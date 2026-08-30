@@ -129,7 +129,7 @@ protected override void UIResearchResultWindow._OnClose()
 public void GameScenarioLogic.NotifyTechResult(int techId)
 ```
 
-`UIGame` calls `FadeOut()` for both an accepted Escape input and its ordinary close handling. `FadeOut()` starts DSP's own animation only when `ready` is true; the normal window update subsequently calls `_Close()`, whose `_OnClose()` clears the UI state and notifies `GameScenarioLogic` of the displayed technology. Spherewright therefore checks this UI only from `Plugin.Update()` and invokes `FadeOut()` once the current result is active and ready. It does not synthesize a key, mouse event, screen coordinate, or Computer Use action. The local `Experience.AutoAcknowledgeResearchResults` setting defaults to `true` and can disable this presentation-only behavior without affecting research state.
+`UIGame` calls `FadeOut()` for both an accepted Escape input and its ordinary close handling. `ready` is exactly `contentGroup.alpha == 1f`; the guarded `FadeOut()` assignment changes that alpha to `0.999f` immediately and sets `windowHeight=0`. Consequently the next Plugin frame no longer satisfies `ready`, so Spherewright cannot repeatedly acknowledge the same result while DSP's normal update animates it closed. That update subsequently calls `_Close()`, whose `_OnClose()` clears the UI state and notifies `GameScenarioLogic` of the displayed technology. Spherewright checks this UI only from `Plugin.Update()` and does not synthesize a key, mouse event, screen coordinate, or Computer Use action. The local `Experience.AutoAcknowledgeResearchResults` setting defaults to `true` and can disable this presentation-only behavior without affecting research state.
 
 ## Mecha refuel and explicit owned-save path
 

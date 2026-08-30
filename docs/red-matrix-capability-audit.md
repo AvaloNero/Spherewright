@@ -16,7 +16,7 @@ This audit maps the end-to-end acceptance chain to the current structured surfac
 | Refine hydrogen | refinery build/configuration plus belts/sorters | Refine recipe compatibility, ordinary power/ticks, all input/output buffers exposed | Compile-verified against current DLL; runtime pending |
 | Separate refinery co-products | `configure_building` with `mode=sorter-filter` | Connected idle empty sorter; topology/stage/cargo/filter bound; exact UI component/sign assignment and readback | Build/Core/MCP verified; runtime pending |
 | Produce a red matrix | matrix-lab production configuration plus filtered inputs | Current red recipe, normal buffers/power/ticks; lab output exposes target item/count | Runtime pending |
-| Prove success | session, progression, recipe, factory, power, player, and action reads | One continuous owned session; target red item output changes from 0 to at least 1; no unexplained item delta | Runtime pending |
+| Prove success | session, progression, recipe, factory, power, player, and action reads | Two live snapshots of the same lab bind session/planet/object, red recipe, output-buffer item/count, game tick, and full state hash; target red item changes from 0 to at least 1 with no unexplained item delta | DTO/hash path offline verified; runtime pending |
 | Persist final evidence | prepare/commit save | Exact current owned save name and revision only; normal DSP save API; confirmed game tick | Build/Core/MCP verified; runtime pending |
 
 ## Required next runtime boundary
@@ -24,3 +24,9 @@ This audit maps the end-to-end acceptance chain to the current structured surfac
 After confirmation, the next Plugin process creates one ordinary peaceful 1x non-sandbox world. The newly added research-result acknowledgement, refuel, sorter-filter, explicit-save, and corrected dependency graph paths are checked as early steps of that same candidate acceptance session; if they pass, the run continues without changing worlds through the first red matrix and final explicit save. If a failure invalidates or quarantines the session, Spherewright stops before creating any replacement world and reports the need for another confirmation.
 
 Per the user's current instruction, installation, DSP restart, and creation of that next validation world remain paused until explicit confirmation.
+
+## Final-proof read sequence
+
+The external Agent first resolves the red-matrix item and recipe from the current `get_recipe_catalog` response. Before enabling the producing lab, it calls `inspect_factory_entity` and retains a snapshot whose session, planet, object, recipe, output buffer, `capturedAtGameTick`, and `stateHash` are all explicit. It leaves the lab output unextracted until a later snapshot of that exact object reports the catalog-resolved red item in an `output` buffer with count at least one. The two snapshots, plus the complete upstream factory/power/resource reads, are the structured production proof; an action completion or a recipe assignment alone is insufficient.
+
+`select_research` terminates when DSP's native queue has accepted the technology. It does not claim that research is complete. Completion must be established separately through progression state and ordinary lab research ticks. Long-running handcraft actions remain `waiting_for_game` while their exact forge task remains in DSP's queue, rather than being declared successful by a wall-clock timeout.

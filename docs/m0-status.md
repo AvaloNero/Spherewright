@@ -33,6 +33,7 @@ No pre-existing save has been enumerated, loaded, or read.
 - `dotnet test Spherewright.Core.slnf --no-build`: 38 passed (Contracts 3, Bridge.Core 26, MCP 9).
 - MCP assembly-registration test expects exactly 34 public tools and explicitly rejects any `basic_production_line` registration.
 - ILSpy class listing of the rebuilt Plugin contains `NormalGameActionCoordinator` and the ordinary `TestWorldCoordinator`, but no `BasicProductionLineCoordinator`.
+- Current-DLL inspection proves research-result `FadeOut()` immediately makes `ready` false (`alpha 1.0 -> 0.999`) before the native close animation, preventing repeated acknowledgement. Factory DTO and canonical hash coverage can bind two same-lab snapshots and prove the runtime-resolved red item in its output buffer changes from 0 to at least 1; runtime evidence is still pending.
 - Fresh ordinary-world verification used process `36496`, session `3d84bb3d-1e15-497f-901a-3bf8375490f1`, and local planet `103`. Readback confirmed `confirmed_peaceful`, `confirmed_disabled`, resource multiplier `1.0`, empty initial inventory, empty handcraft queue, 314 technology states, 161 recipes, 174 items, and runtime red-matrix item `6002` with five dependency recipes.
 - The same-key new-game commit replay returned the original action with `idempotentReplay=true`; a resource cursor reused under a different filter returned `STALE_CURSOR`.
 - BepInEx and DSP `Player.log` contained no error or exception after the successful run.

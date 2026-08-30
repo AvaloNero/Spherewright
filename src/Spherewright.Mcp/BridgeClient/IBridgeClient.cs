@@ -1,0 +1,173 @@
+using Spherewright.Contracts.Actions;
+using Spherewright.Contracts.Factory;
+using Spherewright.Contracts.Players;
+using Spherewright.Contracts.Power;
+using Spherewright.Contracts.Progression;
+using Spherewright.Contracts.Resources;
+using Spherewright.Contracts.Sessions;
+using Spherewright.Contracts.Testing;
+
+namespace Spherewright.Mcp.BridgeClient;
+
+public interface IBridgeClient
+{
+    Task<BridgeCallResult<BridgeStatus>> GetBridgeStatusAsync(CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<SessionState>> GetSessionStateAsync(CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PlayerStateSnapshot>> GetPlayerStateAsync(
+        string sessionId,
+        LocalPlanetRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<ProgressionStateSnapshot>> GetProgressionStateAsync(
+        string sessionId,
+        LocalPlanetRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<RecipeCatalogSnapshot>> GetRecipeCatalogAsync(
+        string sessionId,
+        LocalPlanetRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<ListResourceNodesResult>> ListResourceNodesAsync(
+        string sessionId,
+        ListResourceNodesRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<ResourceNodeSnapshot>> InspectResourceNodeAsync(
+        string sessionId,
+        InspectResourceNodeRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<ListFactoryEntitiesResult>> ListFactoryEntitiesAsync(
+        string sessionId,
+        ListFactoryEntitiesRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<FactoryEntitySnapshot>> InspectFactoryEntityAsync(
+        string sessionId,
+        InspectFactoryEntityRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PowerSummarySnapshot>> GetPowerSummaryAsync(
+        string sessionId,
+        LocalPlanetRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<ActionResultSnapshot>> GetActionResultAsync(
+        GetActionResultRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareMoveAsync(
+        string sessionId,
+        PrepareMoveRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitMoveAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareHarvestAsync(
+        string sessionId,
+        PrepareHarvestRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitHarvestAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareHandcraftAsync(
+        string sessionId,
+        PrepareHandcraftRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitHandcraftAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareSelectResearchAsync(
+        string sessionId,
+        PrepareSelectResearchRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitSelectResearchAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareBuildAsync(
+        string sessionId,
+        PrepareBuildRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitBuildAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareConfigureBuildingAsync(
+        string sessionId,
+        PrepareConfigureBuildingRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitConfigureBuildingAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareTransferAsync(
+        string sessionId,
+        PrepareTransferRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitTransferAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareRefuelAsync(
+        string sessionId,
+        PrepareRefuelRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitRefuelAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareSaveAsync(
+        string sessionId,
+        PrepareSaveRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitSaveAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<ListAssemblersResult>> ListAssemblersAsync(
+        string sessionId,
+        ListAssemblersRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<AssemblerSnapshot>> InspectAssemblerAsync(
+        string sessionId,
+        InspectAssemblerRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<BuildCatalog>> GetBuildCatalogAsync(
+        string sessionId,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedTestWorldPlan>> PrepareTestWorldAsync(
+        PrepareTestWorldRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<TestWorldCreationResult>> CommitTestWorldAsync(
+        CommitTestWorldRequest request,
+        CancellationToken cancellationToken);
+}

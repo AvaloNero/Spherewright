@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Spherewright.Bridge.Core</AssemblyName>
+    <RootNamespace>Spherewright.Bridge.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Spherewright.Contracts\Spherewright.Contracts.csproj" />
+  </ItemGroup>
+</Project>
+

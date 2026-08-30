@@ -1,0 +1,14 @@
+.local/
+**/bin/
+**/obj/
+**/TestResults/
+.vs/
+.idea/
+*.user
+*.suo
+*.dsv
+*.dsv.tmp
+*.autosave
+bridge-*.json
+BepInEx/
+

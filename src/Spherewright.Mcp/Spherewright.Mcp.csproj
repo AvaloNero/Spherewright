@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Spherewright.Mcp</AssemblyName>
+    <RootNamespace>Spherewright.Mcp</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Spherewright.Contracts\Spherewright.Contracts.csproj" />
+    <ProjectReference Include="..\Spherewright.Bridge.Core\Spherewright.Bridge.Core.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="ModelContextProtocol" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="System.IO.FileSystem.AccessControl" />
+  </ItemGroup>
+</Project>

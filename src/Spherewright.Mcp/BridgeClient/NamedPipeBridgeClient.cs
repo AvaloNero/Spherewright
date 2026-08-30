@@ -1,0 +1,441 @@
+using System.IO.Pipes;
+using System.Security.Principal;
+using Newtonsoft.Json;
+using Spherewright.Bridge.Core.Framing;
+using Spherewright.Contracts.Actions;
+using Spherewright.Contracts.Errors;
+using Spherewright.Contracts.Factory;
+using Spherewright.Contracts.Players;
+using Spherewright.Contracts.Power;
+using Spherewright.Contracts.Progression;
+using Spherewright.Contracts.Protocol;
+using Spherewright.Contracts.Resources;
+using Spherewright.Contracts.Sessions;
+using Spherewright.Contracts.Testing;
+
+namespace Spherewright.Mcp.BridgeClient;
+
+internal sealed class NamedPipeBridgeClient : IBridgeClient
+{
+    private const string ClientVersion = "0.1.0";
+    private readonly BridgeClientOptions _options;
+    private readonly BridgeDescriptorLocator _locator;
+    private readonly FrameCodec _frameCodec = new FrameCodec(ProtocolConstants.DefaultMaxFrameBytes);
+
+    public NamedPipeBridgeClient(BridgeClientOptions options, BridgeDescriptorLocator locator)
+    {
+        _options = options;
+        _locator = locator;
+    }
+
+    public async Task<BridgeCallResult<BridgeStatus>> GetBridgeStatusAsync(CancellationToken cancellationToken)
+    {
+        return await CallAsync<EmptyPayload, BridgeStatus>(
+            BridgeMethods.GetBridgeStatus,
+            null,
+            new EmptyPayload(),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<SessionState>> GetSessionStateAsync(CancellationToken cancellationToken)
+    {
+        return await CallAsync<EmptyPayload, SessionState>(
+            BridgeMethods.GetSessionState,
+            null,
+            new EmptyPayload(),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<PlayerStateSnapshot>> GetPlayerStateAsync(
+        string sessionId,
+        LocalPlanetRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<LocalPlanetRequest, PlayerStateSnapshot>(
+            BridgeMethods.GetPlayerState,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<ProgressionStateSnapshot>> GetProgressionStateAsync(
+        string sessionId,
+        LocalPlanetRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<LocalPlanetRequest, ProgressionStateSnapshot>(
+            BridgeMethods.GetProgressionState,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<RecipeCatalogSnapshot>> GetRecipeCatalogAsync(
+        string sessionId,
+        LocalPlanetRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<LocalPlanetRequest, RecipeCatalogSnapshot>(
+            BridgeMethods.GetRecipeCatalog,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<ListResourceNodesResult>> ListResourceNodesAsync(
+        string sessionId,
+        ListResourceNodesRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<ListResourceNodesRequest, ListResourceNodesResult>(
+            BridgeMethods.ListResourceNodes,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<ResourceNodeSnapshot>> InspectResourceNodeAsync(
+        string sessionId,
+        InspectResourceNodeRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<InspectResourceNodeRequest, ResourceNodeSnapshot>(
+            BridgeMethods.InspectResourceNode,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<ListFactoryEntitiesResult>> ListFactoryEntitiesAsync(
+        string sessionId,
+        ListFactoryEntitiesRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<ListFactoryEntitiesRequest, ListFactoryEntitiesResult>(
+            BridgeMethods.ListFactoryEntities,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<FactoryEntitySnapshot>> InspectFactoryEntityAsync(
+        string sessionId,
+        InspectFactoryEntityRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<InspectFactoryEntityRequest, FactoryEntitySnapshot>(
+            BridgeMethods.InspectFactoryEntity,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<PowerSummarySnapshot>> GetPowerSummaryAsync(
+        string sessionId,
+        LocalPlanetRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<LocalPlanetRequest, PowerSummarySnapshot>(
+            BridgeMethods.GetPowerSummary,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<ActionResultSnapshot>> GetActionResultAsync(
+        GetActionResultRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<GetActionResultRequest, ActionResultSnapshot>(
+            BridgeMethods.GetActionResult,
+            null,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareMoveAsync(
+        string sessionId,
+        PrepareMoveRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<PrepareMoveRequest, PreparedNormalAction>(BridgeMethods.PrepareMove, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitMoveAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitMove, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareHarvestAsync(
+        string sessionId,
+        PrepareHarvestRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<PrepareHarvestRequest, PreparedNormalAction>(BridgeMethods.PrepareHarvest, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitHarvestAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitHarvest, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareHandcraftAsync(
+        string sessionId,
+        PrepareHandcraftRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<PrepareHandcraftRequest, PreparedNormalAction>(BridgeMethods.PrepareHandcraft, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitHandcraftAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitHandcraft, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareSelectResearchAsync(
+        string sessionId,
+        PrepareSelectResearchRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<PrepareSelectResearchRequest, PreparedNormalAction>(BridgeMethods.PrepareSelectResearch, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitSelectResearchAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitSelectResearch, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareBuildAsync(
+        string sessionId,
+        PrepareBuildRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<PrepareBuildRequest, PreparedNormalAction>(BridgeMethods.PrepareBuild, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitBuildAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitBuild, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareConfigureBuildingAsync(
+        string sessionId,
+        PrepareConfigureBuildingRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<PrepareConfigureBuildingRequest, PreparedNormalAction>(BridgeMethods.PrepareConfigureBuilding, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitConfigureBuildingAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitConfigureBuilding, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareTransferAsync(
+        string sessionId,
+        PrepareTransferRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<PrepareTransferRequest, PreparedNormalAction>(BridgeMethods.PrepareTransfer, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitTransferAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitTransfer, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareRefuelAsync(
+        string sessionId,
+        PrepareRefuelRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<PrepareRefuelRequest, PreparedNormalAction>(BridgeMethods.PrepareRefuel, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitRefuelAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitRefuel, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareSaveAsync(
+        string sessionId,
+        PrepareSaveRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<PrepareSaveRequest, PreparedNormalAction>(BridgeMethods.PrepareSave, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitSaveAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitSave, sessionId, request, cancellationToken);
+
+    public async Task<BridgeCallResult<ListAssemblersResult>> ListAssemblersAsync(
+        string sessionId,
+        ListAssemblersRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<ListAssemblersRequest, ListAssemblersResult>(
+            BridgeMethods.ListAssemblers,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<AssemblerSnapshot>> InspectAssemblerAsync(
+        string sessionId,
+        InspectAssemblerRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<InspectAssemblerRequest, AssemblerSnapshot>(
+            BridgeMethods.InspectAssembler,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<BuildCatalog>> GetBuildCatalogAsync(
+        string sessionId,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<EmptyPayload, BuildCatalog>(
+            BridgeMethods.GetBuildCatalog,
+            sessionId,
+            new EmptyPayload(),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<PreparedTestWorldPlan>> PrepareTestWorldAsync(
+        PrepareTestWorldRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<PrepareTestWorldRequest, PreparedTestWorldPlan>(
+            BridgeMethods.PrepareNewGame,
+            null,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<TestWorldCreationResult>> CommitTestWorldAsync(
+        CommitTestWorldRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<CommitTestWorldRequest, TestWorldCreationResult>(
+            BridgeMethods.CommitNewGame,
+            null,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<BridgeCallResult<TResponse>> CallAsync<TRequest, TResponse>(
+        string method,
+        string? sessionId,
+        TRequest payload,
+        CancellationToken cancellationToken)
+    {
+        var located = _locator.Locate();
+        if (!located.Success)
+        {
+            return BridgeCallResult<TResponse>.Failed(located.Error!);
+        }
+
+        var descriptor = located.Value!.Descriptor;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(_options.RequestTimeoutSeconds));
+
+        try
+        {
+            using var pipe = new NamedPipeClientStream(
+                ".",
+                descriptor.PipeName,
+                PipeDirection.InOut,
+                PipeOptions.Asynchronous,
+                TokenImpersonationLevel.Identification);
+            await pipe.ConnectAsync(_options.ConnectTimeoutMilliseconds, timeout.Token).ConfigureAwait(false);
+
+            var handshake = new BridgeRequestEnvelope<HandshakeRequest>
+            {
+                MessageType = BridgeMessageTypes.Handshake,
+                RequestId = Guid.NewGuid().ToString("D"),
+                Payload = new HandshakeRequest
+                {
+                    BridgeInstanceId = descriptor.BridgeInstanceId,
+                    AuthToken = descriptor.AuthToken,
+                    ClientName = "Spherewright.Mcp",
+                    ClientVersion = ClientVersion,
+                },
+            };
+            var handshakeResponse = await SendAsync<HandshakeRequest, HandshakeResponse>(
+                pipe,
+                handshake,
+                timeout.Token).ConfigureAwait(false);
+            if (!handshakeResponse.Success || handshakeResponse.Result?.Accepted != true)
+            {
+                return BridgeCallResult<TResponse>.Failed(handshakeResponse.Error ?? BridgeError.Create(
+                    BridgeErrorCodes.AuthFailed,
+                    "The active Spherewright bridge rejected authentication.",
+                    true,
+                    "Rediscover the active bridge descriptor and retry."));
+            }
+
+            var request = new BridgeRequestEnvelope<TRequest>
+            {
+                RequestId = Guid.NewGuid().ToString("D"),
+                SessionId = sessionId,
+                Method = method,
+                Payload = payload,
+            };
+            var response = await SendAsync<TRequest, TResponse>(pipe, request, timeout.Token).ConfigureAwait(false);
+            return response.Success && response.Result is not null
+                ? BridgeCallResult<TResponse>.Succeeded(response.Result)
+                : BridgeCallResult<TResponse>.Failed(response.Error ?? Internal("Bridge response was incomplete."));
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return BridgeCallResult<TResponse>.Failed(BridgeError.Create(
+                BridgeErrorCodes.RequestTimeout,
+                "The read-only bridge request timed out.",
+                true,
+                "Ensure DSP and the Spherewright Plugin are responsive, then retry."));
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (
+            exception is IOException
+            || exception is UnauthorizedAccessException
+            || exception is FrameProtocolException
+            || exception is JsonException)
+        {
+            return BridgeCallResult<TResponse>.Failed(BridgeError.Create(
+                BridgeErrorCodes.BridgeNotReady,
+                "The Spherewright bridge connection is unavailable or invalid.",
+                true,
+                "Confirm DSP is running with the Plugin loaded, then retry."));
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope<TResponse>> SendAsync<TRequest, TResponse>(
+        Stream pipe,
+        BridgeRequestEnvelope<TRequest> request,
+        CancellationToken cancellationToken)
+    {
+        var bytes = FrameCodec.EncodeUtf8(McpBridgeJson.Serialize(request));
+        await _frameCodec.WriteFrameAsync(pipe, bytes, cancellationToken).ConfigureAwait(false);
+        var responseBytes = await _frameCodec.ReadFrameAsync(pipe, cancellationToken).ConfigureAwait(false);
+        if (responseBytes is null)
+        {
+            throw new IOException("Bridge connection closed before a response was received.");
+        }
+
+        var response = McpBridgeJson.Deserialize<BridgeResponseEnvelope<TResponse>>(
+            FrameCodec.DecodeUtf8(responseBytes));
+        if (response is null || !string.Equals(response.RequestId, request.RequestId, StringComparison.Ordinal))
+        {
+            throw new FrameProtocolException("Bridge response did not match the request.");
+        }
+
+        return response;
+    }
+
+    private static BridgeError Internal(string message)
+    {
+        return BridgeError.Create(
+            BridgeErrorCodes.InternalError,
+            message,
+            true,
+            "Retry the request. If it repeats, inspect the local Spherewright logs.");
+    }
+}

@@ -1,0 +1,14 @@
+{
+  "solution": {
+    "path": "Spherewright.sln",
+    "projects": [
+      "src\\Spherewright.Contracts\\Spherewright.Contracts.csproj",
+      "src\\Spherewright.Bridge.Core\\Spherewright.Bridge.Core.csproj",
+      "src\\Spherewright.Mcp\\Spherewright.Mcp.csproj",
+      "tests\\Spherewright.Contracts.Tests\\Spherewright.Contracts.Tests.csproj",
+      "tests\\Spherewright.Bridge.Core.Tests\\Spherewright.Bridge.Core.Tests.csproj",
+      "tests\\Spherewright.Mcp.Tests\\Spherewright.Mcp.Tests.csproj"
+    ]
+  }
+}
+

@@ -1,0 +1,39 @@
+namespace Spherewright.Contracts.Protocol;
+
+public static class BridgeMethods
+{
+    public const string GetBridgeStatus = "get_bridge_status";
+    public const string GetSessionState = "get_session_state";
+    public const string GetPlayerState = "get_player_state";
+    public const string GetProgressionState = "get_progression_state";
+    public const string GetRecipeCatalog = "get_recipe_catalog";
+    public const string ListResourceNodes = "list_resource_nodes";
+    public const string InspectResourceNode = "inspect_resource_node";
+    public const string ListFactoryEntities = "list_factory_entities";
+    public const string InspectFactoryEntity = "inspect_factory_entity";
+    public const string GetPowerSummary = "get_power_summary";
+    public const string GetActionResult = "get_action_result";
+    public const string ListAssemblers = "list_assemblers";
+    public const string InspectAssembler = "inspect_assembler";
+    public const string GetBuildCatalog = "get_build_catalog";
+    public const string PrepareNewGame = "prepare_new_game";
+    public const string CommitNewGame = "commit_new_game";
+    public const string PrepareMove = "prepare_move";
+    public const string CommitMove = "commit_move";
+    public const string PrepareHarvest = "prepare_harvest";
+    public const string CommitHarvest = "commit_harvest";
+    public const string PrepareHandcraft = "prepare_handcraft";
+    public const string CommitHandcraft = "commit_handcraft";
+    public const string PrepareSelectResearch = "prepare_select_research";
+    public const string CommitSelectResearch = "commit_select_research";
+    public const string PrepareBuild = "prepare_build";
+    public const string CommitBuild = "commit_build";
+    public const string PrepareConfigureBuilding = "prepare_configure_building";
+    public const string CommitConfigureBuilding = "commit_configure_building";
+    public const string PrepareTransfer = "prepare_transfer";
+    public const string CommitTransfer = "commit_transfer";
+    public const string PrepareRefuel = "prepare_refuel";
+    public const string CommitRefuel = "commit_refuel";
+    public const string PrepareSave = "prepare_save";
+    public const string CommitSave = "commit_save";
+}

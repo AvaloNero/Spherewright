@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>Spherewright.Plugin</AssemblyName>
+    <RootNamespace>Spherewright.Plugin</RootNamespace>
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Spherewright.Contracts\Spherewright.Contracts.csproj" />
+    <ProjectReference Include="..\Spherewright.Bridge.Core\Spherewright.Bridge.Core.csproj" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" PrivateAssets="all" />
+    <PackageReference Include="Newtonsoft.Json" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Historical sandbox research is retained as source evidence only and must not enter the M0 Plugin binary. -->
+    <Compile Remove="Game\BasicProductionLineCoordinator.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\.local\game-refs\BepInEx.dll')">
+    <Reference Include="BepInEx">
+      <HintPath>$(MSBuildThisFileDirectory)..\..\.local\game-refs\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(MSBuildThisFileDirectory)..\..\.local\game-refs\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(MSBuildThisFileDirectory)..\..\.local\game-refs\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(MSBuildThisFileDirectory)..\..\.local\game-refs\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  <Target Name="RequireLocalGameReferences" BeforeTargets="CoreCompile" Condition="!Exists('$(MSBuildThisFileDirectory)..\..\.local\game-refs\BepInEx.dll')">
+    <Error Text="Local DSP/BepInEx references are missing. Run scripts/sync-game-refs.ps1 first." />
+  </Target>
+</Project>

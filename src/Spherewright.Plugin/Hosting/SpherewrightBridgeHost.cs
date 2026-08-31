@@ -15,6 +15,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
     private readonly ManualLogSource _logger;
     private readonly GameVersionSnapshotProvider _gameVersionProvider;
     private readonly GameSessionTracker _sessionTracker;
+    private readonly GameplayJournalManager _gameplayJournalManager;
     private readonly NormalGameActionCoordinator _normalActionCoordinator;
     private readonly ResearchResultAutoAcknowledger _researchResultAutoAcknowledger;
     private readonly BridgeStatusSnapshotProvider _statusProvider;
@@ -31,6 +32,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
         ManualLogSource logger,
         GameVersionSnapshotProvider gameVersionProvider,
         GameSessionTracker sessionTracker,
+        GameplayJournalManager gameplayJournalManager,
         NormalGameActionCoordinator normalActionCoordinator,
         ResearchResultAutoAcknowledger researchResultAutoAcknowledger,
         BridgeStatusSnapshotProvider statusProvider,
@@ -43,6 +45,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
         _logger = logger;
         _gameVersionProvider = gameVersionProvider;
         _sessionTracker = sessionTracker;
+        _gameplayJournalManager = gameplayJournalManager;
         _normalActionCoordinator = normalActionCoordinator;
         _researchResultAutoAcknowledger = researchResultAutoAcknowledger;
         _statusProvider = statusProvider;
@@ -79,6 +82,11 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             flightCheckpoints,
             logger);
         var gameStateReader = new GameStateReader(sessionTracker);
+        var gameplayJournalManager = new GameplayJournalManager(
+            configuration.RuntimeDescriptorDirectory,
+            gameVersion,
+            sessionTracker,
+            logger);
         var normalActionCoordinator = new NormalGameActionCoordinator(
             configuration.PlanTokenLifetimeSeconds,
             configuration.IdempotencyRetentionMinutes,
@@ -119,6 +127,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             statusProvider,
             dispatcher,
             gameStateReader,
+            gameplayJournalManager,
             testWorldCoordinator,
             ownedWorldResumeCoordinator,
             flightCheckpointReloadCoordinator,
@@ -140,6 +149,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             logger,
             versionProvider,
             sessionTracker,
+            gameplayJournalManager,
             normalActionCoordinator,
             researchResultAutoAcknowledger,
             statusProvider,
@@ -179,6 +189,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
 
         _sessionTracker.UpdateOnMainThread();
         _statusProvider.UpdateGameLoadedOnMainThread(_sessionTracker.GameLoaded);
+        _gameplayJournalManager.UpdateOnMainThread();
         _normalActionCoordinator.UpdateOnMainThread();
         _researchResultAutoAcknowledger.UpdateOnMainThread();
 
@@ -208,6 +219,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
         }
 
         _started = false;
+        _gameplayJournalManager.Dispose();
         _pipeServer.Dispose();
         _descriptorPublisher.Dispose();
         _dispatcher.Dispose();

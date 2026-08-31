@@ -6,6 +6,7 @@ public static class BridgeMethods
     public const string GetSessionState = "get_session_state";
     public const string GetPlayerState = "get_player_state";
     public const string GetProgressionState = "get_progression_state";
+    public const string GetGameplayJournal = "get_gameplay_journal";
     public const string GetLocalStarSystem = "get_local_star_system";
     public const string GetRecipeCatalog = "get_recipe_catalog";
     public const string ListResourceNodes = "list_resource_nodes";

@@ -31,6 +31,7 @@ internal sealed class NamedPipeBridgeServer : IDisposable
     private readonly BridgeStatusSnapshotProvider _statusProvider;
     private readonly BoundedMainThreadDispatcher _dispatcher;
     private readonly GameStateReader _gameStateReader;
+    private readonly GameplayJournalManager _gameplayJournalManager;
     private readonly TestWorldCoordinator _testWorldCoordinator;
     private readonly OwnedWorldResumeCoordinator _ownedWorldResumeCoordinator;
     private readonly FlightCheckpointReloadCoordinator _flightCheckpointReloadCoordinator;
@@ -49,6 +50,7 @@ internal sealed class NamedPipeBridgeServer : IDisposable
         BridgeStatusSnapshotProvider statusProvider,
         BoundedMainThreadDispatcher dispatcher,
         GameStateReader gameStateReader,
+        GameplayJournalManager gameplayJournalManager,
         TestWorldCoordinator testWorldCoordinator,
         OwnedWorldResumeCoordinator ownedWorldResumeCoordinator,
         FlightCheckpointReloadCoordinator flightCheckpointReloadCoordinator,
@@ -64,6 +66,7 @@ internal sealed class NamedPipeBridgeServer : IDisposable
         _statusProvider = statusProvider;
         _dispatcher = dispatcher;
         _gameStateReader = gameStateReader;
+        _gameplayJournalManager = gameplayJournalManager;
         _testWorldCoordinator = testWorldCoordinator;
         _ownedWorldResumeCoordinator = ownedWorldResumeCoordinator;
         _flightCheckpointReloadCoordinator = flightCheckpointReloadCoordinator;
@@ -264,6 +267,14 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             cancellationToken).ConfigureAwait(false);
                         break;
                     }
+                case BridgeMethods.GetGameplayJournal:
+                    await DispatchAndWriteAsync(
+                        pipe,
+                        header.RequestId,
+                        header.SessionId,
+                        () => _gameplayJournalManager.CaptureOnMainThread(header.SessionId),
+                        cancellationToken).ConfigureAwait(false);
+                    break;
                 case BridgeMethods.GetRecipeCatalog:
                     {
                         var request = PluginJson.Deserialize<BridgeRequestEnvelope<LocalPlanetRequest>>(requestJson);

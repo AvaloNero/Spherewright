@@ -5,6 +5,7 @@ using ModelContextProtocol.Server;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Factory;
+using Spherewright.Contracts.Journals;
 using Spherewright.Contracts.Resources;
 using Spherewright.Contracts.Sessions;
 using Spherewright.Contracts.Testing;
@@ -110,6 +111,23 @@ public static class SpherewrightTools
             new LocalPlanetRequest { PlanetId = planetId },
             cancellationToken).ConfigureAwait(false);
         return ToToolResult(result, "Technology progression captured from the owned ordinary world.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_get_gameplay_journal",
+        Title = "Get the per-save first-event gameplay journal",
+        ReadOnly = true,
+        Destructive = false,
+        Idempotent = true,
+        OpenWorld = false)]
+    [Description("Returns the protected journal for the current owned save: first manual and production-line output per item are tracked independently, as are first technology and upgrade selections, with wall-clock and in-save game times.")]
+    public static async Task<CallToolResult> GetGameplayJournalAsync(
+        [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
+        [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,
+        [Description("Cancellation token supplied by the MCP host.")] CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.GetGameplayJournalAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Per-save first-event gameplay journal captured.");
     }
 
     [McpServerTool(

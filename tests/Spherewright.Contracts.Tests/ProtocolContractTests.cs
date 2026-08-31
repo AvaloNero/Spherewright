@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Spherewright.Contracts.Errors;
+using Spherewright.Contracts.Journals;
 using Spherewright.Contracts.Protocol;
 using Spherewright.Contracts.Sessions;
 using Xunit;
@@ -54,5 +55,39 @@ public sealed class ProtocolContractTests
 
         Assert.Equal(ProtocolConstants.CurrentVersion, request.ProtocolVersion);
         Assert.Equal(BridgeMessageTypes.Request, request.MessageType);
+    }
+
+    [Fact]
+    public void GameplayJournal_ExposesTimesWithoutRawSaveIdentity()
+    {
+        var journal = new GameplayJournalSnapshot
+        {
+            SessionId = "session",
+            JournalId = "opaque-hash",
+            CreatedAtActualTime = "2026-09-01T00:00:00+08:00",
+            TrackingStartedAtGameTick = 120,
+            TrackingStartedAtGameTime = "000d 00:00:02",
+            Entries = new List<GameplayJournalEntry>
+            {
+                new GameplayJournalEntry
+                {
+                    Sequence = 1,
+                    Kind = GameplayJournalEventKinds.ManualItemFirst,
+                    ItemId = 1101,
+                    ActualTime = "2026-09-01T00:00:01+08:00",
+                    GameTick = 180,
+                    GameTime = "000d 00:00:03",
+                },
+            },
+        };
+
+        var json = JsonSerializer.Serialize(journal, JsonOptions);
+        using var parsed = JsonDocument.Parse(json);
+        var entry = parsed.RootElement.GetProperty("entries")[0];
+
+        Assert.Equal("2026-09-01T00:00:01+08:00", entry.GetProperty("actualTime").GetString());
+        Assert.Equal(180, entry.GetProperty("gameTick").GetInt64());
+        Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("filePath", json, StringComparison.OrdinalIgnoreCase);
     }
 }

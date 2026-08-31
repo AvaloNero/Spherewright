@@ -13,6 +13,7 @@ spherewright_get_status
 spherewright_get_session_state
 spherewright_get_player_state
 spherewright_get_progression_state
+spherewright_get_gameplay_journal
 spherewright_get_local_star_system
 spherewright_get_recipe_catalog
 spherewright_get_build_catalog
@@ -57,6 +58,8 @@ spherewright_commit_reload_flight_checkpoint
 `prepare_new_game` and `commit_new_game` now describe only a peaceful 1x non-sandbox world. The old sandbox basic-production-line methods are not registered as MCP tools and are excluded from M0.
 
 `spherewright_prepare_configure_building` accepts `production`, `research`, and `sorter-filter` modes. Sorter-filter mode additionally carries `filterItemId`, requires a connected idle empty sorter, and binds its topology, stage, carried cargo, and current filter. The refuel pair binds an exact current player/fuel-chamber snapshot and commits through `Mecha.AutoReplenishFuel`; readback must prove equal-and-opposite count changes and conserved proliferator points. The normal save pair binds the current owned-session revision and commits only through `GameSave.SaveCurrentGame` with the exact internally retained primary save name. An interplanetary-flight commit first saves a separately named internal checkpoint, verifies its header tick, and persists its reusable provenance ticket before native flight begins. None of these operations can address an external save or inject an item/energy value.
+
+`spherewright_get_gameplay_journal` is a read-only, owned-session-gated view of a current-user-protected file keyed by a one-way hash of the internal owned-save identity. It records first manual and first production-line output independently per item, plus first technology and upgrade selections, with ISO-8601 wall-clock time, raw game tick, and formatted in-save time. It never returns the raw save identity or an absolute journal path. A journal created for an already progressed save explicitly reports incomplete historical coverage instead of inventing earlier timestamps.
 
 Quarantine reconciliation is not a force-unlock: it is available only for the exact retained outcome-unknown build action and clears quarantine only after the item decrement, all new entity/component identities, and directed topology form one unchanged proof. It never repeats the build. Owned-game resume is likewise not a save picker: it accepts only a protected one-time token, calls DSP's fixed `LastExit` loader, and adopts the payload only when its high-entropy owned identity, minimum tick, planet, peaceful/non-sandbox/1x settings, and source-process shutdown proof all match; the token is then consumed.
 

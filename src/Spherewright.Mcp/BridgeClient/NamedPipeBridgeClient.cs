@@ -6,6 +6,7 @@ using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
+using Spherewright.Contracts.Journals;
 using Spherewright.Contracts.Players;
 using Spherewright.Contracts.Power;
 using Spherewright.Contracts.Progression;
@@ -356,6 +357,17 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
             BridgeMethods.CommitNewGame,
             null,
             request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<GameplayJournalSnapshot>> GetGameplayJournalAsync(
+        string sessionId,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<EmptyPayload, GameplayJournalSnapshot>(
+            BridgeMethods.GetGameplayJournal,
+            sessionId,
+            new EmptyPayload(),
             cancellationToken).ConfigureAwait(false);
     }
 

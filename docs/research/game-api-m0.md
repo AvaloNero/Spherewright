@@ -95,6 +95,30 @@ Historical implementation note: the original `TestWorldCoordinator` created a pe
 
 For this game version, `GameDesc.isPeaceMode` is the reliable black-fog boundary because `isCombatMode` is its inverse. A missing descriptor is treated as unknown and blocks writes. Owned worlds are saved only with `GameSave.SaveCurrentGame` after the local factory exists; save files are never opened or modified directly.
 
+## Per-save first-event journal signals
+
+Targeted metadata and IL inspection of the current `Assembly-CSharp.dll` established these exact signals:
+
+```text
+public void MechaForge.GameTick(long time, float deltaTime)
+public void ForgeTask.Produce()
+public void GameHistoryData.AddFeatureValue(int featureId, int addVal)
+public int GameHistoryData.GetFeatureValue(int featureId)
+public int[] FactoryProductionStat.productRegister
+public void FactoryProductionStat.PrepareTick()
+public void FactoryProductionStat.ClearRegisters()
+public void FactoryProductionStat.GameTick(long time)
+public int TechProto.page { get; }
+```
+
+For every completed forge task, `MechaForge.GameTick` first registers its product statistics, calls `ForgeTask.Produce`, then calls `GameHistoryData.AddFeatureValue(2140000 + recipeId, 1)`. This also covers nested handcraft prerequisite tasks, unlike the public `onTaskDelivery` event, which fires only for a top-level task. Spherewright therefore reconstructs cumulative manual item counts from the persisted per-recipe feature counter and each runtime recipe's `Results/ResultCounts`; it does not infer handcrafting from an inventory increase.
+
+Automated factory systems write their current-tick outputs to `FactoryProductionStat.productRegister`; current call sites include miner, assembler, fractionator, lab, transport, power and Dyson production ticks. `FactoryProductionStat.PrepareTick` clears this register at the start of a tick, and `FactoryProductionStat.GameTick` consumes it into production statistics. By contrast, `Mecha.AddProductionStat` calls `AddProductionToTotalArray` directly and does not write `productRegister`. A positive register value observed in the Plugin main-thread update is therefore an independent production-line signal rather than a manual-crafting echo.
+
+`TechProto.page` returns `0` for IDs below `2000` and `1` otherwise, matching DSP's technology/upgrade pages. A first selection is captured from the normal `GameHistoryData.currentTech/techQueue` state; no technology is unlocked or advanced by the journal. Each event stores `DateTimeOffset.Now` as an ISO-8601 actual time and `GameMain.gameTick` both raw and formatted at 60 ticks per in-save second.
+
+Journal files live below the current-user-protected Spherewright runtime directory and are named only by a SHA-256 identity derived from the internally retained owned-save name. New Spherewright worlds get complete prospective coverage from their adoption frame. When this feature first attaches to an already progressed owned save, existing manual, production and research IDs are seeded as historical without timestamps, and `historicalCoverageComplete=false`; this prevents fabricated or duplicate "first" records while preserving exact coverage for future unseen events.
+
 ## Factory and assembler read path
 
 The adopted session's local factory is obtained through `GameMain.data.localLoadedPlanetFactory`. Assembler snapshots use:

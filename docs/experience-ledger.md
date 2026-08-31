@@ -1,6 +1,6 @@
 # Spherewright experience ledger
 
-更新时间：2026-08-31（Asia/Singapore）
+更新时间：2026-09-01（Asia/Singapore）
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据或 `docs/m0-status.md` 的 Gate 验收状态。
 
@@ -580,6 +580,18 @@
 - 关联：EXP-004、EXP-005、EXP-036、EXP-038、`src/Spherewright.Plugin/RuntimeDescriptor/FlightCheckpointStore.cs`、`src/Spherewright.Plugin/Game/FlightCheckpointReloadCoordinator.cs`、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.InterplanetaryFlight.cs`、`docs/research/game-api-m0.md`。
 - 最近复验：2026-08-31（原生 API 反编译、保存先于起飞的源码审计、完整构建与 MCP 注册/映射测试；live 待部署）。
 
+### EXP-048 — 首次手搓与首次产线产出必须使用两个原生计数域
+
+- 状态：`observed`
+- 日期：2026-09-01
+- 适用范围：当前 DSP `0.10.34.28529`、逐 owned-save 日记、机甲复制器、工厂生产统计以及科技树选择。
+- 当前结论：不能用背包增量区分“手搓”和“产线”。手搓以 `GameHistoryData.GetFeatureValue(2140000 + recipeId)` 的持久完成次数乘 runtime `Results/ResultCounts`；产线以刚完成游戏 tick 的 `FactoryProductionStat.productRegister` 为独立信号。两类 item ID 分别去重，所以同一物品可以各有一次首次记录。科技/升级首次选择从正常 `currentTech/techQueue` 观察，并按 `TechProto.page` 的 `0/1` 分类。每条记录同时保存带时区的 ISO 实际时间、原始 `GameMain.gameTick` 与 60 tick/s 格式化局内时间。
+- 直接证据：当前程序集 IL 显示每个 `ForgeTask.Produce` 后调用 `AddFeatureValue(2140000 + recipeId, 1)`，包括不触发顶层 `onTaskDelivery` 的嵌套前置手搓；`Mecha.AddProductionStat` 直接调用 `AddProductionToTotalArray`，不写 `productRegister`，而矿机、制造、分馏、研究站、物流、电力与戴森生产 tick 均引用该寄存器。`TechProto.page` 对 ID `<2000` 返回 0，否则返回 1。实现以 owned-save 内部身份的 SHA-256 派生日记 ID，在当前用户保护目录原子持久化，并新增 owned-only 只读 MCP 工具；完整解决方案 0 warning/0 error，62 tests passed（Contracts 4、Bridge.Core 45、MCP 13）。
+- 限制或反例：当前主档早于该功能存在，无法从统计恢复过去事件的真实墙钟时间。首次附着会把已有手搓、生产和科研 ID 作为无时间的 historical seed，并明确返回 `historicalCoverageComplete=false`；不得把迁移时刻伪称旧物品的首次时刻。新档从 Spherewright 采用帧开始才具有完整覆盖。该实现尚待新版 Plugin 实机部署、文件 ACL/重启延续和首个新事件复验，因此当前不标 `validated`。
+- 复验触发：本次安全部署、首次日记文件创建/读取、首个此前未出现物品的手搓与产线双事件、首次科技/升级选择、跨进程恢复、DSP 生产统计或 feature ID 行为变化。
+- 关联：EXP-005、EXP-037、`src/Spherewright.Plugin/Game/GameplayJournalManager.cs`、`src/Spherewright.Bridge.Core/Journals/GameplayFirstOccurrenceDetector.cs`、`docs/research/game-api-m0.md`。
+- 最近复验：2026-09-01（当前程序集元数据/IL、完整构建、Core 去重测试、Contracts 脱敏测试与 MCP 注册/映射测试；live 待部署）。
+
 ## 修订记录
 
 - 2026-08-31：创建账本；录入并复核本轮已知的构建、启动、恢复、动作协调、状态稳定、电力、分拣器和执行优先级经验。尚未把 EXP-006、EXP-011、EXP-012 的待实机范围误标为完全验证。
@@ -620,3 +632,4 @@
 - 2026-08-31：新增 EXP-046，并据反例修订 EXP-035：机甲核心提升至 200 MJ 后，从煤点返程仍因旧 DLL move 终态残留耗尽；普通生产路点只有约 80 kW 基础恢复，不能当作充电目标。读取无线塔 `180` 的真实坐标后到达 2.47 m，8 秒净增约 20.765 MJ，确认自动回充闭环；撤销“高于 50% 即可返程”的单阈值。
 - 2026-08-31：机甲核心 II/驱动引擎 II 分别在 tick `3932513/4013644` 完成；以范围内 Mine 清除旧 Move 后，从石墨仓 `114` 守恒转移并加注 100 高能石墨，核心达到 `400/400 MJ`、燃料格余 91，动作 `0e59ee2f-5d49-44e6-bfd9-119bfe08c8c1` 正常保存主档 tick `4204523`。新增 EXP-047，把用户要求的“起飞前独立存档、失败反复加载同一档”固化为保存头证明、保护票据、严格采用与可重复 reload 的离线实现；完整解决方案 0 warning/0 error、57 tests passed，live 待安全部署。
 - 2026-08-31：用户要求关闭游戏前，动作 `387a4629-f1b4-4c40-ad6b-10f15e840219` 通过正常 save API 再次保存同一 owned 主档 tick `4409247`；最终 revision `354`、`ownedSaveState=saved`、`writeHealth=healthy`。该点被指定为下次唯一接续点。随后进程 `24828` 接受正常窗口关闭并退出，未强杀；runtime descriptor 已清理，固定 `_lastexit_.dsv` 于 `2026-08-31T14:54:27Z` 更新。现存两个恢复票据绑定旧进程/旧 session，与本局不匹配，不能用于恢复；下次必须先为该精确主档重建 owned-session 证明。新需求“每个新档分别记录物品首次手搓/首次产线产出、科技首次点击、升级首次点击，并同时记录实际时间和本局时间”只完成初步 API 审计，尚未形成经验条目或代码实现，下一次恢复该档后继续。
+- 2026-09-01：新增 EXP-048；把逐存档日记落为独立的手搓 feature counter、自动生产 register、科技页分类和双时间记录，旧档迁移明确不补造历史时间。公开面增至 44 个工具；完整构建 0 warning/0 error，62 tests passed，等待同档安全恢复后的实机复验。

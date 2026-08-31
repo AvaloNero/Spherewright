@@ -56,6 +56,10 @@ internal sealed class GameSessionTracker
 
     public string? SessionId => _sessionId;
 
+    public string? OwnedSaveName => IsCurrentSessionOwned ? _ownedSaveName : null;
+
+    public bool CurrentOwnedSessionStartedAsNewGame { get; private set; }
+
     public long Revision => _revision;
 
     public string WriteHealth => _writeHealth;
@@ -122,6 +126,7 @@ internal sealed class GameSessionTracker
                 _writeQuarantineReason = null;
                 _currentFlightCheckpointId = null;
                 _currentSessionLoadedFromFlightCheckpoint = false;
+                CurrentOwnedSessionStartedAsNewGame = false;
             }
 
             GameLoaded = false;
@@ -147,6 +152,7 @@ internal sealed class GameSessionTracker
                 _ownedSaveState = OwnedSaveStates.WaitingToSave;
                 _ownedSessionStartTick = GameMain.gameTick;
                 _lastOwnedSaveGameTick = null;
+                CurrentOwnedSessionStartedAsNewGame = true;
                 _logger.LogInfo("Spherewright adopted the newly created ordinary peaceful world");
             }
             else if (_expectedResumeTicket is not null)
@@ -173,6 +179,7 @@ internal sealed class GameSessionTracker
                 _ownedSaveError = null;
                 _currentFlightCheckpointId = null;
                 _currentSessionLoadedFromFlightCheckpoint = false;
+                CurrentOwnedSessionStartedAsNewGame = false;
                 _logger.LogWarning("Spherewright detected an unowned game session; save and factory reads are blocked");
             }
         }
@@ -203,6 +210,7 @@ internal sealed class GameSessionTracker
             _lastOwnedSaveGameTick = ticket.SavedGameTick;
             _currentFlightCheckpointId = ticket.CheckpointId;
             _currentSessionLoadedFromFlightCheckpoint = true;
+            CurrentOwnedSessionStartedAsNewGame = false;
             _logger.LogInfo("Spherewright adopted the exact reusable pre-flight checkpoint without replacing the primary owned save");
         }
 
@@ -232,6 +240,7 @@ internal sealed class GameSessionTracker
             _ownedSessionStartTick = GameMain.gameTick;
             _lastOwnedSaveGameTick = null;
             _resumeTickets.Consume(ticket.ResumeToken);
+            CurrentOwnedSessionStartedAsNewGame = false;
             _logger.LogInfo("Spherewright adopted the exact normally saved owned world through one-time restart-resume proof");
         }
 
@@ -393,6 +402,7 @@ internal sealed class GameSessionTracker
             "session.read",
             "player.read",
             "progression.read",
+            "gameplay-journal.read",
             "assembler.read",
             "build-catalog.read",
             "recipe-catalog.read",

@@ -1,6 +1,7 @@
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Factory;
+using Spherewright.Contracts.Journals;
 using Spherewright.Contracts.Players;
 using Spherewright.Contracts.Power;
 using Spherewright.Contracts.Progression;
@@ -24,6 +25,10 @@ public interface IBridgeClient
     Task<BridgeCallResult<ProgressionStateSnapshot>> GetProgressionStateAsync(
         string sessionId,
         LocalPlanetRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<GameplayJournalSnapshot>> GetGameplayJournalAsync(
+        string sessionId,
         CancellationToken cancellationToken);
 
     Task<BridgeCallResult<LocalStarSystemSnapshot>> GetLocalStarSystemAsync(

@@ -4,6 +4,7 @@ using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
+using Spherewright.Contracts.Journals;
 using Spherewright.Contracts.Players;
 using Spherewright.Contracts.Power;
 using Spherewright.Contracts.Progression;
@@ -48,6 +49,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_commit_transfer",
                 "spherewright_get_action_result",
                 "spherewright_get_build_catalog",
+                "spherewright_get_gameplay_journal",
                 "spherewright_get_local_star_system",
                 "spherewright_get_player_state",
                 "spherewright_get_power_summary",
@@ -145,6 +147,23 @@ public sealed class SpherewrightToolsTests
         Assert.Equal(17, bridge.LastListRequest?.Limit);
         Assert.Equal("cursor-9", bridge.LastListRequest?.Cursor);
         Assert.Equal(9, result.StructuredContent!.Value.GetProperty("result").GetProperty("revision").GetInt64());
+    }
+
+    [Fact]
+    public async Task GameplayJournalTool_MapsOwnedSession()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.GetGameplayJournalAsync(
+            bridge,
+            "session-journal",
+            CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("session-journal", bridge.LastSessionId);
+        Assert.Equal(
+            "journal",
+            result.StructuredContent!.Value.GetProperty("result").GetProperty("journalId").GetString());
     }
 
     [Fact]
@@ -308,6 +327,18 @@ public sealed class SpherewrightToolsTests
             {
                 SessionId = sessionId,
                 PlanetId = request.PlanetId,
+            }));
+        }
+
+        public Task<BridgeCallResult<GameplayJournalSnapshot>> GetGameplayJournalAsync(
+            string sessionId,
+            CancellationToken cancellationToken)
+        {
+            LastSessionId = sessionId;
+            return Task.FromResult(BridgeCallResult<GameplayJournalSnapshot>.Succeeded(new GameplayJournalSnapshot
+            {
+                SessionId = sessionId,
+                JournalId = "journal",
             }));
         }
 

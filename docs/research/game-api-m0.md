@@ -145,7 +145,31 @@ public static bool GameSave.SaveCurrentGame(string saveName)
 
 `Mecha.AutoReplenishFuel` takes at most one native item stack from `Player.package`, inserts it into exactly the supplied reactor-storage grid through the fuel-typed `StorageComponent.AddItem` overload, and returns any unaccepted remainder to the package. Spherewright's prepare reproduces the current grid/filter/stack-capacity decision without mutation and binds package plus fuel-storage contents in the player-action fingerprint. Commit calls the native method once and rereads both containers; the expected package decrement, fuel-storage increment, combined count, and combined proliferator points must all match. It never writes `coreEnergy`, `reactorEnergy`, a storage grid, or an item count directly.
 
+`Player.GameTick` calls `Mecha.GenerateEnergy(deltaTime)` every game tick. The current method first adds `corePowerGen * deltaTime` to `coreEnergy` and clamps to `coreEnergyCap`, independently of the later reactor-fuel branch. Only afterward does it consume `reactorEnergy` or take another item from `reactorStorage`. Consequently an alive stationary mecha has a slow native baseline recovery even with `reactorEnergy=0`, `reactorItemId=0`, and an empty fuel chamber. A 20-second live sample in the current world rose monotonically from about `36.13 MJ` to `37.61 MJ`, approximately `80 kW`, with identical position and player-action state hash. This is an emergency recovery floor, not a practical substitute for fuel or a powered charger during long travel.
+
 The explicit save action binds the active owned session, local planet, current revision, and the high-entropy save name retained internally when Spherewright created that world. Commit calls `GameSave.SaveCurrentGame` only with that exact identity and records `lastOwnedSaveGameTick` after a true return. The path does not enumerate a save directory, discover save names, open a save, or accept a client-provided save name. It is compile/Core/MCP covered and runtime-validated repeatedly in the current owned world, including the M0 acceptance save at tick `2499658` and the later continuation save at tick `2710106`.
+
+## Exact player-order ownership and termination
+
+Targeted Mono.Cecil inspection of the current assembly confirmed:
+
+```text
+public void Player.Order(OrderNode order, bool enqueue)
+public void Player.AbortOrder()
+public OrderNode Player.currentOrder { get; }
+public void PlayerOrder.Order(OrderNode order)
+public void PlayerOrder.Abort()
+```
+
+For `enqueue=false`, `Player.Order` calls `PlayerOrder.Order`; that method passes the supplied `OrderNode` through `ReachTest` and assigns the same reference directly to `currentOrder`. `Player.AbortOrder` delegates to `PlayerOrder.Abort`, which dequeues the next order into `currentOrder`. This gives Spherewright an exact ownership identity that is stronger than comparing an order's target coordinates after DSP has normalized or snapped them.
+
+The action coordinator now creates the move or mine `OrderNode`, stores that exact reference on its action record, and submits it to `Player.Order`. Completion, stall, power-starvation, and global-timeout paths call `AbortOrder` only when `ReferenceEquals(player.currentOrder, action.PlayerOrder)` is true. A later manual or external order is therefore not stopped. The former move check compared the live target with the requested surface point within `0.1 m`; a live move was declared complete at `1.5 m` but its game order survived, repeatedly spent each small recharge pulse, and drained roughly `101 MJ` before a mine order replaced it. The exact-reference rule removes that split-brain terminal state.
+
+## Resource-node identity and bounded manual harvest
+
+Factory `objectId` values and resource `nodeId` values are different pool namespaces even when their integers happen to match. A miner snapshot exposes its covered resource identities through `resourceNodeIds`; those values, or IDs returned by `list_resource_nodes`, are the only valid inputs to `inspect_resource_node` and `prepare_harvest`. For example, factory entity `106` is a coal miner near the red-matrix line and covers resource nodes `308, 309, 312, 313, 318, 321, 325`, while resource node `106` is an unrelated iron vein on the other side of the planet.
+
+`PrepareHarvestOnMainThread` now requires the freshly inspected resource to report `WithinPlayerBuildArea=true`. A resource outside the player's current normal interaction area returns retryable `TARGET_OUT_OF_RANGE` and instructs the caller to use bounded surface waypoints before re-inspection. The former implementation exposed `EstimatedDistance` but did not enforce a maximum; an accidental factory-ID-as-node-ID request therefore started a remote Mine order and spent the 7200-tick global window walking toward an unrelated vein. Range rejection makes harvest an interaction primitive again rather than an unbounded navigation shortcut.
 
 ## Sorter item-filter path
 
@@ -185,6 +209,10 @@ public void FactorySystem.SetInserterInsertTarget(int inserterId, int insertTarg
 ```
 
 `BuildTool_Click.CheckBuildConditions` evaluates a copied `tmpPackage`. The ordinary action's isolated click/path/inserter tools copy the real player package and require the requested owned building items to already exist; prepare releases the copy and never touches player inventory or the factory.
+
+The raw named-pipe DTO and the MCP wrapper intentionally expose different coordinate shapes. A direct `Invoke-SpherewrightBridgeRequest -Method 'prepare_build'` payload must serialize `PrepareBuildRequest.PreferredPosition` as `preferredPosition = @{ x = ...; y = ...; z = ... }`. The MCP tool instead exposes the convenience scalars `preferredPositionX/Y/Z` and combines them into that DTO. Passing those MCP-only scalar names to the raw bridge is not equivalent: the current JSON reader ignores the unknown properties and falls back to the near-player candidate search. Therefore precision construction uses an explicit prepare/read/commit sequence and bounds-checks `plannedPosition`, `plannedYaw`, `buildKind`, and endpoint identities before any commit. This rule caught a red-matrix storage request whose intended coordinates were near lab `256` but whose prepared fallback was near the player; the resulting ordinary storage `259` is retained as a separate utility object, while the corrected vector request produced storage `260` at the validated lab-side pose and sorter `261` connected `256 -> 260`.
+
+A successful core-building prepare proves only that building's click-build legality. It does not prove that a future inserter can span from that building to another endpoint. The power-engine layout provided a direct contrast: storage `286` was an ordinary accepted build, but the later `285 -> 286` inserter prepare returned `BUILD_CONNECTION_INVALID/TooFar`; no inserter was committed. A tangent-plane ring search found the closer accepted storage `287`, after which separate prepares accepted `285 -> 288 -> 287` and `26 -> 289 -> 285`. Multi-device layout therefore reserves connection margin, checks the snapped position rather than the requested float vector, and treats every sorter connection as its own prepare-time proof. A valid but unreachable auxiliary building is retained when no safe dismantle action exists.
 
 Commit repeats the exact validation and invokes `CreatePrebuilds` once. It requires ordinary negative prebuild IDs and proves that exactly the planned owned items were consumed. Spherewright does **not** call `PlanetFactory.BuildFinally`; construction drones and normal game ticks must replace every prebuild. Completion then resolves matching built entities and rereads resource-node binding, belt topology, or sorter pick/insert targets as applicable. An unprovable disappearing or timed-out prebuild quarantines writes instead of performing a guessed rollback.
 

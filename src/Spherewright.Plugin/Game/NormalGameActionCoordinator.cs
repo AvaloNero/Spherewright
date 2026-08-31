@@ -151,6 +151,15 @@ internal sealed partial class NormalGameActionCoordinator
             return InvalidPlan("Crude-oil veins cannot be harvested by the player's manual mining action.");
         }
 
+        if (!resource.WithinPlayerBuildArea)
+        {
+            return GameCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
+                BridgeErrorCodes.TargetOutOfRange,
+                "The selected resource is outside the player's current normal interaction area.",
+                true,
+                "Move through bounded surface waypoints, then inspect a resource with withinPlayerBuildArea=true and prepare again."));
+        }
+
         if (resource.Yields.Count == 0)
         {
             return InvalidPlan("The selected runtime resource has no normal manual-harvest yield.");
@@ -579,7 +588,8 @@ internal sealed partial class NormalGameActionCoordinator
                     player.position.y,
                     player.position.z,
                     Vector3.Distance(player.position, plan.TargetPosition));
-                player.Order(OrderNode.MoveTo(plan.TargetPosition), false);
+                action.PlayerOrder = OrderNode.MoveTo(plan.TargetPosition);
+                player.Order(action.PlayerOrder, false);
                 action.State = NormalActionStates.WaitingForGame;
                 action.Message = "DSP accepted a normal player movement order.";
                 break;
@@ -588,7 +598,12 @@ internal sealed partial class NormalGameActionCoordinator
                     ? EObjectType.Vein
                     : EObjectType.Vegetable;
                 var approach = CalculateMiningApproach(player.position, plan.TargetPosition);
-                player.Order(OrderNode.MineTarget(approach, objectType, plan.ResourceNodeId, plan.TargetPosition), false);
+                action.PlayerOrder = OrderNode.MineTarget(
+                    approach,
+                    objectType,
+                    plan.ResourceNodeId,
+                    plan.TargetPosition);
+                player.Order(action.PlayerOrder, false);
                 action.State = NormalActionStates.WaitingForGame;
                 action.Message = "DSP accepted a normal player mining order; walking, energy use, and mining remain game-tick driven.";
                 break;
@@ -771,11 +786,7 @@ internal sealed partial class NormalGameActionCoordinator
             : yielded >= plan.Count || nodeRemoved;
         if (completed)
         {
-            if (GameMain.mainPlayer.currentOrder?.type == EOrderType.Mine)
-            {
-                GameMain.mainPlayer.AbortOrder();
-            }
-
+            AbortPlayerOrderIfOwned(action);
             action.AfterTargetAmount = remaining;
             Complete(action,
                 $"Normal manual harvesting completed: node reduction {targetReduced}, observed inventory yield {yielded}.");
@@ -841,19 +852,12 @@ internal sealed partial class NormalGameActionCoordinator
     private static void AbortPlayerOrderIfOwned(ActionRecord action)
     {
         var player = GameMain.mainPlayer;
-        var order = player?.currentOrder;
-        if (player is null || order is null)
+        if (player is null || action.PlayerOrder is null)
         {
             return;
         }
 
-        var ownsOrder = (action.ActionKind == NormalActionKinds.Move
-                && order.type == EOrderType.Move
-                && Vector3.Distance(order.target, action.Plan.TargetPosition) <= 0.1f)
-            || (action.ActionKind == NormalActionKinds.Harvest
-                && order.type == EOrderType.Mine
-                && order.objId == action.Plan.ResourceNodeId);
-        if (ownsOrder)
+        if (ReferenceEquals(player.currentOrder, action.PlayerOrder))
         {
             player.AbortOrder();
         }
@@ -1721,6 +1725,7 @@ internal sealed partial class NormalGameActionCoordinator
         public Dictionary<int, int>? AfterInventory { get; set; }
         public int[] ExpectedYieldItemIds { get; set; } = Array.Empty<int>();
         public ForgeTask? ForgeTask { get; set; }
+        public OrderNode? PlayerOrder { get; set; }
         public long? PowerStarvedAtGameTick { get; set; }
         public MovementProgressWatchdog? MovementProgress { get; set; }
         public List<int> PrebuildIds { get; set; } = new List<int>();

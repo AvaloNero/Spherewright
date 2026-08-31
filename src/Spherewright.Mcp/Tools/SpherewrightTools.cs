@@ -682,7 +682,7 @@ public static class SpherewrightTools
         string sessionId,
         int planetId,
         string resourceKind,
-        int nodeId,
+        [Description("Resource node ID returned by spherewright_list_resource_nodes or spherewright_inspect_resource_node; factory object IDs are a separate namespace and are invalid here.")] int nodeId,
         int requestedYieldCount,
         string expectedResourceStateHash,
         string expectedPlayerStateHash,

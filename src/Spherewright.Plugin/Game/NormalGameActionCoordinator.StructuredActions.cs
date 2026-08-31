@@ -524,9 +524,10 @@ internal sealed partial class NormalGameActionCoordinator
             return false;
         }
 
-        if (!string.Equals(snapshot.StateHash, expectedStateHash, StringComparison.Ordinal))
+        if (!string.Equals(snapshot.EndpointStateHash, expectedStateHash, StringComparison.Ordinal)
+            && !string.Equals(snapshot.StateHash, expectedStateHash, StringComparison.Ordinal))
         {
-            error = $"Bound endpoint {objectId} changed after inspection.";
+            error = $"Bound endpoint {objectId} identity, pose, or connections changed after inspection.";
             return false;
         }
 
@@ -1205,6 +1206,36 @@ internal sealed partial class NormalGameActionCoordinator
 
         try
         {
+            action.PreexistingBuildEntityIds.Clear();
+            if (action.Plan.BuildKind == NormalBuildKinds.Inserter)
+            {
+                // DSP anchors every sorter that leaves a building at the same
+                // source pose.  Capture older co-located sorters before the
+                // prebuild exists so completion cannot attribute this action
+                // to a different, already-built sorter.
+                CaptureBuiltEntityIds(
+                    factory,
+                    item.ID,
+                    previews[0].lpos,
+                    action.PreexistingBuildEntityIds);
+            }
+            else if (action.Plan.BuildKind == NormalBuildKinds.Belt)
+            {
+                // A path that starts from an existing belt can create its
+                // first new belt at exactly the source belt's pose. Capture
+                // every older co-located belt before CreatePrebuilds so the
+                // completion readback maps each step to the newly built
+                // entity instead of inserting the source belt into the path.
+                foreach (var preview in previews)
+                {
+                    CaptureBuiltEntityIds(
+                        factory,
+                        item.ID,
+                        preview.lpos,
+                        action.PreexistingBuildEntityIds);
+                }
+            }
+
             create();
             foreach (var preview in previews)
             {
@@ -1263,7 +1294,12 @@ internal sealed partial class NormalGameActionCoordinator
         var resolved = new List<int>();
         foreach (var expected in action.ExpectedBuildEntities)
         {
-            var entityId = FindBuiltEntityExcluding(factory, expected.ItemId, expected.Position, resolved);
+            var entityId = FindBuiltEntityExcluding(
+                factory,
+                expected.ItemId,
+                expected.Position,
+                action.PreexistingBuildEntityIds,
+                resolved);
             if (entityId <= 0)
             {
                 QuarantineBuildOutcome(action, "An accepted prebuild disappeared without a provable matching built entity.");
@@ -1290,8 +1326,9 @@ internal sealed partial class NormalGameActionCoordinator
         action.Terminal = true;
         action.CompletedAtGameTick = GameMain.gameTick;
         action.Message = message;
+        action.OriginalOutcomeMessage = message;
         action.AfterInventory = CaptureInventory(GameMain.mainPlayer);
-        _sessions.QuarantineWritesOnMainThread(message);
+        _sessions.QuarantineWritesOnMainThread(action.ActionId, message);
     }
 
     private static bool VerifyBuiltTopology(
@@ -1951,6 +1988,24 @@ internal sealed partial class NormalGameActionCoordinator
 
         ref var entity = ref factory.entityPool[snapshot.ObjectId];
         var item = LDB.items.Select(entity.protoId);
+        if (item?.prefabDesc?.isBelt == true)
+        {
+            var slot = requireOutput ? 0 : 1;
+            factory.ReadObjectConn(snapshot.ObjectId, slot, out _, out var otherObjectId, out _);
+            if (otherObjectId == 0)
+            {
+                var rotation = Quaternion.AngleAxis(entity.tilt, entity.rot * Vector3.forward) * entity.rot;
+                if (!requireOutput)
+                {
+                    rotation *= Quaternion.Euler(0f, 180f, 0f);
+                }
+
+                result.Add(new EndpointPoint(snapshot.ObjectId, slot, new Pose(entity.pos, rotation)));
+            }
+
+            return result;
+        }
+
         var ports = item?.prefabDesc?.portPoses ?? Array.Empty<Pose>();
         for (var index = 0; index < ports.Length; index++)
         {
@@ -2015,34 +2070,8 @@ internal sealed partial class NormalGameActionCoordinator
         return result;
     }
 
-    private static string BuildEndpointHash(FactoryEntitySnapshot snapshot)
-    {
-        var fields = new List<object?>
-        {
-            snapshot.SessionId,
-            snapshot.PlanetId,
-            snapshot.ObjectId,
-            snapshot.ItemId,
-            snapshot.ObjectKind,
-            snapshot.ComponentKind,
-            snapshot.Position.X,
-            snapshot.Position.Y,
-            snapshot.Position.Z,
-            snapshot.Rotation.X,
-            snapshot.Rotation.Y,
-            snapshot.Rotation.Z,
-            snapshot.Rotation.W,
-        };
-        foreach (var connection in snapshot.Connections.OrderBy(connection => connection.Slot))
-        {
-            fields.Add(connection.Slot);
-            fields.Add(connection.IsOutput);
-            fields.Add(connection.OtherObjectId);
-            fields.Add(connection.OtherSlot);
-        }
-
-        return CanonicalStateHash.Combine("build-endpoint", fields.ToArray());
-    }
+    private static string BuildEndpointHash(FactoryEntitySnapshot snapshot) =>
+        CanonicalStateHash.FactoryEndpoint(snapshot);
 
     private static string BuildPlanFingerprint(BuildPreparation preparation)
     {
@@ -2167,28 +2196,50 @@ internal sealed partial class NormalGameActionCoordinator
         PlanetFactory factory,
         int itemId,
         Vector3 position,
-        IReadOnlyCollection<int> excluded)
+        IReadOnlyCollection<int> preexistingEntityIds,
+        IReadOnlyCollection<int> alreadySelectedEntityIds)
     {
-        var bestId = 0;
-        var bestDistance = 0.09f;
+        var candidates = new List<BuildEntityCandidate>();
         var limit = Math.Min(factory.entityCursor, factory.entityPool.Length);
         for (var entityId = 1; entityId < limit; entityId++)
         {
             ref var entity = ref factory.entityPool[entityId];
-            if (entity.id != entityId || entity.protoId != itemId || excluded.Contains(entityId))
+            if (entity.id != entityId || entity.protoId != itemId)
             {
                 continue;
             }
 
             var distance = (entity.pos - position).sqrMagnitude;
-            if (distance < bestDistance)
+            if (distance < 0.09f)
             {
-                bestDistance = distance;
-                bestId = entityId;
+                candidates.Add(new BuildEntityCandidate(entityId, distance));
             }
         }
 
-        return bestId;
+        return BuildEntityAttribution.SelectNearestNewCandidate(
+            candidates,
+            preexistingEntityIds,
+            alreadySelectedEntityIds,
+            0.09f);
+    }
+
+    private static void CaptureBuiltEntityIds(
+        PlanetFactory factory,
+        int itemId,
+        Vector3 position,
+        ISet<int> destination)
+    {
+        var limit = Math.Min(factory.entityCursor, factory.entityPool.Length);
+        for (var entityId = 1; entityId < limit; entityId++)
+        {
+            ref var entity = ref factory.entityPool[entityId];
+            if (entity.id == entityId
+                && entity.protoId == itemId
+                && (entity.pos - position).sqrMagnitude < 0.09f)
+            {
+                destination.Add(entityId);
+            }
+        }
     }
 
     private static Vector3 ProjectTangent(Vector3 direction, Vector3 surfacePosition)

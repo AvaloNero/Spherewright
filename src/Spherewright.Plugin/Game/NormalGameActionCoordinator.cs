@@ -12,6 +12,7 @@ namespace Spherewright.Plugin.Game;
 internal sealed partial class NormalGameActionCoordinator
 {
     private const int StateHashVersion = 1;
+    private const long PowerStarvationGraceTicks = 600;
     private readonly GameSessionTracker _sessions;
     private readonly GameStateReader _reader;
     private readonly PreparedPlanStore<NormalActionPlanPayload> _plans;
@@ -21,6 +22,7 @@ internal sealed partial class NormalGameActionCoordinator
 
     public NormalGameActionCoordinator(
         int planLifetimeSeconds,
+        int idempotencyRetentionMinutes,
         int idempotencyCapacity,
         GameSessionTracker sessions,
         GameStateReader reader)
@@ -30,7 +32,9 @@ internal sealed partial class NormalGameActionCoordinator
         _plans = new PreparedPlanStore<NormalActionPlanPayload>(
             TimeSpan.FromSeconds(planLifetimeSeconds),
             128);
-        _idempotency = new IdempotencyCache<NormalActionCommitResult>(idempotencyCapacity);
+        _idempotency = new IdempotencyCache<NormalActionCommitResult>(
+            idempotencyCapacity,
+            TimeSpan.FromMinutes(idempotencyRetentionMinutes));
     }
 
     public GameCallResult<PreparedNormalAction> PrepareMoveOnMainThread(
@@ -411,7 +415,12 @@ internal sealed partial class NormalGameActionCoordinator
             request.SessionId,
             request.PlanetId,
             request.PlanToken);
-        if (_idempotency.TryGet(request.IdempotencyKey, fingerprint, out var replay, out var conflict))
+        if (_idempotency.TryGet(
+            request.SessionId,
+            request.IdempotencyKey,
+            fingerprint,
+            out var replay,
+            out var conflict))
         {
             var current = replay!;
             if (_actions.TryGetValue(current.ActionId, out var record))
@@ -463,6 +472,17 @@ internal sealed partial class NormalGameActionCoordinator
             return GameCallResult<NormalActionCommitResult>.Failed(staleError);
         }
 
+        var activePlayerOrder = _actions.Values.FirstOrDefault(action =>
+            !action.Terminal && IsPlayerOrderAction(action.ActionKind));
+        if (IsPlayerOrderAction(plan.ActionKind) && activePlayerOrder is not null)
+        {
+            return GameCallResult<NormalActionCommitResult>.Failed(BridgeError.Create(
+                BridgeErrorCodes.ServerBusy,
+                $"Player order {activePlayerOrder.ActionId} is still active; a second move or harvest order would replace DSP's single current player order.",
+                true,
+                "Wait for the active player-order action to become terminal, then inspect and prepare again."));
+        }
+
         var action = new ActionRecord
         {
             ActionId = Guid.NewGuid().ToString("D"),
@@ -498,7 +518,7 @@ internal sealed partial class NormalGameActionCoordinator
             Plan = plan,
         };
         var accepted = CreateCommitResult(action, false);
-        if (!_idempotency.TryAdd(request.IdempotencyKey, fingerprint, accepted))
+        if (!_idempotency.TryAdd(request.SessionId, request.IdempotencyKey, fingerprint, accepted))
         {
             return GameCallResult<NormalActionCommitResult>.Failed(BridgeError.Create(
                 BridgeErrorCodes.IdempotencyCapacityExceeded,
@@ -518,8 +538,9 @@ internal sealed partial class NormalGameActionCoordinator
             action.State = NormalActionStates.OutcomeUnknown;
             action.Terminal = true;
             action.Message = $"The action start outcome could not be proven after {exception.GetType().Name}.";
+            action.OriginalOutcomeMessage = action.Message;
             action.CompletedAtGameTick = GameMain.gameTick;
-            _sessions.QuarantineWritesOnMainThread(action.Message);
+            _sessions.QuarantineWritesOnMainThread(action.ActionId, action.Message);
         }
 
         return GameCallResult<NormalActionCommitResult>.Succeeded(CreateCommitResult(action, false));
@@ -552,6 +573,12 @@ internal sealed partial class NormalGameActionCoordinator
         switch (action.ActionKind)
         {
             case NormalActionKinds.Move:
+                action.MovementProgress = new MovementProgressWatchdog(
+                    GameMain.gameTick,
+                    player.position.x,
+                    player.position.y,
+                    player.position.z,
+                    Vector3.Distance(player.position, plan.TargetPosition));
                 player.Order(OrderNode.MoveTo(plan.TargetPosition), false);
                 action.State = NormalActionStates.WaitingForGame;
                 action.Message = "DSP accepted a normal player movement order.";
@@ -681,6 +708,40 @@ internal sealed partial class NormalGameActionCoordinator
             return;
         }
 
+        if (FailPowerStarvedPlayerOrder(action, "movement"))
+        {
+            return;
+        }
+
+        if (action.PowerStarvedAtGameTick.HasValue)
+        {
+            return;
+        }
+
+        action.MovementProgress ??= new MovementProgressWatchdog(
+            action.StartedAtGameTick,
+            player.position.x,
+            player.position.y,
+            player.position.z,
+            distance);
+        var progress = action.MovementProgress.Observe(
+            GameMain.gameTick,
+            player.position.x,
+            player.position.y,
+            player.position.z,
+            distance);
+        if (progress.Status != MovementProgressStatus.Progressing)
+        {
+            AbortPlayerOrderIfOwned(action);
+            var condition = progress.Status == MovementProgressStatus.PositionStalled
+                ? $"made less than {MovementProgressWatchdog.DefaultMinimumDisplacement:F2} metres of physical progress"
+                : $"did not reduce its best remaining distance by {MovementProgressWatchdog.DefaultMinimumTargetProgress:F2} metres";
+            Fail(action,
+                $"The normal movement order {condition} for {progress.StalledGameTicks} game ticks "
+                + $"while {progress.RemainingDistance:F2} metres remained; Spherewright stopped only its exact owned order before the global timeout or energy exhaustion.");
+            return;
+        }
+
         if (GameMain.gameTick > action.StartedAtGameTick + Math.Max(3600, action.Plan.EstimatedTicks * 8))
         {
             AbortPlayerOrderIfOwned(action);
@@ -721,11 +782,60 @@ internal sealed partial class NormalGameActionCoordinator
             return;
         }
 
+        if (FailPowerStarvedPlayerOrder(action, "mining"))
+        {
+            return;
+        }
+
         if (GameMain.gameTick > action.StartedAtGameTick + Math.Max(7200, plan.EstimatedTicks * 8))
         {
             AbortPlayerOrderIfOwned(action);
             Fail(action, "The normal mining order did not produce the requested observed yield within the bounded game-tick window.");
         }
+    }
+
+    private bool FailPowerStarvedPlayerOrder(ActionRecord action, string orderKind)
+    {
+        var mecha = GameMain.mainPlayer?.mecha;
+        if (mecha is null || mecha.coreEnergy > 0.5d || mecha.reactorEnergy > 0.5d
+            || mecha.reactorItemId > 0 || HasUsableFuel(mecha.reactorStorage))
+        {
+            action.PowerStarvedAtGameTick = null;
+            return false;
+        }
+
+        action.PowerStarvedAtGameTick ??= GameMain.gameTick;
+        if (GameMain.gameTick < action.PowerStarvedAtGameTick.Value + PowerStarvationGraceTicks)
+        {
+            return false;
+        }
+
+        AbortPlayerOrderIfOwned(action);
+        Fail(action,
+            $"The normal {orderKind} order stopped after the mecha had no core energy, reactor energy, current reactor item, or usable fuel for {PowerStarvationGraceTicks} game ticks.");
+        return true;
+    }
+
+    private static bool HasUsableFuel(StorageComponent? storage)
+    {
+        var grids = storage?.grids;
+        if (storage is null || grids is null)
+        {
+            return false;
+        }
+
+        var limit = Math.Min(storage.size, grids.Length);
+        for (var index = 0; index < limit; index++)
+        {
+            var grid = grids[index];
+            var item = grid.itemId > 0 && grid.count > 0 ? LDB.items.Select(grid.itemId) : null;
+            if (item is not null && item.HeatValue > 0L && item.FuelType > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void AbortPlayerOrderIfOwned(ActionRecord action)
@@ -748,6 +858,9 @@ internal sealed partial class NormalGameActionCoordinator
             player.AbortOrder();
         }
     }
+
+    private static bool IsPlayerOrderAction(string actionKind) =>
+        actionKind == NormalActionKinds.Move || actionKind == NormalActionKinds.Harvest;
 
     private void UpdateHandcraft(ActionRecord action)
     {
@@ -1073,6 +1186,8 @@ internal sealed partial class NormalGameActionCoordinator
             RequestedCount = action.RequestedCount,
             BeforeTargetAmount = action.BeforeTargetAmount,
             AfterTargetAmount = action.AfterTargetAmount,
+            ReconciledFromOutcomeUnknown = action.ReconciledFromOutcomeUnknown,
+            ReconciledAtGameTick = action.ReconciledAtGameTick,
         };
         var after = action.AfterInventory ?? CaptureInventory(GameMain.mainPlayer);
         foreach (var itemId in action.BeforeInventory.Keys.Concat(after.Keys).Distinct().OrderBy(id => id))
@@ -1599,12 +1714,18 @@ internal sealed partial class NormalGameActionCoordinator
         public int? BeforeTargetAmount { get; set; }
         public int? AfterTargetAmount { get; set; }
         public string? Message { get; set; }
+        public string? OriginalOutcomeMessage { get; set; }
+        public bool ReconciledFromOutcomeUnknown { get; set; }
+        public long? ReconciledAtGameTick { get; set; }
         public Dictionary<int, int> BeforeInventory { get; set; } = new Dictionary<int, int>();
         public Dictionary<int, int>? AfterInventory { get; set; }
         public int[] ExpectedYieldItemIds { get; set; } = Array.Empty<int>();
         public ForgeTask? ForgeTask { get; set; }
+        public long? PowerStarvedAtGameTick { get; set; }
+        public MovementProgressWatchdog? MovementProgress { get; set; }
         public List<int> PrebuildIds { get; set; } = new List<int>();
         public List<BuildExpectedEntity> ExpectedBuildEntities { get; set; } = new List<BuildExpectedEntity>();
+        public HashSet<int> PreexistingBuildEntityIds { get; } = new HashSet<int>();
         public NormalActionPlanPayload Plan { get; set; } = null!;
     }
 

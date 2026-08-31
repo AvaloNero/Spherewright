@@ -4,6 +4,8 @@
     <AssemblyName>Spherewright.Plugin</AssemblyName>
     <RootNamespace>Spherewright.Plugin</RootNamespace>
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+    <!-- The exact net472 reference package is pinned below; suppress the SDK's environment-dependent umbrella injection. -->
+    <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Spherewright.Contracts\Spherewright.Contracts.csproj" />

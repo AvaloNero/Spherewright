@@ -1,0 +1,506 @@
+# Spherewright experience ledger
+
+更新时间：2026-08-31（Asia/Singapore）
+
+本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据或 `docs/m0-status.md` 的 Gate 验收状态。
+
+## 维护协议
+
+- 状态只取 `observed | validated | superseded | invalidated`。
+- `observed` 表示证据真实但适用范围尚窄；不得自行外推为稳定 API 或通用阈值。
+- `validated` 表示当前写明的适用范围内已有独立复读、自动化测试或当前版本实机证据。
+- `superseded` 必须指向替代条目；`invalidated` 必须说明反证。历史不删除。
+- 每个实现批次结束、每累计 10 个成功游戏写动作、Plugin 部署或重启、DSP/程序集版本变化、写入隔离或恢复、M0 Gate 状态变化以及最终交接前，复核新增条目和所有受影响条目，并更新“最近复验”。
+- 安全相关新经验和会影响下一动作前提的新经验，必须先写入本文件，再执行下一次游戏写入。
+- 证据只记录可复核的脱敏摘要、动作/实体 ID 或代码测试位置；不记录 token、存档内容或 runtime descriptor。
+
+## 当前经验
+
+### EXP-001 — 部署前显式构建完整解决方案
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前 `Spherewright.sln` 与 Plugin 开发部署流程。
+- 当前结论：`dotnet test` 可能不重建未被测试项目引用的 Plugin；部署前必须显式执行完整 `dotnet build Spherewright.sln --no-restore --nologo`，再以构建产物安装。
+- 直接证据：一次仅运行测试后 Plugin DLL 未包含最新改动；显式完整构建后部署哈希与输出一致，构建为 0 warning / 0 error。
+- 限制或反例：若未来测试项目显式引用 Plugin，该现象可能改变，但完整构建仍是部署前的明确证据。
+- 复验触发：解决方案/测试引用图、构建脚本或 Plugin 输出路径变化。
+- 关联：`scripts/install-dev-plugin.ps1`、`src/Spherewright.Plugin/Spherewright.Plugin.csproj`。
+- 最近复验：2026-08-31。
+
+### EXP-002 — DSP 应通过 Steam 启动链启动
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前 Windows Steam 安装的 DSP `0.10.34.28529`。
+- 当前结论：直接启动 `DSPGAME.exe` 会很快退出；本机可靠启动路径是 Steam `-applaunch 1366540`，随后再发现实际游戏进程和 Bridge descriptor。
+- 直接证据：直接启动进程退出；Steam 启动后 DSP、BepInEx 和 Spherewright Plugin 正常加载。
+- 限制或反例：非 Steam 发行版或未来启动器未验证。
+- 复验触发：游戏安装来源、Steam app ID、启动脚本或游戏版本变化。
+- 关联：`scripts/locate-dsp.ps1`、`docs/research/environment.md`。
+- 最近复验：2026-08-31。
+
+### EXP-003 — 运行时描述文件使用 `bridge-*.json`
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前 RuntimeDescriptorPublisher 与本机 MCP 发现流程。
+- 当前结论：descriptor 的实际文件模式是 `bridge-*.json`；自动化脚本不得猜测为 `spherewright-*.json`。
+- 直接证据：当前 Plugin 发布并由 MCP 成功发现的文件名与代码模板一致。
+- 限制或反例：若发布协议显式改名，脚本与文档必须原子更新。
+- 复验触发：RuntimeDescriptorPublisher、协议或发现脚本变化。
+- 关联：`src/Spherewright.Plugin/RuntimeDescriptor/RuntimeDescriptorPublisher.cs`、`src/Spherewright.Mcp/BridgeClient/NamedPipeBridgeClient.cs`。
+- 最近复验：2026-08-31。
+
+### EXP-004 — 跨进程恢复票据需要可见且受保护的固定交接目录
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前 Codex 文件层、外部 DSP 进程和本机开发 Plugin 部署目录之间的一次性 owned-world resume 交接。
+- 当前结论：由工具层写入 `%LOCALAPPDATA%` 的票据在本环境中可能对外部 DSP 进程不可见；安装目录下固定的 `runtime-handoff/owned-world-resume.json` 对 DSP 可见，但目录必须禁用继承并限制为当前用户，票据必须一次性消费。
+- 直接证据：前者可由工具读回但 Plugin 报告缺失；受保护的固定交接文件被 Plugin 读取并成功恢复精确 owned world，随后按消费语义删除。
+- 限制或反例：这是当前宿主文件可见性现象，不应推断所有 Codex/Windows 环境都相同；安装目录写权限可能不同。
+- 复验触发：宿主、权限模型、部署目录、恢复协议或 Windows 用户变化。
+- 关联：`src/Spherewright.Plugin/RuntimeDescriptor/OwnedWorldResumeTicketStore.cs`、`src/Spherewright.Plugin/RuntimeDescriptor/WindowsCurrentUserSecurity.cs`、`docs/safety-model.md`。
+- 最近复验：2026-08-31。
+
+### EXP-005 — 只有严格绑定的 LastExit 恢复才能延续同一 owned world
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前一次性重启恢复协议和当前自建普通和平存档。
+- 当前结论：重启后继续必须同时验证高熵内部存档身份、最低 game tick、planet、和平、非沙盒、1x 和一次性票据；验证成功后立即消费票据并重新绑定新 session，不能枚举或让客户端选择存档。
+- 直接证据：当前恢复动作通过上述约束恢复同一存档，并在更高 tick 正常复读/保存；未读取或枚举其他存档。
+- 限制或反例：只验证了 DSP 原生 `LastExit` 指向精确目标的路径；LastExit 改变或任一断言失败都必须 fail closed。
+- 复验触发：恢复契约、GameSave API、owned-world 身份字段、DSP 版本或 LastExit 行为变化。
+- 关联：`src/Spherewright.Plugin/Game/OwnedWorldResumeCoordinator.cs`、`src/Spherewright.Contracts/Sessions/OwnedWorldResumeContracts.cs`、`docs/safety-model.md`。
+- 最近复验：2026-08-31。
+
+### EXP-006 — 主菜单 demo 状态没有暴露仍可用的恢复票据
+
+- 状态：`observed`
+- 日期：2026-08-31
+- 适用范围：当前 `GameSessionTracker` 的未拥有/main-menu-demo 分支。
+- 当前结论：票据存储中仍有有效恢复票据时，主菜单 demo 返回的 SessionState 仍可能省略 `restartResumeAvailable`、token 和 `owned-game.resume` capability；这是可观察性/API 缺口，不等于票据不存在。
+- 直接证据：票据存储日志确认已加载票据，而同一进程结构化 session 响应未显示恢复字段；使用受保护票据完成恢复。
+- 限制或反例：尚未补回归测试；必须限定在安全主菜单状态，不能因此向任意未拥有游戏开放 capability。
+- 复验触发：修复 `GameSessionTracker` 后、主菜单状态判定变化、恢复契约变化。
+- 关联：`src/Spherewright.Plugin/Game/GameSessionTracker.cs`、`src/Spherewright.Plugin/Game/OwnedWorldResumeCoordinator.cs`。
+- 最近复验：2026-08-31（仍待修复）。
+
+### EXP-007 — 客户端包装失败不代表游戏动作未执行
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：所有 prepare/commit 后的客户端脚本、格式化和结果提取。
+- 当前结论：commit 返回后，脚本可能在打印不存在字段等后处理阶段报错；不得据此重试。必须用 action result、实体/节点/背包复读判断 before、expected-after 或 outcome-unknown。
+- 直接证据：油井建造已创建实体 `129` 且节点 miner count 从 0 变 1，但包装脚本因读取不存在的 `createdObjectIds` 报错；正确字段为 `targetObjectIds`。后续铁矿采集又在打印不存在的 `resourceDeltas` 时抛错，复读仍证明背包铁矿 `3 -> 12`、节点 `7886 -> 7877`，因此没有重试。
+- 限制或反例：若 prepare 在任何 commit 前明确失败且无 action ID，可按普通 prepare 失败处理。
+- 复验触发：客户端响应模型、ActionResult 字段或脚本 helper 变化。
+- 关联：`src/Spherewright.Contracts/Actions/ActionResultContracts.cs`、`docs/protocol.md`、`docs/safety-model.md`。
+- 最近复验：2026-08-31。
+
+### EXP-008 — 施工无人机会使玩家状态哈希短时变化
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前玩家 canonical state hash 和依赖该哈希的移动、建造、转移动作。
+- 当前结论：玩家 hash 包含施工无人机状态；刚完成施工时，即使位置几乎不变，hash 仍可能在读与 prepare 之间变化。下一动作前应等待无人机回收，并取得两次一致 hash，而不是放宽 stale-state 校验。
+- 直接证据：连续建造后候选放置多次出现 `STALE_STATE`；等待无人机/玩家稳定后相同类型动作可正常准备。
+- 限制或反例：两次一致 hash 是当前调度下的操作准则，不是对所有帧率的时间保证。
+- 复验触发：CanonicalStateHash 玩家字段、无人机系统或 stale-state策略变化。
+- 关联：`src/Spherewright.Bridge.Core/Safety/CanonicalStateHash.cs`、`src/Spherewright.Plugin/Game/GameStateReader.cs`。
+- 最近复验：2026-08-31。
+
+### EXP-009 — 移动 action 终态不等于物理速度已经归零
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前正常地表移动 coordinator 与后续依赖玩家 hash/位置的动作。
+- 当前结论：移动 action 达到到达容差后可以终结，但机甲仍可能处于 Drift；后续写入前必须复读速度接近 0 且玩家 hash 连续稳定。
+- 直接证据：移动 action 已完成，而紧随其后的速度仍约 `4.22`，15 秒后仍有约 `0.19` 的 Drift。
+- 限制或反例：具体衰减时长和阈值受地形/帧率影响；当前 `speed < 0.05` 是操作稳定阈值，不是 DSP API 常量。
+- 复验触发：移动终止条件、玩家 DTO、物理/导航实现或游戏版本变化。
+- 关联：`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.StructuredActions.cs`、`docs/manual-test-m0.md`。
+- 最近复验：2026-08-31。
+
+### EXP-010 — 三台风机只够覆盖当前油井的紧负载
+
+- 状态：`invalidated`
+- 日期：2026-08-31
+- 适用范围：当前普通 1x 世界、实体 `129` 油井和当前版本电力数值。
+- 当前结论：旧结论已失效，由 EXP-017 替代。`14000` 是本轮早期记录错误，不是当前 DTO 的油井每 tick 需求。
+- 直接证据：10 动作复核时，实体 `129` 的 `powerDemandPerTick=400`；合网后网络 3 的两个消费者（油井与分拣器）总 `energyRequired=550`、`energyCapacity=51000`。热电接入前同一风电网容量为 `15000`，不是“仅余 1000”的紧负载。
+- 限制或反例：保留本条用于防止旧数字再次传播；不得继续用于容量规划。
+- 复验触发：供电建筑、科技加成、网络拓扑、DSP 版本或油井参数变化。
+- 关联：`docs/m0-status.md`、`docs/research/game-api-m0.md`。
+- 最近复验：2026-08-31（复验失败，已 invalidated）。
+
+### EXP-011 — 当前储仓/热电姿态在约 6.41 m 成功、8.90 m 与 12.8 m 失败
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前版本、小型储仓 `135` 到热电站 `134` 的具体端点姿态。
+- 当前结论：储仓 `135`（约 12.8 m）和储仓 `136`（实测约 8.90 m）到热电站 `134` 均为 `TooFar`；储仓 `137`（实测约 6.41 m）到热电站的同类基础分拣器则通过 prepare、正常建成实体 `138` 并实际输送燃料。后续仍必须让 DSP 原生校验决定，不能把 6.41 m 直接当作通用最大距离。
+- 直接证据：两次失败 prepare 均未消耗分拣器；成功动作 `8130b214-e4c8-47d4-9a78-cd5975341725` 消耗 1 个分拣器并创建 `137 -> 134` 的实体 `138`，供电后储仓石墨从 18 降至 8、热电站出现石墨燃料读回。
+- 限制或反例：判定可能取端口、建筑旋转、碰撞或网格姿态而非建筑中心距离；三个距离都只约束当前建筑类型和具体姿态。
+- 复验触发：成功建立更近连接、端口距离计算研究、建筑模型或 DSP 版本变化。
+- 关联：`docs/manual-test-m0.md`、`docs/research/game-api-m0.md`。
+- 最近复验：2026-08-31（当前姿态的成功/失败边界已实机复读）。
+
+### EXP-012 — 同位置旧分拣器必须从新实体归属候选中排除
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前版本 `CreatePrebuilds` 后的分拣器实体归属与完成复读。
+- 当前结论：仅按源端姿态寻找新分拣器会误选同位置旧实体；创建前必须快照同位置既有 ID，完成归属时排除它们并再验证目标拓扑。
+- 直接证据：旧进程曾把新实体 `213` 误归属为 `211` 并正确隔离；回归测试复现两实体同位并证明只选择 `213`。当前进程动作 `613f0889-6d15-4fcb-bc79-0ed7834ee396` 又在旧分拣器 `164` 已存在时创建新实体 `181`；两者位置完全相同且 source 均为 `141`，读回仍唯一证明 `164 -> 163`、`181 -> 170`，action target 只包含 `181`，write health 保持 `healthy`。
+- 限制或反例：当前版本的同位置双输出范围已实机验证；若实体扫描、DSP 建造完成顺序或 attribution key 变化仍需复验。
+- 复验触发：首次同位双输出实机复验、实体扫描/建造完成逻辑或 DSP 版本变化。
+- 关联：`src/Spherewright.Bridge.Core/Safety/BuildEntityAttribution.cs`、`tests/Spherewright.Bridge.Core.Tests/BuildEntityAttributionTests.cs`。
+- 最近复验：2026-08-31（离线与当前版本同位置双输出实机均 validated）。
+
+### EXP-013 — outcome unknown 后只允许证据化协调，不允许猜测重试
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：所有游戏写动作与 quarantine/restart reconciliation。
+- 当前结论：无法证明 before 或 expected-after 时必须冻结该 session 写入；隔离本身不代表必须弃档。只有通过精确 owned-save 身份、动作/状态复读和严格恢复协议完成协调后，才能在同一存档的新 session 继续，绝不能直接重试、回滚或另开档。
+- 直接证据：分拣器归属不确定时旧 session 隔离且未继续写；修复部署后通过一次性严格 LastExit 恢复同一自建存档，当前新 session 健康继续。
+- 限制或反例：若无法证明精确存档身份、世界约束或动作后状态，仍必须停止；协调机制不能把 unknown 猜成成功/失败。
+- 复验触发：任何 quarantine、恢复失败、动作审计模型或安全状态机变化。
+- 关联：`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.QuarantineReconciliation.cs`、`src/Spherewright.Plugin/Game/OwnedWorldResumeCoordinator.cs`、`docs/safety-model.md`。
+- 最近复验：2026-08-31。
+
+### EXP-014 — PowerShell helper 要避开保留名、别名并显式处理空聚合
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：本仓库 PowerShell 自动化和临时实机调用 helper。
+- 当前结论：PowerShell 变量名大小写不敏感，`$pid` 会碰撞只读自动变量 `$PID`；星球变量使用 `$planetId` 等任务专用名。函数名 `Move` 会与 `Move-Item` 命令解析冲突，应使用 `Invoke-GameMove` 等任务专用动词名。StrictMode 下空集合聚合不能直接访问 `.Sum`，必须显式处理空结果。
+- 直接证据：`$PID`、空聚合和 `Move`/`Move-Item` 三类 helper 错误均在本轮出现；最后一次冲突发生在任何 Bridge prepare/commit 前，未产生游戏写入。改用任务专用名称和空集合分支后继续。
+- 限制或反例：不是 Bridge 行为，不应把脚本异常解释为游戏动作失败。
+- 复验触发：helper 固化进仓库、PowerShell 版本或脚本执行策略变化。
+- 关联：`scripts/`、EXP-007。
+- 最近复验：2026-08-31。
+
+### EXP-015 — M0 执行顺序以可持续生产线为主
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前 M0 First Red Matrix 外部 Agent 规划。
+- 当前结论：优先建设并验证自动生产链；仅在机器等待产量、科研或移动稳定期间处理恢复 API、黄矩阵远期方案等旁支。手搓只用于解锁或补齐生产线所需的最小启动资源，不能替代自动化验收。
+- 直接证据：用户明确指定“优先继续生产线，等待产量的时候再考虑别的问题”，并要求红糖同时规划跨星球钛与黄糖，但先完成行星物流站前置。
+- 限制或反例：安全故障、outcome unknown 或会影响下一动作正确性的实现缺口优先于继续写入。
+- 复验触发：用户调整优先级、M0 Gate D 完成或出现安全阻断。
+- 关联：`AGENTS.md` Gate D、`docs/m0-status.md`。
+- 最近复验：2026-08-31。
+
+### EXP-016 — 孤立热电站不能依靠无电分拣器完成冷启动
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前热电站 `134`、燃料储仓 `137`、输入分拣器 `138` 和网络 4。
+- 当前结论：热电站无燃料时孤立网络容量为 0，输入分拣器也因此无电并停在 `Picking`，不能把首份燃料送入；必须先用已有风电网络/电线杆覆盖分拣器，或采用另一条已有电源的正常物流路径完成冷启动。
+- 直接证据：连续 10 秒结构化复读中，储仓始终有 18 个高能石墨，分拣器 `137 -> 134` 拓扑正确但网络 ID 为 0、阶段为 `Picking`，热电网络 4 容量和产出均为 0；新增电线杆 `139`、`140` 后网络合并为 3，分拣器 serve ratio 为 1.0，储仓降到 8，网络容量由 15000 增至 51000。
+- 限制或反例：热电站一旦已有燃料或网络已连接其他电源，行为会不同；不能据此推断所有发电设备的启动规则。
+- 复验触发：网络 4 接入启动电源后、首份燃料进入后、电力读取或 DSP 版本变化。
+- 关联：`docs/research/game-api-m0.md`、`docs/manual-test-m0.md`。
+- 最近复验：2026-08-31（冷启动前后均已复读）。
+
+### EXP-017 — 当前油井与基础分拣器负载远低于三台风机容量
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前版本、实体 `129` 油井、实体 `138` 基础分拣器和网络 3 的 DTO 单位。
+- 当前结论：油井 `powerDemandPerTick=400`，基础分拣器加入后网络总需求为 `550`；三台风机容量 `15000` 对这两个负载有明显余量。热电仍提供额外容量和后续精炼扩展，但不是维持油井本身所必需。
+- 直接证据：实体与网络在同一 tick 附近的结构化复读；serve ratio 和 consumer ratio 均为 1.0。EXP-010 的 `14000` 已被反证。
+- 限制或反例：DTO 数值是每 tick 内部单位，不能直接当作 UI 瓦数；新增精炼厂、更多分拣器或科技/版本变化后必须重新汇总。
+- 复验触发：精炼厂接电、网络拓扑或消费者变化、DTO 单位映射或 DSP 版本变化。
+- 关联：`src/Spherewright.Contracts/Power/`、`src/Spherewright.Plugin/Game/GameStateReader.cs`、EXP-010。
+- 最近复验：2026-08-31。
+
+### EXP-018 — 批量手搓原料会进入复制队列缓冲，终态才代表整批完成
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前正常 replicator handcraft action 与 PlayerState 的 `handcraftQueue` / inventory 读回。
+- 当前结论：批量手搓开始后，整批输入会从可用背包计数进入队列的 `bufferedCount`，成品随批次逐步增加；只有 action terminal 和最终物品差量复读才能证明整批完成。中途不能只看背包减少就判定物品丢失，也不能把已缓冲原料重复预算给下一动作。
+- 直接证据：20 批传送带进行中，队列剩 8 批、铁块/齿轮缓冲分别为 16/8，背包已有 42 条带；最终动作证明铁块 `83 -> 43`、齿轮 `20 -> 0`、传送带 `6 -> 66`。
+- 限制或反例：只验证了当前 replicator 和这些普通配方；队列取消、背包满或多级自动子配方行为未覆盖。
+- 复验触发：handcraft coordinator、PlayerState queue DTO、复制器 API 或 DSP 版本变化。
+- 关联：`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.StructuredActions.cs`、`src/Spherewright.Contracts/Players/PlayerStateSnapshot.cs`。
+- 最近复验：2026-08-31。
+
+### EXP-019 — 当前两座电线杆约 22.57 m 不会自动连线
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前版本、电线杆 `133` 与 `142` 的具体网格落点。
+- 当前结论：两塔实测中心距约 `22.57 m` 时没有合网；精炼厂 `141` 虽被塔 `142` 覆盖，但落在独立网络 4，serve ratio 为 0。加入中继塔 `143` 后，两段约 `12.31 m`、`12.91 m` 均成功连线并把精炼厂并入网络 3。规划电网应保留明显余量并通过消费者/网络汇总复读确认。
+- 直接证据：塔 `142` 建成后，power summary 同时存在网络 3 和网络 4；精炼厂报告网络 4、需求 400、供电 0。中继塔 `143` 建成后仅剩网络 3，精炼厂网络变为 3、serve ratio 为 1.0，总网络需求 `950/51000`。
+- 限制或反例：精确判定可能受网格吸附后的距离、模型连接半径或节点类型影响；成功/失败样本仍只限定于当前电线杆姿态。
+- 复验触发：中继塔建成后、成功/失败的更近距离样本、电网 API 或 DSP 版本变化。
+- 关联：`src/Spherewright.Plugin/Game/GameStateReader.cs`、`docs/research/game-api-m0.md`。
+- 最近复验：2026-08-31（同一路径中继合网已复读）。
+
+### EXP-020 — 油井到精炼厂不能把两台建筑都直接绑定为传送带端口
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前油井 `129`、未配置精炼厂 `141` 和基础传送带 prepare。
+- 当前结论：油井 `129` 存在可用直接输出 belt port；未配置精炼厂 `141` 不提供可绑定的直接输入 belt port。正确的当前路径是“油井直接出带，带末端再用分拣器喂精炼厂”。
+- 直接证据：双端绑定 prepare 失败且未消耗物品；随后只绑定油井 source、以自由 `PathEnd` 结束的动作 `d39d8a9b-3f49-4ff5-9e1a-61a654834b22` 成功，消耗 18 条带并创建实体 `144`–`161`，证明先前失败端是精炼厂 destination；动作 `a870028b-2434-4cc3-bf60-f83576450edd` 又成功创建末端 `161 -> 141` 的输入分拣器 `162`。
+- 限制或反例：结论限定当前建筑类型/版本/未配置状态；配方启动后的原油实际入料仍需复读。
+- 复验触发：只绑定油井的 belt prepare、自由带末端到精炼厂的输入分拣器、建筑或 DSP 版本变化。
+- 关联：`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.StructuredActions.cs`、`docs/research/game-api-m0.md`。
+- 最近复验：2026-08-31（油井出带与精炼厂输入分拣器均已实机验证）。
+
+### EXP-021 — 自动燃料输入仓的旧余量不能保留给后续手工预算
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：热电站 `134`、输入仓 `137` 和分拣器 `138` 的当前连续物流。
+- 当前结论：分拣器接电后会继续把输入仓燃料装入热电站；几分钟前复读到的剩余 8 个石墨随后已变为 0。任何手工取料或跨动作预算都必须在 prepare 前重读自动物流端仓库，不能依赖旧快照。
+- 直接证据：从 `137` 取 4 个石墨的 prepare 返回 `INVENTORY_INSUFFICIENT` 且未写入；紧接着复读确认仓 `137` 为空、热电站燃料读回增加，主石墨仓 `114` 仍有 3000。
+- 限制或反例：热电站 buffer 的 `count` 是当前 DTO 的发电燃料读数，不能直接当作仓库物品格计数；结论重点是输入仓余量随自动物流变化。
+- 复验触发：给输入仓补货、分拣器停机/过滤、发电机燃料模型或状态哈希变化。
+- 关联：EXP-016、`src/Spherewright.Plugin/Game/GameStateReader.cs`。
+- 最近复验：2026-08-31。
+
+### EXP-022 — 长距离施工前可从已验证主仓正常补充机甲燃料
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前主石墨仓 `114`、正常 transfer/refuel 原语与伊卡洛斯燃料系统。
+- 当前结论：低核心能量会拖慢移动和无人机施工时，可从可审计的正常产线主仓取少量高能石墨，再经原生 mecha refuel 路径补入燃料舱；必须分别证明仓库、背包和燃料舱守恒，不能直接写核心能量。
+- 直接证据：动作 `35b6fe2b-518f-4f84-ba14-92ffcad2ff9b` 使主仓 `3000 -> 2996`、背包 `0 -> 4`；动作 `213d41ed-9ada-4068-a8f5-e7a7192e078d` 使背包 `4 -> 0`、燃料舱 `0 -> 4`，随后读回一个石墨正在反应、三个仍在燃料格，核心能量正常上升。
+- 限制或反例：这是无线输电塔建成前的临时续航，不算“伊卡洛斯无线充电”验收；燃料来源必须已有正常产线证据。
+- 复验触发：燃料类型、refuel coordinator、玩家燃料 DTO 或 DSP 版本变化。
+- 关联：`docs/safety-model.md`、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.StructuredActions.cs`。
+- 最近复验：2026-08-31。
+
+### EXP-023 — 无线输电必须用独立于燃料的核心能量与电网差量验收
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前无线输电塔 `180`、网络 1 与伊卡洛斯当前版本能源 DTO。
+- 当前结论：无线塔建成不能只看实体存在；应同时证明塔接入有容量的电网、玩家在覆盖范围内、反应堆/燃料为空，并在连续快照中看到核心能量上升。当前塔距玩家约 `10.42 m`，满足这条证据链。
+- 直接证据：运行时配方链正常消耗 12 铁矿、7 铜块、18 石矿以及 2 铁块，逐级产出 14 磁线圈、9 玻璃、6 棱镜、3 电浆激发器、1 电力感应塔和 1 无线输电塔；动作 `efb211e2-2d4b-4917-b55e-3cdf31b3506a` 创建实体 `180`。建成后网络 1 节点 `18 -> 19`、需求 `6350 -> 7850` 且全供电；在 `reactorEnergy=0`、燃料格为空的约 10 秒内，核心能量从约 `35.77M -> 36.61M`。
+- 限制或反例：`10.42 m` 只证明该点在覆盖范围内，不是无线塔最大半径；网络需求差量的内部单位不能直接当 UI 瓦数。
+- 复验触发：玩家离开/进入覆盖范围、无线塔或电网参数、能源 DTO 或 DSP 版本变化。
+- 关联：`docs/research/game-api-m0.md`、`src/Spherewright.Plugin/Game/GameStateReader.cs`、EXP-019、EXP-022。
+- 最近复验：2026-08-31。
+
+### EXP-024 — 建筑有电不代表相邻分拣器处于电塔覆盖范围
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：精炼厂 `141`、原油输入分拣器 `162` 与网络 3 的当前布局。
+- 当前结论：精炼厂 `141` 已在网络 3 且 serve ratio 为 1.0，但位于另一侧的输入分拣器 `162` 仍可为 `network=0`、停在 `Picking`；生产设备的供电网络不会通过机器本体给分拣器供电。每个关键分拣器必须单独复读网络/阶段，并由电塔覆盖。新增塔后还必须以分拣器实际携货和下游产物增长闭环，不能只看塔存在。
+- 直接证据：配方 16 启动后连续约 40 秒原油输入仍为 0；油井 `129 -> 151…161` 拓扑完整且油井缓冲 50，末端分拣器 `162 -> 141` 拓扑正确，但 `162 network=0`、不工作。动作 `48a48476-2f04-4080-825b-fa64461c0688` 在距分拣器约 7 m 的候选处创建塔 `182` 后，`162` 进入网络 3、阶段变为 `Sending` 并携带 1 个原油；精炼厂配方 16 开始推进，精炼油仓 `163` 从空增长到 15。
+- 限制或反例：覆盖半径取决于电塔类型和具体姿态；不能从本例推导固定半径。
+- 复验触发：电力或布局变化、分拣器再次停滞、建筑/电塔参数或 DSP 版本变化。
+- 关联：EXP-016、EXP-019、`src/Spherewright.Plugin/Game/GameStateReader.cs`。
+- 最近复验：2026-08-31（新增塔 `182` 后以携货、配方推进和成品增长完成闭环复验）。
+
+### EXP-025 — 精炼链启动后必须重新按整网峰值校核容量
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前网络 3、精炼厂 `141`、油井与三处分拣器的运行态负载。
+- 当前结论：空闲/未供电时的网络需求不能用于生产态容量规划。网络 3 在精炼链启动后需求升至 `19721`，而四台风机容量只有 `15000`，服务率约 `0.7606`；热电站 `134` 无燃料时不会贡献其额定容量。可用正常副产物给新增热电站供料恢复容量，但仍须验证新增物流未破坏既有连接。
+- 直接证据：塔 `182` 接通输入分拣器后，同一轮结构化复读显示网络 3 有 10 个节点、6 个消费者、4 个发电机，`energyRequired=19721`、`energyCapacity=15000`、`consumerRatio=0.7606105`；精炼厂 `141` 与分拣器 `162` 的 `powerServeRatio` 同为该值。动作 `82489838-ecdd-4e8e-a95f-83156f0671db`、`b613e28d-b904-4155-8507-d4452ddfbdb2` 建成热电站 `183` 与精炼油输入分拣器 `184` 后，发电燃料读回为精炼油，网络 3 容量变为 `51000`、需求约 `20021`、服务率恢复 `1.0`。
+- 限制或反例：需求随分拣器工作阶段和机器停启波动；这里的内部每 tick 数值不能直接映射成 UI 瓦数，也不能代表未来扩线容量。
+- 复验触发：热电补燃料、新增发电机/消费者、电网合并拆分、科技或 DSP 版本变化。
+- 关联：EXP-016、EXP-017、EXP-019、`src/Spherewright.Contracts/Power/`。
+- 最近复验：2026-08-31。
+
+### EXP-026 — 建造完成后的首次单体查询仍应允许一次只读重读
+
+- 状态：`observed`
+- 日期：2026-08-31
+- 适用范围：当前 `commit_build` action 终态之后紧接的 `inspect_factory_entity` 调度窗口。
+- 当前结论：action 已证明建造完成并返回目标 ID 后，紧接的首次单体查询仍曾短暂返回 `INVALID_ENTITY`；这不能授权重试建造。应保持写入不重放，改用只读列表/单体重读确认实体是否已经稳定可见，并保留 action 结果作为协调证据。
+- 直接证据：动作 `48a48476-2f04-4080-825b-fa64461c0688` 已以 `completed` 返回目标 `182` 和物品 `1 -> 0`，随后第一次 `inspect 182` 报 `INVALID_ENTITY`；不进行任何写重试，稍后的 item-filter 列表明确包含实体 `182`，位置与 action 的吸附后计划坐标完全一致，分拣器也已接电运行。
+- 限制或反例：目前只有一个样本，尚不能断定是跨 tick 可见性、请求时序还是读取侧竞态；不得把所有 `INVALID_ENTITY` 都视为瞬时错误。
+- 复验触发：再次出现 action 终态后首次查询失败、读取调度或 action 完成条件变化、DSP 版本变化。
+- 关联：EXP-007、EXP-013、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.StructuredActions.cs`。
+- 最近复验：2026-08-31（单样本，保持 observed）。
+
+### EXP-027 — 新分拣器验收必须证明端点既有连接未被覆盖
+
+- 状态：`invalidated`
+- 日期：2026-08-31
+- 适用范围：当前普通分拣器 prepare/commit/completion、带既有分拣器连接的储仓端点。
+- 当前结论：本条把 `FactoryEntitySnapshot.connections` 的缺省误判成运行链断开，已被物料流反证。不得据此修改端点选择或重启游戏；由 EXP-028 替代。
+- 直接证据：动作 `b613e28d-b904-4155-8507-d4452ddfbdb2` 后，储仓 `163` 的公开连接槽显示新 `184`，旧分拣器 `164` 显示 `connections=[]`，一度被误判为静默断线。但后续连续只读采样中，`164` 从 `Picking` 变为 `Sending`、实际携带 1 个精炼油，`pickTarget=141`、`insertTarget=163` 保持；仓库存量从 78 增至 96，再在 10 秒内从 96 增至 97，同时新增热电仍在耗油。
+- 限制或反例：保留该条用于阻止把展示层连接列表错误升级为安全缺陷。
+- 复验触发：无；如出现真实物料不流动，应按 EXP-028 的证据顺序重新诊断。
+- 关联：EXP-012、EXP-028、`src/Spherewright.Plugin/Game/GameStateReader.cs`。
+- 最近复验：2026-08-31（被连续运行态流量反证，已 invalidated）。
+
+### EXP-028 — 分拣器运行拓扑以目标字段和物料流为准
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前普通分拣器 DTO、共享建筑端点姿态和 `FactoryEntitySnapshot.connections` 展示。
+- 当前结论：多个分拣器共享建筑侧姿态/槽位时，公开 `connections` 列表不保证列出每个仍可运行的分拣器关系；不能仅凭某个旧分拣器 `connections=[]` 判定断线。诊断顺序应是 `pickTargetObjectId/insertTargetObjectId`、阶段/携货变化、上下游库存差量，最后才把连接列表作为辅助拓扑信息。
+- 直接证据：新 `163 -> 184 -> 183` 建成后，旧 `141 -> 164 -> 163` 的 `connections` 为空，但 `164` 的目标字段保持 `141/163`，连续采样出现 `Picking -> Sending` 和携货 `0 -> 1`；仓库在新增热电持续取油时仍由 78 增至 96，再由 96 增至 97，证明旧输入链仍运行。
+- 限制或反例：belt path 的逐段方向仍由连接字段直接验收；本条只约束分拣器共享建筑端点的公开表示，不能推广到任意组件。
+- 复验触发：分拣器目标 DTO、连接读取实现、共享端点行为或 DSP 版本变化。
+- 关联：EXP-012、EXP-020、EXP-027、`src/Spherewright.Plugin/Game/GameStateReader.cs`。
+- 最近复验：2026-08-31。
+
+### EXP-029 — 储液罐的公开工厂快照此前未采集流体缓冲
+
+- 状态：`observed`
+- 日期：2026-08-31
+- 适用范围：当前已安装 Plugin 的 `GameStateReader` 与 DSP `0.10.34.28529` 的 `TankComponent`。
+- 当前结论：储液罐 `buffers=[]` 不能证明罐内没有流体；已安装版本只调用 `CaptureStorage`，没有读取 `entity.tankId` 对应组件。源码已新增 `CaptureTank`，把 `fluidId/fluidCount/fluidInc` 映射为 `tank-fluid` buffer，但在不具备健康会话计划重启票据时不为只读增强中断当前存档；部署前保持 observed，当前氢链改由下游分拣器携货和红矩阵研究站输入/产出闭环验收。
+- 直接证据：罐 `165` 长期返回空 buffers，但上游氢分拣器 `181` 反复实际携带 item `1120`。当前 `Assembly-CSharp.dll` 的元数据明确显示 `FactoryStorage.tankPool/tankCursor` 以及 `TankComponent.fluidId/fluidCount/fluidInc`；新增读取代码完整解决方案构建 0 warning/0 error、49 项测试通过。
+- 限制或反例：源码尚未装入当前 DSP 进程，未取得罐 `165` 的新字段实机读回；不能提前标为 live-validated。
+- 复验触发：下次具备严格健康会话计划重启能力并部署后、储液罐堆叠/开关行为、DSP 版本变化。
+- 关联：`src/Spherewright.Plugin/Game/GameStateReader.cs`、EXP-028、`docs/research/game-api-m0.md`。
+- 最近复验：2026-08-31（程序集字段与离线编译已验证，live 部署待办）。
+
+### EXP-030 — 当前仓库使用本地 SDK，程序集字段研究优先 Mono.Cecil
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前 Windows 工作区的离线构建和 DSP 程序集元数据检查。
+- 当前结论：系统 PATH 的 `C:\Program Files\dotnet\dotnet.exe` 只有 runtime；本仓库构建必须显式使用 `.local\dotnet\dotnet.exe`。检查 `Assembly-CSharp.dll` 字段时优先用 BepInEx 自带 `Mono.Cecil.dll` 做静态元数据读取，不要给 PowerShell 注册会递归处理 satellite assembly 的脚本式 `AssemblyResolve`。
+- 直接证据：PATH dotnet 报 `No .NET SDKs were found`，而 `.local\dotnet` 的 SDK `8.0.424` 完整构建成功；一次 PowerShell `AssemblyResolve` handler 因资源程序集递归触发 stack overflow，未修改游戏，改用 Mono.Cecil 后稳定列出 `TankComponent` 和 `FactoryStorage` 精确字段。
+- 限制或反例：换机或重新安装 SDK 后路径可能变化；静态元数据只能证明签名，行为仍需实机复读。
+- 复验触发：工作区 SDK 布局、构建脚本、BepInEx/Mono.Cecil 或 DSP 程序集变化。
+- 关联：`.local/dotnet/`、`scripts/sync-game-refs.ps1`、`docs/research/environment.md`。
+- 最近复验：2026-08-31。
+
+### EXP-031 — 范围内 harvest 会通过正常玩家动作接近资源点
+
+- 状态：`observed`
+- 日期：2026-08-31
+- 适用范围：当前 `prepare_harvest/commit_harvest`、伊卡洛斯地表状态和约 63.76 m 的铁矿目标。
+- 当前结论：资源节点在当前正常交互/建造范围内时，不必预先单独调用 move；harvest action 会让伊卡洛斯走正常接近与采集流程，并在整批采集完成后终结。仍应在终态后复读玩家位置/速度，不能假定所有地形都能无阻导航。
+- 直接证据：提交 6 个铁矿的动作 `4e7d6aba-e3de-44c1-87e8-91e454649590` 前，节点 `4` 距玩家 `63.76 m`，玩家在约 `(-43.08,-103.46,-165.92)`；动作正常完成并守恒产出 6 铁矿后，玩家稳定位置约 `(-63.14,-47.00,-184.10)`，即目标矿脉旁。
+- 限制或反例：只有一个无阻到达样本；超出交互范围、跨障碍、基座卡脚或飞行/航行状态仍可能需要显式 waypoint。
+- 复验触发：下一次远距 harvest、导航受阻、交互范围/移动实现或 DSP 版本变化。
+- 关联：EXP-009、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.StructuredActions.cs`。
+- 最近复验：2026-08-31（单个 63.76 m 样本，保持 observed）。
+
+### EXP-032 — 从活跃货带末端接续路径会把端点货物回收到玩家
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前普通多段传送带 build action、玩家 before/after inventory 差量与正在输送氢的带路。
+- 当前结论：从一段正在输送物品的末端 belt 继续构造下一段时，当前路径实现会在接续点创建同位的新首段，端点上的 1 件货物可按正常建造行为回收到玩家背包。build commit 仍严格验证建材精确消耗；非建材正差量必须单独记账，不能算作配方产出或生产线验收，也不能据此重放建造。
+- 直接证据：第二段氢主干动作 `3870525c-14ce-4e41-936c-36984d560858` 消耗 25 条带并使玩家氢 `0 -> 1`；第三段动作 `8f733ab2-a4da-4616-ae03-ee5778299ba3` 消耗 22 条带并使氢 `1 -> 2`。两次均从已有活跃氢带末端继续建造、均恰好回收 1 氢，session 保持 `healthy`，既有分段边界和完整带路拓扑复读成立。代码在 `CreatePreparedPrebuildsOnMainThread` 对建材执行 `baseline - previews.Count` 精确检查，最终 action DTO 汇总完整施工窗口的库存差量。
+- 限制或反例：已验证的是当前版本、基础传送带和氢货物的接续样本；内部究竟在 `CreatePrebuilds` 哪一步回收货物尚未以 IL 单独归因。背包中的 2 氢不用于首个自动红矩阵证据链。
+- 复验触发：其他货物/带级接续、改用非同位续带、动作库存审计或 DSP 版本变化。
+- 关联：EXP-007、EXP-018、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.StructuredActions.cs`、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.cs`。
+- 最近复验：2026-08-31（两个独立续带动作均出现精确 `+1` 氢，当前适用范围内 validated）。
+
+### EXP-033 — 首个自动红矩阵必须以同一研究站的 0→正数闭环验收
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前普通 1x 世界、研究站 `256`、配方 `18` 与能量矩阵 item `6002`。
+- 当前结论：首个自动红矩阵的充分证据是同一生产研究站在接入原料前输出为 0，接入两条正常物流后输入/进度/输出连续变化，并且输出增长到至少 1；玩家背包或手搓结果不能替代该闭环。完成后还要通过显式 save action 保存精确 owned world。当前 Gate D 的自动产出与最终保存要求均已完成。
+- 直接证据：配置动作 `dc3e404f-9c69-48d9-860f-897bcea2f834` 后，研究站 `256` 明确为配方 18，石墨/氢/能量矩阵 buffers 全为 0、网络 2 全供电。动作 `bfe37097-76ff-4195-b16e-b450f1a3e568` 创建 `114 -> 257 -> 256` 石墨输入，动作 `7ceb1cf9-345d-4d74-9b55-abc1954dbd18` 创建 `255 -> 258 -> 256` 氢输入。随后只读快照中输出 `6002` 为 3，20 秒后为 6；同期石墨输入 `4 -> 5`、氢输入 `3 -> 5`、配方进度持续推进，两只分拣器均在网络 2 正常循环。显式保存动作 `b399facb-48cd-4838-b7ab-9c9762b6def7` 随后由 DSP 正常 save API 确认 tick `2499658`，session revision `150 -> 151`、`ownedSaveState=saved`、`writeHealth=healthy`。
+- 限制或反例：玩家背包因两次活带续接存在 2 个另行记账的氢，已按 EXP-032 排除；当前输出缓冲尚未连接下游仓库，且网络 2 只有约 90% 服务率，但两者都不否定同一机器的自动 `0 -> 6` 产出。
+- 复验触发：配方/研究站/上游改造、输出取走、后续显式保存或 DSP 版本变化。
+- 关联：EXP-015、EXP-020、EXP-028、EXP-032、`docs/m0-status.md`。
+- 最近复验：2026-08-31。
+
+### EXP-034 — 红矩阵站运行态把原本宽裕的网络 2 推入轻度欠供电
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前网络 2、研究站 `256` 与输入分拣器 `257/258` 的运行态。
+- 当前结论：建筑空闲/刚落地时的电网余量不能代表配方运行态。研究站刚建成、未接料时网络 2 需求为 `1100/15000`；红矩阵生产开始后总需求在约 `16378–16702`，服务率约 `0.898–0.916`。生产线可持续但降速，保存首个产出后应优先增大发电或合网能力。
+- 直接证据：研究站 `256` 未配方运行时 power summary 为网络 2 `energyRequired=1100`、`energyCapacity=15000`、ratio 1.0；两路输入运行后连续快照为 `16378/15000` 与 `16702/15000`，研究站和分拣器读回相同时间片附近的约 0.9 服务率，同时红矩阵仍由 3 增至 6。
+- 限制或反例：分拣器瞬时工作使需求和单体 serve ratio 波动；数值是内部每 tick 单位，不能直接映射 UI 瓦数。
+- 复验触发：新增发电/电塔合网、研究站停启、消费者变化或 DSP 版本变化。
+- 关联：EXP-017、EXP-025、`src/Spherewright.Contracts/Power/`。
+- 最近复验：2026-08-31。
+
+### EXP-035 — 长途移动前必须自动做能量预算并保留回充余量
+
+- 状态：`observed`
+- 日期：2026-08-31
+- 适用范围：当前普通地表 `prepare_move/commit_move`、伊卡洛斯核心能量/燃料舱读回与已有无线输电塔 `180`。
+- 当前结论：低电时不再等待人工提醒。长途移动前必须先复读核心能量、燃料舱和最近无线输电塔；若无法带着余量到达，就先用玩家已拥有的正常燃料应急，或去更近的正常燃料仓补给，再按短 waypoint 自动回充。能量耗尽导致的正常移动终止是 `action_failed`，不是 quarantine，也不能据此重放同一移动。当前先采用保守规则：低于 50% 容量时不启动非必要长途移动，目标是到达充电覆盖范围后仍保留至少 20% 容量；在取得更多样本前不把单次移动折算成固定 MJ/m。2026-08-31 的后续复核确认“剩余能量下降”不能替代位移进度判断：碰撞卡住也会持续耗能，能量预算与卡路检测必须并行。
+- 直接证据：动作 `1255b3ce-bfbf-4b9a-b1c7-d2ea40b00c3e` 从约 `(-27.88,-88.40,-176.46)` 向 40.83 m 目标正常移动，途中在约 `(-6.18,-101.01,-172.14)` 因核心、反应堆和可用燃料连续 600 tick 均不足而以 `action_failed` 终止；会话未进入隔离。随后原生 refuel 动作 `39e51333-8343-4579-8b49-5bfc1493211e` 守恒地把此前正常回收的 2 氢从背包 `2 -> 0`、燃料舱 `0 -> 2`，核心能量随后由约 2.12M 恢复到 24.40M 以上。当前最近无线塔 `180` 的球面距离约 127.3 m，不能把两份氢误当成足够的直达预算。后续动作 `b64a5abf-3afe-4c9b-a5b7-f134b85979f5` 在前半段实际移动约 6.5 m 后位置连续不变、仍持续耗能，证明同一能量现象也可能来自实体碰撞。
+- 限制或反例：当前只有一次“长途移动途中耗尽”和一次“碰撞卡住时耗能”的直接样本，移动耗能受速度、机甲科技、地形和动作状态影响；50%/20% 是当前保守运行阈值，不是 DSP 固定参数，后续必须用更多成功回充行程复验并调整。
+- 复验触发：下一次自动回充、机甲能量/移动科技变化、无线塔布局变化、燃料 DTO 或 DSP 版本变化。
+- 关联：EXP-009、EXP-022、EXP-023、EXP-031、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.cs`。
+- 最近复验：2026-08-31（补入碰撞耗能反例，结论收窄为“能量预算与位移进度分别判断”，保持 observed）。
+
+### EXP-036 — 移动必须用位移和剩余距离双窗口提前判停
+
+- 状态：`observed`
+- 日期：2026-08-31
+- 适用范围：当前源码中的普通 `move` player order、同一 owned world 的地表实体碰撞，以及下一次安全部署后的实机复验。
+- 当前结论：移动开始时记录真实位置和目标剩余距离。连续 180 game ticks 内累计位移不足 0.75 m，判为物理卡住；即使玩家仍在侧移，连续 600 ticks 未把历史最佳剩余距离减少至少 1 m，也判为路线无进展。两种情况都只中止 Spherewright 精确归属的 order，并以可重规划的 `action_failed` 结束，不等到全局超时或能量耗尽。完全断能期间暂不套用 180-tick 碰撞分类，保留原有 600-tick power-starved 原因。DSP 只有一个当前 player order，因此未终止的 move/harvest 之间采用 single-flight，后提交者返回可重试的 `SERVER_BUSY`，不得默默覆盖前一个 order。
+- 直接证据：旧运行 DLL 下，动作 `b64a5abf-3afe-4c9b-a5b7-f134b85979f5` 从 `(-86.64,-47.84,-174.05)` 前进约 6.5 m 后停在 `(-81.45,-51.78,-175.42)`；三秒外部只读采样已足以证明零位移，但动作仍等到旧全局窗口才失败。并发动作 `b65825d1-d6c2-4953-b4d0-50bbb118a38a` 没有取得独立 player order，也等到超时。待两者终止后，动作 `ac1354b5-5125-4a18-a0ff-0d90c38c44d9` 配合一次跳跃越过实体，正常到达 `(-73.78,-57.49,-177.00)`，终态剩余 1.48 m，核心能量约 71.9M；这把碰撞卡住与目标无效、断能区分开。`MovementProgressWatchdogTests` 覆盖硬卡、有效位移、侧移无目标进展、目标进展复位和非法窗口。
+- 限制或反例：当前游戏进程仍加载旧 Plugin DLL；新增 watchdog 与 single-flight 已离线构建/测试，但尚未在安全重启后的新进程实机触发，故不得标为 live validated。上述一次跳跃由 post-M0 脱困时的 Computer Use 输入完成，只用于保住当前存档并确认碰撞根因，明确排除在 M0 验收和结构化移动能力证据之外；后续不把该手段作为自动执行路径。
+- 复验触发：下一次可安全恢复同档并部署 Plugin、移动速度/科技变化、阈值调整、order 归属逻辑或 DSP 版本变化。
+- 关联：EXP-009、EXP-031、EXP-035、`src/Spherewright.Bridge.Core/Safety/MovementProgressWatchdog.cs`、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.cs`。
+- 最近复验：2026-08-31（离线 5 个专项测试与一次旧 DLL 碰撞现场，保持 observed）。
+
+### EXP-037 — 产线里程碑必须同时保存游戏并提交推送工程经验
+
+- 状态：`validated`
+- 日期：2026-08-31
+- 适用范围：当前用户要求下的同一 Spherewright owned world 与后续每一种新产物的自动生产流水线。
+- 当前结论：无安全/版本/存档归属问题时持续使用同一个存档。每完成一种产物的生产流水线，必须先用同一生产设备的结构化快照证明目标产物从 0 增长到正数或继续累积，再执行普通 `prepare_save/commit_save`；随后把对应实现、现场证据和经验账本作为一个 Git 里程碑提交并推送。输出缓冲满后暂时停机不否定“首次产出”里程碑，但应立即把下游储存或消费列为该产线的第一项完善工作。不得为了部署离线补丁而热替换运行 DLL；只有同档恢复条件可证明时才重启。
+- 直接证据：红矩阵研究站 `256` 已由 `0 -> 3 -> 6 -> 10` 正常累积 item `6002`，其石墨/氢输入各余 6，满输出缓冲使 `isWorking=false`；脱困后保存动作 `02f50a58-276c-4b90-be62-bb9645920abf` 再次通过 DSP 正常 save API 保存精确 owned world 于 tick `2710106`，session revision `190 -> 191`、`writeHealth=healthy`。本轮 Git 提交/推送作为该规则的首个工程落盘实例。
+- 限制或反例：`restartResumeAvailable=false` 时，即使已有正常保存也不能假定关闭后可由工具安全续接；应保持当前进程，直到恢复票据链可用或用户明确结束本次运行。若出现 quarantine、版本不匹配、存档身份不明或无法证明产出，则不得用提交标签掩盖未完成状态。
+- 复验触发：每个新产物首次自动产出、每次 save/commit/push、会话健康变化、恢复协议变化或用户调整里程碑定义。
+- 关联：EXP-005、EXP-033、`docs/m0-status.md`、`docs/handoff-next-computer-agent.md`。
+- 最近复验：2026-08-31（首个红矩阵里程碑保存完成；Git 推送将在同一批次结束前复核）。
+
+### EXP-038 — 主菜单加载动作必须在副作用前证明幂等容量并收敛票据副本
+
+- 状态：`observed`
+- 日期：2026-08-31
+- 适用范围：当前 `new-game` / `resume-owned-game` 主菜单加载协调器、quarantine reconciliation 状态转换、按 scope 的 `IdempotencyCache`、两个固定 owned-world resume ticket 位置和脱敏日志。
+- 当前结论：任何可能让 DSP 开始载入世界或清除 quarantine 的 commit，都必须在副作用前确认其幂等 scope 仍有容量；不能先触发加载/状态转换，再发现 action result 无法登记。这个容量检查只因这些协调器都在同一 Unity 主线程串行执行而安全，不能外推为多线程 reservation。reconciliation 若在预检后仍意外无法登记，必须立即重新 quarantine 并返回 `ACTION_OUTCOME_UNKNOWN`。一次性恢复 token 若在 runtime 与受保护 handoff 两个固定位置存在相同副本，消费时必须清除当前副本和其余同 token 副本；不同 token 文件不得误删。票据路径、底层 IO 异常消息和保存路径不得进入正常日志或 MCP 错误，只保留异常类型。
+- 直接证据：提交前代码复核发现两个主菜单 coordinator 都在 `DSPGame.StartGame*` 返回后才调用 `TryAdd`，当 scope 已满时会出现“副作用已开始但缓存拒绝”的窗口；reconciliation 也曾先缓存“成功”再尝试清 quarantine，失败重放会产生错误成功语义。新增 `IdempotencyCache.HasCapacity(scope)` 在锁内先清理过期项并按 scope 判断；`IdempotencyCache_HasCapacityPrunesExpiredEntriesWithinScope` 证明满 scope、独立 scope 和过期回收。主菜单 coordinator 在消费 plan/调用 DSP 前使用检查；reconciliation 先预检、再清除、再登记，并对理论上的登记失败重新隔离。`OwnedWorldResumeTicketStore.Consume` 现在对另一个固定路径只在 constant-time token 匹配时删除；对相关运行时/保存/加载错误的源码扫描未再发现路径字段或 `exception.Message` 外泄。完整解决方案 0 warning / 0 error，55 tests passed。
+- 限制或反例：双路径同 token 的实际文件消费尚无独立自动化测试或下一次重启实机样本；`HasCapacity` 不是通用并发预留 API，如果未来把 commit 移出 Unity 主线程，必须改为原子 reservation。当前运行 DLL 也未包含本次脱敏/预检改动。
+- 复验触发：下一次 quarantine/resume、ticket store 路径变化、commit 调度线程变化、idempotency cache API 变化、日志格式或 DSP 版本变化。
+- 关联：EXP-004、EXP-005、`src/Spherewright.Bridge.Core/Safety/IdempotencyCache.cs`、`src/Spherewright.Plugin/Game/TestWorldCoordinator.cs`、`src/Spherewright.Plugin/Game/OwnedWorldResumeCoordinator.cs`、`src/Spherewright.Plugin/RuntimeDescriptor/OwnedWorldResumeTicketStore.cs`。
+- 最近复验：2026-08-31（容量语义单元测试和完整构建通过；双路径消费保持 observed）。
+
+## 修订记录
+
+- 2026-08-31：创建账本；录入并复核本轮已知的构建、启动、恢复、动作协调、状态稳定、电力、分拣器和执行优先级经验。尚未把 EXP-006、EXP-011、EXP-012 的待实机范围误标为完全验证。
+- 2026-08-31：EXP-011 加入储仓 `136` 到热电站 `134` 实测约 8.90 m 仍为 `TooFar` 的反证，撤销任何“约 9 m 可能足够”的隐含假设。
+- 2026-08-31：新增 EXP-016；实机复读确认孤立热电站与其燃料分拣器形成冷启动供电死锁。
+- 2026-08-31：EXP-011 升级为 `validated`（限定于当前姿态）；约 6.41 m 的实体 `138` 成功输送燃料。EXP-016 补充电线杆 `139`、`140` 合网后的冷启动成功证据。
+- 2026-08-31：完成首个累计 10 个成功游戏写动作复核。EXP-010 因当前实体/网络读回反证改为 `invalidated`，新增 EXP-017 作为替代；EXP-008、EXP-011、EXP-015、EXP-016 与最新现场仍一致。
+- 2026-08-31：新增 EXP-018；用 20 批齿轮/传送带的队列中途快照和最终守恒结果验证批量手搓的原料缓冲与终态语义。
+- 2026-08-31：新增 EXP-019；记录电线杆 `133` 与 `142` 约 22.57 m 未合网及精炼厂独立断电网络的读回。
+- 2026-08-31：EXP-019 升级为 `validated`（限定于当前姿态）；中继塔 `143` 的约 12.31/12.91 m 两段完成合网，精炼厂供电率恢复为 1.0。
+- 2026-08-31：新增 EXP-020；记录油井与精炼厂双端 belt 绑定被合并端口检查拒绝，保留单端归因待验证。
+- 2026-08-31：EXP-020 升级为 `validated`；油井 source-only 路径正常创建 18 段带，从合并错误中排除了油井端，确认精炼厂应由末端分拣器输入。
+- 2026-08-31：EXP-020 补充输入分拣器 `162` 的成功建造证据；当前原油输入拓扑已完整，配方仍保持关闭。
+- 2026-08-31：新增 EXP-021；一次被安全拒绝的旧库存预算证明自动燃料仓必须在每次转移前重新复读。
+- 2026-08-31：新增 EXP-022；记录从正常石墨主仓到背包再到机甲燃料舱的完整守恒补能链，并明确它不替代无线充电验收。
+- 2026-08-31：EXP-007 补充第二个独立样本：harvest 已完成但脚本访问不存在的 `resourceDeltas` 后失败，节点与背包复读阻止了一次危险的重复采集。
+- 2026-08-31：新增 EXP-023；用无线塔实体、电网节点/负载差量以及零反应堆状态下的连续核心能量上升完成无线充电验收。
+- 2026-08-31：完成后续累计 10 个成功写动作复核。EXP-007、EXP-008、EXP-009、EXP-018、EXP-019、EXP-021、EXP-022 与新现场一致；EXP-012 仍只缺当前进程的第二个同源输出分拣器实机复验，未提前升级范围。
+- 2026-08-31：EXP-012 完成当前进程实机复验；同位置旧 `164` 与新 `181` 被正确区分，关闭该条目的 live-validation 缺口。
+- 2026-08-31：新增 EXP-024；原油链不动的只读诊断证明“精炼厂有电”不能替代对输入分拣器覆盖的独立检查。
+- 2026-08-31：EXP-024 由塔 `182`、分拣器实际携油和精炼油增长完成闭环；新增 EXP-025 记录精炼运行态的整网容量瓶颈，新增 EXP-026 保留 action 完成后首次单体查询短暂失败的单样本经验，且未因此重放写入。
+- 2026-08-31：EXP-025 补充以精炼油副产物驱动热电站 `183`、把网络 3 恢复满供电的证据。随后用连续流量复读推翻 EXP-027 的“连接槽覆盖导致断线”推断并将其 invalidated；新增 EXP-028，明确共享端点分拣器应以目标字段、阶段/携货和上下游库存差量验收，取消不必要的写入冻结与重启计划。
+- 2026-08-31：新增 EXP-029，确认当前空 tank buffers 是读取缺口并完成离线实现，但为保持同一健康存档暂缓部署；新增 EXP-030，固化本地 SDK 与 Mono.Cecil 元数据研究路径。完整解决方案 0 warning/0 error，49 tests passed。
+- 2026-08-31：完成下一组累计 10 个成功游戏写动作复核（覆盖补塔、精炼油热电、三次主仓转移、采铁及磁铁/线圈手搓）。EXP-015、EXP-018、EXP-024、EXP-025、EXP-028 与现场仍一致；EXP-029 保持“离线实现、live 待部署”。新增 EXP-031 记录范围内 harvest 的正常接近行为。
+- 2026-08-31：完成再下一组累计 10 个成功游戏写动作复核（采石、玻璃/电塔/研究站、40 齿轮、120 传送带、两段移动、两段氢主干）。EXP-008、EXP-009、EXP-015、EXP-018、EXP-020 与现场仍一致；新增 EXP-032，隔离记录长施工窗口中的非预算氢 `0 -> 1`，不把它计入自动红矩阵验收。
+- 2026-08-31：第三段氢主干再次在活带续接时使玩家氢 `1 -> 2`，且结构/会话健康；EXP-032 由单样本 observed 收敛为当前基础带+氢续接范围内 validated，2 个回收氢继续从自动红矩阵证据中排除。
+- 2026-08-31：M0 Gate D 状态变化复核：新增 EXP-033，以研究站 `256` 的配方 18、双输入和能量矩阵 `0 -> 3 -> 6` 完成首个自动红矩阵闭环；新增 EXP-034，记录网络 2 运行态约 90% 的容量瓶颈。EXP-015 的生产线优先级和 EXP-032 的 2 氢排除规则均继续适用。
+- 2026-08-31：显式保存动作 `b399facb-48cd-4838-b7ab-9c9762b6def7` 完成 tick `2499658` 的精确 owned-world 保存；EXP-033 补齐最终保存证据，M0 Gate D 转为 complete，EXP-034 保留为里程碑后的首要产能优化项。
+- 2026-08-31：完成 M0 前后交界的下一组累计 10 个成功写动作复核（第三段氢带、红糖站/配方/双输入、最终保存、两次建材转移、采铁和磁铁）。EXP-031、EXP-032、EXP-033、EXP-034 均与现场一致；未发现新 quarantine、未解释建材差量或存档状态回退。
+- 2026-08-31：新增 EXP-035；一次长途移动因真实能量耗尽而正常 `action_failed`，未触发隔离。把“低电自动回充、直达前预算、保留 20% 余量、预算不足先用已有燃料或近端燃料仓”固化为当前运行规则，并保留阈值待后续样本优化。
+- 2026-08-31：复核 EXP-035 并加入“实体碰撞也会持续耗能”的反例；新增 EXP-036，以位移/目标进度双窗口、断能原因隔离和 player-order single-flight 替代只等全局超时。新增 EXP-037，固化同档续玩以及每种新产物完成后依次实机复读、普通保存、Git 提交与推送的里程碑规则。
+- 2026-08-31：提交前安全复核新增 EXP-038；把 new-game/resume 的幂等容量拒绝前移到 DSP 加载副作用之前，消费相同 token 的固定票据副本，并移除相关路径/底层异常消息泄漏。完整解决方案 0 warning/0 error，55 tests passed。

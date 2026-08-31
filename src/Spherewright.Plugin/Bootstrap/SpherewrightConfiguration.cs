@@ -129,5 +129,12 @@ internal sealed class SpherewrightConfiguration
         {
             throw new InvalidOperationException("RuntimeDescriptorDirectory is required.");
         }
+
+        if (PlanTokenLifetimeSeconds <= 0
+            || IdempotencyRetentionMinutes <= 0
+            || MaxIdempotencyEntriesPerSession <= 0)
+        {
+            throw new InvalidOperationException("One or more Safety lifetime or capacity settings are invalid.");
+        }
     }
 }

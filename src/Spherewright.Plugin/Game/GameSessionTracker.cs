@@ -1,6 +1,7 @@
 using BepInEx.Logging;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Sessions;
+using Spherewright.Plugin.RuntimeDescriptor;
 
 namespace Spherewright.Plugin.Game;
 
@@ -9,6 +10,7 @@ internal sealed class GameSessionTracker
     private readonly bool _writesConfigured;
     private readonly string _gameVersion;
     private readonly ManualLogSource _logger;
+    private readonly OwnedWorldResumeTicketStore _resumeTickets;
     private GameData? _observedData;
     private GameData? _ownedData;
     private string? _expectedOwnedSaveName;
@@ -21,12 +23,20 @@ internal sealed class GameSessionTracker
     private string _ownedSaveState = OwnedSaveStates.None;
     private string? _ownedSaveError;
     private string _writeHealth = WriteHealthStates.Healthy;
+    private string? _writeQuarantineActionId;
     private string? _writeQuarantineReason;
+    private OwnedWorldResumeTicket? _expectedResumeTicket;
+    private string? _resumeAdoptionError;
 
-    public GameSessionTracker(bool writesConfigured, string gameVersion, ManualLogSource logger)
+    public GameSessionTracker(
+        bool writesConfigured,
+        string gameVersion,
+        OwnedWorldResumeTicketStore resumeTickets,
+        ManualLogSource logger)
     {
         _writesConfigured = writesConfigured;
         _gameVersion = gameVersion;
+        _resumeTickets = resumeTickets;
         _logger = logger;
     }
 
@@ -43,7 +53,11 @@ internal sealed class GameSessionTracker
 
     public string WriteHealth => _writeHealth;
 
+    public string? WriteQuarantineActionId => _writeQuarantineActionId;
+
     public string? WriteQuarantineReason => _writeQuarantineReason;
+
+    public string? ResumeAdoptionError => _resumeAdoptionError;
 
     public void ExpectNextSessionToBeOwned(string saveName)
     {
@@ -53,7 +67,8 @@ internal sealed class GameSessionTracker
         }
 
         if (((GameMain.data is not null || GameMain.isRunning) && !DSPGame.IsMenuDemo)
-            || _expectedOwnedSaveName is not null)
+            || _expectedOwnedSaveName is not null
+            || _expectedResumeTicket is not null)
         {
             throw new InvalidOperationException("An owned new world can only be armed from an idle main menu.");
         }
@@ -89,6 +104,7 @@ internal sealed class GameSessionTracker
                 _revision = 0;
                 _lastOwnedSaveGameTick = null;
                 _writeHealth = WriteHealthStates.Healthy;
+                _writeQuarantineActionId = null;
                 _writeQuarantineReason = null;
             }
 
@@ -102,6 +118,7 @@ internal sealed class GameSessionTracker
             _sessionId = Guid.NewGuid().ToString("D");
             _revision = 1;
             _writeHealth = WriteHealthStates.Healthy;
+            _writeQuarantineActionId = null;
             _writeQuarantineReason = null;
             _lastPlanetId = 0;
             GameLoaded = true;
@@ -116,6 +133,14 @@ internal sealed class GameSessionTracker
                 _lastOwnedSaveGameTick = null;
                 _logger.LogInfo("Spherewright adopted the newly created ordinary peaceful world");
             }
+            else if (_expectedResumeTicket is not null)
+            {
+                _ownedData = null;
+                _ownedSaveName = null;
+                _ownedSaveState = OwnedSaveStates.WaitingForWorld;
+                _ownedSaveError = null;
+                _logger.LogInfo("Spherewright detected the exact one-time owned-world resume load and is validating provenance");
+            }
             else
             {
                 _ownedData = null;
@@ -124,6 +149,35 @@ internal sealed class GameSessionTracker
                 _ownedSaveError = null;
                 _logger.LogWarning("Spherewright detected an unowned game session; save and factory reads are blocked");
             }
+        }
+
+        if (_expectedResumeTicket is not null && !IsCurrentSessionOwned)
+        {
+            if (!TryValidateResumeCandidate(currentData, _expectedResumeTicket, out var pending, out var rejection))
+            {
+                if (pending)
+                {
+                    return;
+                }
+
+                _resumeAdoptionError = rejection;
+                _resumeTickets.Consume(_expectedResumeTicket.ResumeToken);
+                _expectedResumeTicket = null;
+                _ownedSaveState = OwnedSaveStates.None;
+                _logger.LogError("Spherewright rejected an owned-world resume candidate because provenance did not match");
+                return;
+            }
+
+            var ticket = _expectedResumeTicket;
+            _ownedData = currentData;
+            _ownedSaveName = ticket.OwnedSaveName;
+            _expectedResumeTicket = null;
+            _ownedSaveState = OwnedSaveStates.WaitingToSave;
+            _ownedSaveError = null;
+            _ownedSessionStartTick = GameMain.gameTick;
+            _lastOwnedSaveGameTick = null;
+            _resumeTickets.Consume(ticket.ResumeToken);
+            _logger.LogInfo("Spherewright adopted the exact normally saved owned world through one-time restart-resume proof");
         }
 
         if (!IsCurrentSessionOwned)
@@ -160,7 +214,9 @@ internal sealed class GameSessionTracker
                 WriteHealth = _writeHealth,
                 OwnedSaveState = _ownedSaveState,
                 OwnedSaveError = _ownedSaveError,
-                Capabilities = new List<string> { "bridge.status", "new-game.create", "action.read" },
+                RestartResumeAvailable = _resumeTickets.HasCurrentTicket,
+                RestartResumeToken = _resumeTickets.CurrentResumeToken,
+                Capabilities = new List<string> { "bridge.status", "new-game.create", "owned-game.resume", "action.read" },
             };
         }
 
@@ -217,11 +273,14 @@ internal sealed class GameSessionTracker
             ResourceMultiplier = descriptor?.resourceMultiplier,
             WritesAllowed = writesAllowed,
             WriteHealth = _writeHealth,
+            WriteQuarantineActionId = _writeQuarantineActionId,
             WriteBlockers = blockers,
             OwnedSaveState = _ownedSaveState,
             OwnedSaveError = _ownedSaveError,
             LastOwnedSaveGameTick = _lastOwnedSaveGameTick,
-            Capabilities = CreateOwnedCapabilities(writesAllowed),
+            RestartResumeAvailable = _resumeTickets.HasCurrentTicket,
+            RestartResumeToken = _resumeTickets.CurrentResumeToken,
+            Capabilities = CreateOwnedCapabilities(writesAllowed, _writeHealth),
         };
     }
 
@@ -233,7 +292,7 @@ internal sealed class GameSessionTracker
         }
     }
 
-    private static List<string> CreateOwnedCapabilities(bool writesAllowed)
+    private static List<string> CreateOwnedCapabilities(bool writesAllowed, string writeHealth)
     {
         var capabilities = new List<string>
         {
@@ -252,6 +311,11 @@ internal sealed class GameSessionTracker
         if (writesAllowed)
         {
             capabilities.Add("normal-game.prepare");
+        }
+
+        if (string.Equals(writeHealth, WriteHealthStates.Quarantined, StringComparison.Ordinal))
+        {
+            capabilities.Add("quarantine.reconcile");
         }
 
         return capabilities;
@@ -302,14 +366,14 @@ internal sealed class GameSessionTracker
         catch (Exception exception)
         {
             _ownedSaveState = OwnedSaveStates.SaveFailed;
-            _ownedSaveError = exception.GetType().Name + ": " + exception.Message;
+            _ownedSaveError = exception.GetType().Name;
             error = _ownedSaveError;
-            _logger.LogError($"Spherewright owned-world save failed: {_ownedSaveError}");
+            _logger.LogError($"Spherewright owned-world save failed ({_ownedSaveError})");
             return false;
         }
     }
 
-    public void QuarantineWritesOnMainThread(string reason)
+    public void QuarantineWritesOnMainThread(string actionId, string reason)
     {
         if (!IsCurrentSessionOwned || string.Equals(_writeHealth, WriteHealthStates.Quarantined, StringComparison.Ordinal))
         {
@@ -317,9 +381,141 @@ internal sealed class GameSessionTracker
         }
 
         _writeHealth = WriteHealthStates.Quarantined;
+        _writeQuarantineActionId = string.IsNullOrWhiteSpace(actionId) ? null : actionId;
         _writeQuarantineReason = string.IsNullOrWhiteSpace(reason) ? "A write outcome could not be proven." : reason;
         _revision++;
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_ownedSaveName)
+                && !string.IsNullOrWhiteSpace(_sessionId)
+                && _lastPlanetId > 0
+                && !string.IsNullOrWhiteSpace(_writeQuarantineActionId))
+            {
+                _resumeTickets.ArmFromQuarantinedOwnedSession(
+                    _ownedSaveName!,
+                    _sessionId!,
+                    _lastPlanetId,
+                    GameMain.gameTick,
+                    _writeQuarantineActionId!);
+            }
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning($"Spherewright could not arm restart-resume after quarantine ({exception.GetType().Name})");
+        }
         _logger.LogError("Spherewright quarantined writes for the current owned session");
+    }
+
+    public void ExpectNextSessionToBeResumed(OwnedWorldResumeTicket ticket)
+    {
+        if (ticket is null)
+        {
+            throw new ArgumentNullException(nameof(ticket));
+        }
+
+        if (((GameMain.data is not null || GameMain.isRunning) && !DSPGame.IsMenuDemo)
+            || _expectedOwnedSaveName is not null
+            || _expectedResumeTicket is not null)
+        {
+            throw new InvalidOperationException("An owned world can only be resumed from an idle main menu.");
+        }
+
+        _expectedResumeTicket = ticket;
+        _ownedSaveState = OwnedSaveStates.WaitingForWorld;
+        _ownedSaveError = null;
+        _resumeAdoptionError = null;
+    }
+
+    public void CancelExpectedResumedSession()
+    {
+        _expectedResumeTicket = null;
+        if (!IsCurrentSessionOwned)
+        {
+            _ownedSaveState = OwnedSaveStates.None;
+            _ownedSaveError = null;
+        }
+    }
+
+    public bool TryClearQuarantineOnMainThread(
+        string expectedActionId,
+        string expectedReason,
+        out string? rejection)
+    {
+        rejection = null;
+        if (!IsCurrentSessionOwned
+            || !string.Equals(_writeHealth, WriteHealthStates.Quarantined, StringComparison.Ordinal))
+        {
+            rejection = "The current owned session is not quarantined.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_writeQuarantineActionId)
+            || !string.Equals(_writeQuarantineActionId, expectedActionId, StringComparison.Ordinal)
+            || !string.Equals(_writeQuarantineReason, expectedReason, StringComparison.Ordinal))
+        {
+            rejection = "The quarantined action identity or reason changed after reconciliation was prepared.";
+            return false;
+        }
+
+        var resumeToken = _resumeTickets.CurrentResumeToken;
+        _writeHealth = WriteHealthStates.Healthy;
+        _writeQuarantineActionId = null;
+        _writeQuarantineReason = null;
+        _revision++;
+        if (!string.IsNullOrWhiteSpace(resumeToken))
+        {
+            _resumeTickets.Consume(resumeToken!);
+        }
+        _logger.LogInfo("Spherewright cleared write quarantine after exact action reconciliation");
+        return true;
+    }
+
+    private static bool TryValidateResumeCandidate(
+        GameData currentData,
+        OwnedWorldResumeTicket ticket,
+        out bool pending,
+        out string rejection)
+    {
+        pending = false;
+        rejection = string.Empty;
+        if (!string.Equals(currentData.gameName, ticket.OwnedSaveName, StringComparison.Ordinal))
+        {
+            rejection = "The LastExit payload did not contain the exact high-entropy owned save identity.";
+            return false;
+        }
+
+        if (GameMain.gameTick < ticket.MinimumGameTick)
+        {
+            rejection = "The LastExit payload is older than the authenticated source-session ticket.";
+            return false;
+        }
+
+        var descriptor = currentData.gameDesc;
+        if (descriptor is null
+            || !descriptor.isPeaceMode
+            || descriptor.isSandboxMode
+            || GameMain.sandboxToolsEnabled
+            || Math.Abs(descriptor.resourceMultiplier - 1f) > 0.0001f)
+        {
+            rejection = "The resumed payload did not prove peaceful, non-sandbox, normal 1x settings.";
+            return false;
+        }
+
+        var localPlanet = currentData.localPlanet;
+        if (localPlanet is null)
+        {
+            pending = true;
+            rejection = "The resumed local planet is still loading.";
+            return false;
+        }
+
+        if (localPlanet.id != ticket.ExpectedPlanetId)
+        {
+            rejection = "The resumed local planet does not match the authenticated source-session ticket.";
+            return false;
+        }
+
+        return true;
     }
 
     private List<WriteBlocker> CreateWriteBlockers(

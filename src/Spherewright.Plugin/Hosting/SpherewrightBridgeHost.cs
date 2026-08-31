@@ -66,10 +66,16 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             gameVersion,
             configuration.AllowWrites);
         var dispatcher = new BoundedMainThreadDispatcher(configuration.MaxMainThreadQueue);
-        var sessionTracker = new GameSessionTracker(configuration.AllowWrites, gameVersion, logger);
+        var resumeTickets = new OwnedWorldResumeTicketStore(
+            configuration.RuntimeDescriptorDirectory,
+            identity.BridgeInstanceId,
+            gameVersion,
+            logger);
+        var sessionTracker = new GameSessionTracker(configuration.AllowWrites, gameVersion, resumeTickets, logger);
         var gameStateReader = new GameStateReader(sessionTracker);
         var normalActionCoordinator = new NormalGameActionCoordinator(
             configuration.PlanTokenLifetimeSeconds,
+            configuration.IdempotencyRetentionMinutes,
             configuration.MaxIdempotencyEntriesPerSession,
             sessionTracker,
             gameStateReader);
@@ -79,8 +85,16 @@ internal sealed class SpherewrightBridgeHost : IDisposable
         var testWorldCoordinator = new TestWorldCoordinator(
             configuration.AllowWrites,
             configuration.PlanTokenLifetimeSeconds,
+            configuration.IdempotencyRetentionMinutes,
             configuration.MaxIdempotencyEntriesPerSession,
             sessionTracker);
+        var ownedWorldResumeCoordinator = new OwnedWorldResumeCoordinator(
+            configuration.AllowWrites,
+            configuration.PlanTokenLifetimeSeconds,
+            configuration.IdempotencyRetentionMinutes,
+            configuration.MaxIdempotencyEntriesPerSession,
+            sessionTracker,
+            resumeTickets);
         var descriptorPublisher = new RuntimeDescriptorPublisher(configuration.RuntimeDescriptorDirectory, logger);
         var pipeServer = new NamedPipeBridgeServer(
             identity,
@@ -91,6 +105,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             dispatcher,
             gameStateReader,
             testWorldCoordinator,
+            ownedWorldResumeCoordinator,
             normalActionCoordinator,
             logger);
         var descriptor = new BridgeRuntimeDescriptor

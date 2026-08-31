@@ -31,6 +31,7 @@ internal sealed class NamedPipeBridgeServer : IDisposable
     private readonly BoundedMainThreadDispatcher _dispatcher;
     private readonly GameStateReader _gameStateReader;
     private readonly TestWorldCoordinator _testWorldCoordinator;
+    private readonly OwnedWorldResumeCoordinator _ownedWorldResumeCoordinator;
     private readonly NormalGameActionCoordinator _normalActionCoordinator;
     private readonly ManualLogSource _logger;
     private readonly CancellationTokenSource _shutdown = new CancellationTokenSource();
@@ -47,6 +48,7 @@ internal sealed class NamedPipeBridgeServer : IDisposable
         BoundedMainThreadDispatcher dispatcher,
         GameStateReader gameStateReader,
         TestWorldCoordinator testWorldCoordinator,
+        OwnedWorldResumeCoordinator ownedWorldResumeCoordinator,
         NormalGameActionCoordinator normalActionCoordinator,
         ManualLogSource logger)
     {
@@ -60,6 +62,7 @@ internal sealed class NamedPipeBridgeServer : IDisposable
         _dispatcher = dispatcher;
         _gameStateReader = gameStateReader;
         _testWorldCoordinator = testWorldCoordinator;
+        _ownedWorldResumeCoordinator = ownedWorldResumeCoordinator;
         _normalActionCoordinator = normalActionCoordinator;
         _logger = logger;
     }
@@ -556,6 +559,40 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                 case BridgeMethods.CommitSave:
                     await DispatchNormalCommitAsync(pipe, header, requestJson, NormalActionKinds.Save, cancellationToken).ConfigureAwait(false);
                     break;
+                case BridgeMethods.PrepareQuarantineReconciliation:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<PrepareQuarantineReconciliationRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            header.SessionId,
+                            () => _normalActionCoordinator.PrepareQuarantineReconciliationOnMainThread(header.SessionId, request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                case BridgeMethods.CommitQuarantineReconciliation:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<CommitNormalActionRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            header.SessionId,
+                            () => _normalActionCoordinator.CommitQuarantineReconciliationOnMainThread(header.SessionId, request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
                 case BridgeMethods.ListAssemblers:
                     {
                         var request = PluginJson.Deserialize<BridgeRequestEnvelope<ListAssemblersRequest>>(requestJson);
@@ -632,6 +669,40 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             cancellationToken).ConfigureAwait(false);
                         break;
                     }
+                case BridgeMethods.PrepareResumeOwnedGame:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<PrepareOwnedWorldResumeRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            null,
+                            () => _ownedWorldResumeCoordinator.PrepareOnMainThread(request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                case BridgeMethods.CommitResumeOwnedGame:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<CommitOwnedWorldResumeRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            null,
+                            () => _ownedWorldResumeCoordinator.CommitOnMainThread(request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
                 default:
                     await WriteErrorAsync(
                         pipe,
@@ -653,6 +724,12 @@ internal sealed class NamedPipeBridgeServer : IDisposable
             && normalResult is not null)
         {
             return GameCallResult<ActionResultSnapshot>.Succeeded(normalResult);
+        }
+
+        if (_ownedWorldResumeCoordinator.TryGetActionResultOnMainThread(request.ActionId, out var resumeResult)
+            && resumeResult is not null)
+        {
+            return GameCallResult<ActionResultSnapshot>.Succeeded(resumeResult);
         }
 
         return _testWorldCoordinator.GetActionResultOnMainThread(request);

@@ -76,11 +76,14 @@ if ($DspDir) {
         }
     }
 
+    $seenDspRoots = [System.Collections.Generic.HashSet[string]]::new(
+        [System.StringComparer]::OrdinalIgnoreCase)
     $matches = @(
         foreach ($libraryRoot in @($libraryRoots | Select-Object -Unique)) {
             $candidate = Join-Path $libraryRoot 'steamapps\common\Dyson Sphere Program'
-            if (Test-DspRoot -Path $candidate) {
-                New-Result -Path $candidate -Source 'steam-auto-detected'
+            $fullCandidate = [IO.Path]::GetFullPath($candidate)
+            if ((Test-DspRoot -Path $fullCandidate) -and $seenDspRoots.Add($fullCandidate)) {
+                New-Result -Path $fullCandidate -Source 'steam-auto-detected'
             }
         }
     )

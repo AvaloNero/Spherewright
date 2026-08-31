@@ -1084,9 +1084,12 @@ internal sealed class GameStateReader
         CaptureLab(factory, ref entity, snapshot);
         CaptureMiner(factory, ref entity, snapshot);
         CaptureStorage(factory, ref entity, snapshot);
+        CaptureTank(factory, ref entity, snapshot);
         CaptureInserter(factory, ref entity, snapshot);
         snapshot.StateHash = CanonicalStateHash.Factory(snapshot);
         snapshot.StateHashVersion = CanonicalStateHash.Version;
+        snapshot.EndpointStateHash = CanonicalStateHash.FactoryEndpoint(snapshot);
+        snapshot.EndpointStateHashVersion = CanonicalStateHash.Version;
         return snapshot;
     }
 
@@ -1124,6 +1127,8 @@ internal sealed class GameStateReader
         CaptureConnections(factory, -prebuildId, snapshot.Connections);
         snapshot.StateHash = CanonicalStateHash.Factory(snapshot);
         snapshot.StateHashVersion = CanonicalStateHash.Version;
+        snapshot.EndpointStateHash = CanonicalStateHash.FactoryEndpoint(snapshot);
+        snapshot.EndpointStateHashVersion = CanonicalStateHash.Version;
         return snapshot;
     }
 
@@ -1357,6 +1362,36 @@ internal sealed class GameStateReader
                 Inc = grid.inc,
             });
         }
+    }
+
+    private static void CaptureTank(
+        PlanetFactory factory,
+        ref EntityData entity,
+        FactoryEntitySnapshot snapshot)
+    {
+        var tankId = entity.tankId;
+        if (tankId <= 0
+            || tankId >= factory.factoryStorage.tankCursor
+            || tankId >= factory.factoryStorage.tankPool.Length)
+        {
+            return;
+        }
+
+        ref var tank = ref factory.factoryStorage.tankPool[tankId];
+        if (tank.id != tankId || tank.entityId != entity.id
+            || tank.fluidId <= 0 || tank.fluidCount <= 0)
+        {
+            return;
+        }
+
+        snapshot.Buffers.Add(new FactoryBufferSnapshot
+        {
+            Role = "tank-fluid",
+            ItemId = tank.fluidId,
+            Name = GetItemName(tank.fluidId),
+            Count = tank.fluidCount,
+            Inc = tank.fluidInc,
+        });
     }
 
     private static void CaptureInserter(

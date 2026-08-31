@@ -14,6 +14,7 @@ public static class NormalActionKinds
     public const string ConfigureBuilding = "configure-building";
     public const string Refuel = "refuel";
     public const string Save = "save";
+    public const string ReconcileQuarantine = "reconcile-quarantine";
 }
 
 public static class NormalBuildKinds
@@ -195,6 +196,17 @@ public sealed class PrepareSaveRequest
     public int StateHashVersion { get; set; } = 1;
 }
 
+public sealed class PrepareQuarantineReconciliationRequest
+{
+    public int PlanetId { get; set; }
+
+    public string ActionId { get; set; } = string.Empty;
+
+    public long ExpectedRevision { get; set; }
+
+    public int StateHashVersion { get; set; } = 1;
+}
+
 public sealed class CommitNormalActionRequest
 {
     public string SessionId { get; set; } = string.Empty;
@@ -243,6 +255,10 @@ public sealed class PreparedNormalAction
     public int? DestinationObjectId { get; set; }
 
     public List<Vector3Snapshot> PlannedPath { get; set; } = new List<Vector3Snapshot>();
+
+    public string? ReconcilesActionId { get; set; }
+
+    public List<int> ProvedObjectIds { get; set; } = new List<int>();
 }
 
 public sealed class ActionItemBudget

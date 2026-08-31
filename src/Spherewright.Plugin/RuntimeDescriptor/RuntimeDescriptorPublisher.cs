@@ -28,7 +28,7 @@ internal sealed class RuntimeDescriptorPublisher : IDisposable
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    private static string ResolveRuntimeDirectory(string configuredDirectory)
+    internal static string ResolveRuntimeDirectory(string configuredDirectory)
     {
         const string localAppDataToken = "%LOCALAPPDATA%";
         if (configuredDirectory.StartsWith(localAppDataToken, StringComparison.OrdinalIgnoreCase))
@@ -41,16 +41,19 @@ internal sealed class RuntimeDescriptorPublisher : IDisposable
 
             var remainder = configuredDirectory.Substring(localAppDataToken.Length)
                 .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            return Path.Combine(localAppData, remainder);
+            var combined = Path.Combine(localAppData, remainder)
+                .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            return Path.GetFullPath(combined);
         }
 
-        var expanded = Environment.ExpandEnvironmentVariables(configuredDirectory);
+        var expanded = Environment.ExpandEnvironmentVariables(configuredDirectory)
+            .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
         if (!Path.IsPathRooted(expanded))
         {
             throw new InvalidOperationException("The runtime descriptor directory must be an absolute path.");
         }
 
-        return expanded;
+        return Path.GetFullPath(expanded);
     }
 
     public void Publish(BridgeRuntimeDescriptor descriptor)
@@ -92,7 +95,7 @@ internal sealed class RuntimeDescriptorPublisher : IDisposable
         }
         catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException)
         {
-            _logger.LogWarning($"Spherewright could not remove its runtime descriptor: {exception.Message}");
+            _logger.LogWarning($"Spherewright could not remove its runtime descriptor ({exception.GetType().Name})");
         }
     }
 
@@ -119,7 +122,7 @@ internal sealed class RuntimeDescriptorPublisher : IDisposable
                 || exception is Newtonsoft.Json.JsonException
                 || exception is ArgumentException)
             {
-                _logger.LogWarning($"Spherewright ignored an unreadable stale descriptor candidate: {exception.Message}");
+                _logger.LogWarning($"Spherewright ignored an unreadable stale descriptor candidate ({exception.GetType().Name})");
             }
         }
     }

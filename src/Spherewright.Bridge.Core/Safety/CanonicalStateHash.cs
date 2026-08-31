@@ -161,6 +161,23 @@ public static class CanonicalStateHash
         return Hash(value);
     }
 
+    public static string FactoryEndpoint(FactoryEntitySnapshot snapshot)
+    {
+        var value = new StringBuilder();
+        Append(value, "factory-endpoint-v1", snapshot.SessionId, snapshot.PlanetId,
+            snapshot.ObjectId, snapshot.ObjectKind, snapshot.ItemId, snapshot.ComponentKind,
+            F(snapshot.Position.X), F(snapshot.Position.Y), F(snapshot.Position.Z),
+            F(snapshot.Rotation.X), F(snapshot.Rotation.Y), F(snapshot.Rotation.Z),
+            F(snapshot.Rotation.W));
+        foreach (var connection in snapshot.Connections.OrderBy(connection => connection.Slot))
+        {
+            Append(value, "connection", connection.Slot, connection.IsOutput,
+                connection.OtherObjectId, connection.OtherSlot);
+        }
+
+        return Hash(value);
+    }
+
     public static string Combine(string actionKind, params object?[] fields)
     {
         var value = new StringBuilder();

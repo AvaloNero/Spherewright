@@ -42,4 +42,71 @@ public sealed class SafetyStoreTests
         Assert.False(cache.TryGet("key", "request-b", out _, out conflict));
         Assert.True(conflict);
     }
+
+    [Fact]
+    public void IdempotencyCache_ExpiresEntriesAndReclaimsCapacity()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T00:00:00Z");
+        var cache = new IdempotencyCache<string>(
+            1,
+            TimeSpan.FromSeconds(30),
+            () => now);
+        Assert.True(cache.TryAdd("session-a", "key-a", "request-a", "result-a"));
+
+        now = now.AddSeconds(31);
+
+        Assert.False(cache.TryGet("session-a", "key-a", "request-a", out _, out var conflict));
+        Assert.False(conflict);
+        Assert.True(cache.TryAdd("session-a", "key-b", "request-b", "result-b"));
+    }
+
+    [Fact]
+    public void IdempotencyCache_IsolatesCapacityAndKeysByScope()
+    {
+        var cache = new IdempotencyCache<string>(1);
+        Assert.True(cache.TryAdd("session-a", "shared-key", "request-a", "result-a"));
+        Assert.True(cache.TryAdd("session-b", "shared-key", "request-b", "result-b"));
+
+        Assert.True(cache.TryGet("session-a", "shared-key", "request-a", out var first, out var firstConflict));
+        Assert.False(firstConflict);
+        Assert.Equal("result-a", first);
+
+        Assert.True(cache.TryGet("session-b", "shared-key", "request-b", out var second, out var secondConflict));
+        Assert.False(secondConflict);
+        Assert.Equal("result-b", second);
+    }
+
+    [Fact]
+    public void IdempotencyCache_AcceptsOnlyOneConcurrentReservation()
+    {
+        var cache = new IdempotencyCache<string>(8);
+        var accepted = 0;
+
+        Parallel.For(0, 32, _ =>
+        {
+            if (cache.TryAdd("session-a", "shared-key", "request-a", "result-a"))
+            {
+                Interlocked.Increment(ref accepted);
+            }
+        });
+
+        Assert.Equal(1, accepted);
+    }
+
+    [Fact]
+    public void IdempotencyCache_HasCapacityPrunesExpiredEntriesWithinScope()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T00:00:00Z");
+        var cache = new IdempotencyCache<string>(
+            1,
+            TimeSpan.FromSeconds(30),
+            () => now);
+        Assert.True(cache.TryAdd("session-a", "key-a", "request-a", "result-a"));
+        Assert.False(cache.HasCapacity("session-a"));
+        Assert.True(cache.HasCapacity("session-b"));
+
+        now = now.AddSeconds(31);
+
+        Assert.True(cache.HasCapacity("session-a"));
+    }
 }

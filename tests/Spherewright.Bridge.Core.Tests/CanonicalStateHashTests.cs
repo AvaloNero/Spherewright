@@ -93,4 +93,41 @@ public sealed class CanonicalStateHashTests
         snapshot.InserterStackCount = 1;
         Assert.NotEqual(filtered, CanonicalStateHash.Factory(snapshot));
     }
+
+    [Fact]
+    public void FactoryEndpoint_IgnoresProductionProgressAndBuffers_ButBindsConnections()
+    {
+        var snapshot = new FactoryEntitySnapshot
+        {
+            SessionId = "session",
+            PlanetId = 103,
+            ObjectId = 12,
+            ObjectKind = FactoryObjectKinds.Entity,
+            ItemId = 2301,
+            ComponentKind = "miner",
+            Position = new Vector3Snapshot { X = 1f, Y = 2f, Z = 3f },
+            Rotation = new QuaternionSnapshot { W = 1f },
+            Progress = 10,
+        };
+        snapshot.Buffers.Add(new FactoryBufferSnapshot
+        {
+            Role = "mined-output",
+            ItemId = 1001,
+            Count = 1,
+        });
+
+        var endpoint = CanonicalStateHash.FactoryEndpoint(snapshot);
+        snapshot.Progress = 20;
+        snapshot.Buffers[0].Count = 50;
+        Assert.Equal(endpoint, CanonicalStateHash.FactoryEndpoint(snapshot));
+
+        snapshot.Connections.Add(new FactoryConnectionSnapshot
+        {
+            Slot = 0,
+            IsOutput = true,
+            OtherObjectId = 13,
+            OtherSlot = 1,
+        });
+        Assert.NotEqual(endpoint, CanonicalStateHash.FactoryEndpoint(snapshot));
+    }
 }

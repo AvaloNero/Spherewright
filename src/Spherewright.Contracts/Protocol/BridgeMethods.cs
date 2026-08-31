@@ -36,4 +36,8 @@ public static class BridgeMethods
     public const string CommitRefuel = "commit_refuel";
     public const string PrepareSave = "prepare_save";
     public const string CommitSave = "commit_save";
+    public const string PrepareQuarantineReconciliation = "prepare_quarantine_reconciliation";
+    public const string CommitQuarantineReconciliation = "commit_quarantine_reconciliation";
+    public const string PrepareResumeOwnedGame = "prepare_resume_owned_game";
+    public const string CommitResumeOwnedGame = "commit_resume_owned_game";
 }

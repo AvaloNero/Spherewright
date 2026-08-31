@@ -46,4 +46,8 @@ public sealed class ActionResultSnapshot
     public int? AfterTargetAmount { get; set; }
 
     public List<ActionItemDelta> ItemDeltas { get; set; } = new List<ActionItemDelta>();
+
+    public bool ReconciledFromOutcomeUnknown { get; set; }
+
+    public long? ReconciledAtGameTick { get; set; }
 }

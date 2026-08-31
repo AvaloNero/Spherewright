@@ -37,7 +37,9 @@ public sealed class SpherewrightToolsTests
                 "spherewright_commit_harvest",
                 "spherewright_commit_move",
                 "spherewright_commit_new_game",
+                "spherewright_commit_quarantine_reconciliation",
                 "spherewright_commit_refuel",
+                "spherewright_commit_resume_owned_game",
                 "spherewright_commit_save",
                 "spherewright_commit_select_research",
                 "spherewright_commit_transfer",
@@ -61,7 +63,9 @@ public sealed class SpherewrightToolsTests
                 "spherewright_prepare_harvest",
                 "spherewright_prepare_move",
                 "spherewright_prepare_new_game",
+                "spherewright_prepare_quarantine_reconciliation",
                 "spherewright_prepare_refuel",
+                "spherewright_prepare_resume_owned_game",
                 "spherewright_prepare_save",
                 "spherewright_prepare_select_research",
                 "spherewright_prepare_transfer",
@@ -162,6 +166,26 @@ public sealed class SpherewrightToolsTests
         Assert.Equal("sha256:factory", bridge.LastConfigureRequest?.ExpectedFactoryStateHash);
     }
 
+    [Fact]
+    public async Task PrepareQuarantineReconciliation_MapsExactActionAndRevision()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.PrepareQuarantineReconciliationAsync(
+            bridge,
+            "session-quarantine",
+            104,
+            "action-quarantine",
+            445,
+            1,
+            CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("session-quarantine", bridge.LastSessionId);
+        Assert.Equal("action-quarantine", bridge.LastReconciliationRequest?.ActionId);
+        Assert.Equal(445, bridge.LastReconciliationRequest?.ExpectedRevision);
+    }
+
     private static BridgeCallResult<BridgeStatus> SuccessResult()
     {
         return BridgeCallResult<BridgeStatus>.Succeeded(new BridgeStatus
@@ -195,6 +219,8 @@ public sealed class SpherewrightToolsTests
         public ListResourceNodesRequest? LastResourceListRequest { get; private set; }
 
         public PrepareConfigureBuildingRequest? LastConfigureRequest { get; private set; }
+
+        public PrepareQuarantineReconciliationRequest? LastReconciliationRequest { get; private set; }
 
         public Task<BridgeCallResult<BridgeStatus>> GetBridgeStatusAsync(CancellationToken cancellationToken)
         {
@@ -426,6 +452,20 @@ public sealed class SpherewrightToolsTests
             CommitNormalActionRequest request,
             CancellationToken cancellationToken) => Committed(sessionId, request, NormalActionKinds.Save);
 
+        public Task<BridgeCallResult<PreparedNormalAction>> PrepareQuarantineReconciliationAsync(
+            string sessionId,
+            PrepareQuarantineReconciliationRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastReconciliationRequest = request;
+            return Prepared(sessionId, NormalActionKinds.ReconcileQuarantine);
+        }
+
+        public Task<BridgeCallResult<NormalActionCommitResult>> CommitQuarantineReconciliationAsync(
+            string sessionId,
+            CommitNormalActionRequest request,
+            CancellationToken cancellationToken) => Committed(sessionId, request, NormalActionKinds.ReconcileQuarantine);
+
         private Task<BridgeCallResult<PreparedNormalAction>> Prepared(string sessionId, string actionKind)
         {
             LastSessionId = sessionId;
@@ -504,6 +544,29 @@ public sealed class SpherewrightToolsTests
             {
                 ActionId = "action",
                 Accepted = true,
+            }));
+        }
+
+        public Task<BridgeCallResult<PreparedOwnedWorldResumePlan>> PrepareOwnedWorldResumeAsync(
+            PrepareOwnedWorldResumeRequest request,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(BridgeCallResult<PreparedOwnedWorldResumePlan>.Succeeded(new PreparedOwnedWorldResumePlan
+            {
+                Prepared = true,
+                PlanToken = "resume-plan",
+            }));
+        }
+
+        public Task<BridgeCallResult<OwnedWorldResumeResult>> CommitOwnedWorldResumeAsync(
+            CommitOwnedWorldResumeRequest request,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(BridgeCallResult<OwnedWorldResumeResult>.Succeeded(new OwnedWorldResumeResult
+            {
+                ActionId = "resume-action",
+                Accepted = true,
+                State = NormalActionStates.WaitingForGame,
             }));
         }
     }

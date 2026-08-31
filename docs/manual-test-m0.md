@@ -36,7 +36,7 @@ For move, harvest, handcraft, build, transfer, configure, research, refuel, and 
 7. For refuel, prove the package decrement, fuel-chamber increment, and total count/proliferator-point conservation; never write mecha energy directly.
 8. For save, prove `lastOwnedSaveGameTick` is recorded for the exact current owned save name; never enumerate or open another save.
 9. Complete at least one technology and prove the result modal is dismissed through the native `FadeOut()` lifecycle without Computer Use or synthesized input.
-10. Configure two idle empty refinery-output sorters with distinct hydrogen/refined-oil filters; prove component filters, entity signs, topology, and carried-cargo state before allowing production.
+10. Build two refinery-output sorters from the same refinery to different destinations. Prove each completed action resolves the newly built entity even though DSP anchors both sorters at the same source pose. Then configure the idle empty sorters with distinct hydrogen/refined-oil filters and prove component filters, entity signs, topology, and carried-cargo state before allowing production.
 
 ## 4. First-red-matrix run
 
@@ -58,3 +58,12 @@ The audit must contain no item grant, storage/buffer insertion, direct technolog
 2. Exit DSP normally.
 3. Confirm no unhandled Spherewright exception and that the runtime descriptor is removed.
 4. Restore `Safety.AllowWrites=false`.
+
+## 6. 2026-08-31 execution result
+
+- Sections 2–4 completed in the exact owned session `c51a4fd0-5a50-4fb2-8520-f7acf216334d`, planet `104`, peaceful 1x non-sandbox, with healthy writes.
+- The same production lab `256` was observed on runtime recipe `18` with output item `6002` at 0 before inputs, then at 3 and 6 after graphite sorter `257` and hydrogen sorter `258` began normal operation.
+- The complete current upstream chain is summarized in `docs/m0-status.md`; per-operation lessons and two excluded live-belt hydrogen returns are recorded in `docs/experience-ledger.md`.
+- Section 5 step 1 completed through save action `b399facb-48cd-4838-b7ab-9c9762b6def7`, confirmed at game tick `2499658`. Steps 2–4 are deliberately deferred because the user asked to keep developing in this saved world; do not describe the still-running process as a shutdown verification.
+- The M0 acceptance boundary ends at that structured save. A later post-M0 collision recovery used one Computer Use jump after the old deployed movement coordinator had already timed out; it is excluded from Sections 2–5 and from every M0 capability claim. The same world was subsequently saved again at tick `2710106` only to preserve continuation state.
+- Source now includes an offline movement regression: less than 0.75 m displacement over 180 ticks and less than 1 m best-target progress over 600 ticks end the exact owned order early, while fully power-starved actions keep their dedicated 600-tick diagnosis. Move/harvest commits are also single-flight. Full build is 0 warning / 0 error and all 55 tests pass, but live verification is deferred until the current save can be safely resumed with the rebuilt Plugin.

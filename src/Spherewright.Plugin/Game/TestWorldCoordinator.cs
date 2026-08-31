@@ -8,6 +8,7 @@ namespace Spherewright.Plugin.Game;
 
 internal sealed class TestWorldCoordinator
 {
+    private const string IdempotencyScope = "new-game";
     private readonly bool _writesConfigured;
     private readonly GameSessionTracker _sessions;
     private readonly PreparedPlanStore<TestWorldPlanPayload> _plans;
@@ -18,6 +19,7 @@ internal sealed class TestWorldCoordinator
     public TestWorldCoordinator(
         bool writesConfigured,
         int planLifetimeSeconds,
+        int idempotencyRetentionMinutes,
         int idempotencyCapacity,
         GameSessionTracker sessions)
     {
@@ -26,7 +28,9 @@ internal sealed class TestWorldCoordinator
         _plans = new PreparedPlanStore<TestWorldPlanPayload>(
             TimeSpan.FromSeconds(planLifetimeSeconds),
             16);
-        _idempotency = new IdempotencyCache<TestWorldCreationResult>(idempotencyCapacity);
+        _idempotency = new IdempotencyCache<TestWorldCreationResult>(
+            idempotencyCapacity,
+            TimeSpan.FromMinutes(idempotencyRetentionMinutes));
     }
 
     public GameCallResult<PreparedTestWorldPlan> PrepareOnMainThread(PrepareTestWorldRequest request)
@@ -104,7 +108,12 @@ internal sealed class TestWorldCoordinator
         }
 
         var fingerprint = "commit-new-world|" + request.PlanToken;
-        if (_idempotency.TryGet(request.IdempotencyKey, fingerprint, out var replay, out var conflict))
+        if (_idempotency.TryGet(
+            IdempotencyScope,
+            request.IdempotencyKey,
+            fingerprint,
+            out var replay,
+            out var conflict))
         {
             return GameCallResult<TestWorldCreationResult>.Succeeded(CloneAsReplay(replay!));
         }
@@ -125,6 +134,15 @@ internal sealed class TestWorldCoordinator
                 "New-world creation is blocked because Safety.AllowWrites is false.",
                 false,
                 "Enable writes in the Spherewright Plugin config, restart DSP, prepare a new plan, and retry."));
+        }
+
+        if (!_idempotency.HasCapacity(IdempotencyScope))
+        {
+            return GameCallResult<TestWorldCreationResult>.Failed(BridgeError.Create(
+                BridgeErrorCodes.IdempotencyCapacityExceeded,
+                "The idempotency cache has no capacity for another new-world action.",
+                false,
+                "Restart the Plugin before preparing another new-world action; no game load was started."));
         }
 
         if (!_plans.TryTake(request.PlanToken, out var plan, out var expired))
@@ -168,7 +186,7 @@ internal sealed class TestWorldCoordinator
             _sessions.CancelExpectedOwnedSession();
             return GameCallResult<TestWorldCreationResult>.Failed(BridgeError.Create(
                 BridgeErrorCodes.ActionFailed,
-                $"The game rejected ordinary peaceful new-world creation: {exception.GetType().Name}: {exception.Message}",
+                $"The game rejected ordinary peaceful new-world creation ({exception.GetType().Name}).",
                 false,
                 "Inspect the local Spherewright and Unity logs before preparing another plan."));
         }
@@ -183,7 +201,7 @@ internal sealed class TestWorldCoordinator
             StarCount = payload.StarCount,
             State = OwnedSaveStates.WaitingForWorld,
         };
-        if (!_idempotency.TryAdd(request.IdempotencyKey, fingerprint, result))
+        if (!_idempotency.TryAdd(IdempotencyScope, request.IdempotencyKey, fingerprint, result))
         {
             return GameCallResult<TestWorldCreationResult>.Failed(BridgeError.Create(
                 BridgeErrorCodes.IdempotencyCapacityExceeded,
@@ -262,7 +280,7 @@ internal sealed class TestWorldCoordinator
         };
     }
 
-    private static BridgeError? ValidateMainMenuReady()
+    internal static BridgeError? ValidateMainMenuReady()
     {
         var hasGameObject = GameMain.data is not null || GameMain.isRunning || DSPGame.Game != null;
         if (hasGameObject && !DSPGame.IsMenuDemo)

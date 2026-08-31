@@ -34,6 +34,8 @@ public sealed class SessionState
 
     public string WriteHealth { get; set; } = WriteHealthStates.Healthy;
 
+    public string? WriteQuarantineActionId { get; set; }
+
     public List<WriteBlocker> WriteBlockers { get; set; } = new List<WriteBlocker>();
 
     public string OwnedSaveState { get; set; } = OwnedSaveStates.None;
@@ -41,6 +43,10 @@ public sealed class SessionState
     public string? OwnedSaveError { get; set; }
 
     public long? LastOwnedSaveGameTick { get; set; }
+
+    public bool RestartResumeAvailable { get; set; }
+
+    public string? RestartResumeToken { get; set; }
 
     public List<string> Capabilities { get; set; } = new List<string>();
 }

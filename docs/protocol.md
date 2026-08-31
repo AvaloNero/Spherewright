@@ -43,23 +43,31 @@ spherewright_prepare_refuel
 spherewright_commit_refuel
 spherewright_prepare_save
 spherewright_commit_save
+spherewright_prepare_quarantine_reconciliation
+spherewright_commit_quarantine_reconciliation
+spherewright_prepare_resume_owned_game
+spherewright_commit_resume_owned_game
 ```
 
 `prepare_new_game` and `commit_new_game` now describe only a peaceful 1x non-sandbox world. The old sandbox basic-production-line methods are not registered as MCP tools and are excluded from M0.
 
 `spherewright_prepare_configure_building` accepts `production`, `research`, and `sorter-filter` modes. Sorter-filter mode additionally carries `filterItemId`, requires a connected idle empty sorter, and binds its topology, stage, carried cargo, and current filter. The refuel pair binds an exact current player/fuel-chamber snapshot and commits through `Mecha.AutoReplenishFuel`; readback must prove equal-and-opposite count changes and conserved proliferator points. The save pair binds the current owned-session revision and commits only through `GameSave.SaveCurrentGame` with the exact internally retained owned save name. None of these operations can address an external save or inject an item/energy value.
 
+Quarantine reconciliation is not a force-unlock: it is available only for the exact retained outcome-unknown build action and clears quarantine only after the item decrement, all new entity/component identities, and directed topology form one unchanged proof. It never repeats the build. Owned-game resume is likewise not a save picker: it accepts only a protected one-time token, calls DSP's fixed `LastExit` loader, and adopts the payload only when its high-entropy owned identity, minimum tick, planet, peaceful/non-sandbox/1x settings, and source-process shutdown proof all match; the token is then consumed.
+
 The public surface contains no composite red-matrix or legacy sandbox operation. Missing future methods return no simulated data and must not be substituted with historical sandbox code.
 
 ## Request rules
 
-Every save/player/factory request carries the active `sessionId`; planet-bound requests also carry `planetId`. A mutable prepare binds the current complete target/resource state and returns an opaque short-lived plan. Commit carries the plan token and a UUID idempotency key.
+Every save/player/factory request carries the active `sessionId`; planet-bound requests also carry `planetId`. A mutable prepare binds the current complete target/resource state and returns an opaque short-lived plan. Commit carries the plan token and a UUID idempotency key. Factory observations expose both `stateHash` for complete mutable device state and `endpointStateHash` for build connections. Build source/destination requests use `endpointStateHash`, which binds identity, pose, and existing connections without becoming stale solely because a miner, belt, or assembler advances normal production.
 
-New-game creation is the only main-menu mutation and has no session/planet yet. The server generates the save name and fixes peaceful mode, sandbox disabled, and resource multiplier 1x.
+Ordinary sorter construction records any pre-existing same-item entities at the prepared source pose before calling DSP's native prebuild path. Completion excludes those IDs before topology verification, so two legal sorters that share the same building-side position cannot cause the newer action to be attributed to the older sorter.
+
+New-game creation and exact owned-game resume are the only main-menu mutations and have no active session/planet envelope yet. New-game creation generates the save name and fixes peaceful mode, sandbox disabled, and resource multiplier 1x. Resume cannot enumerate or accept a save name and is bound to the one fixed `LastExit` proof above.
 
 A stale session returns `STALE_SESSION`, an unowned session returns `SESSION_NOT_OWNED`, a stale target/resource snapshot returns `STALE_STATE`, and any confirmed or unknown sandbox state blocks gameplay commits.
 
-Responses never contain the Pipe name, authentication token, descriptor path, stack trace, absolute game path, save contents, or raw game component. List methods are bounded and use session/planet/snapshot/filter-bound cursors.
+Responses never contain the Pipe name, bridge authentication token, descriptor path, stack trace, absolute game path, raw save identity/content, or raw game component. Opaque plan tokens and the one-time resume token appear only in their intended authenticated structured fields and must not be copied into logs or evidence documents. List methods are bounded and use session/planet/snapshot/filter-bound cursors.
 
 ## Action semantics
 

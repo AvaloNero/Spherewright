@@ -332,7 +332,7 @@ public static class SpherewrightTools
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Uses DSP's click-build validator to find one clear near-player site for an unlocked building already in inventory. Prepare creates no prebuild and consumes nothing.")]
+    [Description("Uses DSP's click-build validator to find one clear near-player site for an unlocked building already in inventory. Bound source and destination objects use endpointStateHash so ordinary production progress cannot make their unchanged physical topology stale. Prepare creates no prebuild and consumes nothing.")]
     public static async Task<CallToolResult> PrepareBuildAsync(
         IBridgeClient bridgeClient,
         string sessionId,
@@ -561,6 +561,57 @@ public static class SpherewrightTools
         var request = CreateCommitRequest(sessionId, planetId, planToken, idempotencyKey);
         var result = await bridgeClient.CommitSaveAsync(sessionId, request, cancellationToken).ConfigureAwait(false);
         return ToToolResult(result, "DSP confirmed a normal save of the exact active Spherewright-owned world.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_prepare_quarantine_reconciliation",
+        Title = "Prove the exact quarantined action outcome",
+        ReadOnly = false,
+        Destructive = false,
+        Idempotent = false,
+        OpenWorld = false)]
+    [Description("Re-reads only the exact outcome-unknown build named by writeQuarantineActionId and prepares a short-lived proof when its retained item cost, built entities, components, and directed topology are all unambiguous. This never clears quarantine or changes the game.")]
+    public static async Task<CallToolResult> PrepareQuarantineReconciliationAsync(
+        IBridgeClient bridgeClient,
+        string sessionId,
+        int planetId,
+        string actionId,
+        long expectedRevision,
+        int stateHashVersion = 1,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.PrepareQuarantineReconciliationAsync(
+            sessionId,
+            new PrepareQuarantineReconciliationRequest
+            {
+                PlanetId = planetId,
+                ActionId = actionId,
+                ExpectedRevision = expectedRevision,
+                StateHashVersion = stateHashVersion,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Exact quarantine reconciliation proof prepared; quarantine remains active until its matching commit.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_commit_quarantine_reconciliation",
+        Title = "Commit an exact quarantine reconciliation",
+        ReadOnly = false,
+        Destructive = true,
+        Idempotent = true,
+        OpenWorld = false)]
+    [Description("Revalidates the prepared proof and clears write quarantine only when the same retained outcome-unknown action, reason, item cost, entities, components, and topology still match. It is not an unconditional administrative clear.")]
+    public static async Task<CallToolResult> CommitQuarantineReconciliationAsync(
+        IBridgeClient bridgeClient,
+        string sessionId,
+        int planetId,
+        string planToken,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        var request = CreateCommitRequest(sessionId, planetId, planToken, idempotencyKey);
+        var result = await bridgeClient.CommitQuarantineReconciliationAsync(sessionId, request, cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "The exact prior action was proved and its matching write quarantine was cleared.");
     }
 
     [McpServerTool(
@@ -896,6 +947,49 @@ public static class SpherewrightTools
             new CommitTestWorldRequest { PlanToken = planToken, IdempotencyKey = idempotencyKey },
             cancellationToken).ConfigureAwait(false);
         return ToToolResult(result, "Standard peaceful Spherewright world creation accepted.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_prepare_resume_owned_game",
+        Title = "Prepare one-time resume of the exact owned world",
+        ReadOnly = false,
+        Destructive = false,
+        Idempotent = false,
+        OpenWorld = false)]
+    [Description("Validates a protected one-time ticket and only the freshness metadata of DSP's fixed LastExit slot. It never enumerates saves, accepts a save name, or loads anything during prepare.")]
+    public static async Task<CallToolResult> PrepareOwnedWorldResumeAsync(
+        IBridgeClient bridgeClient,
+        string resumeToken,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.PrepareOwnedWorldResumeAsync(
+            new PrepareOwnedWorldResumeRequest { ResumeToken = resumeToken },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "One-time exact owned-world resume plan prepared; no save was loaded.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_commit_resume_owned_game",
+        Title = "Resume the exact normally closed owned world",
+        ReadOnly = false,
+        Destructive = true,
+        Idempotent = true,
+        OpenWorld = false)]
+    [Description("Loads only DSP's fixed LastExit slot through DSPGame.StartGame and adopts it only when the one-time ticket's embedded high-entropy owned name, minimum tick, planet, peaceful/non-sandbox state, and 1x resources all match.")]
+    public static async Task<CallToolResult> CommitOwnedWorldResumeAsync(
+        IBridgeClient bridgeClient,
+        string planToken,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.CommitOwnedWorldResumeAsync(
+            new CommitOwnedWorldResumeRequest
+            {
+                PlanToken = planToken,
+                IdempotencyKey = idempotencyKey,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "DSP accepted the exact fixed LastExit resume; poll actionId for provenance validation and high-entropy resave.");
     }
 
     private static CommitNormalActionRequest CreateCommitRequest(

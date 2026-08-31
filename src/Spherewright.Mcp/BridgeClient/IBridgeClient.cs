@@ -149,6 +149,16 @@ public interface IBridgeClient
         CommitNormalActionRequest request,
         CancellationToken cancellationToken);
 
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareQuarantineReconciliationAsync(
+        string sessionId,
+        PrepareQuarantineReconciliationRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitQuarantineReconciliationAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
     Task<BridgeCallResult<ListAssemblersResult>> ListAssemblersAsync(
         string sessionId,
         ListAssemblersRequest request,
@@ -169,5 +179,13 @@ public interface IBridgeClient
 
     Task<BridgeCallResult<TestWorldCreationResult>> CommitTestWorldAsync(
         CommitTestWorldRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedOwnedWorldResumePlan>> PrepareOwnedWorldResumeAsync(
+        PrepareOwnedWorldResumeRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<OwnedWorldResumeResult>> CommitOwnedWorldResumeAsync(
+        CommitOwnedWorldResumeRequest request,
         CancellationToken cancellationToken);
 }

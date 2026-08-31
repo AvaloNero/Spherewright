@@ -108,6 +108,10 @@ public sealed class FactoryEntitySnapshot
     public string StateHash { get; set; } = string.Empty;
 
     public int StateHashVersion { get; set; } = 1;
+
+    public string EndpointStateHash { get; set; } = string.Empty;
+
+    public int EndpointStateHashVersion { get; set; } = 1;
 }
 
 public sealed class QuaternionSnapshot

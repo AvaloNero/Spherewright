@@ -261,6 +261,26 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
         CancellationToken cancellationToken) =>
         CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitSave, sessionId, request, cancellationToken);
 
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareQuarantineReconciliationAsync(
+        string sessionId,
+        PrepareQuarantineReconciliationRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<PrepareQuarantineReconciliationRequest, PreparedNormalAction>(
+            BridgeMethods.PrepareQuarantineReconciliation,
+            sessionId,
+            request,
+            cancellationToken);
+
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitQuarantineReconciliationAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(
+            BridgeMethods.CommitQuarantineReconciliation,
+            sessionId,
+            request,
+            cancellationToken);
+
     public async Task<BridgeCallResult<ListAssemblersResult>> ListAssemblersAsync(
         string sessionId,
         ListAssemblersRequest request,
@@ -313,6 +333,28 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
     {
         return await CallAsync<CommitTestWorldRequest, TestWorldCreationResult>(
             BridgeMethods.CommitNewGame,
+            null,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<PreparedOwnedWorldResumePlan>> PrepareOwnedWorldResumeAsync(
+        PrepareOwnedWorldResumeRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<PrepareOwnedWorldResumeRequest, PreparedOwnedWorldResumePlan>(
+            BridgeMethods.PrepareResumeOwnedGame,
+            null,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<OwnedWorldResumeResult>> CommitOwnedWorldResumeAsync(
+        CommitOwnedWorldResumeRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<CommitOwnedWorldResumeRequest, OwnedWorldResumeResult>(
+            BridgeMethods.CommitResumeOwnedGame,
             null,
             request,
             cancellationToken).ConfigureAwait(false);

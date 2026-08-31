@@ -383,8 +383,9 @@ M0 不自动回滚。
 - 允许读取和 prepare。
 - 所有 commit 返回 `WRITE_SUBSYSTEM_QUARANTINED`。
 - prepare 的 `commitBlockers` 必须包含 quarantine。
-- M0 不提供远程解除隔离工具。
-- 只有退出并重新载入存档形成新 session，或重启 Plugin，才能解除。
+- 不提供通用“强制解除”、客户端声明成功、猜测字段回滚或重放原动作的工具。
+- 仅当当前进程仍保留造成隔离的精确 action record，且通过新的两阶段 reconciliation 对实际物品成本、全部新实体/组件和有向拓扑得到唯一 proof 时，才允许把该 `outcome_unknown` 收敛为成功并清除隔离；任一歧义都保持 quarantine。reconciliation 本身不得再次执行原写入。
+- 若当前进程无法保留上述 proof，只允许通过受保护的一次性票据、固定 `LastExit`、高熵 owned save identity、最小 tick、planet、和平、非沙盒和 1x 全部匹配后恢复同一存档形成新 session；不得枚举、选择或尝试其他存档。
 - 审计日志必须记录触发原因，但不得包含认证令牌或 planToken。
 
 ### 2.11 MCP stdout 禁止写日志
@@ -880,7 +881,7 @@ resourceMultiplier == 1.0
 - 不枚举 Save 目录、游戏读档列表或任何既有存档名。
 - 不载入非 Spherewright 创建并登记的存档。
 - 当前进程只通过精确 `GameData` 对象身份拥有新建 session；进入其他 session 时只返回受限 bridge 状态，不读取 save name、星球、玩家、背包或工厂内容。
-- 若未来支持重启后续玩，只能通过 Spherewright 自己生成的高熵 save name 和独立所有权清单精确载入；该能力不作为 M0 完成前提。
+- 重启后续玩只能通过 Spherewright 自己生成的高熵 save name、受保护的一次性恢复票据和固定 `LastExit` 精确载入；必须校验来源进程已退出、最低 game tick、planet、和平、非沙盒和 1x，成功后立即消费票据。不得枚举或让客户端选择存档。
 - 切档、退出、Plugin 重启使所有未接受 planToken 失效；每次载入生成新 `sessionId`。
 
 `get_session_state` 至少返回：所有权、session/planet/tick、`combatModeStatus`、`sandboxModeStatus`、资源倍率、write health、write blockers 和当前能力。和平或沙盒状态为 unknown 时 fail-closed；沙盒为 enabled 时所有 M0 commit 返回 `SANDBOX_MODE_ACTIVE`。
@@ -1245,6 +1246,20 @@ spherewright_get_m0_progress
 - 生成文件必须可由脚本重建。
 - 引用社区代码时记录仓库、文件、许可证和采用方式；不得把 GPL 实现复制进计划采用宽松许可证的代码库。
 - 用户未确认许可证前不创建 `LICENSE`。
+
+### 11.1 实现经验账本与持续复验
+
+`docs/experience-ledger.md` 是实现、游戏 API、运行环境、安全处置和正常玩法控制经验的权威账本。编码 Agent 必须：
+
+- 将本次实现中产生的每一条可复用经验在同一次执行内落盘；涉及安全边界、动作结果不确定或下一次写入前提的经验，必须在下一次游戏写入前先记录。
+- 每条经验至少记录：稳定 ID、日期、状态、适用范围、当前结论、直接证据、限制或反例、复验触发条件、关联代码/测试/文档和最近复验时间。
+- 只使用 `observed | validated | superseded | invalidated` 四种状态。单次现场现象先记为 `observed`；只有独立复读、测试或当前版本实机证据足以支持适用范围时才升级为 `validated`。
+- 新证据与旧经验冲突时，先降低旧条目的状态或标记 `superseded` / `invalidated`，再写当前结论；不得让相互矛盾的“现行结论”并存。保留修订记录和替代条目链接，不静默抹去历史。
+- 在每个实现批次结束、每累计 10 个成功游戏写动作、Plugin 部署或重启、DSP/程序集版本变化、写入隔离或恢复、M0 Gate 状态变化以及最终交接前，复核新增条目和所有受影响旧条目；以先到的触发点为准。
+- 复验失败时立即更新账本及受影响的计划/安全判断，不能继续依赖已经失效的经验。
+- 账本只保存脱敏证据；不得写入 token、存档内容、runtime descriptor、用户私密路径或其他被本文件禁止提交的材料。
+
+`docs/research/` 保存程序集/API 的详细证据，`docs/m0-status.md` 保存 Gate 状态；经验账本链接它们，但不以摘要替代原始研究或验收证据。
 
 ---
 

@@ -183,6 +183,28 @@ function Get-InventoryCount([object]$player, [string]$itemName) {
     return [int]$entry.count
 }
 
+function Wait-PlayerActionStateStable {
+    $deadline = (Get-Date).AddSeconds(30)
+    $previousHash = $null
+    do {
+        $player = Get-PlayerSnapshot
+        if ($previousHash -and [string]$player.stateHash -eq $previousHash) {
+            return $player
+        }
+
+        $previousHash = [string]$player.stateHash
+        Start-Sleep -Milliseconds 500
+    } while ((Get-Date) -lt $deadline)
+
+    throw 'Player action state did not stabilize after the newly created world finished loading.'
+}
+
+# Skip-prologue world creation can expose the owned GameData before Icarus has
+# completed the ordinary landing transition. Preparing against two different
+# landing positions is correctly stale, so wait for two identical public
+# action hashes before the first mutable bootstrap observation.
+$null = Wait-PlayerActionStateStable
+
 $initialProgression = Get-ProgressionSnapshot
 $electromagnetismState = $initialProgression.technologies |
     Where-Object name -eq '电磁学' |

@@ -6,6 +6,7 @@ public static class BridgeMethods
     public const string GetSessionState = "get_session_state";
     public const string GetPlayerState = "get_player_state";
     public const string GetProgressionState = "get_progression_state";
+    public const string GetLocalStarSystem = "get_local_star_system";
     public const string GetRecipeCatalog = "get_recipe_catalog";
     public const string ListResourceNodes = "list_resource_nodes";
     public const string InspectResourceNode = "inspect_resource_node";
@@ -20,6 +21,8 @@ public static class BridgeMethods
     public const string CommitNewGame = "commit_new_game";
     public const string PrepareMove = "prepare_move";
     public const string CommitMove = "commit_move";
+    public const string PrepareInterplanetaryFlight = "prepare_interplanetary_flight";
+    public const string CommitInterplanetaryFlight = "commit_interplanetary_flight";
     public const string PrepareHarvest = "prepare_harvest";
     public const string CommitHarvest = "commit_harvest";
     public const string PrepareHandcraft = "prepare_handcraft";
@@ -40,4 +43,6 @@ public static class BridgeMethods
     public const string CommitQuarantineReconciliation = "commit_quarantine_reconciliation";
     public const string PrepareResumeOwnedGame = "prepare_resume_owned_game";
     public const string CommitResumeOwnedGame = "commit_resume_owned_game";
+    public const string PrepareReloadFlightCheckpoint = "prepare_reload_flight_checkpoint";
+    public const string CommitReloadFlightCheckpoint = "commit_reload_flight_checkpoint";
 }

@@ -48,9 +48,9 @@ dotnet test Spherewright.sln --no-build --no-restore
 ## Current verification result
 
 - Full solution build: succeeded with 0 warnings and 0 errors.
-- Automated tests after the latest M0 and movement-safety fixes: 55 passed (Contracts 3, Bridge.Core 42, MCP 10).
+- Automated tests after the latest movement, same-star flight, and reusable checkpoint-reload fixes: 57 passed (Contracts 3, Bridge.Core 42, MCP 12).
 - BepInEx load: verified in DSP at the main menu and in a current-process-created world.
-- MCP Inspector: the 38-tool surface compiles and is covered by registration tests. The current owned world runtime-verified explicit save, research-result acknowledgement, normal refuel, exact-proof quarantine reconciliation, one-time LastExit resume, and both refinery-output sorter filters.
+- MCP Inspector: the 43-tool surface compiles and is covered by registration tests. The current owned world runtime-verified explicit save, research-result acknowledgement, normal refuel, exact-proof quarantine reconciliation, one-time LastExit resume, and both refinery-output sorter filters. Same-star flight and reusable exact pre-flight checkpoint reload are offline-built/tested only and await a safe deployment into a process that can prove continuation of the same save.
 - Historical sandbox basic line: six entities built and reread; the installed DLL converted 6 iron ore into 6 iron ingots under wind power, following an earlier 20-to-20 run. This is not evidence for revised M0 Gates B-D.
 - Revised ordinary mode: live verification created a peaceful 1x non-sandbox owned world and exercised structured research plus normal drone-built power, copper/iron/coal/oil extraction, logistics, smelting, electromagnetic-matrix research, graphite, steel, oil refining, co-product separation, and energy-matrix production. The earlier co-located-sorter attribution failure was repaired and live-validated after strict same-world recovery; lab `256` then produced energy matrices `0 -> 3 -> 6`, and the exact owned world was saved normally. The same live lab later accumulated 10 before its output buffer filled.
 
@@ -64,6 +64,6 @@ The current checkout was re-audited on 2026-08-30 and the live milestone evidenc
 - Steam auto-detection initially returned the same DSP root twice with different path casing. `locate-dsp.ps1` now de-duplicates validated roots with Windows case-insensitive path semantics.
 - Steam build ID remains `23109513`; `Assembly-CSharp.dll` remains SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`, matching the previously researched current-version API baseline.
 - After explicit user approval, official `xiaoye97-BepInEx-5.4.17` was installed and its `BepInEx.dll` hash matched the recorded baseline. The development Plugin loaded successfully and created exactly one user-authorized validation world.
-- The full solution builds with 0 warnings and 0 errors. The current suite passes 55 tests: Contracts 3, Bridge.Core 42, MCP 10.
+- The full solution builds with 0 warnings and 0 errors. The current suite passes 57 tests: Contracts 3, Bridge.Core 42, MCP 12.
 - The installed Plugin's earlier positional build readback selected an older sorter when two refinery outputs shared an exact source pose. Source now snapshots and excludes pre-existing co-located sorter IDs; the `211`/`213` regression is covered offline, and the corrected DLL was later deployed through the strict recovery path and live-validated with distinct co-located outputs `164` and `181` in the current healthy session.
 - Source now includes a pure movement-progress watchdog and player-order single-flight. Five Core tests cover the watchdog, and the full Plugin compiles against the current game DLL; this latest movement change is intentionally not hot-deployed into the still-running healthy process.

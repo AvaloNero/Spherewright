@@ -50,4 +50,10 @@ public sealed class ActionResultSnapshot
     public bool ReconciledFromOutcomeUnknown { get; set; }
 
     public long? ReconciledAtGameTick { get; set; }
+
+    public string? FlightCheckpointId { get; set; }
+
+    public string? FlightCheckpointReloadToken { get; set; }
+
+    public long? FlightCheckpointGameTick { get; set; }
 }

@@ -13,6 +13,7 @@ spherewright_get_status
 spherewright_get_session_state
 spherewright_get_player_state
 spherewright_get_progression_state
+spherewright_get_local_star_system
 spherewright_get_recipe_catalog
 spherewright_get_build_catalog
 spherewright_get_power_summary
@@ -27,6 +28,8 @@ spherewright_prepare_new_game
 spherewright_commit_new_game
 spherewright_prepare_move
 spherewright_commit_move
+spherewright_prepare_interplanetary_flight
+spherewright_commit_interplanetary_flight
 spherewright_prepare_harvest
 spherewright_commit_harvest
 spherewright_prepare_handcraft
@@ -47,13 +50,17 @@ spherewright_prepare_quarantine_reconciliation
 spherewright_commit_quarantine_reconciliation
 spherewright_prepare_resume_owned_game
 spherewright_commit_resume_owned_game
+spherewright_prepare_reload_flight_checkpoint
+spherewright_commit_reload_flight_checkpoint
 ```
 
 `prepare_new_game` and `commit_new_game` now describe only a peaceful 1x non-sandbox world. The old sandbox basic-production-line methods are not registered as MCP tools and are excluded from M0.
 
-`spherewright_prepare_configure_building` accepts `production`, `research`, and `sorter-filter` modes. Sorter-filter mode additionally carries `filterItemId`, requires a connected idle empty sorter, and binds its topology, stage, carried cargo, and current filter. The refuel pair binds an exact current player/fuel-chamber snapshot and commits through `Mecha.AutoReplenishFuel`; readback must prove equal-and-opposite count changes and conserved proliferator points. The save pair binds the current owned-session revision and commits only through `GameSave.SaveCurrentGame` with the exact internally retained owned save name. None of these operations can address an external save or inject an item/energy value.
+`spherewright_prepare_configure_building` accepts `production`, `research`, and `sorter-filter` modes. Sorter-filter mode additionally carries `filterItemId`, requires a connected idle empty sorter, and binds its topology, stage, carried cargo, and current filter. The refuel pair binds an exact current player/fuel-chamber snapshot and commits through `Mecha.AutoReplenishFuel`; readback must prove equal-and-opposite count changes and conserved proliferator points. The normal save pair binds the current owned-session revision and commits only through `GameSave.SaveCurrentGame` with the exact internally retained primary save name. An interplanetary-flight commit first saves a separately named internal checkpoint, verifies its header tick, and persists its reusable provenance ticket before native flight begins. None of these operations can address an external save or inject an item/energy value.
 
 Quarantine reconciliation is not a force-unlock: it is available only for the exact retained outcome-unknown build action and clears quarantine only after the item decrement, all new entity/component identities, and directed topology form one unchanged proof. It never repeats the build. Owned-game resume is likewise not a save picker: it accepts only a protected one-time token, calls DSP's fixed `LastExit` loader, and adopts the payload only when its high-entropy owned identity, minimum tick, planet, peaceful/non-sandbox/1x settings, and source-process shutdown proof all match; the token is then consumed.
+
+Flight-checkpoint reload is a narrower repeatable recovery path. It accepts only the protected token created immediately before that flight, never accepts or enumerates save names, revalidates the internally generated name and exact saved tick, and loads through `DSPGame.StartGame`. Adoption additionally requires the embedded primary owned-save identity, origin planet, peaceful/non-sandbox/1x settings, and exact checkpoint ID. The token remains reusable so another failed attempt returns to the same checkpoint rather than creating or guessing another save.
 
 The public surface contains no composite red-matrix or legacy sandbox operation. Missing future methods return no simulated data and must not be substituted with historical sandbox code.
 
@@ -63,11 +70,11 @@ Every save/player/factory request carries the active `sessionId`; planet-bound r
 
 Ordinary sorter construction records any pre-existing same-item entities at the prepared source pose before calling DSP's native prebuild path. Completion excludes those IDs before topology verification, so two legal sorters that share the same building-side position cannot cause the newer action to be attributed to the older sorter.
 
-New-game creation and exact owned-game resume are the only main-menu mutations and have no active session/planet envelope yet. New-game creation generates the save name and fixes peaceful mode, sandbox disabled, and resource multiplier 1x. Resume cannot enumerate or accept a save name and is bound to the one fixed `LastExit` proof above.
+New-game creation and exact owned-game resume are the ordinary main-menu mutations and have no active session/planet envelope yet. Flight-checkpoint reload may replace only the exact matching active owned game or run from an idle main menu; it can interrupt no active normal action except its own bound flight. New-game creation generates the save name and fixes peaceful mode, sandbox disabled, and resource multiplier 1x. Neither recovery path can enumerate or accept a save name.
 
 A stale session returns `STALE_SESSION`, an unowned session returns `SESSION_NOT_OWNED`, a stale target/resource snapshot returns `STALE_STATE`, and any confirmed or unknown sandbox state blocks gameplay commits.
 
-Responses never contain the Pipe name, bridge authentication token, descriptor path, stack trace, absolute game path, raw save identity/content, or raw game component. Opaque plan tokens and the one-time resume token appear only in their intended authenticated structured fields and must not be copied into logs or evidence documents. List methods are bounded and use session/planet/snapshot/filter-bound cursors.
+Responses never contain the Pipe name, bridge authentication token, descriptor path, stack trace, absolute game path, raw save identity/content, or raw game component. Opaque plan tokens plus one-time resume/reusable checkpoint tokens appear only in their intended authenticated structured fields and must not be copied into logs or evidence documents. List methods are bounded and use session/planet/snapshot/filter-bound cursors.
 
 ## Action semantics
 

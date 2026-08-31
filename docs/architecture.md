@@ -19,7 +19,7 @@ External Agent
 
 The Pipe worker parses bounded DTO envelopes and enqueues immutable commands. `SpherewrightBridgeHost.PumpMainThread` updates session identity and runs a bounded number of commands inside a frame budget. Results leave the main thread only as Spherewright-owned deep copies.
 
-Save privacy is based on creation provenance and exact object identity. The Plugin arms only its own new-game transition and binds the resulting `GameData`; an unrelated loaded session receives restricted status without save/player/factory reads. M0 does not enumerate or load existing saves.
+Save privacy is based on creation provenance and exact object identity. The Plugin arms only its own new-game transition and binds the resulting `GameData`; an unrelated loaded session receives restricted status without save/player/factory reads. M0 does not enumerate or load existing saves. Post-M0 flight recovery is limited to the separate checkpoint Spherewright itself creates immediately before launch: an internal name and reusable protected token bind its exact tick, primary owned identity, origin and destination, and no public request can supply a save name.
 
 For M0, all gameplay mutations must use current-version normal business paths:
 
@@ -35,6 +35,8 @@ move owned fuel into the mecha fuel chamber through the native transfer path
 save only the exact current process-owned world through DSP's normal save API
 observe production, logistics, power, and technology
 ```
+
+Post-M0 same-star flight remains an ordinary game-tick action. Its commit first proves a separate internal checkpoint, then uses native `Fly`/`Sail` transitions and paid sail-energy adjustments; it never assigns player position or performs a planet transfer. Exact checkpoint reload is a separate two-stage mutation that may replace only the matching owned game and remains repeatable until that flight succeeds.
 
 The external Agent composes these primitives to reach the first red matrix. Spherewright does not contain an autonomous red-matrix planner or a one-click completion method.
 

@@ -6,6 +6,7 @@ namespace Spherewright.Contracts.Actions;
 public static class NormalActionKinds
 {
     public const string Move = "move";
+    public const string InterplanetaryFlight = "interplanetary-flight";
     public const string Harvest = "harvest";
     public const string Handcraft = "handcraft";
     public const string SelectResearch = "select-research";
@@ -192,6 +193,21 @@ public sealed class PrepareSaveRequest
     public int PlanetId { get; set; }
 
     public long ExpectedRevision { get; set; }
+
+    public int StateHashVersion { get; set; } = 1;
+}
+
+public sealed class PrepareInterplanetaryFlightRequest
+{
+    public int PlanetId { get; set; }
+
+    public int DestinationPlanetId { get; set; }
+
+    public string ExpectedPlayerStateHash { get; set; } = string.Empty;
+
+    public string ExpectedStarSystemStateHash { get; set; } = string.Empty;
+
+    public double MinimumCoreEnergyRatio { get; set; } = 0.95d;
 
     public int StateHashVersion { get; set; } = 1;
 }

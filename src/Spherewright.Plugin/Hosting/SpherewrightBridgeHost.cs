@@ -71,14 +71,21 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             identity.BridgeInstanceId,
             gameVersion,
             logger);
-        var sessionTracker = new GameSessionTracker(configuration.AllowWrites, gameVersion, resumeTickets, logger);
+        var flightCheckpoints = new FlightCheckpointStore(identity.BridgeInstanceId, gameVersion, logger);
+        var sessionTracker = new GameSessionTracker(
+            configuration.AllowWrites,
+            gameVersion,
+            resumeTickets,
+            flightCheckpoints,
+            logger);
         var gameStateReader = new GameStateReader(sessionTracker);
         var normalActionCoordinator = new NormalGameActionCoordinator(
             configuration.PlanTokenLifetimeSeconds,
             configuration.IdempotencyRetentionMinutes,
             configuration.MaxIdempotencyEntriesPerSession,
             sessionTracker,
-            gameStateReader);
+            gameStateReader,
+            flightCheckpoints);
         var researchResultAutoAcknowledger = new ResearchResultAutoAcknowledger(
             configuration.AutoAcknowledgeResearchResults,
             logger);
@@ -95,6 +102,14 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             configuration.MaxIdempotencyEntriesPerSession,
             sessionTracker,
             resumeTickets);
+        var flightCheckpointReloadCoordinator = new FlightCheckpointReloadCoordinator(
+            configuration.AllowWrites,
+            configuration.PlanTokenLifetimeSeconds,
+            configuration.IdempotencyRetentionMinutes,
+            configuration.MaxIdempotencyEntriesPerSession,
+            sessionTracker,
+            flightCheckpoints,
+            normalActionCoordinator);
         var descriptorPublisher = new RuntimeDescriptorPublisher(configuration.RuntimeDescriptorDirectory, logger);
         var pipeServer = new NamedPipeBridgeServer(
             identity,
@@ -106,6 +121,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             gameStateReader,
             testWorldCoordinator,
             ownedWorldResumeCoordinator,
+            flightCheckpointReloadCoordinator,
             normalActionCoordinator,
             logger);
         var descriptor = new BridgeRuntimeDescriptor

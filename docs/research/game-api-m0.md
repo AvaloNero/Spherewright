@@ -149,6 +149,25 @@ public static bool GameSave.SaveCurrentGame(string saveName)
 
 The explicit save action binds the active owned session, local planet, current revision, and the high-entropy save name retained internally when Spherewright created that world. Commit calls `GameSave.SaveCurrentGame` only with that exact identity and records `lastOwnedSaveGameTick` after a true return. The path does not enumerate a save directory, discover save names, open a save, or accept a client-provided save name. It is compile/Core/MCP covered and runtime-validated repeatedly in the current owned world, including the M0 acceptance save at tick `2499658` and the later continuation save at tick `2710106`.
 
+## Native same-star flight and reusable pre-flight checkpoint
+
+Targeted current-assembly decompilation additionally confirmed:
+
+```text
+public static bool GameSave.SaveCurrentGame(string saveName)
+public static void GameSave.ReadHeader(string saveName, bool readImage, out GameSaveHeader header)
+public static void DSPGame.StartGame(string loadFile)
+public void PlayerMove_Walk.SwitchToFly()
+public double PlayerMove_Sail.UseSailEnergy(double acc)
+public void PlayerMove_Sail.UseSailEnergy(ref VectorLF3 delta, double costRatio)
+```
+
+The flight action resolves only planets in the current star, requires Drive Engine level 2, a living grounded player, no active player order, a high core-energy ratio, and a conservative core/reactor/fuel energy budget. It enters DSP's native `Fly`/`Sail` movement states, continuously targets the destination's live universal position, and uses `PlayerMove_Sail.UseSailEnergy` for every steering, acceleration, or braking velocity delta. The game continues to integrate position, collision, gravity, energy generation/consumption, and landing on ordinary ticks; the action contains no planet transfer, teleport, fast-travel call, or direct position assignment. Exceeding the conservative duration estimate does not abandon control while the player is still in space.
+
+The first commit toward a destination performs a strictly ordered checkpoint transaction before `SwitchToFly`: generate an internal high-entropy `Spherewright_PreFlight_*` slot; call `SaveCurrentGame`; read the header and require its `gameTick` to equal the just-saved tick; atomically persist a current-user-protected ticket containing checkpoint ID/token, internal slot, embedded primary owned-save identity, source session/revision, origin/destination, game version and state hashes; then bind that ticket to the action. If any step fails, native launch does not start. A retry immediately after loading that checkpoint reuses it instead of creating a newer save.
+
+Checkpoint reload has its own two-phase surface and never accepts a save name. Prepare requires the protected reusable token and revalidates the exact internal file/header; commit preflights idempotency capacity, permits interruption only of the flight bound to that checkpoint, arms exact-session adoption, and calls `DSPGame.StartGame` with the ticket's internal slot. The newly loaded payload is adopted only when `DSPGame.LoadFile`, the embedded primary owned-save name, saved tick, origin planet, peaceful/non-sandbox/1x settings, and checkpoint ID agree. The ticket is deliberately not consumed, so repeated failed attempts load the same pre-flight state. This complete path builds with MCP registration/mapping coverage but is not yet live-deployed in the current healthy old-Plugin process.
+
 ## Exact player-order ownership and termination
 
 Targeted Mono.Cecil inspection of the current assembly confirmed:
@@ -249,4 +268,4 @@ Commit action `9170d11c-e458-4d11-b1d1-a406b818d890` created and reread entities
 
 After the final partial-build rollback hardening, a second fresh current-process world verified the installed final DLL itself. Action `e77fd86a-2e5f-474b-a1a4-f845252be221` again created entities 1 through 6, advanced revision 1 to 2, saved successfully, and converted 6 iron ore into 6 iron ingots. Structure, connection, recipe, and power-network checks were all true, and a same-key retry returned `idempotentReplay=true` without a second mutation.
 
-No pre-existing save was enumerated, loaded, or read during this research or runtime verification. The ordinary non-sandbox world and structured observation path have live runtime verification; normal-play actions and the complete first-red-matrix path do not yet.
+No unrelated pre-existing save was enumerated, loaded, or read during this research or runtime verification. The ordinary non-sandbox world, structured observation, normal-play actions and complete first-red-matrix path have live runtime verification. Same-star flight and its exact reusable checkpoint reload currently have assembly, compile and automated MCP evidence only; live validation waits for a safe same-save Plugin deployment.

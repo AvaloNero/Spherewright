@@ -3,6 +3,7 @@ using System.Text;
 using Spherewright.Bridge.Core.Progression;
 using Spherewright.Bridge.Core.Safety;
 using Spherewright.Bridge.Core.Snapshots;
+using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Players;
@@ -1364,6 +1365,74 @@ internal sealed class GameStateReader
         }
     }
 
+    public GameCallResult<LocalStarSystemSnapshot> GetLocalStarSystemOnMainThread(
+        string? requestedSessionId,
+        LocalPlanetRequest request)
+    {
+        var accessError = ValidateOwnedPlanetOnMainThread(requestedSessionId, request.PlanetId, out _);
+        if (accessError is not null)
+        {
+            return GameCallResult<LocalStarSystemSnapshot>.Failed(accessError);
+        }
+
+        var player = GameMain.mainPlayer;
+        var galaxy = GameMain.galaxy;
+        var localPlanet = GameMain.localPlanet;
+        var localStar = GameMain.localStar;
+        if (player is null || galaxy is null || localPlanet is null || localStar?.planets is null)
+        {
+            return GameCallResult<LocalStarSystemSnapshot>.Failed(NotReady(
+                "The local star system is not ready in the owned ordinary world."));
+        }
+
+        var planets = new List<PlanetSnapshot>();
+        foreach (var planet in localStar.planets.Where(candidate => candidate is not null).OrderBy(candidate => candidate.id))
+        {
+            var theme = LDB.themes.Select(planet.theme);
+            var resources = CapturePotentialResourceTypes(theme);
+            var universalPosition = planet.uPosition;
+            planets.Add(new PlanetSnapshot
+            {
+                PlanetId = planet.id,
+                Name = planet.displayName,
+                PlanetType = planet.type.ToString(),
+                ThemeId = planet.theme,
+                ThemeName = theme?.displayName ?? string.Empty,
+                IsCurrentPlanet = planet.id == localPlanet.id,
+                IsBirthPlanet = planet.id == galaxy.birthPlanetId,
+                IsGasGiant = planet.type == EPlanetType.Gas,
+                FactoryLoaded = planet.factoryLoaded,
+                RealRadius = planet.realRadius,
+                OrbitRadius = planet.orbitRadius,
+                DistanceFromPlayer = (planet.uPosition - player.uPosition).magnitude,
+                UniversalPosition = new UniversalPositionSnapshot
+                {
+                    X = universalPosition.x,
+                    Y = universalPosition.y,
+                    Z = universalPosition.z,
+                },
+                PotentialResourceTypes = resources,
+            });
+        }
+
+        var result = new LocalStarSystemSnapshot
+        {
+            SessionId = _sessions.SessionId!,
+            LocalPlanetId = localPlanet.id,
+            StarId = localStar.id,
+            StarName = localStar.displayName,
+            CapturedAtGameTick = GameMain.gameTick,
+            Planets = planets,
+        };
+        result.StateHash = CanonicalStateHash.Combine(
+            "local-star-system",
+            result.SessionId,
+            result.StarId,
+            string.Join("|", planets.Select(planet =>
+                $"{planet.PlanetId}:{planet.Name}:{planet.PlanetType}:{planet.ThemeId}:{planet.IsGasGiant}:{string.Join(",", planet.PotentialResourceTypes)}")));
+        return GameCallResult<LocalStarSystemSnapshot>.Succeeded(result);
+    }
+
     private static void CaptureTank(
         PlanetFactory factory,
         ref EntityData entity,
@@ -1659,6 +1728,34 @@ internal sealed class GameStateReader
         return (componentKind is null
                 || string.Equals(snapshot.ComponentKind, componentKind, StringComparison.OrdinalIgnoreCase))
             && (!itemId.HasValue || snapshot.ItemId == itemId.Value);
+    }
+
+    private static List<string> CapturePotentialResourceTypes(ThemeProto? theme)
+    {
+        if (theme is null)
+        {
+            return new List<string>();
+        }
+
+        var veinTypes = new SortedSet<int>();
+        var regular = theme.VeinSpot ?? Array.Empty<int>();
+        for (var index = 0; index < regular.Length && index + 1 < (int)EVeinType.Max; index++)
+        {
+            if (regular[index] > 0)
+            {
+                veinTypes.Add(index + 1);
+            }
+        }
+
+        foreach (var veinType in theme.RareVeins ?? Array.Empty<int>())
+        {
+            if (veinType > 0 && veinType < (int)EVeinType.Max)
+            {
+                veinTypes.Add(veinType);
+            }
+        }
+
+        return veinTypes.Select(value => ((EVeinType)value).ToString()).ToList();
     }
 
     private static Vector3Snapshot CaptureVector(UnityEngine.Vector3 value)

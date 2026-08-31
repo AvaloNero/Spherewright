@@ -3,6 +3,7 @@ using System.Text.Json;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using Spherewright.Contracts.Actions;
+using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Resources;
 using Spherewright.Contracts.Sessions;
@@ -109,6 +110,27 @@ public static class SpherewrightTools
             new LocalPlanetRequest { PlanetId = planetId },
             cancellationToken).ConfigureAwait(false);
         return ToToolResult(result, "Technology progression captured from the owned ordinary world.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_get_local_star_system",
+        Title = "Get planets in the current star system",
+        ReadOnly = true,
+        Destructive = false,
+        Idempotent = true,
+        OpenWorld = false)]
+    [Description("Returns the current star's planets, live distances, non-generating theme-based potential resources, and stable planet identity. It does not generate or inspect unvisited factories.")]
+    public static async Task<CallToolResult> GetLocalStarSystemAsync(
+        IBridgeClient bridgeClient,
+        string sessionId,
+        int planetId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.GetLocalStarSystemAsync(
+            sessionId,
+            new LocalPlanetRequest { PlanetId = planetId },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Current-star planet catalog captured without generating unvisited factories.");
     }
 
     [McpServerTool(
@@ -670,6 +692,61 @@ public static class SpherewrightTools
     }
 
     [McpServerTool(
+        Name = "spherewright_prepare_interplanetary_flight",
+        Title = "Prepare a normal same-star planet flight",
+        ReadOnly = false,
+        Destructive = false,
+        Idempotent = false,
+        OpenWorld = false)]
+    [Description("Binds a non-gas destination in the current star, Drive Engine level 2, a nearly full core, usable normal fuel, and stable player/star-system snapshots. Prepare never launches or changes movement.")]
+    public static async Task<CallToolResult> PrepareInterplanetaryFlightAsync(
+        IBridgeClient bridgeClient,
+        string sessionId,
+        int planetId,
+        int destinationPlanetId,
+        string expectedPlayerStateHash,
+        string expectedStarSystemStateHash,
+        double minimumCoreEnergyRatio = 0.95d,
+        int stateHashVersion = 1,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.PrepareInterplanetaryFlightAsync(
+            sessionId,
+            new PrepareInterplanetaryFlightRequest
+            {
+                PlanetId = planetId,
+                DestinationPlanetId = destinationPlanetId,
+                ExpectedPlayerStateHash = expectedPlayerStateHash,
+                ExpectedStarSystemStateHash = expectedStarSystemStateHash,
+                MinimumCoreEnergyRatio = minimumCoreEnergyRatio,
+                StateHashVersion = stateHashVersion,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Same-star flight plan prepared; the player remains grounded.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_commit_interplanetary_flight",
+        Title = "Launch and land a prepared same-star flight",
+        ReadOnly = false,
+        Destructive = true,
+        Idempotent = true,
+        OpenWorld = false)]
+    [Description("Uses DSP's native flight/sail transition and sail-energy functions to launch, steer, brake, and land on the bound planet. It never teleports, grants fuel, or enables sandbox fast travel.")]
+    public static async Task<CallToolResult> CommitInterplanetaryFlightAsync(
+        IBridgeClient bridgeClient,
+        string sessionId,
+        int planetId,
+        string planToken,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        var request = CreateCommitRequest(sessionId, planetId, planToken, idempotencyKey);
+        var result = await bridgeClient.CommitInterplanetaryFlightAsync(sessionId, request, cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Normal same-star flight accepted; poll its actionId through landing.");
+    }
+
+    [McpServerTool(
         Name = "spherewright_prepare_harvest",
         Title = "Prepare normal manual harvesting",
         ReadOnly = false,
@@ -990,6 +1067,49 @@ public static class SpherewrightTools
             },
             cancellationToken).ConfigureAwait(false);
         return ToToolResult(result, "DSP accepted the exact fixed LastExit resume; poll actionId for provenance validation and high-entropy resave.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_prepare_reload_flight_checkpoint",
+        Title = "Prepare the exact reusable pre-flight checkpoint",
+        ReadOnly = false,
+        Destructive = false,
+        Idempotent = false,
+        OpenWorld = false)]
+    [Description("Validates only the protected checkpoint bound to the supplied high-entropy token, including its internally generated save name and exact saved game tick. It never accepts or enumerates save names and does not load during prepare.")]
+    public static async Task<CallToolResult> PrepareFlightCheckpointReloadAsync(
+        IBridgeClient bridgeClient,
+        string reloadToken,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.PrepareFlightCheckpointReloadAsync(
+            new PrepareFlightCheckpointReloadRequest { ReloadToken = reloadToken },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Exact reusable pre-flight checkpoint reload prepared; no save was loaded.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_commit_reload_flight_checkpoint",
+        Title = "Reload the exact reusable pre-flight checkpoint",
+        ReadOnly = false,
+        Destructive = true,
+        Idempotent = true,
+        OpenWorld = false)]
+    [Description("Interrupts only its bound flight attempt, then loads the internally named checkpoint through DSPGame.StartGame. Adoption requires its exact saved tick, embedded primary owned-save identity, origin planet, peaceful/non-sandbox state, and 1x resources; the ticket remains reusable for another failed attempt.")]
+    public static async Task<CallToolResult> CommitFlightCheckpointReloadAsync(
+        IBridgeClient bridgeClient,
+        string planToken,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.CommitFlightCheckpointReloadAsync(
+            new CommitFlightCheckpointReloadRequest
+            {
+                PlanToken = planToken,
+                IdempotencyKey = idempotencyKey,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "DSP accepted the exact reusable pre-flight checkpoint; poll actionId until provenance validation completes.");
     }
 
     private static CommitNormalActionRequest CreateCommitRequest(

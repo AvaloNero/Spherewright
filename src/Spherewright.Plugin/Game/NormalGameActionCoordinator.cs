@@ -5,6 +5,7 @@ using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Progression;
 using Spherewright.Contracts.Resources;
 using Spherewright.Contracts.Sessions;
+using Spherewright.Plugin.RuntimeDescriptor;
 using UnityEngine;
 
 namespace Spherewright.Plugin.Game;
@@ -15,6 +16,7 @@ internal sealed partial class NormalGameActionCoordinator
     private const long PowerStarvationGraceTicks = 600;
     private readonly GameSessionTracker _sessions;
     private readonly GameStateReader _reader;
+    private readonly FlightCheckpointStore _flightCheckpoints;
     private readonly PreparedPlanStore<NormalActionPlanPayload> _plans;
     private readonly IdempotencyCache<NormalActionCommitResult> _idempotency;
     private readonly Dictionary<string, ActionRecord> _actions =
@@ -25,10 +27,12 @@ internal sealed partial class NormalGameActionCoordinator
         int idempotencyRetentionMinutes,
         int idempotencyCapacity,
         GameSessionTracker sessions,
-        GameStateReader reader)
+        GameStateReader reader,
+        FlightCheckpointStore flightCheckpoints)
     {
         _sessions = sessions;
         _reader = reader;
+        _flightCheckpoints = flightCheckpoints;
         _plans = new PreparedPlanStore<NormalActionPlanPayload>(
             TimeSpan.FromSeconds(planLifetimeSeconds),
             128);
@@ -487,7 +491,7 @@ internal sealed partial class NormalGameActionCoordinator
         {
             return GameCallResult<NormalActionCommitResult>.Failed(BridgeError.Create(
                 BridgeErrorCodes.ServerBusy,
-                $"Player order {activePlayerOrder.ActionId} is still active; a second move or harvest order would replace DSP's single current player order.",
+                $"Player movement action {activePlayerOrder.ActionId} is still active; a second move, harvest, or flight would replace or race DSP's single player controller.",
                 true,
                 "Wait for the active player-order action to become terminal, then inspect and prepare again."));
         }
@@ -502,7 +506,11 @@ internal sealed partial class NormalGameActionCoordinator
             State = NormalActionStates.Executing,
             StartedAtGameTick = GameMain.gameTick,
             BeforeStateHash = plan.ExpectedStateHash,
-            TargetObjectId = plan.ResourceNodeId > 0 ? plan.ResourceNodeId : (int?)null,
+            TargetObjectId = plan.DestinationPlanetId > 0
+                ? plan.DestinationPlanetId
+                : plan.ResourceNodeId > 0
+                    ? plan.ResourceNodeId
+                    : (int?)null,
             TargetItemId = plan.RecipeId > 0
                 ? plan.RecipeId
                 : plan.TechId > 0
@@ -575,6 +583,38 @@ internal sealed partial class NormalGameActionCoordinator
         return true;
     }
 
+    public bool CanReloadFlightCheckpointOnMainThread(FlightCheckpointTicket ticket, out string rejection)
+    {
+        var active = _actions.Values.Where(action => !action.Terminal).ToArray();
+        if (active.Length == 0)
+        {
+            rejection = string.Empty;
+            return true;
+        }
+
+        if (active.Length == 1
+            && active[0].ActionKind == NormalActionKinds.InterplanetaryFlight
+            && string.Equals(active[0].FlightCheckpointId, ticket.CheckpointId, StringComparison.Ordinal))
+        {
+            rejection = string.Empty;
+            return true;
+        }
+
+        rejection = "A non-flight normal-game action is still active, so an exact checkpoint reload would interrupt an unproved outcome.";
+        return false;
+    }
+
+    public void NotifyFlightCheckpointReloadStartingOnMainThread(FlightCheckpointTicket ticket)
+    {
+        foreach (var action in _actions.Values.Where(action =>
+                     !action.Terminal
+                     && action.ActionKind == NormalActionKinds.InterplanetaryFlight
+                     && string.Equals(action.FlightCheckpointId, ticket.CheckpointId, StringComparison.Ordinal)))
+        {
+            Fail(action, "The exact bound pre-flight checkpoint reload was accepted; this flight attempt is superseded.");
+        }
+    }
+
     private void StartActionOnMainThread(ActionRecord action)
     {
         var player = GameMain.mainPlayer;
@@ -592,6 +632,9 @@ internal sealed partial class NormalGameActionCoordinator
                 player.Order(action.PlayerOrder, false);
                 action.State = NormalActionStates.WaitingForGame;
                 action.Message = "DSP accepted a normal player movement order.";
+                break;
+            case NormalActionKinds.InterplanetaryFlight:
+                StartInterplanetaryFlightOnMainThread(action);
                 break;
             case NormalActionKinds.Harvest:
                 var objectType = plan.ResourceKind == ResourceNodeKinds.Vein
@@ -684,9 +727,10 @@ internal sealed partial class NormalGameActionCoordinator
 
     private void UpdateActionOnMainThread(ActionRecord action)
     {
+        var isFlight = action.ActionKind == NormalActionKinds.InterplanetaryFlight;
         if (!_sessions.IsCurrentSessionOwned
             || !string.Equals(_sessions.SessionId, action.SessionId, StringComparison.Ordinal)
-            || GameMain.localPlanet?.id != action.PlanetId)
+            || (!isFlight && GameMain.localPlanet?.id != action.PlanetId))
         {
             action.State = NormalActionStates.ActionFailed;
             action.Terminal = true;
@@ -699,6 +743,9 @@ internal sealed partial class NormalGameActionCoordinator
         {
             case NormalActionKinds.Move:
                 UpdateMove(action);
+                break;
+            case NormalActionKinds.InterplanetaryFlight:
+                UpdateInterplanetaryFlight(action);
                 break;
             case NormalActionKinds.Harvest:
                 UpdateHarvest(action);
@@ -864,7 +911,9 @@ internal sealed partial class NormalGameActionCoordinator
     }
 
     private static bool IsPlayerOrderAction(string actionKind) =>
-        actionKind == NormalActionKinds.Move || actionKind == NormalActionKinds.Harvest;
+        actionKind == NormalActionKinds.Move
+        || actionKind == NormalActionKinds.Harvest
+        || actionKind == NormalActionKinds.InterplanetaryFlight;
 
     private void UpdateHandcraft(ActionRecord action)
     {
@@ -896,6 +945,8 @@ internal sealed partial class NormalGameActionCoordinator
     {
         switch (plan.ActionKind)
         {
+            case NormalActionKinds.InterplanetaryFlight:
+                return RevalidateInterplanetaryFlightPlanOnMainThread(plan);
             case NormalActionKinds.Move:
             case NormalActionKinds.Handcraft:
                 var player = _reader.GetPlayerStateOnMainThread(
@@ -1192,6 +1243,9 @@ internal sealed partial class NormalGameActionCoordinator
             AfterTargetAmount = action.AfterTargetAmount,
             ReconciledFromOutcomeUnknown = action.ReconciledFromOutcomeUnknown,
             ReconciledAtGameTick = action.ReconciledAtGameTick,
+            FlightCheckpointId = action.FlightCheckpointId,
+            FlightCheckpointReloadToken = action.FlightCheckpointReloadToken,
+            FlightCheckpointGameTick = action.FlightCheckpointGameTick,
         };
         var after = action.AfterInventory ?? CaptureInventory(GameMain.mainPlayer);
         foreach (var itemId in action.BeforeInventory.Keys.Concat(after.Keys).Distinct().OrderBy(id => id))
@@ -1728,6 +1782,12 @@ internal sealed partial class NormalGameActionCoordinator
         public OrderNode? PlayerOrder { get; set; }
         public long? PowerStarvedAtGameTick { get; set; }
         public MovementProgressWatchdog? MovementProgress { get; set; }
+        public long FlightLastControlGameTick { get; set; }
+        public double FlightBestDistance { get; set; }
+        public long FlightBestDistanceAtGameTick { get; set; }
+        public string? FlightCheckpointId { get; set; }
+        public string? FlightCheckpointReloadToken { get; set; }
+        public long? FlightCheckpointGameTick { get; set; }
         public List<int> PrebuildIds { get; set; } = new List<int>();
         public List<BuildExpectedEntity> ExpectedBuildEntities { get; set; } = new List<BuildExpectedEntity>();
         public HashSet<int> PreexistingBuildEntityIds { get; } = new HashSet<int>();
@@ -1743,9 +1803,13 @@ internal sealed partial class NormalGameActionCoordinator
         public string PlayerStateHash { get; private set; } = string.Empty;
         public string ResourceStateHash { get; private set; } = string.Empty;
         public string ProgressionStateHash { get; private set; } = string.Empty;
+        public string StarSystemStateHash { get; private set; } = string.Empty;
         public Vector3 TargetPosition { get; private set; }
         public float ArrivalTolerance { get; private set; }
         public double EstimatedDistance { get; private set; }
+        public int DestinationPlanetId { get; private set; }
+        public double MinimumCoreEnergyRatio { get; private set; }
+        public double RequiredFlightEnergy { get; private set; }
         public long EstimatedTicks { get; set; }
         public string ResourceKind { get; private set; } = string.Empty;
         public int ResourceNodeId { get; private set; }
@@ -1796,6 +1860,29 @@ internal sealed partial class NormalGameActionCoordinator
                 TargetPosition = target,
                 ArrivalTolerance = tolerance,
                 EstimatedDistance = distance,
+            };
+
+        public static NormalActionPlanPayload InterplanetaryFlight(
+            string sessionId,
+            int planetId,
+            int destinationPlanetId,
+            string expectedStateHash,
+            string playerStateHash,
+            string starSystemStateHash,
+            double distance,
+            double minimumCoreEnergyRatio,
+            double requiredFlightEnergy) => new NormalActionPlanPayload
+            {
+                ActionKind = NormalActionKinds.InterplanetaryFlight,
+                SessionId = sessionId,
+                PlanetId = planetId,
+                DestinationPlanetId = destinationPlanetId,
+                ExpectedStateHash = expectedStateHash,
+                PlayerStateHash = playerStateHash,
+                StarSystemStateHash = starSystemStateHash,
+                EstimatedDistance = distance,
+                MinimumCoreEnergyRatio = minimumCoreEnergyRatio,
+                RequiredFlightEnergy = requiredFlightEnergy,
             };
 
         public static NormalActionPlanPayload Harvest(

@@ -6,6 +6,7 @@ using Spherewright.Bridge.Core.Authentication;
 using Spherewright.Bridge.Core.Framing;
 using Spherewright.Bridge.Core.Routing;
 using Spherewright.Contracts.Actions;
+using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Resources;
@@ -32,6 +33,7 @@ internal sealed class NamedPipeBridgeServer : IDisposable
     private readonly GameStateReader _gameStateReader;
     private readonly TestWorldCoordinator _testWorldCoordinator;
     private readonly OwnedWorldResumeCoordinator _ownedWorldResumeCoordinator;
+    private readonly FlightCheckpointReloadCoordinator _flightCheckpointReloadCoordinator;
     private readonly NormalGameActionCoordinator _normalActionCoordinator;
     private readonly ManualLogSource _logger;
     private readonly CancellationTokenSource _shutdown = new CancellationTokenSource();
@@ -49,6 +51,7 @@ internal sealed class NamedPipeBridgeServer : IDisposable
         GameStateReader gameStateReader,
         TestWorldCoordinator testWorldCoordinator,
         OwnedWorldResumeCoordinator ownedWorldResumeCoordinator,
+        FlightCheckpointReloadCoordinator flightCheckpointReloadCoordinator,
         NormalGameActionCoordinator normalActionCoordinator,
         ManualLogSource logger)
     {
@@ -63,6 +66,7 @@ internal sealed class NamedPipeBridgeServer : IDisposable
         _gameStateReader = gameStateReader;
         _testWorldCoordinator = testWorldCoordinator;
         _ownedWorldResumeCoordinator = ownedWorldResumeCoordinator;
+        _flightCheckpointReloadCoordinator = flightCheckpointReloadCoordinator;
         _normalActionCoordinator = normalActionCoordinator;
         _logger = logger;
     }
@@ -399,6 +403,31 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                 case BridgeMethods.CommitMove:
                     await DispatchNormalCommitAsync(pipe, header, requestJson, NormalActionKinds.Move, cancellationToken).ConfigureAwait(false);
                     break;
+                case BridgeMethods.PrepareInterplanetaryFlight:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<PrepareInterplanetaryFlightRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            header.SessionId,
+                            () => _normalActionCoordinator.PrepareInterplanetaryFlightOnMainThread(header.SessionId, request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                case BridgeMethods.CommitInterplanetaryFlight:
+                    await DispatchNormalCommitAsync(
+                        pipe,
+                        header,
+                        requestJson,
+                        NormalActionKinds.InterplanetaryFlight,
+                        cancellationToken).ConfigureAwait(false);
+                    break;
                 case BridgeMethods.PrepareHarvest:
                     {
                         var request = PluginJson.Deserialize<BridgeRequestEnvelope<PrepareHarvestRequest>>(requestJson);
@@ -576,6 +605,23 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             cancellationToken).ConfigureAwait(false);
                         break;
                     }
+                case BridgeMethods.GetLocalStarSystem:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<LocalPlanetRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            header.SessionId,
+                            () => _gameStateReader.GetLocalStarSystemOnMainThread(header.SessionId, request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
                 case BridgeMethods.CommitQuarantineReconciliation:
                     {
                         var request = PluginJson.Deserialize<BridgeRequestEnvelope<CommitNormalActionRequest>>(requestJson);
@@ -703,6 +749,40 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             cancellationToken).ConfigureAwait(false);
                         break;
                     }
+                case BridgeMethods.PrepareReloadFlightCheckpoint:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<PrepareFlightCheckpointReloadRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            null,
+                            () => _flightCheckpointReloadCoordinator.PrepareOnMainThread(request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                case BridgeMethods.CommitReloadFlightCheckpoint:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<CommitFlightCheckpointReloadRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            null,
+                            () => _flightCheckpointReloadCoordinator.CommitOnMainThread(request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
                 default:
                     await WriteErrorAsync(
                         pipe,
@@ -730,6 +810,12 @@ internal sealed class NamedPipeBridgeServer : IDisposable
             && resumeResult is not null)
         {
             return GameCallResult<ActionResultSnapshot>.Succeeded(resumeResult);
+        }
+
+        if (_flightCheckpointReloadCoordinator.TryGetActionResultOnMainThread(request.ActionId, out var checkpointResult)
+            && checkpointResult is not null)
+        {
+            return GameCallResult<ActionResultSnapshot>.Succeeded(checkpointResult);
         }
 
         return _testWorldCoordinator.GetActionResultOnMainThread(request);

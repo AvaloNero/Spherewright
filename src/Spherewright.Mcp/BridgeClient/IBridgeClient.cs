@@ -1,4 +1,5 @@
 using Spherewright.Contracts.Actions;
+using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Players;
 using Spherewright.Contracts.Power;
@@ -21,6 +22,11 @@ public interface IBridgeClient
         CancellationToken cancellationToken);
 
     Task<BridgeCallResult<ProgressionStateSnapshot>> GetProgressionStateAsync(
+        string sessionId,
+        LocalPlanetRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<LocalStarSystemSnapshot>> GetLocalStarSystemAsync(
         string sessionId,
         LocalPlanetRequest request,
         CancellationToken cancellationToken);
@@ -65,6 +71,16 @@ public interface IBridgeClient
         CancellationToken cancellationToken);
 
     Task<BridgeCallResult<NormalActionCommitResult>> CommitMoveAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareInterplanetaryFlightAsync(
+        string sessionId,
+        PrepareInterplanetaryFlightRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitInterplanetaryFlightAsync(
         string sessionId,
         CommitNormalActionRequest request,
         CancellationToken cancellationToken);
@@ -187,5 +203,13 @@ public interface IBridgeClient
 
     Task<BridgeCallResult<OwnedWorldResumeResult>> CommitOwnedWorldResumeAsync(
         CommitOwnedWorldResumeRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<PreparedFlightCheckpointReloadPlan>> PrepareFlightCheckpointReloadAsync(
+        PrepareFlightCheckpointReloadRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<FlightCheckpointReloadResult>> CommitFlightCheckpointReloadAsync(
+        CommitFlightCheckpointReloadRequest request,
         CancellationToken cancellationToken);
 }

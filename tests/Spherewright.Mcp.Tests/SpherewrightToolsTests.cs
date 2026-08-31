@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol.Server;
 using Spherewright.Contracts.Actions;
+using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Players;
@@ -35,16 +36,19 @@ public sealed class SpherewrightToolsTests
                 "spherewright_commit_configure_building",
                 "spherewright_commit_handcraft",
                 "spherewright_commit_harvest",
+                "spherewright_commit_interplanetary_flight",
                 "spherewright_commit_move",
                 "spherewright_commit_new_game",
                 "spherewright_commit_quarantine_reconciliation",
                 "spherewright_commit_refuel",
+                "spherewright_commit_reload_flight_checkpoint",
                 "spherewright_commit_resume_owned_game",
                 "spherewright_commit_save",
                 "spherewright_commit_select_research",
                 "spherewright_commit_transfer",
                 "spherewright_get_action_result",
                 "spherewright_get_build_catalog",
+                "spherewright_get_local_star_system",
                 "spherewright_get_player_state",
                 "spherewright_get_power_summary",
                 "spherewright_get_progression_state",
@@ -61,10 +65,12 @@ public sealed class SpherewrightToolsTests
                 "spherewright_prepare_configure_building",
                 "spherewright_prepare_handcraft",
                 "spherewright_prepare_harvest",
+                "spherewright_prepare_interplanetary_flight",
                 "spherewright_prepare_move",
                 "spherewright_prepare_new_game",
                 "spherewright_prepare_quarantine_reconciliation",
                 "spherewright_prepare_refuel",
+                "spherewright_prepare_reload_flight_checkpoint",
                 "spherewright_prepare_resume_owned_game",
                 "spherewright_prepare_save",
                 "spherewright_prepare_select_research",
@@ -186,6 +192,45 @@ public sealed class SpherewrightToolsTests
         Assert.Equal(445, bridge.LastReconciliationRequest?.ExpectedRevision);
     }
 
+    [Fact]
+    public async Task PrepareInterplanetaryFlight_MapsBoundDestinationAndProofs()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.PrepareInterplanetaryFlightAsync(
+            bridge,
+            "session-flight",
+            104,
+            103,
+            "sha256:player",
+            "sha256:star",
+            0.97d,
+            1,
+            CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("session-flight", bridge.LastSessionId);
+        Assert.Equal(104, bridge.LastFlightRequest?.PlanetId);
+        Assert.Equal(103, bridge.LastFlightRequest?.DestinationPlanetId);
+        Assert.Equal("sha256:player", bridge.LastFlightRequest?.ExpectedPlayerStateHash);
+        Assert.Equal("sha256:star", bridge.LastFlightRequest?.ExpectedStarSystemStateHash);
+        Assert.Equal(0.97d, bridge.LastFlightRequest?.MinimumCoreEnergyRatio);
+    }
+
+    [Fact]
+    public async Task PrepareFlightCheckpointReload_MapsOnlyReusableToken()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.PrepareFlightCheckpointReloadAsync(
+            bridge,
+            "checkpoint-token",
+            CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("checkpoint-token", bridge.LastFlightCheckpointReloadRequest?.ReloadToken);
+    }
+
     private static BridgeCallResult<BridgeStatus> SuccessResult()
     {
         return BridgeCallResult<BridgeStatus>.Succeeded(new BridgeStatus
@@ -221,6 +266,10 @@ public sealed class SpherewrightToolsTests
         public PrepareConfigureBuildingRequest? LastConfigureRequest { get; private set; }
 
         public PrepareQuarantineReconciliationRequest? LastReconciliationRequest { get; private set; }
+
+        public PrepareInterplanetaryFlightRequest? LastFlightRequest { get; private set; }
+
+        public PrepareFlightCheckpointReloadRequest? LastFlightCheckpointReloadRequest { get; private set; }
 
         public Task<BridgeCallResult<BridgeStatus>> GetBridgeStatusAsync(CancellationToken cancellationToken)
         {
@@ -259,6 +308,19 @@ public sealed class SpherewrightToolsTests
             {
                 SessionId = sessionId,
                 PlanetId = request.PlanetId,
+            }));
+        }
+
+        public Task<BridgeCallResult<LocalStarSystemSnapshot>> GetLocalStarSystemAsync(
+            string sessionId,
+            LocalPlanetRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastSessionId = sessionId;
+            return Task.FromResult(BridgeCallResult<LocalStarSystemSnapshot>.Succeeded(new LocalStarSystemSnapshot
+            {
+                SessionId = sessionId,
+                LocalPlanetId = request.PlanetId,
             }));
         }
 
@@ -367,6 +429,21 @@ public sealed class SpherewrightToolsTests
             string sessionId,
             CommitNormalActionRequest request,
             CancellationToken cancellationToken) => Committed(sessionId, request, NormalActionKinds.Move);
+
+        public Task<BridgeCallResult<PreparedNormalAction>> PrepareInterplanetaryFlightAsync(
+            string sessionId,
+            PrepareInterplanetaryFlightRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastSessionId = sessionId;
+            LastFlightRequest = request;
+            return Prepared(sessionId, NormalActionKinds.InterplanetaryFlight);
+        }
+
+        public Task<BridgeCallResult<NormalActionCommitResult>> CommitInterplanetaryFlightAsync(
+            string sessionId,
+            CommitNormalActionRequest request,
+            CancellationToken cancellationToken) => Committed(sessionId, request, NormalActionKinds.InterplanetaryFlight);
 
         public Task<BridgeCallResult<PreparedNormalAction>> PrepareHarvestAsync(
             string sessionId,
@@ -568,6 +645,34 @@ public sealed class SpherewrightToolsTests
                 Accepted = true,
                 State = NormalActionStates.WaitingForGame,
             }));
+        }
+
+        public Task<BridgeCallResult<PreparedFlightCheckpointReloadPlan>> PrepareFlightCheckpointReloadAsync(
+            PrepareFlightCheckpointReloadRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastFlightCheckpointReloadRequest = request;
+            return Task.FromResult(BridgeCallResult<PreparedFlightCheckpointReloadPlan>.Succeeded(
+                new PreparedFlightCheckpointReloadPlan
+                {
+                    Prepared = true,
+                    PlanToken = "checkpoint-plan",
+                    CheckpointId = "checkpoint-id",
+                }));
+        }
+
+        public Task<BridgeCallResult<FlightCheckpointReloadResult>> CommitFlightCheckpointReloadAsync(
+            CommitFlightCheckpointReloadRequest request,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(BridgeCallResult<FlightCheckpointReloadResult>.Succeeded(
+                new FlightCheckpointReloadResult
+                {
+                    ActionId = "checkpoint-action",
+                    CheckpointId = "checkpoint-id",
+                    Accepted = true,
+                    State = NormalActionStates.WaitingForGame,
+                }));
         }
     }
 }

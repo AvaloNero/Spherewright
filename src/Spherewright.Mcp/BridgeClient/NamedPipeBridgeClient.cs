@@ -3,6 +3,7 @@ using System.Security.Principal;
 using Newtonsoft.Json;
 using Spherewright.Bridge.Core.Framing;
 using Spherewright.Contracts.Actions;
+using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Players;
@@ -164,6 +165,26 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
         CommitNormalActionRequest request,
         CancellationToken cancellationToken) =>
         CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitMove, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareInterplanetaryFlightAsync(
+        string sessionId,
+        PrepareInterplanetaryFlightRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<PrepareInterplanetaryFlightRequest, PreparedNormalAction>(
+            BridgeMethods.PrepareInterplanetaryFlight,
+            sessionId,
+            request,
+            cancellationToken);
+
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitInterplanetaryFlightAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(
+            BridgeMethods.CommitInterplanetaryFlight,
+            sessionId,
+            request,
+            cancellationToken);
 
     public Task<BridgeCallResult<PreparedNormalAction>> PrepareHarvestAsync(
         string sessionId,
@@ -338,6 +359,18 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
             cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<BridgeCallResult<LocalStarSystemSnapshot>> GetLocalStarSystemAsync(
+        string sessionId,
+        LocalPlanetRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<LocalPlanetRequest, LocalStarSystemSnapshot>(
+            BridgeMethods.GetLocalStarSystem,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<BridgeCallResult<PreparedOwnedWorldResumePlan>> PrepareOwnedWorldResumeAsync(
         PrepareOwnedWorldResumeRequest request,
         CancellationToken cancellationToken)
@@ -355,6 +388,28 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
     {
         return await CallAsync<CommitOwnedWorldResumeRequest, OwnedWorldResumeResult>(
             BridgeMethods.CommitResumeOwnedGame,
+            null,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<PreparedFlightCheckpointReloadPlan>> PrepareFlightCheckpointReloadAsync(
+        PrepareFlightCheckpointReloadRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<PrepareFlightCheckpointReloadRequest, PreparedFlightCheckpointReloadPlan>(
+            BridgeMethods.PrepareReloadFlightCheckpoint,
+            null,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<FlightCheckpointReloadResult>> CommitFlightCheckpointReloadAsync(
+        CommitFlightCheckpointReloadRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<CommitFlightCheckpointReloadRequest, FlightCheckpointReloadResult>(
+            BridgeMethods.CommitReloadFlightCheckpoint,
             null,
             request,
             cancellationToken).ConfigureAwait(false);

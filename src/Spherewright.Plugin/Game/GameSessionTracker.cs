@@ -11,6 +11,7 @@ internal sealed class GameSessionTracker
     private readonly string _gameVersion;
     private readonly ManualLogSource _logger;
     private readonly OwnedWorldResumeTicketStore _resumeTickets;
+    private readonly FlightCheckpointStore _flightCheckpoints;
     private GameData? _observedData;
     private GameData? _ownedData;
     private string? _expectedOwnedSaveName;
@@ -27,16 +28,22 @@ internal sealed class GameSessionTracker
     private string? _writeQuarantineReason;
     private OwnedWorldResumeTicket? _expectedResumeTicket;
     private string? _resumeAdoptionError;
+    private FlightCheckpointTicket? _expectedFlightCheckpoint;
+    private string? _currentFlightCheckpointId;
+    private bool _currentSessionLoadedFromFlightCheckpoint;
+    private string? _flightCheckpointAdoptionError;
 
     public GameSessionTracker(
         bool writesConfigured,
         string gameVersion,
         OwnedWorldResumeTicketStore resumeTickets,
+        FlightCheckpointStore flightCheckpoints,
         ManualLogSource logger)
     {
         _writesConfigured = writesConfigured;
         _gameVersion = gameVersion;
         _resumeTickets = resumeTickets;
+        _flightCheckpoints = flightCheckpoints;
         _logger = logger;
     }
 
@@ -59,6 +66,12 @@ internal sealed class GameSessionTracker
 
     public string? ResumeAdoptionError => _resumeAdoptionError;
 
+    public string? FlightCheckpointAdoptionError => _flightCheckpointAdoptionError;
+
+    public string? CurrentFlightCheckpointId => _currentFlightCheckpointId;
+
+    public bool CurrentSessionLoadedFromFlightCheckpoint => _currentSessionLoadedFromFlightCheckpoint;
+
     public void ExpectNextSessionToBeOwned(string saveName)
     {
         if (string.IsNullOrWhiteSpace(saveName))
@@ -68,7 +81,8 @@ internal sealed class GameSessionTracker
 
         if (((GameMain.data is not null || GameMain.isRunning) && !DSPGame.IsMenuDemo)
             || _expectedOwnedSaveName is not null
-            || _expectedResumeTicket is not null)
+            || _expectedResumeTicket is not null
+            || _expectedFlightCheckpoint is not null)
         {
             throw new InvalidOperationException("An owned new world can only be armed from an idle main menu.");
         }
@@ -106,6 +120,8 @@ internal sealed class GameSessionTracker
                 _writeHealth = WriteHealthStates.Healthy;
                 _writeQuarantineActionId = null;
                 _writeQuarantineReason = null;
+                _currentFlightCheckpointId = null;
+                _currentSessionLoadedFromFlightCheckpoint = false;
             }
 
             GameLoaded = false;
@@ -141,14 +157,53 @@ internal sealed class GameSessionTracker
                 _ownedSaveError = null;
                 _logger.LogInfo("Spherewright detected the exact one-time owned-world resume load and is validating provenance");
             }
+            else if (_expectedFlightCheckpoint is not null)
+            {
+                _ownedData = null;
+                _ownedSaveName = null;
+                _ownedSaveState = OwnedSaveStates.WaitingForWorld;
+                _ownedSaveError = null;
+                _logger.LogInfo("Spherewright detected an exact flight-checkpoint reload and is validating provenance");
+            }
             else
             {
                 _ownedData = null;
                 _ownedSaveName = null;
                 _ownedSaveState = OwnedSaveStates.None;
                 _ownedSaveError = null;
+                _currentFlightCheckpointId = null;
+                _currentSessionLoadedFromFlightCheckpoint = false;
                 _logger.LogWarning("Spherewright detected an unowned game session; save and factory reads are blocked");
             }
+        }
+
+        if (_expectedFlightCheckpoint is not null && !IsCurrentSessionOwned)
+        {
+            if (!TryValidateFlightCheckpointCandidate(currentData, _expectedFlightCheckpoint, out var pending, out var rejection))
+            {
+                if (pending)
+                {
+                    return;
+                }
+
+                _flightCheckpointAdoptionError = rejection;
+                _expectedFlightCheckpoint = null;
+                _ownedSaveState = OwnedSaveStates.None;
+                _logger.LogError("Spherewright rejected a flight-checkpoint reload because provenance did not match");
+                return;
+            }
+
+            var ticket = _expectedFlightCheckpoint;
+            _ownedData = currentData;
+            _ownedSaveName = ticket.OwnedSaveName;
+            _expectedFlightCheckpoint = null;
+            _ownedSaveState = OwnedSaveStates.Saved;
+            _ownedSaveError = null;
+            _ownedSessionStartTick = GameMain.gameTick;
+            _lastOwnedSaveGameTick = ticket.SavedGameTick;
+            _currentFlightCheckpointId = ticket.CheckpointId;
+            _currentSessionLoadedFromFlightCheckpoint = true;
+            _logger.LogInfo("Spherewright adopted the exact reusable pre-flight checkpoint without replacing the primary owned save");
         }
 
         if (_expectedResumeTicket is not null && !IsCurrentSessionOwned)
@@ -200,7 +255,7 @@ internal sealed class GameSessionTracker
         UpdateOnMainThread();
         if (!GameLoaded || _observedData is null)
         {
-            return new SessionState
+            var idle = new SessionState
             {
                 BridgeConnected = true,
                 GameLoaded = false,
@@ -216,8 +271,10 @@ internal sealed class GameSessionTracker
                 OwnedSaveError = _ownedSaveError,
                 RestartResumeAvailable = _resumeTickets.HasCurrentTicket,
                 RestartResumeToken = _resumeTickets.CurrentResumeToken,
-                Capabilities = new List<string> { "bridge.status", "new-game.create", "owned-game.resume", "action.read" },
+                Capabilities = CreateIdleCapabilities(),
             };
+            ApplyFlightCheckpointState(idle);
+            return idle;
         }
 
         if (!IsCurrentSessionOwned)
@@ -255,7 +312,7 @@ internal sealed class GameSessionTracker
         var blockers = CreateWriteBlockers(descriptor, peacefulState, sandboxState);
         var writesAllowed = blockers.Count == 0;
 
-        return new SessionState
+        var owned = new SessionState
         {
             BridgeConnected = true,
             GameLoaded = true,
@@ -280,8 +337,44 @@ internal sealed class GameSessionTracker
             LastOwnedSaveGameTick = _lastOwnedSaveGameTick,
             RestartResumeAvailable = _resumeTickets.HasCurrentTicket,
             RestartResumeToken = _resumeTickets.CurrentResumeToken,
+            CurrentSessionLoadedFromFlightCheckpoint = _currentSessionLoadedFromFlightCheckpoint,
             Capabilities = CreateOwnedCapabilities(writesAllowed, _writeHealth),
         };
+        ApplyFlightCheckpointState(owned);
+        return owned;
+    }
+
+    private List<string> CreateIdleCapabilities()
+    {
+        var capabilities = new List<string> { "bridge.status", "new-game.create", "owned-game.resume", "action.read" };
+        if (_flightCheckpoints.HasCurrentTicket)
+        {
+            capabilities.Add("flight-checkpoint.reload");
+        }
+
+        return capabilities;
+    }
+
+    private void ApplyFlightCheckpointState(SessionState state)
+    {
+        var ticket = _flightCheckpoints.CurrentTicket;
+        if (ticket is null
+            || (state.OwnedBySpherewright
+                && !string.Equals(state.SaveName, ticket.OwnedSaveName, StringComparison.Ordinal)))
+        {
+            return;
+        }
+
+        state.FlightCheckpointAvailable = true;
+        state.FlightCheckpointId = ticket.CheckpointId;
+        state.FlightCheckpointReloadToken = ticket.ReloadToken;
+        state.FlightCheckpointOriginPlanetId = ticket.OriginPlanetId;
+        state.FlightCheckpointDestinationPlanetId = ticket.DestinationPlanetId;
+        state.FlightCheckpointGameTick = ticket.SavedGameTick;
+        if (!state.Capabilities.Contains("flight-checkpoint.reload"))
+        {
+            state.Capabilities.Add("flight-checkpoint.reload");
+        }
     }
 
     public void IncrementRevisionOnMainThread()
@@ -415,7 +508,8 @@ internal sealed class GameSessionTracker
 
         if (((GameMain.data is not null || GameMain.isRunning) && !DSPGame.IsMenuDemo)
             || _expectedOwnedSaveName is not null
-            || _expectedResumeTicket is not null)
+            || _expectedResumeTicket is not null
+            || _expectedFlightCheckpoint is not null)
         {
             throw new InvalidOperationException("An owned world can only be resumed from an idle main menu.");
         }
@@ -433,6 +527,85 @@ internal sealed class GameSessionTracker
         {
             _ownedSaveState = OwnedSaveStates.None;
             _ownedSaveError = null;
+        }
+    }
+
+    public void MarkCurrentSessionFlightCheckpoint(FlightCheckpointTicket ticket)
+    {
+        if (ticket is null
+            || !IsCurrentSessionOwned
+            || !string.Equals(_sessionId, ticket.SourceSessionId, StringComparison.Ordinal)
+            || !string.Equals(_ownedSaveName, ticket.OwnedSaveName, StringComparison.Ordinal)
+            || _revision != ticket.SourceRevision
+            || GameMain.localPlanet?.id != ticket.OriginPlanetId
+            || GameMain.gameTick < ticket.SavedGameTick)
+        {
+            throw new InvalidOperationException("The completed flight checkpoint does not match the current owned session.");
+        }
+
+        _currentFlightCheckpointId = ticket.CheckpointId;
+        _currentSessionLoadedFromFlightCheckpoint = false;
+        _flightCheckpointAdoptionError = null;
+    }
+
+    public bool CanReuseFlightCheckpointForCurrentSession(FlightCheckpointTicket ticket)
+    {
+        if (ticket is null
+            || !IsCurrentSessionOwned
+            || !string.Equals(_ownedSaveName, ticket.OwnedSaveName, StringComparison.Ordinal)
+            || !string.Equals(_currentFlightCheckpointId, ticket.CheckpointId, StringComparison.Ordinal)
+            || GameMain.localPlanet?.id != ticket.OriginPlanetId)
+        {
+            return false;
+        }
+
+        if (_currentSessionLoadedFromFlightCheckpoint)
+        {
+            return _revision == 1 && GameMain.gameTick >= ticket.SavedGameTick;
+        }
+
+        return string.Equals(_sessionId, ticket.SourceSessionId, StringComparison.Ordinal)
+            && _revision == ticket.SourceRevision + 1
+            && GameMain.gameTick >= ticket.SavedGameTick;
+    }
+
+    public void ExpectNextSessionToBeLoadedFromFlightCheckpoint(FlightCheckpointTicket ticket)
+    {
+        if (ticket is null)
+        {
+            throw new ArgumentNullException(nameof(ticket));
+        }
+
+        var activeOrdinaryGame = (GameMain.data is not null || GameMain.isRunning) && !DSPGame.IsMenuDemo;
+        if (_expectedOwnedSaveName is not null
+            || _expectedResumeTicket is not null
+            || _expectedFlightCheckpoint is not null
+            || (activeOrdinaryGame
+                && (!IsCurrentSessionOwned
+                    || !string.Equals(_ownedSaveName, ticket.OwnedSaveName, StringComparison.Ordinal))))
+        {
+            throw new InvalidOperationException("The exact flight checkpoint can only replace its owned game or load from an idle main menu.");
+        }
+
+        _expectedFlightCheckpoint = ticket;
+        _ownedSaveState = OwnedSaveStates.WaitingForWorld;
+        _ownedSaveError = null;
+        _flightCheckpointAdoptionError = null;
+    }
+
+    public void CancelExpectedFlightCheckpointSession()
+    {
+        _expectedFlightCheckpoint = null;
+        if (!IsCurrentSessionOwned)
+        {
+            _ownedSaveState = OwnedSaveStates.None;
+            _ownedSaveError = null;
+        }
+        else
+        {
+            _ownedSaveState = _lastOwnedSaveGameTick.HasValue
+                ? OwnedSaveStates.Saved
+                : OwnedSaveStates.WaitingToSave;
         }
     }
 
@@ -467,6 +640,60 @@ internal sealed class GameSessionTracker
             _resumeTickets.Consume(resumeToken!);
         }
         _logger.LogInfo("Spherewright cleared write quarantine after exact action reconciliation");
+        return true;
+    }
+
+    private static bool TryValidateFlightCheckpointCandidate(
+        GameData currentData,
+        FlightCheckpointTicket ticket,
+        out bool pending,
+        out string rejection)
+    {
+        pending = false;
+        rejection = string.Empty;
+        if (!string.Equals(DSPGame.LoadFile, ticket.CheckpointSaveName, StringComparison.Ordinal))
+        {
+            rejection = "DSP did not load the exact internally named pre-flight checkpoint.";
+            return false;
+        }
+
+        if (!string.Equals(currentData.gameName, ticket.OwnedSaveName, StringComparison.Ordinal))
+        {
+            rejection = "The flight checkpoint did not contain the exact primary owned-save identity.";
+            return false;
+        }
+
+        if (GameMain.gameTick < ticket.SavedGameTick)
+        {
+            rejection = "The loaded flight checkpoint is older than its protected ticket.";
+            return false;
+        }
+
+        var descriptor = currentData.gameDesc;
+        if (descriptor is null
+            || !descriptor.isPeaceMode
+            || descriptor.isSandboxMode
+            || GameMain.sandboxToolsEnabled
+            || Math.Abs(descriptor.resourceMultiplier - 1f) > 0.0001f)
+        {
+            rejection = "The flight checkpoint did not prove peaceful, non-sandbox, normal 1x settings.";
+            return false;
+        }
+
+        var localPlanet = currentData.localPlanet;
+        if (localPlanet is null)
+        {
+            pending = true;
+            rejection = "The flight-checkpoint origin planet is still loading.";
+            return false;
+        }
+
+        if (localPlanet.id != ticket.OriginPlanetId)
+        {
+            rejection = "The loaded planet does not match the protected flight-checkpoint origin.";
+            return false;
+        }
+
         return true;
     }
 

@@ -48,5 +48,19 @@ public sealed class SessionState
 
     public string? RestartResumeToken { get; set; }
 
+    public bool FlightCheckpointAvailable { get; set; }
+
+    public string? FlightCheckpointId { get; set; }
+
+    public string? FlightCheckpointReloadToken { get; set; }
+
+    public int? FlightCheckpointOriginPlanetId { get; set; }
+
+    public int? FlightCheckpointDestinationPlanetId { get; set; }
+
+    public long? FlightCheckpointGameTick { get; set; }
+
+    public bool CurrentSessionLoadedFromFlightCheckpoint { get; set; }
+
     public List<string> Capabilities { get; set; } = new List<string>();
 }

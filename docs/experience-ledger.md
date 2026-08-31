@@ -474,15 +474,15 @@
 
 ### EXP-039 — player order 必须用对象引用证明归属并在动作终态精确终止
 
-- 状态：`observed`
+- 状态：`validated`
 - 日期：2026-08-31
 - 适用范围：DSP `0.10.34.28529` 的 `Player.Order(OrderNode, false)`、普通 move/harvest action 和当前源码的订单终止路径。
-- 当前结论：move/harvest 下单时必须保存传给 DSP 的同一个 `OrderNode` 对象；完成、卡路、断能和全局超时只能在 `ReferenceEquals(player.currentOrder, action.PlayerOrder)` 成立时调用 `AbortOrder()`。不能用请求坐标与游戏内部目标坐标的近似相等来证明归属，也不能只因当前订单类型相同就无条件停止。动作终态后还应短窗复读位置、速度和核心能量趋势；若动作已成功但仍周期性位移/耗能，先用另一个有界正常订单覆盖并取得明确终态，禁止把它误判成充电或继续叠加 move。
-- 直接证据：旧运行 DLL 的路点动作 `e8aaaacc-e007-439a-bd5b-8bdc8401261e` 在距请求路点小于 `1.5 m` 时返回成功，但随后玩家从约 `(-43.11,-12.00,-195.94)` 持续发生小位移，核心能量从约 `101 MJ` 降到接近零；零距离 move `4ad897c1-58f3-4841-a607-9d3083eaad41` 也返回成功但未消除周期性掉电。Mine 动作 `c57c3a2d-8526-4cc5-bad8-fb267a1d72d5` 以明确的 600-tick 断能失败覆盖旧 Move，之后位置稳定、核心能量从约 `1.14 MJ` 连续单调升到 `2.28 MJ`。第二次现场复验中，约 297.5 m 返程的末段 move 到达后仍必须用范围内 Mine 动作 `6d2df711-199e-4466-9ce9-1fa6204cf220` 覆盖；该动作正常产出 1 铁、终态位置/速度稳定。当前程序集 IL 证明 `PlayerOrder.Order` 把传入 `OrderNode` 同一引用直接设为 `currentOrder`，`Player.AbortOrder` 委托 `PlayerOrder.Abort`；源码已改为保存并比较精确引用。
-- 限制或反例：当前游戏进程仍加载旧 DLL，引用归属修复尚未在部署后的 move/harvest 终态实机复验；Mine 覆盖动作同时把玩家带近电网，单调回充证据证明残留耗能消失，但不能单独量化普通电塔/无线塔的充电机制。修改后的完整解决方案已离线构建为 0 warning / 0 error，55 tests passed。
+- 当前结论：move/harvest 下单时必须保存传给 DSP 的同一个 `OrderNode` 对象；完成、卡路、断能和全局超时只能在 `ReferenceEquals(player.currentOrder, action.PlayerOrder)` 成立时调用 `AbortOrder()`。不能用请求坐标与游戏内部目标坐标的近似相等来证明归属，也不能只因当前订单类型相同就无条件停止。动作终态后还应短窗复读位置、速度和核心能量趋势；正常 Abort 后仍可能保留数秒物理惯性，下一段移动必须等速度降到小阈值再读取 optimistic hash。若动作已成功但超过该 settling 窗口仍周期性位移/耗能，先判断精确订单是否残留，再决定是否用另一个有界正常订单覆盖，禁止把它误判成充电或继续盲目叠加 move。
+- 直接证据：旧运行 DLL 的路点动作 `e8aaaacc-e007-439a-bd5b-8bdc8401261e` 在距请求路点小于 `1.5 m` 时返回成功，但随后玩家从约 `(-43.11,-12.00,-195.94)` 持续发生小位移，核心能量从约 `101 MJ` 降到接近零；零距离 move `4ad897c1-58f3-4841-a607-9d3083eaad41` 也返回成功但未消除周期性掉电。Mine 动作 `c57c3a2d-8526-4cc5-bad8-fb267a1d72d5` 以明确的 600-tick 断能失败覆盖旧 Move，之后位置稳定、核心能量从约 `1.14 MJ` 连续单调升到 `2.28 MJ`。第二次现场复验中，约 297.5 m 返程的末段 move 到达后仍必须用范围内 Mine 动作 `6d2df711-199e-4466-9ce9-1fa6204cf220` 覆盖；该动作正常产出 1 铁、终态位置/速度稳定。当前程序集 IL 证明 `PlayerOrder.Order` 把传入 `OrderNode` 同一引用直接设为 `currentOrder`，`Player.AbortOrder` 委托 `PlayerOrder.Abort`；源码已改为保存并比较精确引用。部署修复版后的动作 `ed605c94-10df-409b-91db-08c6aea4e0d5` 在仍距目标 `27.36 m`、连续 180 tick 位移少于 `0.75 m` 时于约 3 秒内明确 `action_failed`，只终止自己的订单；玩家停在 `(-91.71,-50.10,-170.78)`、速度 `0`，核心能量仍为 `400/400 MJ`，未再等全局超时或耗尽能源。planet `102` 的最后一段正常 move `985c9a1e-bb9f-4893-9f12-6c277f6ef4fa` 终态即时速度仍约 `4.18 m/s`，约 4 秒后自动降至 0、位置稳定且没有持续耗能，给出了“惯性 settling”与旧残留订单的直接对照。
+- 限制或反例：本次 live 样本验证了物理停滞窗口和精确终止；600-tick 最佳目标进度窗口、部署后的 harvest 冲突以及断能分支仍保留各自复验触发。Mine 覆盖动作同时把玩家带近电网，单调回充证据不能单独量化普通电塔/无线塔的充电机制。
 - 复验触发：下一次安全部署、任一 move/harvest 成功或失败终态、DSP `PlayerOrder` 实现变化、single-flight 规则变化或再次出现终态后位移/掉电。
 - 关联：EXP-031、EXP-035、EXP-036、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.cs`、`docs/research/game-api-m0.md`。
-- 最近复验：2026-08-31（旧 DLL 现场、当前程序集 IL 和完整离线构建已验证；新源码 live 待办）。
+- 最近复验：2026-09-01（修复版 180-tick 物理停滞窗口和精确订单终止已实机验证）。
 
 ### EXP-040 — factory objectId 与 resource nodeId 是独立命名空间，harvest 必须限距
 
@@ -570,15 +570,15 @@
 
 ### EXP-047 — 星际航行必须先落独立检查点，失败只重复加载同一票据
 
-- 状态：`observed`
+- 状态：`validated`
 - 日期：2026-08-31
-- 适用范围：当前 DSP `0.10.34.28529`、离线同星系飞行实现、`GameSave`/`DSPGame` 原生保存加载路径与后续钛星往返。
-- 当前结论：实际起飞提交必须把“独立保存成功”作为进入 `Fly/Sail` 之前的硬前置：内部生成高熵 `Spherewright_PreFlight_*` 名称，调用 `GameSave.SaveCurrentGame`，用 `GameSave.ReadHeader` 证明精确 tick，再把检查点 ID/token、内部档名、主 owned-save 身份、源 session/revision、起点/终点和状态哈希原子落到当前用户保护票据。任何一步失败都不得起飞。航行明确失败后只通过该可重复 token 调用 `DSPGame.StartGame` 加载同一档；加载后继续保留票据，下一次失败仍回到同一检查点，不枚举、猜测或接受外部存档名。
-- 直接证据：当前程序集反编译确认 `SaveCurrentGame(string)`、`ReadHeader(...)` 和 `DSPGame.StartGame(string)`；源码将检查点事务放在 `SwitchToFly` 之前，并让 reload prepare/commit 复验内部档名、header tick、嵌入主存档身份、起点星球及和平/非沙盒/1x 条件。active reload 只允许无未终止动作，或中断与票据 ID 相同的飞行动作。完整解决方案构建 0 warning / 0 error，57 tests passed（Contracts 3、Bridge.Core 42、MCP 12）；注册测试固定 43 个工具，新增包装测试证明公开 reload 只映射高熵 token、不映射 save name。
-- 限制或反例：当前游戏进程仍加载旧 Plugin，`restartResumeAvailable=false`；新检查点保存、原生飞行和重复加载尚未实机触发，因此本条不能标为 live `validated`，也不能据此现在关闭游戏部署。`ReadHeader` 只先证明文件/tick，真正载入后仍必须由 embedded owned identity 与模式/星球证据完成采用；超出保守飞行时长时控制保持活跃，不能把估算超时本身误判成坏档。
+- 适用范围：当前 DSP `0.10.34.28529`、同星系飞行实现、`GameSave`/`DSPGame` 原生保存加载路径与钛星往返。
+- 当前结论：实际起飞提交必须把“独立保存成功”作为进入 `Fly/Sail` 之前的硬前置：内部生成高熵 `Spherewright_PreFlight_*` 名称，调用 `GameSave.SaveCurrentGame`，用 `GameSave.ReadHeader` 证明精确 tick，再把检查点 ID/token、内部档名、主 owned-save 身份、源 session/revision、起点/终点和状态哈希原子落到当前用户保护票据。任何一步失败都不得起飞。航行明确失败后只通过该可重复 token 调用 `DSPGame.StartGame` 加载同一档；加载后继续保留票据，下一次失败仍回到同一检查点，不枚举、猜测或接受外部存档名。采用阶段必须排除主菜单演示 `GameData`，等待 `GameLoader` 结束且本地星球就绪；`GameData.Import` 会在读取存档 tick 前主动清空 `DSPGame.LoadFile`，所以该瞬态字段不能作为加载完成后的身份证据。最终证明改为提交时再次校验精确文件/header、唯一内部 `StartGame` 调用、嵌入的主 owned-save 身份、起点/模式和 `[savedTick,savedTick+3600]` 采用窗口。
+- 直接证据：当前程序集反编译确认 `SaveCurrentGame(string)`、`ReadHeader(...)`、`DSPGame.StartGame(string)` 以及 `GameData.Import(BinaryReader)` 清空 `DSPGame.LoadFile` 的顺序。首次实飞在 planet `104 -> 102` 前保存并复读检查点 tick `4617708`；同一保护票据在多次失败尝试后由动作 `dce307ac-9c46-4768-8f0e-25b4e4ebde05`、`a51f8653-cdab-478e-bd3b-558498e0f190` 等重复加载，均重新采用同一 tick 窗口、起点星球和主 owned-save 身份，而非创建新档。最终动作 `e6ba15c2-b04b-420a-8b9c-977671a63395` 以该检查点起飞并在 planet `102` 物理着陆。返航前又创建独立检查点 tick `4808424`；旧 DLL 物理落地但误报后、首版修复暴露瞬时 Walk 后，动作 `829be384-6740-45db-b3a2-5a8320e1b7a3` 与 `a27a51de-abde-4f0f-b378-cfacde88b25b` 继续从同一票据恢复。最终动作 `d95955e7-cd86-48dd-b79f-4cb54734863c` 成功返航并通过 600-tick 稳定落地，证明双向“先存—失败复读同一档—继续飞行”闭环成立。
+- 限制或反例：`ReadHeader` 只证明文件/tick，不能替代载入后的身份与模式校验；瞬时 `Walk` 也不能替代稳定着陆，详见 EXP-052。超出保守飞行时长时控制保持活跃，不能把估算超时本身误判成坏档。当前保护票据仍可复用，但主档已经在稳定返航后正常保存，后续不得无理由回滚到该旧检查点。
 - 复验触发：下一次安全 Plugin 部署、首次独立起飞检查点、任一飞行失败/重载/重复重试、成功着陆、DSP 保存头或飞行能耗实现变化。
 - 关联：EXP-004、EXP-005、EXP-036、EXP-038、`src/Spherewright.Plugin/RuntimeDescriptor/FlightCheckpointStore.cs`、`src/Spherewright.Plugin/Game/FlightCheckpointReloadCoordinator.cs`、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.InterplanetaryFlight.cs`、`docs/research/game-api-m0.md`。
-- 最近复验：2026-08-31（原生 API 反编译、保存先于起飞的源码审计、完整构建与 MCP 注册/映射测试；live 待部署）。
+- 最近复验：2026-09-01（去程检查点 `4617708`、返程检查点 `4808424`、跨进程同票据重复加载和稳定双向着陆均已 live）。
 
 ### EXP-048 — 首次手搓与首次产线产出必须使用两个原生计数域
 
@@ -586,11 +586,59 @@
 - 日期：2026-09-01
 - 适用范围：当前 DSP `0.10.34.28529`、逐 owned-save 日记、机甲复制器、工厂生产统计以及科技树选择。
 - 当前结论：不能用背包增量区分“手搓”和“产线”。手搓以 `GameHistoryData.GetFeatureValue(2140000 + recipeId)` 的持久完成次数乘 runtime `Results/ResultCounts`；产线以刚完成游戏 tick 的 `FactoryProductionStat.productRegister` 为独立信号。两类 item ID 分别去重，所以同一物品可以各有一次首次记录。科技/升级首次选择从正常 `currentTech/techQueue` 观察，并按 `TechProto.page` 的 `0/1` 分类。每条记录同时保存带时区的 ISO 实际时间、原始 `GameMain.gameTick` 与 60 tick/s 格式化局内时间。
-- 直接证据：当前程序集 IL 显示每个 `ForgeTask.Produce` 后调用 `AddFeatureValue(2140000 + recipeId, 1)`，包括不触发顶层 `onTaskDelivery` 的嵌套前置手搓；`Mecha.AddProductionStat` 直接调用 `AddProductionToTotalArray`，不写 `productRegister`，而矿机、制造、分馏、研究站、物流、电力与戴森生产 tick 均引用该寄存器。`TechProto.page` 对 ID `<2000` 返回 0，否则返回 1。实现以 owned-save 内部身份的 SHA-256 派生日记 ID，在当前用户保护目录原子持久化，并新增 owned-only 只读 MCP 工具；完整解决方案 0 warning/0 error，62 tests passed（Contracts 4、Bridge.Core 45、MCP 13）。
-- 限制或反例：当前主档早于该功能存在，无法从统计恢复过去事件的真实墙钟时间。首次附着会把已有手搓、生产和科研 ID 作为无时间的 historical seed，并明确返回 `historicalCoverageComplete=false`；不得把迁移时刻伪称旧物品的首次时刻。新档从 Spherewright 采用帧开始才具有完整覆盖。该实现尚待新版 Plugin 实机部署、文件 ACL/重启延续和首个新事件复验，因此当前不标 `validated`。
+- 直接证据：当前程序集 IL 显示每个 `ForgeTask.Produce` 后调用 `AddFeatureValue(2140000 + recipeId, 1)`，包括不触发顶层 `onTaskDelivery` 的嵌套前置手搓；`Mecha.AddProductionStat` 直接调用 `AddProductionToTotalArray`，不写 `productRegister`，而矿机、制造、分馏、研究站、物流、电力与戴森生产 tick 均引用该寄存器。`TechProto.page` 对 ID `<2000` 返回 0，否则返回 1。实现以 owned-save 内部身份的 SHA-256 派生日记 ID，在当前用户保护目录原子持久化，并新增 owned-only 只读 MCP 工具；完整解决方案 0 warning/0 error，62 tests passed（Contracts 4、Bridge.Core 45、MCP 13）。修复版部署并严格恢复同档后，日记以 `attached_existing_save`、`historicalCoverageComplete=false` 从 tick `4428079` 挂接，保护目录生成一个 SHA-256 派生文件；正常点选基础化工 `1121` 后新增 `technology_first_selected`，实际时间 `2026-09-01T00:49:36+08:00`、游戏 tick `4462081`、局内时间 `000d 20:39:28` 三者同时可读，未补造任何旧事件。
+- 限制或反例：当前主档早于该功能存在，无法从统计恢复过去事件的真实墙钟时间。首次附着会把已有手搓、生产和科研 ID 作为无时间的 historical seed，并明确返回 `historicalCoverageComplete=false`；不得把迁移时刻伪称旧物品的首次时刻。新档从 Spherewright 采用帧开始才具有完整覆盖。当前已验证文件创建、旧档迁移和首次科技选择；首次此前未出现物品的手搓/产线双事件、首次升级选择与下一次跨进程持续性仍待样本，因此本条暂不升级为完全 `validated`。
 - 复验触发：本次安全部署、首次日记文件创建/读取、首个此前未出现物品的手搓与产线双事件、首次科技/升级选择、跨进程恢复、DSP 生产统计或 feature ID 行为变化。
 - 关联：EXP-005、EXP-037、`src/Spherewright.Plugin/Game/GameplayJournalManager.cs`、`src/Spherewright.Bridge.Core/Journals/GameplayFirstOccurrenceDetector.cs`、`docs/research/game-api-m0.md`。
-- 最近复验：2026-09-01（当前程序集元数据/IL、完整构建、Core 去重测试、Contracts 脱敏测试与 MCP 注册/映射测试；live 待部署）。
+- 最近复验：2026-09-01（旧档挂接、保护文件和基础化工首次科技选择已 live；物品双事件与升级仍待复验）。
+
+### EXP-049 — 互为必需的两种原料不能无约束共用短带
+
+- 状态：`validated`
+- 日期：2026-09-01
+- 适用范围：当前基础传送带、基础分拣器、蓝矩阵站 `76` 与短距离双原料补给。
+- 当前结论：当配方必须同时取得 A/B 两种原料时，不得让两个无过滤源分拣器向容量很小的同一短带灌料；任一原料先占满全带后，设备因缺另一种原料无法启动，也就无法消费前者释放位置，形成稳定背压死锁。应使用两条独立输入带、已验证的配比/过滤方案，或足够长且具有受控混流的线路。只看源分拣器 `Working=true` 或持货不能证明物品到达设备。
+- 直接证据：新建 `73 -> 296 -> 295…291 -> 297 -> 76` 后磁线圈正常到达；随后专用电路仓 `298` 的分拣器 `299` 也接入同一 5 段带，蓝矩阵站先出现 `coil=6/circuit=0`，随后出现 `coil=0/circuit=6`，两只源分拣器分别保持携带 1 件、末端无可消费目标。独立电路带 `298 -> 311 -> 309…300 -> 312 -> 76` 与独立磁线圈带 `73 -> 330 -> 329…325 -> 331 -> 76` 接通后，蓝矩阵站恢复工作；同一基础化工研究哈希从 `720 -> 1123`，研究站出现 `6710` 的蓝矩阵内部缓冲，证明两条专线实际送达并被消费。
+- 限制或反例：这不是“所有混料带都禁止”；具有排序、过滤、优先级、足够缓冲或已证明配比的 sushi belt 仍可能可靠。当前结论限定于无过滤、短带、互为启动前提的双输入。
+- 复验触发：升级传送带/分拣器、引入堆叠或过滤、改变带长、配方速率、输入拓扑或出现再次背压。
+- 关联：EXP-015、EXP-044、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.StructuredActions.cs`。
+- 最近复验：2026-09-01（蓝矩阵双输入由混料死锁改为两条独立专线后恢复产出和研究哈希增长）。
+
+### EXP-050 — 原生 Sail 切换与离开母星必须分成两个受控阶段
+
+- 状态：`observed`
+- 日期：2026-09-01
+- 适用范围：DSP `0.10.34.28529` 的 `PlayerMove_Fly.GameTick`、`PlayerMove_Sail`、同星系近距离星际航行和当前 planet `104 -> 102` 样本。
+- 当前结论：当前程序集没有公开 `SwitchToSail`。进入 Sail 必须先让普通 Fly 路径满足高度、水平速度、推进器和建造 UI 条件，并持续通过原生 `input1.y/input0.y` 维持上升与前进；仅把 `targetAltitude` 写成 50 会被 native tick 降为 49.9 而永久错过阈值。满足条件后可严格复现 `PlayerMove_Fly.GameTick` 的同一分支：清空 Build command、设 `movementStateInFrame=Sail`、调用 `ResetSailState`、同步相机、通知 scenario 和移动状态变化，不改位置或能量。进入 Sail 后不能立即直指目的星：若射线穿过母星，必须先以径向外飞和切向绕行清除遮挡，再转入目的星制导。
+- 直接证据：实机 Fly 阶段在目标高度约 100 m、水平速度约 14.3–14.7 m/s、推进器等级 2、blueprint `None` 时进入 Sail。若立即指向 planet `102`，玩家首先向 planet `104` 表面回落；新增 departure 控制后，离表高度约 `132 -> 345 -> 499 m`，相对速度约 `129 -> 195.6 -> 199.2 m/s`，随后 `localPlanet=null`，目的星表面距离持续从约 `61106 -> 56424 -> … -> 2123 m` 并最终原生着陆。全程转向、加速和刹车均调用 `UseSailEnergy`，没有位置、星球或能量直接赋值。
+- 限制或反例：目前仍只有一个星系和同一对行星；控制频率使首航高能石墨从 87 降至 44，返航也消耗约 24 煤并把满核心压到接近零，说明能量节流仍需结合 tick 频率、轨道相位和更多距离样本优化。目的星瞬时 Walk 还可能回跳 Drift，航行成功必须叠加 EXP-052 的稳定落地窗口。
+- 复验触发：下一次返航、飞行距离/相对轨道变化、出生点不遮挡目的星、能量消耗异常、DSP Fly/Sail 实现变化。
+- 关联：EXP-035、EXP-046、EXP-047、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.InterplanetaryFlight.cs`、`docs/research/game-api-m0.md`。
+- 最近复验：2026-09-01（`104 -> 102` 去程与从同一 `102 -> 104` 检查点重复返航，均覆盖原生 Sail、离场、巡航、刹车和着陆）。
+
+### EXP-051 — 长距离地表移动使用有界球面分段，并在每段后等待惯性归零
+
+- 状态：`observed`
+- 日期：2026-09-01
+- 适用范围：当前 `prepare_move/commit_move`、半径约 200 m 的 planet `102`、无显著工厂障碍的矿区间移动和 `scripts/invoke-surface-route.ps1`。
+- 当前结论：跨越数百米的地表目标不应一次提交或用直角坐标线性插值穿过球体。先把起点/终点归一化，在球面做 slerp，并把每个路点重新投影到当前玩家半径；每段弧长暂限 30 m、单独 fresh read→prepare→commit，任一已提交动作失败立即停下。动作终态后等待速度降至 `<=0.1 m/s` 再读取下一段 hash；只有明确发生在 commit 前的 `STALE_STATE` 可以重新只读准备，不能重放已提交动作。最终还要复读目标距离、Walk、速度和写入健康。
+- 直接证据：首次临时 10 段路线把玩家从钛矿约 `216.7 m` 外带到节点 `322` 的 `6.70 m` 内，随后守恒手采 1000 钛。固化脚本从该矿区到煤节点 `380` 的剩余球面弧长 `246.2 m` 分为 9 段，动作目标误差均约 `1.93–2.23 m`，核心约 `85.7 -> 70.5 MJ`；最终复读距煤节点 `2.04 m`、范围内、Walk、速度 0、写入健康。脚本初版暴露两类可复验错误：PowerShell 浮点夹取/逗号优先级会产生错误向量；最后一段终态即时速度约 `4.18 m/s` 会让下一次位置 hash stale。当前版改为显式标量 clamp/括号、逐段 settling 和仅 prepare-stale 重读。
+- 限制或反例：这不是全局寻路器，也不会绕过建筑、悬崖或复杂碰撞；密集工厂仍由 EXP-036/039 的停滞 watchdog 在首个失败段终止，随后必须换侧向路点。当前只有 planet `102` 两条开阔路线样本，因此保持 `observed`，30 m 也只是保守经验值。
+- 复验触发：首次密集工厂路线、明显高差/水面、不同星球半径、任一段 stall、连续三条不同地形路线成功或 DSP Move 订单变化。
+- 关联：EXP-031、EXP-035、EXP-036、EXP-039、EXP-040、`scripts/invoke-surface-route.ps1`。
+- 最近复验：2026-09-01（钛矿接近和钛矿→煤矿两条球面分段路线；后一条由固化脚本 live 完成）。
+
+### EXP-052 — 飞行动作不能把瞬时 Walk 当成稳定着陆
+
+- 状态：`validated`
+- 日期：2026-09-01
+- 适用范围：当前 DSP `0.10.34.28529` 的目的星 Fly/Drift/Walk 过渡、`player.speed`、返航动作终态和可复用飞行检查点。
+- 当前结论：`localPlanet/player.planetId` 已指向目的星且某一 tick 出现 `Walk`，只证明发生地表接触，不证明着陆稳定。完成条件必须要求连续 600 game ticks 同时满足：目的星身份一致、玩家存活、`Walk`、速度 `<=0.1 m/s`；任何 Drift、Fly、Sail 或超速都会清零连续计时。首次目的星接触后给 7200 ticks 的有界 settling 窗口，仍不稳定则明确失败并保留原检查点。动作成功后还要短窗复读位置、速度与核心/燃料趋势。
+- 直接证据：只修复判断顺序的返航动作 `deb65f97-117d-463a-bf52-2da2b9091086` 在首次 Walk 瞬间返回 completed，但即时速度仍约 `3.41 m/s`；5 秒后复读为 `Drift`、约 `0.10 m/s`，燃料仓 `79 -> 67`、核心仅约 `0.2 MJ`，因此该“成功”被否决并由动作 `829be384-6740-45db-b3a2-5a8320e1b7a3` 重载同一检查点。部署连续窗口后，动作 `d95955e7-cd86-48dd-b79f-4cb54734863c` 先报告 grounded `201/600` ticks，最终只在 `600/600` 后完成；之后 10 秒三次样本位置完全一致、Walk/速度 0，核心 `32.84 -> 37.30 -> 41.74 MJ` 正常回充，未再漂移。
+- 限制或反例：600/7200 ticks 是当前碰撞与返航样本的保守阈值，不保证所有水面、极端地形或未来 DSP 版本都最优；稳定窗口解决“过早宣布完成”，不替代航行能量预算或碰撞物理。目的星若长期 Drift，必须失败并重载，而不是延长到无界等待。
+- 复验触发：下一次不同落点/星球返航、水面或高坡着陆、任何成功终态后位置变化、DSP Fly/Drift/Walk 转换变化。
+- 关联：EXP-039、EXP-047、EXP-050、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.InterplanetaryFlight.cs`。
+- 最近复验：2026-09-01（同一返航检查点的瞬时 Walk 反例与 600-tick 稳定成功正例）。
 
 ## 修订记录
 
@@ -633,3 +681,7 @@
 - 2026-08-31：机甲核心 II/驱动引擎 II 分别在 tick `3932513/4013644` 完成；以范围内 Mine 清除旧 Move 后，从石墨仓 `114` 守恒转移并加注 100 高能石墨，核心达到 `400/400 MJ`、燃料格余 91，动作 `0e59ee2f-5d49-44e6-bfd9-119bfe08c8c1` 正常保存主档 tick `4204523`。新增 EXP-047，把用户要求的“起飞前独立存档、失败反复加载同一档”固化为保存头证明、保护票据、严格采用与可重复 reload 的离线实现；完整解决方案 0 warning/0 error、57 tests passed，live 待安全部署。
 - 2026-08-31：用户要求关闭游戏前，动作 `387a4629-f1b4-4c40-ad6b-10f15e840219` 通过正常 save API 再次保存同一 owned 主档 tick `4409247`；最终 revision `354`、`ownedSaveState=saved`、`writeHealth=healthy`。该点被指定为下次唯一接续点。随后进程 `24828` 接受正常窗口关闭并退出，未强杀；runtime descriptor 已清理，固定 `_lastexit_.dsv` 于 `2026-08-31T14:54:27Z` 更新。现存两个恢复票据绑定旧进程/旧 session，与本局不匹配，不能用于恢复；下次必须先为该精确主档重建 owned-session 证明。新需求“每个新档分别记录物品首次手搓/首次产线产出、科技首次点击、升级首次点击，并同时记录实际时间和本局时间”只完成初步 API 审计，尚未形成经验条目或代码实现，下一次恢复该档后继续。
 - 2026-09-01：新增 EXP-048；把逐存档日记落为独立的手搓 feature counter、自动生产 register、科技页分类和双时间记录，旧档迁移明确不补造历史时间。公开面增至 44 个工具；完整构建 0 warning/0 error，62 tests passed，等待同档安全恢复后的实机复验。
+- 2026-09-01：同一主档通过受保护 handoff 与 fixed LastExit 严格恢复为 session `9e626e04-1b5e-452f-a8ab-27c59a450e51`，planet `104`、和平/非沙盒/1x、tick 高于 `4409247` 且自动重存健康；EXP-039 的 180-tick 停滞看门狗完成 live 验证，EXP-048 补上旧档日记挂接和首次科技选择证据。新增 EXP-049，以蓝矩阵混料短带的双向死锁及两条独立输入专线修复形成正反对照。
+- 2026-09-01：EXP-047 升级为 live `validated`：独立检查点 tick `4617708` 经同一 token 多次重载后继续起飞并物理着陆 planet `102`。新增 EXP-050，记录当前版本 Fly-to-Sail 精确分支、持续原生输入、母星遮挡判断与径向/切向离场；源码同时修复目的星 Fly 落地阶段被起飞超时误报的顺序问题，等待返航部署复验。
+- 2026-09-01：新增 EXP-051；把两次钛星长距离移动归纳为 30 m 球面 slerp 分段、逐段 prepare/commit、终态惯性 settling 和仅 commit 前 stale 重读，并落为 `scripts/invoke-surface-route.ps1`。1000 钛与首批 99 煤均以矿脉减少/背包增加守恒完成，返航燃料补给继续按实际能量读回推进。
+- 2026-09-01：新增 EXP-052；首版落地顺序修复被 5 秒复读证伪为瞬时 Walk→Drift，立即从返航检查点 `4808424` 恢复。加入 600-tick 连续稳定与 7200-tick 接触超时后，同一检查点返航动作 `d95955e7-cd86-48dd-b79f-4cb54734863c` 正常完成，10 秒后位置/速度仍稳定；1000 钛带回母星并由正常保存动作 `c6d7c88e-0c36-4c15-af29-3844a124ddc5` 落到主档 tick `4819163`。

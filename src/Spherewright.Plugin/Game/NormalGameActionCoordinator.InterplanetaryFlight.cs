@@ -11,6 +11,9 @@ internal sealed partial class NormalGameActionCoordinator
 {
     private const long FlightLaunchTimeoutTicks = 3600;
     private const long MinimumFlightTimeoutTicks = 216000;
+    private const long FlightLandingStableTicks = 600;
+    private const long FlightLandingTimeoutTicks = 7200;
+    private const float NativeSailEntryTargetAltitude = 100f;
 
     public GameCallResult<PreparedNormalAction> PrepareInterplanetaryFlightOnMainThread(
         string? requestedSessionId,
@@ -75,6 +78,15 @@ internal sealed partial class NormalGameActionCoordinator
                 "A DSP player order is still active, so launch would replace or race it.",
                 true,
                 "Wait for the exact move or harvest order to end, then inspect and prepare again."));
+        }
+
+        if (!BuildUiIsIdle(player))
+        {
+            return GameCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
+                BridgeErrorCodes.ServerBusy,
+                "The normal build UI still owns an active preview, so native flight controls are not isolated.",
+                true,
+                "Finish or cancel the current build preview, then inspect and prepare the flight again."));
         }
 
         if (destination.id == localPlanet.id
@@ -188,6 +200,7 @@ internal sealed partial class NormalGameActionCoordinator
             : 0d;
         if (player?.mecha is null || destination is null || player.movementState != EMovementState.Walk
             || player.currentOrder is not null || player.mecha.thrusterLevel < 2
+            || !BuildUiIsIdle(player)
             || coreRatio + 1e-9d < plan.MinimumCoreEnergyRatio
             || CalculateAvailableFlightEnergy(player.mecha) + 1d < plan.RequiredFlightEnergy)
         {
@@ -212,6 +225,12 @@ internal sealed partial class NormalGameActionCoordinator
         action.FlightBestDistance = action.Plan.EstimatedDistance;
         action.FlightBestDistanceAtGameTick = GameMain.gameTick;
         action.FlightLastControlGameTick = -1L;
+        action.FlightDestinationContactAtGameTick = -1L;
+        action.FlightStableLandingAtGameTick = -1L;
+        // PlayerMove_Fly caps targetAltitude below its own sail threshold while
+        // blueprint mode is retained. This is the same public setter the
+        // current-version native sail-entry branch uses before switching modes.
+        player.controller.actionBuild.blueprintMode = EBlueprintMode.None;
         EnterNativeFlight(player);
         action.State = NormalActionStates.WaitingForGame;
         action.Message = $"A separate pre-flight checkpoint was confirmed at tick {action.FlightCheckpointGameTick}; DSP then accepted native launch toward planet {action.Plan.DestinationPlanetId}.";
@@ -301,20 +320,60 @@ internal sealed partial class NormalGameActionCoordinator
 
         action.FlightLastControlGameTick = GameMain.gameTick;
         var localPlanet = GameMain.localPlanet;
-        if (localPlanet?.id == destination.id
-            && player.planetId == destination.id
-            && player.movementState == EMovementState.Walk)
+        var atDestination = localPlanet?.id == destination.id || player.planetId == destination.id;
+        if (atDestination)
         {
-            var after = _reader.GetPlayerStateOnMainThread(
-                action.SessionId,
-                new LocalPlanetRequest { PlanetId = destination.id });
-            if (after.Success && after.Value is not null)
+            ReleaseNativeAscentInput(action);
+            if (action.FlightDestinationContactAtGameTick < 0L)
             {
-                action.AfterStateHash = after.Value.StateHash;
-                Complete(action, $"Normal flight landed alive on planet {destination.id} and returned the player to Walk state.");
+                action.FlightDestinationContactAtGameTick = GameMain.gameTick;
             }
 
-            return;
+            if (GameMain.gameTick > action.FlightDestinationContactAtGameTick + FlightLandingTimeoutTicks)
+            {
+                Fail(action, $"Native landing on planet {destination.id} did not remain grounded within the bounded settling window; reload the bound pre-flight checkpoint before retrying.");
+                return;
+            }
+
+            if (player.movementState == EMovementState.Walk)
+            {
+                if (player.speed <= 0.1f)
+                {
+                    if (action.FlightStableLandingAtGameTick < 0L)
+                    {
+                        action.FlightStableLandingAtGameTick = GameMain.gameTick;
+                    }
+
+                    var stableTicks = GameMain.gameTick - action.FlightStableLandingAtGameTick;
+                    action.Message = $"Native landing on planet {destination.id} is grounded at {player.speed:F2} m/s for {stableTicks}/{FlightLandingStableTicks} verification ticks.";
+                    if (stableTicks >= FlightLandingStableTicks)
+                    {
+                        var after = _reader.GetPlayerStateOnMainThread(
+                            action.SessionId,
+                            new LocalPlanetRequest { PlanetId = destination.id });
+                        if (after.Success && after.Value is not null)
+                        {
+                            action.AfterStateHash = after.Value.StateHash;
+                            Complete(action, $"Normal flight remained alive, grounded, and in Walk state on planet {destination.id} for {FlightLandingStableTicks} verification ticks.");
+                        }
+
+                        return;
+                    }
+                }
+                else
+                {
+                    action.FlightStableLandingAtGameTick = -1L;
+                    action.Message = $"Native landing touched planet {destination.id} in Walk state but is still settling at {player.speed:F2} m/s.";
+                }
+
+                return;
+            }
+
+            action.FlightStableLandingAtGameTick = -1L;
+        }
+        else
+        {
+            action.FlightStableLandingAtGameTick = -1L;
         }
 
         if (player.movementState == EMovementState.Walk)
@@ -341,13 +400,27 @@ internal sealed partial class NormalGameActionCoordinator
         {
             if (localPlanet?.id == destination.id || player.planetId == destination.id)
             {
+                ReleaseNativeAscentInput(action);
                 player.controller.actionFly.targetAltitude = 1f;
                 player.controller.actionFly.moveVelocity = Vector3.zero;
                 player.controller.actionFly.rtsVelocity = Vector3.zero;
             }
             else
             {
-                player.controller.actionFly.targetAltitude = 50f;
+                if (GameMain.gameTick > action.StartedAtGameTick + FlightLaunchTimeoutTicks)
+                {
+                    Fail(action, "DSP did not enter native sail mode within the bounded launch window; the bound pre-flight checkpoint remains reusable.");
+                    return;
+                }
+
+                ApplyNativeAscentInput(action, player);
+                // PlayerMove_Fly.GameTick lowers an unattended targetAltitude by
+                // 0.1 before checking its >= 50 sail-entry threshold. Reasserting
+                // exactly 50 after each tick therefore converges to a permanent
+                // 49.9/50 oscillation. A modest margin lets DSP's own GameTick
+                // satisfy altitude, horizontal-speed, and thruster checks and run
+                // its native ResetSailState/camera/scenario transition.
+                player.controller.actionFly.targetAltitude = NativeSailEntryTargetAltitude;
                 var tangent = player.forward;
                 tangent -= Vector3.Dot(tangent, player.position.normalized) * player.position.normalized;
                 if (tangent.sqrMagnitude < 0.01f)
@@ -356,6 +429,21 @@ internal sealed partial class NormalGameActionCoordinator
                 }
 
                 player.controller.actionFly.moveVelocity = tangent.normalized * Math.Max(13f, player.mecha.walkSpeed * 2.5f);
+                action.Message = $"Native fly launch is at {player.controller.actionFly.currentAltitude:F1}/{player.controller.actionFly.targetAltitude:F1} m with {player.controller.horzSpeed:F1} m/s horizontal and {player.controller.vertSpeed:F1} m/s vertical speed; blueprint={player.controller.actionBuild.blueprintMode}, thruster={player.mecha.thrusterLevel}, frame-state={player.controller.movementStateInFrame}.";
+                if (TryEnterCurrentVersionNativeSail(player))
+                {
+                    ReleaseNativeAscentInput(action);
+                    var originPlanet = GameMain.galaxy?.PlanetById(action.PlanetId);
+                    if (originPlanet is not null
+                        && ControlNativeSailDeparture(player, originPlanet, destination, out var initialSurfaceDistance, out var initialRelativeSpeed))
+                    {
+                        action.Message = $"DSP's current-version native Fly-to-Sail branch accepted; immediate origin clearance began at {initialSurfaceDistance:F0} m and {initialRelativeSpeed:F1} m/s.";
+                    }
+                    else
+                    {
+                        action.Message = "DSP's current-version native Fly-to-Sail branch accepted the verified altitude, horizontal-speed, and thruster conditions.";
+                    }
+                }
             }
 
             return;
@@ -363,6 +451,20 @@ internal sealed partial class NormalGameActionCoordinator
 
         if (player.movementState < EMovementState.Sail)
         {
+            if (atDestination && GameMain.gameTick % 120L == 0L)
+            {
+                action.Message = $"Native landing has contacted planet {destination.id} in {player.movementState} state and is waiting for a stable grounded Walk state.";
+            }
+
+            return;
+        }
+
+        ReleaseNativeAscentInput(action);
+        var origin = GameMain.galaxy?.PlanetById(action.PlanetId);
+        if (origin is not null
+            && ControlNativeSailDeparture(player, origin, destination, out var departureSurfaceDistance, out var departureSpeed))
+        {
+            action.Message = $"Native sail is clearing the origin planet at {departureSurfaceDistance:F0} m above its surface and {departureSpeed:F1} m/s relative speed before turning toward planet {destination.id}.";
             return;
         }
 
@@ -437,6 +539,79 @@ internal sealed partial class NormalGameActionCoordinator
         }
     }
 
+    private static bool ControlNativeSailDeparture(
+        Player player,
+        PlanetData origin,
+        PlanetData destination,
+        out double surfaceDistance,
+        out double relativeSpeed)
+    {
+        var fromOrigin = player.uPosition - origin.uPosition;
+        var centerDistance = fromOrigin.magnitude;
+        surfaceDistance = Math.Max(0d, centerDistance - origin.realRadius);
+        if (centerDistance <= 1e-6d)
+        {
+            relativeSpeed = 0d;
+            return false;
+        }
+
+        var outward = (Vector3)(fromOrigin / centerDistance);
+        var toDestination = destination.uPosition - player.uPosition;
+        var destinationDirection = toDestination.magnitude > 1e-6d
+            ? (Vector3)(toDestination / toDestination.magnitude)
+            : outward;
+        var inwardProjection = Vector3.Dot(destinationDirection, outward);
+        var closestApproach = inwardProjection < 0f
+            ? centerDistance * Math.Sqrt(Math.Max(0d, 1d - inwardProjection * inwardProjection))
+            : double.MaxValue;
+        var lineOfSightBlocked = inwardProjection < 0f
+                                 && closestApproach < origin.realRadius + 100d;
+        if (surfaceDistance >= 500d && !lineOfSightBlocked)
+        {
+            relativeSpeed = 0d;
+            return false;
+        }
+
+        var tangent = destinationDirection - outward * inwardProjection;
+        if (tangent.sqrMagnitude < 0.01f)
+        {
+            tangent = Vector3.Cross(outward, player.forward);
+            if (tangent.sqrMagnitude < 0.01f)
+            {
+                tangent = Vector3.Cross(outward, Vector3.up);
+            }
+        }
+
+        var outwardWeight = surfaceDistance < 500d ? 1f : 0.25f;
+        var departureDirection = (outward * outwardWeight + tangent.normalized).normalized;
+        var astro = GameMain.galaxy.astrosData[origin.id];
+        var originVelocity = (astro.uPosNext - astro.uPos) * 60d;
+        var relativeVelocity = player.uVelocity - originVelocity;
+        relativeSpeed = relativeVelocity.magnitude;
+        if (relativeSpeed > 1e-6d)
+        {
+            var angle = VectorLF3.AngleDEG(relativeVelocity, (VectorLF3)departureDirection);
+            var turn = (float)(1.6d / Math.Max(10d, angle));
+            var desiredRelative = (VectorLF3)departureDirection * relativeSpeed;
+            var steered = (VectorLF3)Vector3.Slerp((Vector3)relativeVelocity, (Vector3)desiredRelative, turn);
+            var steeringDelta = steered - relativeVelocity;
+            player.controller.actionSail.UseSailEnergy(ref steeringDelta, 0.36d);
+            player.uVelocity += steeringDelta;
+            relativeVelocity = player.uVelocity - originVelocity;
+            relativeSpeed = relativeVelocity.magnitude;
+        }
+
+        var departureSpeed = Math.Min(200d, player.controller.actionSail.maxSailSpeed);
+        if (relativeSpeed < departureSpeed)
+        {
+            var acceleration = Math.Min(7d, departureSpeed - relativeSpeed);
+            var ratio = player.controller.actionSail.UseSailEnergy(acceleration);
+            player.uVelocity += (VectorLF3)departureDirection * (acceleration * ratio);
+        }
+
+        return true;
+    }
+
     private static void EnterNativeFlight(Player player)
     {
         var previous = player.movementState;
@@ -447,6 +622,86 @@ internal sealed partial class NormalGameActionCoordinator
         {
             player.controller.NotifyMovementStateChange(previous, next);
         }
+    }
+
+    private static bool TryEnterCurrentVersionNativeSail(Player player)
+    {
+        var controller = player.controller;
+        var fly = controller.actionFly;
+        if (player.movementState != EMovementState.Fly
+            || fly.targetAltitude < 50f
+            || fly.currentAltitude <= 49f
+            || controller.horzSpeed <= 12.5f
+            || player.mecha.thrusterLevel < 2
+            || GameCamera.instance is null
+            || GameMain.gameScenario is null)
+        {
+            return false;
+        }
+
+        // Assembly-CSharp exposes no SwitchToSail method. These are the exact
+        // side effects in PlayerMove_Fly.GameTick after its four guards above;
+        // velocity, position, energy, gravity, and collision remain untouched.
+        if (controller.cmd.type == ECommand.Build)
+        {
+            controller.cmd.SetNoneCommand();
+            controller.actionBuild.blueprintMode = EBlueprintMode.None;
+        }
+
+        var previous = player.movementState;
+        controller.movementStateInFrame = EMovementState.Sail;
+        controller.actionSail.ResetSailState();
+        GameCamera.instance.SyncForSailMode();
+        GameMain.gameScenario.NotifyOnSailModeEnter();
+        player.movementState = controller.movementStateInFrame;
+        if (player.movementState != previous)
+        {
+            controller.NotifyMovementStateChange(previous, player.movementState);
+        }
+
+        return true;
+    }
+
+    private static void ApplyNativeAscentInput(ActionRecord action, Player player)
+    {
+        if (!action.FlightAscentInputOwned)
+        {
+            action.FlightOriginalVerticalInput = player.controller.input1.y;
+            action.FlightOriginalForwardInput = player.controller.input0.y;
+            action.FlightAscentInputOwned = true;
+        }
+
+        // This is the same vertical-control channel PlayerMove_Fly.GameTick
+        // reads from ordinary player input. Keeping it positive across native
+        // ticks is required when rendering and simulation advance at different
+        // rates; targetAltitude alone decays back toward 15 between frames.
+        player.controller.input1.y = 1f;
+        // Sail entry also requires PlayerController.horzSpeed > 12.5. The
+        // actionFly.moveVelocity state decays toward zero when input0 is idle,
+        // so keep the ordinary forward-control channel asserted until DSP's
+        // native GameTick performs the Fly -> Sail transition.
+        player.controller.input0.y = 1f;
+    }
+
+    private static void ReleaseNativeAscentInput(ActionRecord action)
+    {
+        if (!action.FlightAscentInputOwned)
+        {
+            return;
+        }
+
+        var controller = GameMain.mainPlayer?.controller;
+        if (controller is not null && Math.Abs(controller.input1.y - 1f) < 0.0001f)
+        {
+            controller.input1.y = action.FlightOriginalVerticalInput;
+        }
+
+        if (controller is not null && Math.Abs(controller.input0.y - 1f) < 0.0001f)
+        {
+            controller.input0.y = action.FlightOriginalForwardInput;
+        }
+
+        action.FlightAscentInputOwned = false;
     }
 
     private static double CalculateAvailableFlightEnergy(Mecha mecha)

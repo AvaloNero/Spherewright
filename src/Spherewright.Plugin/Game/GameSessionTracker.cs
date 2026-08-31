@@ -108,7 +108,10 @@ internal sealed class GameSessionTracker
 
     public void UpdateOnMainThread()
     {
-        var running = GameMain.isRunning && GameMain.data is not null;
+        // DSP keeps a synthetic GameData alive for the animated main-menu demo.
+        // Treating that demo as a loaded world can consume a pending exact-load
+        // expectation before DSPGame.StartGame has created the real save loader.
+        var running = GameMain.isRunning && GameMain.data is not null && !DSPGame.IsMenuDemo;
         var currentData = running ? GameMain.data : null;
         if (!running || currentData is null)
         {
@@ -661,9 +664,23 @@ internal sealed class GameSessionTracker
     {
         pending = false;
         rejection = string.Empty;
-        if (!string.Equals(DSPGame.LoadFile, ticket.CheckpointSaveName, StringComparison.Ordinal))
+        if (UnityEngine.Object.FindObjectOfType<GameLoader>() is not null)
         {
-            rejection = "DSP did not load the exact internally named pre-flight checkpoint.";
+            pending = true;
+            rejection = "DSP is still running the exact flight-checkpoint loader.";
+            return false;
+        }
+
+        var localPlanet = currentData.localPlanet;
+        if (localPlanet is null)
+        {
+            // GameLoader publishes a new GameData before it has populated the
+            // save identity, local planet, and final DSPGame.LoadFile state.
+            // Keep the exact expectation armed until the world has crossed
+            // that native readiness boundary; validating earlier rejects a
+            // legitimate checkpoint on its transient loader values.
+            pending = true;
+            rejection = "The flight-checkpoint origin planet is still loading.";
             return false;
         }
 
@@ -679,6 +696,19 @@ internal sealed class GameSessionTracker
             return false;
         }
 
+        // GameData.Import deliberately clears DSPGame.LoadFile before it reads
+        // the saved tick, so that transient field cannot be a post-load proof.
+        // Commit already revalidates the exact internal file/header and is the
+        // only path that arms this ticket before calling StartGame with that
+        // name. Bound adoption to the first minute of resumed simulation as an
+        // additional final-state guard against a different later save of the
+        // same primary owned world.
+        if (GameMain.gameTick > ticket.SavedGameTick + 3600L)
+        {
+            rejection = "The loaded flight-checkpoint candidate advanced beyond the bounded adoption window.";
+            return false;
+        }
+
         var descriptor = currentData.gameDesc;
         if (descriptor is null
             || !descriptor.isPeaceMode
@@ -687,14 +717,6 @@ internal sealed class GameSessionTracker
             || Math.Abs(descriptor.resourceMultiplier - 1f) > 0.0001f)
         {
             rejection = "The flight checkpoint did not prove peaceful, non-sandbox, normal 1x settings.";
-            return false;
-        }
-
-        var localPlanet = currentData.localPlanet;
-        if (localPlanet is null)
-        {
-            pending = true;
-            rejection = "The flight-checkpoint origin planet is still loading.";
             return false;
         }
 

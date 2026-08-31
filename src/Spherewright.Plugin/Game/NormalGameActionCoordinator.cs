@@ -1175,6 +1175,11 @@ internal sealed partial class NormalGameActionCoordinator
 
     private void Complete(ActionRecord action, string message)
     {
+        if (action.ActionKind == NormalActionKinds.InterplanetaryFlight)
+        {
+            ReleaseNativeAscentInput(action);
+        }
+
         action.State = NormalActionStates.Completed;
         action.Terminal = true;
         action.Succeeded = true;
@@ -1187,6 +1192,11 @@ internal sealed partial class NormalGameActionCoordinator
 
     private void Fail(ActionRecord action, string message)
     {
+        if (action.ActionKind == NormalActionKinds.InterplanetaryFlight)
+        {
+            ReleaseNativeAscentInput(action);
+        }
+
         action.State = NormalActionStates.ActionFailed;
         action.Terminal = true;
         action.Succeeded = false;
@@ -1785,6 +1795,11 @@ internal sealed partial class NormalGameActionCoordinator
         public long FlightLastControlGameTick { get; set; }
         public double FlightBestDistance { get; set; }
         public long FlightBestDistanceAtGameTick { get; set; }
+        public long FlightDestinationContactAtGameTick { get; set; }
+        public long FlightStableLandingAtGameTick { get; set; }
+        public bool FlightAscentInputOwned { get; set; }
+        public float FlightOriginalVerticalInput { get; set; }
+        public float FlightOriginalForwardInput { get; set; }
         public string? FlightCheckpointId { get; set; }
         public string? FlightCheckpointReloadToken { get; set; }
         public long? FlightCheckpointGameTick { get; set; }

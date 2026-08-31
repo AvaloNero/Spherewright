@@ -8,7 +8,7 @@
 
 ## 2026-08-31 M0 完成状态（当前权威）
 
-- 当前精确 owned session 为 `c51a4fd0-5a50-4fb2-8520-f7acf216334d`、星球 `104`；和平、1x、关闭沙盒。用户要求关机前，动作 `387a4629-f1b4-4c40-ad6b-10f15e840219` 已通过正常 save API 再次确认同一主档 tick `4409247`；最终 session revision `354`、`ownedSaveState=saved`、`writeHealth=healthy`。这是下次唯一允许接续的存档点，不得创建或改用其他档。当前已部署旧版仍报告 `restartResumeAvailable=false`，因此下次必须先对该精确主档重新建立 owned-session 证明，再执行任何游戏写入；不能把正常保存成功误当作自动接管能力已经验证。
+- 当前精确 owned session 为 `c51a4fd0-5a50-4fb2-8520-f7acf216334d`、星球 `104`；和平、1x、关闭沙盒。用户要求关机前，动作 `387a4629-f1b4-4c40-ad6b-10f15e840219` 已通过正常 save API 再次确认同一主档 tick `4409247`；最终 session revision `354`、`ownedSaveState=saved`、`writeHealth=healthy`。这是下次唯一允许接续的存档点，不得创建或改用其他档。进程 `24828` 随后接受 `CloseMainWindow` 并正常退出，未强杀；对应 runtime descriptor 已移除，固定 `_lastexit_.dsv` 在 `2026-08-31T14:54:27Z` 更新。当前已部署旧版退出前报告 `restartResumeAvailable=false`；磁盘上的两个受保护恢复票据均绑定更早的进程/会话，与本局 session 不匹配，严禁使用。因此下次必须先对 tick `4409247` 的精确主档重新建立 owned-session 证明，再执行任何游戏写入；不能把正常保存或 LastExit 更新时间误当作自动接管能力已经验证。
 - 当前离线源码/MCP 注册面为 43 个工具；除既有精确 quarantine reconciliation 与一次性 fixed-LastExit 同档恢复外，新增同星系原生飞行和可重复的精确飞行检查点读档。检查点接口不接受/枚举存档名，只能使用起飞提交内部生成并落盘的高熵 token。
 - Gate C 的同位置分拣器归属修复已部署并实机验证：旧 `164` 与新 `181` 共享精炼厂 `141` 的源端姿态，但分别输出至 `163` 与 `170`，新 action 只归属 `181`，会话未隔离。
 - Gate D 已完成。研究站 `256` 配方 `18` 在接料前能量矩阵 item `6002` 为 0；石墨链 `114 -> 257 -> 256` 与氢链 `165 -> 205…255 -> 258 -> 256` 接通后，同一输出 buffer 依次读到 3、6，后续继续积累至 10。post-M0 输出链 `256 -> 261 -> 260` 已接通，仓库 `260` 复读到 22 个能量矩阵，研究站输出清空并恢复工作。

@@ -25,18 +25,18 @@ function Get-VectorMagnitude([double[]]$Vector) {
     return [Math]::Sqrt($squaredMagnitude)
 }
 
-function Wait-ForSettledPlayer([int]$Seconds = 5) {
+function Wait-ForSettledPlayer([int]$Seconds = 10) {
     $deadline = (Get-Date).AddSeconds($Seconds)
     do {
         $snapshot = Get-CurrentPlayerSnapshot
-        if ([double]$snapshot.speed -le 0.1) {
+        if ($snapshot.movementState -eq 'Walk' -and [double]$snapshot.speed -le 0.1) {
             return $snapshot
         }
 
         Start-Sleep -Milliseconds 250
     } while ((Get-Date) -lt $deadline)
 
-    throw "The player was still moving at $($snapshot.speed) m/s after the settle window."
+    throw "The player did not settle into Walk state below 0.1 m/s after the settle window (state=$($snapshot.movementState), speed=$($snapshot.speed))."
 }
 
 function Get-SurfacePoint(

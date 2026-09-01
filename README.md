@@ -5,7 +5,7 @@
 
 Spherewright is a structured, safety-first control bridge for **Dyson Sphere Program**. It lets an external MCP-capable Agent observe the live game and perform bounded actions through normal DSP systems—without embedding an LLM, editing saves, injecting items, or driving the UI with screenshots and keyboard/mouse macros.
 
-The project is experimental and under active development. The original **M0 — First Red Matrix** milestone is complete; the current development save has also validated automatic power-engine, plastic, titanium-ingot, diamond, gear, electric-motor, water, organic-crystal, and titanium-crystal production plus same-star interplanetary flight. Structure Matrix research is now active on the path to the yellow-matrix production chain.
+The project is experimental and under active development. The original **M0 — First Red Matrix** milestone is complete; the current development save has also validated automatic power-engine, plastic, titanium-ingot, diamond, gear, electric-motor, water, organic-crystal, titanium-crystal, and structure-matrix production plus same-star interplanetary flight. Development is now moving from the completed yellow-matrix line toward planetary and interstellar logistics.
 
 Runtime evidence currently targets DSP `0.10.34.28529`, single-player peaceful mode, sandbox disabled, and 1× resources.
 
@@ -113,9 +113,9 @@ The detailed, evidence-backed status lives in [docs/m0-status.md](./docs/m0-stat
 - secure local Bridge and MCP surface: complete;
 - ordinary peaceful 1× owned-world observation and action primitives: complete for the validated DSP build;
 - first automatic red matrix: complete;
-- automatic power engine, plastic, titanium ingot, diamond, gear, electric motor, water, and organic crystal: complete;
+- automatic power engine, plastic, titanium ingot, diamond, gear, electric motor, water, organic crystal, titanium crystal, and structure matrix: complete;
 - native same-star checkpointed flight: complete for the validated route;
-- yellow-matrix chain and broader compatibility: in progress.
+- planetary/interstellar logistics and broader compatibility: in progress.
 
 There are no stability or compatibility guarantees yet. Before reporting a bug, include the DSP version, BepInEx version, Spherewright commit, the structured error code, and sanitized action/state evidence—never auth tokens, plan tokens, raw save identities, or save files.
 

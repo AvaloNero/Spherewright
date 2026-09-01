@@ -1867,6 +1867,11 @@ internal sealed class GameStateReader
 
     private static string? GetBasicLineRole(PrefabDesc descriptor)
     {
+        if (descriptor.minerType == EMinerType.Water)
+        {
+            return "water-pump";
+        }
+
         if (descriptor.oilMiner || descriptor.minerType == EMinerType.Oil)
         {
             return "oil-extractor";

@@ -5,7 +5,7 @@
 
 Spherewright is a structured, safety-first control bridge for **Dyson Sphere Program**. It lets an external MCP-capable Agent observe the live game and perform bounded actions through normal DSP systems—without embedding an LLM, editing saves, injecting items, or driving the UI with screenshots and keyboard/mouse macros.
 
-The project is experimental and under active development. The original **M0 — First Red Matrix** milestone is complete; the current development save has also validated automatic power-engine, plastic, titanium-ingot, diamond, gear, electric-motor, water, and organic-crystal production plus same-star interplanetary flight. Work is now advancing through titanium crystals toward the yellow-matrix production chain.
+The project is experimental and under active development. The original **M0 — First Red Matrix** milestone is complete; the current development save has also validated automatic power-engine, plastic, titanium-ingot, diamond, gear, electric-motor, water, organic-crystal, and titanium-crystal production plus same-star interplanetary flight. Structure Matrix research is now active on the path to the yellow-matrix production chain.
 
 Runtime evidence currently targets DSP `0.10.34.28529`, single-player peaceful mode, sandbox disabled, and 1× resources.
 

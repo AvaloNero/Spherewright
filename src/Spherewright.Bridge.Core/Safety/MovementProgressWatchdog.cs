@@ -145,6 +145,31 @@ public sealed class MovementProgressWatchdog
                 remainingDistance);
     }
 
+    public void ResetWindow(
+        long gameTick,
+        double x,
+        double y,
+        double z,
+        double remainingDistance)
+    {
+        if (gameTick < _lastDisplacementGameTick || gameTick < _lastTargetProgressGameTick)
+        {
+            throw new ArgumentOutOfRangeException(nameof(gameTick));
+        }
+
+        ValidateFinite(x, nameof(x));
+        ValidateFinite(y, nameof(y));
+        ValidateFinite(z, nameof(z));
+        ValidateNonNegativeFinite(remainingDistance, nameof(remainingDistance));
+
+        _checkpointX = x;
+        _checkpointY = y;
+        _checkpointZ = z;
+        _lastDisplacementGameTick = gameTick;
+        _bestRemainingDistance = remainingDistance;
+        _lastTargetProgressGameTick = gameTick;
+    }
+
     private static void ValidateFinite(double value, string parameterName)
     {
         if (double.IsNaN(value) || double.IsInfinity(value))

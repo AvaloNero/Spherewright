@@ -1410,9 +1410,11 @@ internal sealed partial class NormalGameActionCoordinator
                     ? entityIds[index + 1]
                     : plan.DestinationObjectId;
                 factory.ReadObjectConn(entityIds[index], 0, out var isOutput, out var otherObjectId, out _);
-                if (expectedOutput > 0 && (!isOutput || otherObjectId != expectedOutput))
+                if (!BeltConnectionProof.OutputMatches(expectedOutput, isOutput, otherObjectId))
                 {
-                    rejection = $"Belt segment {entityIds[index]} output is not connected to {expectedOutput}.";
+                    rejection = expectedOutput > 0
+                        ? $"Belt segment {entityIds[index]} output is not connected to {expectedOutput}."
+                        : $"Belt segment {entityIds[index]} unexpectedly has an output-side connection to object {otherObjectId}.";
                     return false;
                 }
             }

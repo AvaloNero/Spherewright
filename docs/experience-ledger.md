@@ -750,14 +750,15 @@
 - 状态：`observed`
 - 日期：2026-09-01
 - 适用范围：180-tick 看门狗已确认零/低位移、附近同时存在两个以上建筑或带体、单一障碍背离方向仍失败的地表 Walk。
-- 当前结论：EXP-057 的单障碍切向背离在多基座夹缝里可能把玩家推向另一个碰撞体。先复读半径约 5–7 m 内实体；若多个大碰撞体方向接近，最多枚举当前位置切平面的四个正交 4 m 短目标，每个方向只提交一次 fresh move，首个成功立即停止。全部失败就重新扫描或走正常保存/重启恢复流程，不能扩大为无界随机游走。脱困后先等 `Walk` 且速度 `<=0.1 m/s`，再走显式侧向 waypoint 绕开已识别障碍。
+- 当前结论：EXP-057 的单障碍切向背离在多基座夹缝里可能把玩家推向另一个碰撞体。先复读半径约 5–7 m 内实体；若多个大碰撞体方向接近，最多枚举当前位置切平面的四个正交 4 m 短目标，每个方向只提交一次 fresh move，首个成功立即停止。全部失败就重新扫描；若按用户规则走正常保存/重启恢复，必须把它理解为清除进程和旧订单的恢复边界，不能假定读档会移动玩家或消除已保存的几何夹缝。恢复后只可基于 fresh 几何再做新的有界探测，不能照抄上一轮四向重放。脱困后先等 `Walk` 且速度 `<=0.1 m/s`，再走显式侧向 waypoint 绕开已识别障碍。
 - 直接证据：玩家先贴住电塔 `39` 约 0.8 m，按 EXP-057 背离 5 m 成功；随后落在仓 `287` 与制造台 `285` 夹缝，单仓背离和三障碍合成排斥方向都被看门狗以零位移终止。四向 4 m 探测中 east 失败、west 动作 `d3794796-d0e1-4c7a-a537-d5b31990e89e` 成功，之后正常到达风机 `82`。另一处玩家压住原油带 `151`、前方有油井 `129`；east 再次失败，west 动作 `393942fc-5736-4a55-afc5-431d4c29b021` 成功，随后经侧向 waypoint 绕过油井并到达塔 `182`。
 - 直接证据：钛晶石预建后，玩家处在电塔 `133`（约 2.12 m）、新输入仓 `768`（约 1.76 m）和 sorter `770/771`（约 2.8 m）之间；前往风机 `82` 的长 Move `a7e44dbd-4e13-40de-8608-bbf453a280cb` 几乎没有位移并被看门狗终止，剩余约 39.42 m。fresh 几何读回后，把多个近端实体的合成排斥方向投影到局部切平面，仅提交第一条 4 m 候选；动作 `8707b409-12b8-4400-83dc-044e48eaf94b` 即成功到达 `(-75.90817,-100.361412,-155.7321)`，终态 Walk、速度 0，核心仍为 `399.97/400 MJ`。本例证明四向上限不要求固定枚举完四条；几何给出的首个自由候选一旦成功就立即停止。
 - 直接证据：结构矩阵研究等待期间，玩家又先后被仓 `286`/制造台 `285`/仓 `287` 的外围碰撞面和带 `689/690`/矿机 `3` 卡停。第一处根据三座大基座计算的 4 m 合成切向动作 `5bd0b7ae-6259-4252-9dc7-8b6c62acaa12` 一次完成，并把三者中心距同时扩大；第二处的首条合成排斥方向动作 `ae6cb304-d9bc-42a3-9459-ab6e10a9f9b3` 被 181-tick 看门狗明确终止，正交且背离矿机的第二候选动作 `4885c756-6f9e-415b-89e4-69b10dc1f8e0` 才一次脱困。两组对照表明“合成排斥”不是必然首选成功方向，仍须保留至多四向、每向一次且首个成功即停的边界。
+- 直接证据：后续为钢材线补上游铁矿时，范围内 harvest 先在电塔 `39` 约 `0.80 m` 处停滞；返回已验证落点后，侧向长 waypoint 又把玩家带到仓 `286`/制造台 `285`/仓 `287` 夹缝。合成排斥、两条正交滑移和单仓背离四个 fresh 短动作分别由 `5f524835-d3d4-4238-93e7-124ac4680167`、`0ba69040-a5d0-478c-8019-1eae23bafc58`、`7b73545b-e5e7-4243-8d8e-1100128ab149`、`0b229fd5-af68-4104-9b4a-54f66b258ef8` 明确判停，没有继续随机探路。正常保存到 tick `7027343` 并按 protected ticket 恢复后，玩家仍在约 `(-81.28,-53.32,-175.04)`，证明重启不改变已保存碰撞位置；该边界由 EXP-081 单独固化。
 - 限制或反例：四向探测只用于已明确终止的短距离 Walk，不适用于水面 Drift、悬崖、飞行或能量不足；方向成功只证明离开当前碰撞，不证明通往最终目标。每次失败都是新的已知终态动作，仍要保留能量余量并禁止相同方向重放。
 - 复验触发：下一次多基座夹缝、四方向全部失败、不同建筑半径、短探测成功后速度未归零或可从实体几何直接算出唯一自由扇区。
 - 关联：EXP-035、EXP-036、EXP-051、EXP-053、EXP-057。
-- 最近复验：2026-09-01（仓/制造台夹缝首候选成功；带/矿机夹缝首候选失败、正交第二候选成功）。
+- 最近复验：2026-09-01（同一仓/制造台夹缝新增四向全部失败反例；正常重启保留精确位置，未扩大为随机游走）。
 
 ### EXP-062 — 锁定配方的预建产线只在科技解锁后激活，里程碑以自动产出、日记和普通保存三重验收
 
@@ -888,17 +889,17 @@
 
 ### EXP-071 — LastExit 未刷新时只能回到票据绑定的最新健康主档，不能伪造关闭证据
 
-- 状态：`validated`
+- 状态：`superseded`
 - 日期：2026-09-01
 - 适用范围：健康 owned session 已签发一次性重启票据、随后 Unity 主线程停滞且正常窗口关闭未更新 fixed LastExit 的恢复。
-- 当前结论：优先恢复 source process 退出后新鲜的 fixed LastExit；若其时间明确早于票据，绝不改文件时间、伪造票据或枚举存档。唯一允许的兜底是：票据本身已密封高熵 owned 主档名和 minimum tick，且该精确主档文件的更新时间处于票据签发容差内时，内部把这个唯一名字交给 `DSPGame.StartGame`。加载后仍必须同时验收高熵身份、`gameTick >= minimumGameTick`、星球、和平/非沙盒/1×，成功后消费旧票据并重存/重签发。该路径只承诺最近健康保存点，明确放弃票据之后未落盘、结果不明的动作。
+- 当前结论：本条关于“不伪造 LastExit、不枚举存档、只接受票据内精确主档”的证据仍成立，但“健康重启优先 fresh LastExit”已由 EXP-084 替代。现行规则按票据类型分流：健康 planned restart 只加载票据内精确 primary；只有 quarantine recovery 才允许 fresh LastExit 保留未保存进度，且两者都要在 commit 前以 header tick 验证 minimum game tick。
 - 直接证据：新 sorter 提交后的 `get_action_result` 首次返回 Unity main-thread `REQUEST_TIMEOUT`，随后三次 `get_session_state` 均在相同边界超时；进程仍存活且 BepInEx 无动作异常。正常 `CloseMainWindow` 被接受并退出，但 `_lastexit_.dsv` 的 UTC 修改时间保持 `2026-09-01T03:55:16.1927201Z`，旧恢复器因此正确返回 `STALE_STATE: LastExit predates ticket`，没有加载。
 - 直接证据：新增 `OwnedWorldResumeSourceSelector` 后，只有 fresh LastExit 优先，或 fresh exact owned primary 兜底，二者都过期则拒绝；Core 新增 4 项策略测试，Contracts/Core/MCP 合计 `4 + 55 + 13 = 72` 项测试通过，完整构建 0 warning/0 error。部署后动作 `f3d5586f-9ede-49b5-8b88-d2dd191f7377` 明确报告 exact ticket-bound primary 通过，minimum tick `6028336`，新 session `905747a6-21cd-4782-81c0-9abeb5b5536a` 在 tick `6028418`、planet `104`、和平/非沙盒/1×、healthy，并再次签发下一张票据。
 - 直接证据：恢复后 sorter 背包仍为 4，既有修复实体 `721` 及其 `580 slot5 -> 721 -> 36 slot1` 拓扑存在，而未能证明且未落盘的候选实体 `722` 返回 `INVALID_ENTITY`。这证明兜底严格回到 ticket minimum 对应健康保存点，没有把超时请求猜成成功，也没有重复提交。
 - 限制或反例：兜底不保留票据签发后的未保存进度；如果 exact primary 也早于签发容差、源进程仍活着、加载后 tick/身份/星球/模式任一不符，必须拒绝。它不接受调用方存档名、不列目录、不解析/修改存档，也不替代正常保存与正常 LastExit 更新。
 - 复验触发：下一次主线程停滞关闭、primary 时间容差变化、不同文件系统时间精度、同名身份/tick 验收变化，或 exact primary 兜底被错误用于正常 fresh LastExit。
 - 关联：EXP-004、EXP-005、EXP-006、EXP-038、EXP-064、EXP-069、`src/Spherewright.Plugin/Game/OwnedWorldResumeCoordinator.cs`。
-- 最近复验：2026-09-01（stale LastExit 拒绝、exact primary 单一兜底、minimum tick/实体回滚边界的完整 live 对照）。
+- 最近复验：2026-09-01（历史 live 对照仍有效；源选择优先级已由 EXP-084 的新安全边界替代）。
 
 ### EXP-072 — Plugin 引用的新 Core 类型要求同批部署所有 Spherewright 程序集
 
@@ -1003,7 +1004,75 @@
 - 关联：EXP-021、EXP-028、EXP-062、EXP-073、EXP-074、EXP-077、EXP-078。
 - 最近复验：2026-09-01（结构矩阵 recipe 27 解锁后一次激活，自动输出 `7 -> 10`，日记序号 18 与正常保存共同闭环）。
 
+### EXP-080 — 活跃仓并发补货会掩盖 transfer 的源端净差量
+
+- 状态：`observed`
+- 日期：2026-09-01
+- 适用范围：`storage-to-player` 或 `player-to-storage` 的目标仓仍被自动产线持续输入/输出，动作前后只读取聚合库存总数的现场。
+- 当前结论：正常 transfer 的动作终态和玩家端精确差量可以证明玩家确实取得或交付目标物，但活跃仓在两次快照间的并发生产/分拣可能刚好抵消源端预期负差量。此时不得把“源仓总数未变”解释为动作未执行并重放，也不能把聚合 `before -> after` 伪写成完整双边守恒。若里程碑必须证明静态双边守恒，应先使用不再通料的仓、短时隔离输入，或把同一窗口的生产增量纳入明确记账；否则只陈述已经由终态与玩家差量证明的较窄事实。
+- 直接证据：为修复钢材上游而从持续收纳电路板的仓 `26` 取 1 个 item `1301`。动作完成后 fresh player 明确 `0 -> 1`，但仓内电路板聚合仍为 `400 -> 400`，与该仓正在被电路板产线补货一致。客户端守恒断言因此报错，但没有重放；后续背包仍保留该 1 个电路板。这个样本不否定 transfer 的内部精确检查，只否定“跨活跃窗口的两个聚合快照必然显示相反净差量”。
+- 限制或反例：静态仓或已证明无并发通料的窗口仍应要求双边相反差量和增殖点守恒；不能借本条放宽 prepare/commit 的 fresh hash、物品 ID、数量、容量或终态要求。单个 `400 -> 400` 样本尚未量化并发补货的精确时间顺序。
+- 复验触发：下一次活跃仓 transfer、引入仓库事件计数/生产寄存器差量、把产线输入临时隔离后复测，或 transfer DTO 增加动作内部双边明细。
+- 关联：EXP-007、EXP-021、EXP-028、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.StructuredActions.cs`。
+- 最近复验：2026-09-01（玩家电路板 `0 -> 1`、活跃仓聚合 `400 -> 400`，展示断言失败后未重放）。
+
+### EXP-081 — 正常保存重启清理进程状态，但不会把玩家移出已保存的碰撞夹缝
+
+- 状态：`observed`
+- 日期：2026-09-01
+- 适用范围：玩家在地表多基座夹缝中由 180-tick 看门狗明确停单、随后按 protected restart ticket 正常保存/关闭/恢复同一 owned world。
+- 当前结论：计划内重启是进程、桥 session、旧订单和恢复证明的边界，不是几何脱困或重生接口。正常保存会保留玩家坐标；同档读回后必须先验证 tick/星球/模式/日记/关键实体，再把保留坐标视为新的 fresh 起点。可以因旧订单已清空而重新计算一个有界方向，但不得假定重启自动消除建筑碰撞，也不得无界重复上一轮失败方向。
+- 直接证据：四向脱困全部明确失败后，动作 `975afb12-fc7e-4356-a760-30efe2279729` 正常保存同一主档到 tick `7027343`、revision `487 -> 488` 并签发恢复票据。DSP 接受正常窗口关闭；直接启动可执行文件被 Steam 立即结束，改用当前 Steam 客户端的正式 `-applaunch 1366540` 后新进程启动。动作 `4e74efd5-2408-495f-bf27-44328e5cb461` 只消费受保护票据并恢复 planet `104`，首次 tick `7030072 >= 7027343`，和平、非沙盒、1×、healthy 全部成立；钢炉/仓/分拣器 `791–794` 和日记序号 20 均存在。恢复前后玩家都在约 `(-81.28,-53.32,-175.04)`，因此没有发生几何重定位。
+- 限制或反例：本条不证明重启对所有碰撞都无帮助；Unity 物理状态和旧订单确实被重建，fresh 短探测仍可能成功。Steam 启动要求属于本机当前账号/客户端现场，换机或启动器变化后必须重新探测，不能硬编码为通用游戏 API。
+- 复验触发：下一次卡脚重启、读档后首个短探测、玩家死亡/重生、DSP 保存玩家姿态实现变化、Steam 启动行为变化或恢复门槛不一致。
+- 关联：EXP-005、EXP-036、EXP-039、EXP-061、EXP-069、EXP-071。
+- 最近复验：2026-09-01（保存/正常关闭/Steam 启动/protected resume 完整闭环；玩家位置被精确保留）。
+
+### EXP-082 — 星际飞行失败只能重载同一绑定检查点，失败分类必须结构化
+
+- 状态：`validated`
+- 日期：2026-09-01
+- 适用范围：同星系 interplanetary-flight 已创建独立 checkpoint，返航在启动或落地验证阶段失败，主档尚未接受本次飞行成功。
+- 当前结论：飞行 commit 一旦被接受，轮询或客户端后处理失败都不能用新幂等键重放；只有 terminal 明确失败后，才用该动作返回且方向/tick 与本次飞行一致的 reload token 回到同一 checkpoint，再做 fresh 玩家/星系/能量复读并准备下一次尝试。失败应以 `recovery_required=true` 和可选 `stalled=true` 结构化返回，不能只把“请 reload”藏在 message；成功稳定落地后立即取消 reload capability，待覆盖成功 tick 的精确主档保存完成再永久 retire ticket。
+- 直接证据：返航 `102 -> 104` 首次动作在目标星球接触后因限定窗口内未保持 grounded 而 terminal `action_failed`；严格恢复本次 checkpoint 后，第二次动作又因 3600 tick 内未进入 native Sail 而失败。两次都未重放 commit，也未生成新 checkpoint。再次恢复同一 checkpoint 的第三次尝试在 tick `7128712` 于 planet `104`、Walk 状态正常完成，随后精确主档保存到 tick `7146048`、write health healthy。相同起点先后覆盖“落地不稳、未入 Sail、成功落地”三种结果，证明重试对象必须是同一 checkpoint，而失败类型不能从调用方猜测。
+- 限制或反例：第三次成功不证明当前飞行控制对所有姿态稳定；现部署 DLL 仍只有文本恢复提示，新结构化状态和 lifecycle 要在新 DLL 部署后复验。checkpoint 重试不会回滚外部 journal，因此成功主档保存后继续暴露旧 token 会造成时间线分叉，必须由 EXP-083 的 retire 规则消除。
+- 复验触发：新 DLL 首次 flight failure、结构化 `recovery_required/stalled` 读回、成功主档保存后 session capability 消失、ticket 过期或进程崩溃中断飞行。
+- 关联：EXP-004、EXP-005、EXP-047、EXP-050、EXP-052、`src/Spherewright.Plugin/Game/NormalGameActionCoordinator.InterplanetaryFlight.cs`、`src/Spherewright.Plugin/RuntimeDescriptor/FlightCheckpointStore.cs`。
+- 最近复验：2026-09-01（同一返航 checkpoint 两次明确失败、第三次成功、随后主档正常保存）。
+
+### EXP-083 — 新主档时间线一旦覆盖飞行 checkpoint，旧回档能力必须立即失效
+
+- 状态：`observed`
+- 日期：2026-09-01
+- 适用范围：pre-flight checkpoint、成功飞行、外部逐存档 journal 与成功后的精确 primary save。
+- 当前结论：checkpoint 不能只凭“文件仍在且 header tick 相等”永久有效。ticket 至少需要 24 小时过期、`active -> recovery_required -> flight_succeeded -> retired` 生命周期；成功飞行先把 token 从 SessionState/capability 移除，覆盖成功 tick 的 primary save 再持久化 retired。Plugin 启动时若精确 primary header 已新于 checkpoint tick，也必须把旧/legacy ticket 视为被主时间线 supersede，防止升级前遗留 token 回滚已经保存的世界而让外部 journal 留在未来。
+- 直接证据：源码复核确认旧 `FlightCheckpointStore` 的有效性只有 version/gameVersion/字段/文件 header，`TryValidateReloadContext` 在当前游戏只核对 owned save、在主菜单只核对 ready；旧返航 checkpoint tick `4808424` 因而理论上仍可覆盖已保存到 `6905142` 之后的黄糖世界。当前修复在 ticket 中加入生命周期/expiry/attempt tick，成功时封存、主档保存后 retire，并在启动时用票据内唯一 owned 主档的 header tick 识别已覆盖时间线。
+- 直接证据：部署前同一主档再次保存到 tick `7198197`。新 Release 启动日志随后明确记录已载入 legacy flight ticket，并因精确 primary header 更新而将其 retire；主菜单和恢复后的 SessionState 均为 `flightCheckpointAvailable=false`，capabilities 不含 reload，且没有读取或选择其他存档。这补齐了“更晚主档淘汰旧 checkpoint”的 live 证据；新版本自身的 `flight_succeeded -> primary-save -> retired` 路径仍等下一次真实飞行复验。
+- 限制或反例：启动时只读取 ticket 内唯一精确主档 header，不枚举存档、不解析内容；primary tick 新于 checkpoint 是单向 supersede 证据，不能反过来证明较旧 primary 可替代失败重试。当前条目在完整构建、测试和新 DLL 实机复验前保持 observed。
+- 复验触发：本批 build/test、正常重启部署、session 不再暴露旧 checkpoint、下一次新 flight 成功/保存/重启完整闭环。
+- 关联：EXP-005、EXP-047、EXP-048、EXP-069、EXP-079、EXP-082、`src/Spherewright.Plugin/RuntimeDescriptor/FlightCheckpointStore.cs`、`src/Spherewright.Plugin/Game/GameSessionTracker.cs`。
+- 最近复验：2026-09-01（Release 部署后 legacy ticket 被精确主档 header 自动 retire，Session capability 双次复读均消失）。
+
+### EXP-084 — 健康重启与隔离恢复必须选择不同的唯一载入源
+
+- 状态：`observed`
+- 日期：2026-09-01
+- 适用范围：一次性 owned-world resume ticket 的 planned restart 与 quarantine recovery 两种来源语义。
+- 当前结论：健康 planned restart 已在签票前完成精确 primary save，因此只能加载 ticket 内 sealed high-entropy primary；fresh LastExit 不提供额外进度，反而可能由另一世界刷新。只有 quarantine recovery 为保留尚未正常保存的进度才使用 fixed LastExit。两类候选都必须在 prepare/commit 期间读取 header 并证明 `gameTick >= MinimumGameTick`，加载后仍做 owned identity/planet/peaceful/non-sandbox/1× 后验采用。消费则先写 token-hash 专属 durable tombstone，再 best-effort 删除双副本；启动从 runtime/handoff 中按最新 issued generation 选择并拒绝任一目录存在 tombstone 的 token，避免删除失败复活。
+- 直接证据：旧 selector 的纯函数和测试明确无条件优先 fresh LastExit，coordinator 也只比较文件 mtime 后直接 `StartGame`；旧 `Consume()` 先清内存、后 best-effort 删除。当前源码已按 `QuarantineActionId` 分流候选、把 header tick 纳入纯 Core 选择器，并改成每 token 独立 tombstone 与双副本最新 generation 选择。
+- 直接证据：Release 完整 solution 0 warning/0 error，Contracts/Core/MCP 共 `4 + 59 + 13 = 76` 项测试通过。部署后的 planned restart prepare 绑定 minimum tick `7198197`，commit 终态 message 明确为 ticket-bound primary owned save；fresh session 在 planet `104`、tick 不低于门槛、和平/非沙盒/1×、healthy，并立即重签下一 generation。旧 token 的 SHA-256 命名 tombstone 在 runtime 与 handoff 两处各有一个，删除结果不再是唯一消费证据。quarantine-only LastExit 分支尚未故意触发。
+- 限制或反例：LastExit header 本身不含已证明的 high-entropy owned identity，quarantine 路径仍依赖加载后的严格采用；若 header/timestamp 任一不足必须拒绝。镜像副本不是文件系统跨目录事务，安全性来自同一 token generation、至少一个 durable replica 与全局 tombstone 拒绝，而不是声称两个 rename 原子同步。
+- 复验触发：本批 Core selector 测试、双副本/删除故障注入测试、下一次健康 planned restart、下一次真实 quarantine、tombstone 删除失败模拟。
+- 关联：EXP-005、EXP-038、EXP-064、EXP-069、EXP-071、EXP-072、`src/Spherewright.Bridge.Core/Safety/OwnedWorldResumeSourceSelector.cs`、`src/Spherewright.Plugin/RuntimeDescriptor/OwnedWorldResumeTicketStore.cs`。
+- 最近复验：2026-09-01（健康 exact-primary 选择、header minimum、双 tombstone 与新 generation 均完成 live；quarantine 分支待自然触发）。
+
 ## 修订记录
+
+- 2026-09-01：本批 Release 完整构建 0 warning/0 error、76 tests passed；同批部署 hash 为 Plugin `3BD98E6CA5A129173F0870259F56286084E43B3C6ECD59D0B027685B13AE7BB9`、Core `22D088E5540B77E69C3A949D0253C6DBE08FFD7BAE8E9E9423C781A147AF3E4A`、Contracts `88C8F76840EF5A214561CCC579BC2923021D828FCFF8F20E9F72AE01921BF4C1`。planned restart 实机只选精确 primary，journal 序号 `20` 已 durable through `20`，旧 flight capability 消失，resume consumption 在两处各有 durable tombstone。
+
+- 2026-09-01：新增 EXP-082–084，并把 EXP-071 标为 superseded。返航用同一 checkpoint 经“落地不稳/未入 Sail”两次明确失败后第三次成功，主档保存到 tick `7146048`；源码复核确认旧 checkpoint 无生命周期、健康 resume 会错误优先 fresh LastExit、消费无 tombstone，现行经验改为 flight 成功封存/主档 retire、planned primary/quarantine LastExit 分流、header tick 前验与 token-hash durable tombstone。
+
+- 2026-09-01：修订 EXP-061 并新增 EXP-080/081。活跃仓 `26` 的并发电路板补货证明 transfer 源端聚合净差量可能被抵消，客户端展示断言失败后没有重放；仓 `286` 多基座夹缝的四向探测全部明确失败，正常保存到 tick `7027343` 后经 Steam 正式启动和 protected ticket 恢复，同档 tick/模式/日记/钢材实体全部越过门槛，但玩家坐标被原样保留，撤销“重启本身会几何脱困”的隐含假设。
 
 - 2026-08-31：创建账本；录入并复核本轮已知的构建、启动、恢复、动作协调、状态稳定、电力、分拣器和执行优先级经验。尚未把 EXP-006、EXP-011、EXP-012 的待实机范围误标为完全验证。
 - 2026-08-31：EXP-011 加入储仓 `136` 到热电站 `134` 实测约 8.90 m 仍为 `TooFar` 的反证，撤销任何“约 9 m 可能足够”的隐含假设。

@@ -604,6 +604,14 @@ internal sealed partial class NormalGameActionCoordinator
         return false;
     }
 
+    public bool HasRecoveryRequiredFlightOnMainThread(string checkpointId) =>
+        !string.IsNullOrWhiteSpace(checkpointId)
+        && _actions.Values.Any(action =>
+            action.Terminal
+            && action.RecoveryRequired
+            && action.ActionKind == NormalActionKinds.InterplanetaryFlight
+            && string.Equals(action.FlightCheckpointId, checkpointId, StringComparison.Ordinal));
+
     public void NotifyFlightCheckpointReloadStartingOnMainThread(FlightCheckpointTicket ticket)
     {
         foreach (var action in _actions.Values.Where(action =>
@@ -732,6 +740,12 @@ internal sealed partial class NormalGameActionCoordinator
             || !string.Equals(_sessions.SessionId, action.SessionId, StringComparison.Ordinal)
             || (!isFlight && GameMain.localPlanet?.id != action.PlanetId))
         {
+            if (isFlight)
+            {
+                Fail(action, "The owned session ended before the normal flight completed; its bound checkpoint requires recovery.");
+                return;
+            }
+
             action.State = NormalActionStates.ActionFailed;
             action.Terminal = true;
             action.CompletedAtGameTick = GameMain.gameTick;
@@ -770,6 +784,7 @@ internal sealed partial class NormalGameActionCoordinator
             return;
         }
 
+        var wasPowerStarved = action.PowerStarvedAtGameTick.HasValue;
         if (FailPowerStarvedPlayerOrder(action, "movement"))
         {
             return;
@@ -786,6 +801,16 @@ internal sealed partial class NormalGameActionCoordinator
             player.position.y,
             player.position.z,
             distance);
+        if (wasPowerStarved)
+        {
+            action.MovementProgress.ResetWindow(
+                GameMain.gameTick,
+                player.position.x,
+                player.position.y,
+                player.position.z,
+                distance);
+        }
+
         var progress = action.MovementProgress.Observe(
             GameMain.gameTick,
             player.position.x,
@@ -1178,6 +1203,26 @@ internal sealed partial class NormalGameActionCoordinator
         if (action.ActionKind == NormalActionKinds.InterplanetaryFlight)
         {
             ReleaseNativeAscentInput(action);
+            var lifecycleRejection = "The bound checkpoint identity is missing.";
+            if (string.IsNullOrWhiteSpace(action.FlightCheckpointId)
+                || !_flightCheckpoints.TryMarkFlightSucceeded(
+                    action.FlightCheckpointId!,
+                    action.ActionId,
+                    GameMain.gameTick,
+                    out lifecycleRejection))
+            {
+                action.State = NormalActionStates.OutcomeUnknown;
+                action.Terminal = true;
+                action.Succeeded = false;
+                action.CompletedAtGameTick = GameMain.gameTick;
+                action.Message = $"The physical flight completed, but its rollback checkpoint could not be sealed before the primary save: {lifecycleRejection}";
+                action.AfterInventory = CaptureInventory(GameMain.mainPlayer);
+                action.AfterStateHash ??= CaptureAfterStateHash(action);
+                _sessions.QuarantineWritesOnMainThread(action.ActionId, action.Message);
+                return;
+            }
+
+            _sessions.ForgetCurrentFlightCheckpoint(action.FlightCheckpointId!);
         }
 
         action.State = NormalActionStates.Completed;
@@ -1195,9 +1240,23 @@ internal sealed partial class NormalGameActionCoordinator
         if (action.ActionKind == NormalActionKinds.InterplanetaryFlight)
         {
             ReleaseNativeAscentInput(action);
+            if (!string.IsNullOrWhiteSpace(action.FlightCheckpointId))
+            {
+                action.RecoveryRequired = true;
+                if (!_flightCheckpoints.TryMarkRecoveryRequired(
+                        action.FlightCheckpointId!,
+                        action.ActionId,
+                        GameMain.gameTick,
+                        out var lifecycleRejection))
+                {
+                    message += $" Checkpoint lifecycle persistence also failed: {lifecycleRejection}";
+                }
+            }
         }
 
-        action.State = NormalActionStates.ActionFailed;
+        action.State = action.RecoveryRequired
+            ? NormalActionStates.RecoveryRequired
+            : NormalActionStates.ActionFailed;
         action.Terminal = true;
         action.Succeeded = false;
         action.CompletedAtGameTick = GameMain.gameTick;
@@ -1256,6 +1315,8 @@ internal sealed partial class NormalGameActionCoordinator
             FlightCheckpointId = action.FlightCheckpointId,
             FlightCheckpointReloadToken = action.FlightCheckpointReloadToken,
             FlightCheckpointGameTick = action.FlightCheckpointGameTick,
+            Stalled = action.Stalled,
+            RecoveryRequired = action.RecoveryRequired,
         };
         var after = action.AfterInventory ?? CaptureInventory(GameMain.mainPlayer);
         foreach (var itemId in action.BeforeInventory.Keys.Concat(after.Keys).Distinct().OrderBy(id => id))
@@ -1803,6 +1864,10 @@ internal sealed partial class NormalGameActionCoordinator
         public string? FlightCheckpointId { get; set; }
         public string? FlightCheckpointReloadToken { get; set; }
         public long? FlightCheckpointGameTick { get; set; }
+
+        public bool Stalled { get; set; }
+
+        public bool RecoveryRequired { get; set; }
         public List<int> PrebuildIds { get; set; } = new List<int>();
         public List<BuildExpectedEntity> ExpectedBuildEntities { get; set; } = new List<BuildExpectedEntity>();
         public HashSet<int> PreexistingBuildEntityIds { get; } = new HashSet<int>();

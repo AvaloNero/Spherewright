@@ -99,7 +99,9 @@ internal sealed class OwnedWorldResumeCoordinator
             MinimumGameTick = ticket.MinimumGameTick,
             CommitAllowedNow = blockers.Count == 0,
             CommitBlockers = blockers,
-            CompletionCondition = "DSP loads the fresh fixed LastExit slot, or only when LastExit was not updated, the exact fresh primary owned save named inside the protected ticket; adoption still requires the embedded high-entropy owned name, minimum game tick, planet, peaceful mode, non-sandbox mode, and 1x resources.",
+            CompletionCondition = string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
+                ? "A healthy planned restart loads only the exact primary owned save named inside the protected ticket after its header proves the minimum game tick; adoption still requires the embedded high-entropy owned name, planet, peaceful mode, non-sandbox mode, and 1x resources."
+                : "Quarantine recovery loads only the fresh fixed LastExit slot after its header proves the minimum game tick; adoption still requires the embedded high-entropy owned name, planet, peaceful mode, non-sandbox mode, and 1x resources.",
         });
     }
 
@@ -285,30 +287,51 @@ internal sealed class OwnedWorldResumeCoordinator
             return false;
         }
 
-        var lastExitWrittenAt = TryReadSaveWrittenAt(GameSave.LastExit);
-        var ownedPrimaryWrittenAt = TryReadSaveWrittenAt(ticket.OwnedSaveName);
+        TryReadSaveEvidence(GameSave.LastExit, out var lastExitWrittenAt, out var lastExitGameTick);
+        TryReadSaveEvidence(ticket.OwnedSaveName, out var ownedPrimaryWrittenAt, out var ownedPrimaryGameTick);
         resumeSource = OwnedWorldResumeSourceSelector.Select(
+            !string.IsNullOrWhiteSpace(ticket.QuarantineActionId),
+            ticket.MinimumGameTick,
             ticket.IssuedAtUtc,
             lastExitWrittenAt,
+            lastExitGameTick,
             ownedPrimaryWrittenAt,
+            ownedPrimaryGameTick,
             TimeSpan.FromSeconds(2));
         if (resumeSource == OwnedWorldResumeSourceKind.None)
         {
-            rejection = "Neither DSP's fixed LastExit slot nor the exact ticket-bound primary owned save is fresh enough for this authenticated source session.";
+            rejection = string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
+                ? "The exact ticket-bound primary owned save is not fresh enough or its header is older than the planned-restart minimum game tick."
+                : "DSP's fixed LastExit slot is not fresh enough or its header is older than the quarantine-recovery minimum game tick.";
             return false;
         }
 
         return true;
     }
 
-    private static DateTimeOffset? TryReadSaveWrittenAt(string saveName)
+    private static void TryReadSaveEvidence(
+        string saveName,
+        out DateTimeOffset? writtenAtUtc,
+        out long? gameTick)
     {
+        writtenAtUtc = null;
+        gameTick = null;
         try
         {
             var path = GameSave.SavePath(saveName);
-            return string.IsNullOrWhiteSpace(path) || !File.Exists(path)
-                ? (DateTimeOffset?)null
-                : new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            {
+                return;
+            }
+
+            GameSave.ReadHeader(saveName, false, out var header);
+            if (header is null || header.gameTick < 0)
+            {
+                return;
+            }
+
+            writtenAtUtc = new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
+            gameTick = header.gameTick;
         }
         catch (Exception exception) when (
             exception is IOException
@@ -316,7 +339,8 @@ internal sealed class OwnedWorldResumeCoordinator
             || exception is ArgumentException
             || exception is NotSupportedException)
         {
-            return null;
+            writtenAtUtc = null;
+            gameTick = null;
         }
     }
 

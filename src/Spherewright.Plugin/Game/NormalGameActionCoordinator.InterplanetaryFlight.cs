@@ -11,6 +11,7 @@ internal sealed partial class NormalGameActionCoordinator
 {
     private const long FlightLaunchTimeoutTicks = 3600;
     private const long MinimumFlightTimeoutTicks = 216000;
+    private const long MinimumFlightProgressStallTicks = 18000;
     private const long FlightLandingStableTicks = 600;
     private const long FlightLandingTimeoutTicks = 7200;
     private const float NativeSailEntryTargetAltitude = 100f;
@@ -218,6 +219,16 @@ internal sealed partial class NormalGameActionCoordinator
     {
         if (!EnsureFlightCheckpointOnMainThread(action))
         {
+            return;
+        }
+
+        if (!_flightCheckpoints.TryMarkAttemptStarted(
+                action.FlightCheckpointId!,
+                action.ActionId,
+                GameMain.gameTick,
+                out var lifecycleRejection))
+        {
+            Fail(action, $"Native launch was not started because its checkpoint lifecycle could not be armed: {lifecycleRejection}");
             return;
         }
 
@@ -483,7 +494,17 @@ internal sealed partial class NormalGameActionCoordinator
         var timeout = Math.Max(MinimumFlightTimeoutTicks, action.Plan.EstimatedTicks * 6L);
         if (GameMain.gameTick > action.StartedAtGameTick + timeout)
         {
-            action.Message = $"Native sail exceeded its conservative estimate at {surfaceDistance:F0} m from planet {destination.id}; control remains active and the bound checkpoint can be reloaded if progress has actually failed.";
+            action.Stalled = true;
+            Fail(action, $"Native sail exceeded its bounded timeout at {surfaceDistance:F0} m from planet {destination.id}; the bound checkpoint must be reloaded before another attempt.");
+            return;
+        }
+
+        var progressStallWindow = Math.Max(MinimumFlightProgressStallTicks, action.Plan.EstimatedTicks * 2L);
+        if (surfaceDistance > destination.realRadius
+            && GameMain.gameTick > action.FlightBestDistanceAtGameTick + progressStallWindow)
+        {
+            action.Stalled = true;
+            Fail(action, $"Native sail made no new best-distance progress for {progressStallWindow} game ticks while {surfaceDistance:F0} m from planet {destination.id}; the bound checkpoint must be reloaded before another attempt.");
         }
     }
 

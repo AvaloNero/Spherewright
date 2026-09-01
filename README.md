@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D4)](#requirements)
+[![Windows Core CI](https://github.com/AvaloNero/Spherewright/actions/workflows/windows-core-ci.yml/badge.svg)](https://github.com/AvaloNero/Spherewright/actions/workflows/windows-core-ci.yml)
 
 Spherewright is a structured, safety-first control bridge for **Dyson Sphere Program**. It lets an external MCP-capable Agent observe the live game and perform bounded actions through normal DSP systems—without embedding an LLM, editing saves, injecting items, or driving the UI with screenshots and keyboard/mouse macros.
 
@@ -14,9 +15,9 @@ Runtime evidence currently targets DSP `0.10.34.28529`, single-player peaceful m
 - An authenticated, current-user-only Named Pipe between the game Plugin and the local MCP server.
 - Structured reads for the player, progression, recipes, build catalog, resources, factory entities, power, the local star system, actions, and the per-save gameplay journal.
 - Two-phase `prepare → commit` actions for movement, harvesting, handcrafting, research, construction, building configuration, transfers, refuelling, saving, and recovery.
-- Native-tick same-star flight with a separately saved, reusable pre-flight checkpoint.
-- Exact owned-world restart handoff through DSP's fresh fixed LastExit flow, with a ticket-bound latest-healthy-primary fallback only when a failed shutdown did not refresh LastExit; Spherewright never exposes a save picker or enumerates unrelated saves.
-- Per-save first-event journaling for manual output, production-line output, technology selection, and upgrade selection, including wall-clock and in-save time.
+- Native-tick same-star flight with a separately saved, expiring pre-flight checkpoint that remains reusable only while that exact flight needs recovery, then loses its capability on success and retires after the covering primary save.
+- Exact owned-world restart handoff: healthy planned restarts load only the ticket-bound primary save, while quarantine recovery alone may use a fresh fixed LastExit whose header already proves the minimum tick. Spherewright never exposes a save picker or enumerates unrelated saves.
+- Per-save first-event journaling for manual output, production-line output, technology selection, and upgrade selection, including wall-clock/in-save time plus the durable-through sequence, pending-write flag, and persistence error.
 - Readback, state hashes, short-lived plans, idempotency, single-flight execution, and write quarantine when a result cannot be proved.
 
 Spherewright is a control layer, not an autonomous planner. The external Agent decides what to do; Spherewright supplies typed state, legal primitives, and evidence-backed results.

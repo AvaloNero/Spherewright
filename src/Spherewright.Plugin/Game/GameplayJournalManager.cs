@@ -25,6 +25,7 @@ internal sealed class GameplayJournalManager : IDisposable
     private GameplayJournalDocument? _document;
     private GameplayFirstOccurrenceDetector? _detector;
     private long _lastScannedGameTick = -1;
+    private long _durableThroughSequence;
     private bool _pendingPersist;
     private string? _persistenceError;
 
@@ -168,6 +169,9 @@ internal sealed class GameplayJournalManager : IDisposable
             TrackingStartedAtGameTick = _document.TrackingStartedAtGameTick,
             TrackingStartedAtGameTime = _document.TrackingStartedAtGameTime,
             CapturedAtGameTick = GameMain.gameTick,
+            DurableThroughSequence = _durableThroughSequence,
+            PersistencePending = _pendingPersist,
+            PersistenceError = _persistenceError,
             Entries = _document.Entries.Select(CloneEntry).ToList(),
         });
     }
@@ -216,7 +220,11 @@ internal sealed class GameplayJournalManager : IDisposable
             _document = document;
             _detector = CreateDetector(document);
             _lastScannedGameTick = -1;
-            _pendingPersist = !File.Exists(path);
+            var existedOnDisk = File.Exists(path);
+            _durableThroughSequence = existedOnDisk
+                ? document.Entries.Select(entry => entry.Sequence).DefaultIfEmpty(0L).Max()
+                : 0L;
+            _pendingPersist = !existedOnDisk;
             _persistenceError = null;
             if (_pendingPersist && !TryPersist())
             {
@@ -513,6 +521,10 @@ internal sealed class GameplayJournalManager : IDisposable
 
             _pendingPersist = false;
             _persistenceError = null;
+            _durableThroughSequence = _document.Entries
+                .Select(entry => entry.Sequence)
+                .DefaultIfEmpty(0L)
+                .Max();
             return true;
         }
         catch (Exception exception) when (
@@ -548,6 +560,7 @@ internal sealed class GameplayJournalManager : IDisposable
         _document = null;
         _detector = null;
         _lastScannedGameTick = -1;
+        _durableThroughSequence = 0L;
         _pendingPersist = false;
         _persistenceError = null;
     }

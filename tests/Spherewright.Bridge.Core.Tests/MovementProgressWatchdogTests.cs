@@ -59,6 +59,21 @@ public sealed class MovementProgressWatchdogTests
     }
 
     [Fact]
+    public void ResetWindow_DiscardsPausedTicksBeforeEnergyRecovery()
+    {
+        var watchdog = CreateWatchdog(positionStallTicks: 10, routeStallTicks: 30);
+
+        watchdog.ResetWindow(300, 0.2, 0, 0, 99.8);
+
+        Assert.Equal(
+            MovementProgressStatus.Progressing,
+            watchdog.Observe(309, 0.2, 0, 0, 99.8).Status);
+        Assert.Equal(
+            MovementProgressStatus.PositionStalled,
+            watchdog.Observe(310, 0.2, 0, 0, 99.8).Status);
+    }
+
+    [Fact]
     public void Constructor_RejectsRouteWindowShorterThanPositionWindow()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>

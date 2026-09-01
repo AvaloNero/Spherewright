@@ -19,7 +19,7 @@ External Agent
 
 The Pipe worker parses bounded DTO envelopes and enqueues immutable commands. `SpherewrightBridgeHost.PumpMainThread` updates session identity and runs a bounded number of commands inside a frame budget. Results leave the main thread only as Spherewright-owned deep copies.
 
-Save privacy is based on creation provenance and exact object identity. The Plugin arms only its own new-game transition and binds the resulting `GameData`; an unrelated loaded session receives restricted status without save/player/factory reads. M0 does not enumerate or load existing saves. Post-M0 flight recovery is limited to the separate checkpoint Spherewright itself creates immediately before launch: an internal name and reusable protected token bind its exact tick, primary owned identity, origin and destination, and no public request can supply a save name.
+Save privacy is based on creation provenance and exact object identity. The Plugin arms only its own new-game transition and binds the resulting `GameData`; an unrelated loaded session receives restricted status without save/player/factory reads. M0 does not enumerate or load existing saves. Post-M0 flight recovery is limited to the separate checkpoint Spherewright itself creates immediately before launch: an internal name and lifecycle-bounded protected token bind its exact tick, primary owned identity, origin and destination, and no public request can supply a save name. The token is reloadable only for a failed/interrupted flight, expires after 24 hours, disappears on stable success, and retires after a covering primary save.
 
 For M0, all gameplay mutations must use current-version normal business paths:
 

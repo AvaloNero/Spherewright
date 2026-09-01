@@ -47,6 +47,7 @@ public static class NormalActionStates
     public const string WaitingForGame = "waiting_for_game";
     public const string Completed = "completed";
     public const string ActionFailed = "action_failed";
+    public const string RecoveryRequired = "recovery_required";
     public const string OutcomeUnknown = "outcome_unknown";
 }
 

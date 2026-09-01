@@ -10,6 +10,7 @@ namespace Spherewright.Plugin.RuntimeDescriptor;
 internal sealed class FlightCheckpointStore
 {
     private const int TicketVersion = 1;
+    private static readonly TimeSpan TicketLifetime = TimeSpan.FromHours(24);
     private readonly string _ticketPath;
     private readonly string _bridgeInstanceId;
     private readonly string _gameVersion;
@@ -30,10 +31,11 @@ internal sealed class FlightCheckpointStore
         _gameVersion = gameVersion;
         _logger = logger;
         _currentTicket = ReadFromDisk();
+        RetireIfCoveredByNewerPrimarySave();
         _logger.LogInfo("Spherewright initialized the protected reusable flight-checkpoint store");
     }
 
-    public FlightCheckpointTicket? CurrentTicket => IsStructurallyValid(_currentTicket)
+    public FlightCheckpointTicket? CurrentTicket => IsReloadEligible(_currentTicket)
         ? _currentTicket
         : null;
 
@@ -61,6 +63,7 @@ internal sealed class FlightCheckpointStore
         }
 
         var checkpointId = Guid.NewGuid().ToString("N");
+        var issuedAt = DateTimeOffset.UtcNow;
         return new FlightCheckpointTicket
         {
             Version = TicketVersion,
@@ -77,7 +80,9 @@ internal sealed class FlightCheckpointStore
             DestinationPlanetId = destinationPlanetId,
             PlayerStateHash = playerStateHash,
             StarSystemStateHash = starSystemStateHash,
-            IssuedAtUtc = DateTimeOffset.UtcNow,
+            IssuedAtUtc = issuedAt,
+            ExpiresAtUtc = issuedAt.Add(TicketLifetime),
+            LifecycleState = FlightCheckpointLifecycleStates.Active,
         };
     }
 
@@ -99,6 +104,123 @@ internal sealed class FlightCheckpointStore
         _logger.LogInfo("Spherewright persisted an exact reusable pre-flight checkpoint ticket");
     }
 
+    public bool TryMarkAttemptStarted(
+        string checkpointId,
+        string actionId,
+        long gameTick,
+        out string rejection)
+    {
+        rejection = string.Empty;
+        var ticket = _currentTicket;
+        if (!IsReloadEligible(ticket)
+            || ticket is null
+            || !string.Equals(ticket.CheckpointId, checkpointId, StringComparison.Ordinal)
+            || string.IsNullOrWhiteSpace(actionId)
+            || gameTick < ticket.SavedGameTick)
+        {
+            rejection = "The flight attempt does not match the current reloadable checkpoint.";
+            return false;
+        }
+
+        ticket.LifecycleState = FlightCheckpointLifecycleStates.Active;
+        ticket.LastAttemptActionId = actionId;
+        ticket.LastAttemptStartedAtGameTick = gameTick;
+        ticket.RecoveryRequiredAtGameTick = null;
+        ticket.SuccessfulFlightAtGameTick = null;
+        return TryPersistLifecycle(ticket, "start the bound flight attempt", out rejection);
+    }
+
+    public bool TryMarkRecoveryRequired(
+        string checkpointId,
+        string actionId,
+        long gameTick,
+        out string rejection)
+    {
+        rejection = string.Empty;
+        var ticket = _currentTicket;
+        if (!IsStructurallyValid(ticket)
+            || ticket is null
+            || !string.Equals(ticket.CheckpointId, checkpointId, StringComparison.Ordinal)
+            || IsSuccessfulOrRetired(ticket)
+            || string.IsNullOrWhiteSpace(actionId)
+            || gameTick < ticket.SavedGameTick)
+        {
+            rejection = "The failed flight does not match the current checkpoint lifecycle.";
+            return false;
+        }
+
+        ticket.LifecycleState = FlightCheckpointLifecycleStates.RecoveryRequired;
+        ticket.LastAttemptActionId = actionId;
+        ticket.RecoveryRequiredAtGameTick = gameTick;
+        return TryPersistLifecycle(ticket, "mark the bound flight as recovery-required", out rejection);
+    }
+
+    public bool TryMarkFlightSucceeded(
+        string checkpointId,
+        string actionId,
+        long gameTick,
+        out string rejection)
+    {
+        rejection = string.Empty;
+        var ticket = _currentTicket;
+        if (!IsStructurallyValid(ticket)
+            || ticket is null
+            || !string.Equals(ticket.CheckpointId, checkpointId, StringComparison.Ordinal)
+            || IsSuccessfulOrRetired(ticket)
+            || string.IsNullOrWhiteSpace(actionId)
+            || gameTick < ticket.SavedGameTick)
+        {
+            rejection = "The successful flight does not match the current checkpoint lifecycle.";
+            return false;
+        }
+
+        ticket.LifecycleState = FlightCheckpointLifecycleStates.FlightSucceeded;
+        ticket.LastAttemptActionId = actionId;
+        ticket.SuccessfulFlightAtGameTick = gameTick;
+        ticket.RecoveryRequiredAtGameTick = null;
+        return TryPersistLifecycle(ticket, "seal the successful flight before its primary save", out rejection);
+    }
+
+    public bool TryRetireAfterPrimarySave(
+        string ownedSaveName,
+        long savedGameTick,
+        out bool retired,
+        out string rejection)
+    {
+        retired = false;
+        rejection = string.Empty;
+        var ticket = _currentTicket;
+        if (!IsStructurallyValid(ticket) || ticket is null)
+        {
+            return true;
+        }
+
+        if (!string.Equals(EffectiveLifecycle(ticket), FlightCheckpointLifecycleStates.FlightSucceeded, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (!string.Equals(ticket.OwnedSaveName, ownedSaveName, StringComparison.Ordinal)
+            || !ticket.SuccessfulFlightAtGameTick.HasValue
+            || savedGameTick < ticket.SuccessfulFlightAtGameTick.Value)
+        {
+            rejection = "The primary save does not cover the successful flight checkpoint timeline.";
+            return false;
+        }
+
+        ticket.LifecycleState = FlightCheckpointLifecycleStates.Retired;
+        ticket.RetiredAtGameTick = savedGameTick;
+        ticket.RetiredAtUtc = DateTimeOffset.UtcNow;
+        if (!TryPersistLifecycle(ticket, "retire the checkpoint after the covering primary save", out rejection))
+        {
+            return false;
+        }
+
+        retired = true;
+        _logger.LogInfo("Spherewright retired the successful flight checkpoint after a covering primary save");
+        return true;
+    }
+
     public bool TryGetActiveTicket(
         string reloadToken,
         out FlightCheckpointTicket? ticket,
@@ -113,11 +235,11 @@ internal sealed class FlightCheckpointStore
         }
 
         var candidate = _currentTicket ?? ReadFromDisk();
-        if (!IsStructurallyValid(candidate)
+        if (!IsReloadEligible(candidate)
             || candidate is null
             || !FixedTimeEquals(candidate.ReloadToken, reloadToken))
         {
-            rejection = "The reusable flight-checkpoint ticket is missing, invalid, or belongs to another game version.";
+            rejection = "The flight-checkpoint ticket is missing, expired, retired, already succeeded, or belongs to another game version.";
             return false;
         }
 
@@ -161,8 +283,76 @@ internal sealed class FlightCheckpointStore
         && ticket.DestinationPlanetId > 0
         && ticket.OriginPlanetId != ticket.DestinationPlanetId
         && ticket.SavedGameTick >= 0
+        && ticket.IssuedAtUtc != default
+        && (ticket.ExpiresAtUtc == default || ticket.ExpiresAtUtc > ticket.IssuedAtUtc)
+        && IsKnownLifecycle(ticket.LifecycleState)
         && !string.IsNullOrWhiteSpace(ticket.PlayerStateHash)
         && !string.IsNullOrWhiteSpace(ticket.StarSystemStateHash);
+
+    private bool IsReloadEligible(FlightCheckpointTicket? ticket) =>
+        IsStructurallyValid(ticket)
+        && ticket is not null
+        && EffectiveExpiresAt(ticket) > DateTimeOffset.UtcNow
+        && !IsSuccessfulOrRetired(ticket);
+
+    internal static bool IsRecoveryRequired(FlightCheckpointTicket ticket) =>
+        string.Equals(
+            EffectiveLifecycle(ticket),
+            FlightCheckpointLifecycleStates.RecoveryRequired,
+            StringComparison.Ordinal);
+
+    internal static bool IsAttemptInFlight(FlightCheckpointTicket ticket) =>
+        string.Equals(
+            EffectiveLifecycle(ticket),
+            FlightCheckpointLifecycleStates.Active,
+            StringComparison.Ordinal);
+
+    private static bool IsSuccessfulOrRetired(FlightCheckpointTicket ticket)
+    {
+        var lifecycle = EffectiveLifecycle(ticket);
+        return string.Equals(lifecycle, FlightCheckpointLifecycleStates.FlightSucceeded, StringComparison.Ordinal)
+            || string.Equals(lifecycle, FlightCheckpointLifecycleStates.Retired, StringComparison.Ordinal);
+    }
+
+    private static bool IsKnownLifecycle(string lifecycle) =>
+        string.IsNullOrWhiteSpace(lifecycle)
+        || string.Equals(lifecycle, FlightCheckpointLifecycleStates.Active, StringComparison.Ordinal)
+        || string.Equals(lifecycle, FlightCheckpointLifecycleStates.RecoveryRequired, StringComparison.Ordinal)
+        || string.Equals(lifecycle, FlightCheckpointLifecycleStates.FlightSucceeded, StringComparison.Ordinal)
+        || string.Equals(lifecycle, FlightCheckpointLifecycleStates.Retired, StringComparison.Ordinal);
+
+    private static string EffectiveLifecycle(FlightCheckpointTicket ticket) =>
+        string.IsNullOrWhiteSpace(ticket.LifecycleState)
+            ? FlightCheckpointLifecycleStates.Active
+            : ticket.LifecycleState;
+
+    private static DateTimeOffset EffectiveExpiresAt(FlightCheckpointTicket ticket) =>
+        ticket.ExpiresAtUtc == default
+            ? ticket.IssuedAtUtc.Add(TicketLifetime)
+            : ticket.ExpiresAtUtc;
+
+    private bool TryPersistLifecycle(
+        FlightCheckpointTicket ticket,
+        string operation,
+        out string rejection)
+    {
+        _currentTicket = ticket;
+        try
+        {
+            Persist(ticket);
+            rejection = string.Empty;
+            return true;
+        }
+        catch (Exception exception) when (
+            exception is IOException
+            || exception is UnauthorizedAccessException
+            || exception is ArgumentException)
+        {
+            rejection = $"Spherewright could not {operation} ({exception.GetType().Name}).";
+            _logger.LogError(rejection);
+            return false;
+        }
+    }
 
     private FlightCheckpointTicket? ReadFromDisk()
     {
@@ -201,6 +391,44 @@ internal sealed class FlightCheckpointStore
         {
             _logger.LogWarning($"Spherewright ignored an unreadable flight-checkpoint ticket ({exception.GetType().Name})");
             return null;
+        }
+    }
+
+    private void RetireIfCoveredByNewerPrimarySave()
+    {
+        var ticket = _currentTicket;
+        if (!IsStructurallyValid(ticket)
+            || ticket is null
+            || string.Equals(EffectiveLifecycle(ticket), FlightCheckpointLifecycleStates.Retired, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        try
+        {
+            GameSave.ReadHeader(ticket.OwnedSaveName, false, out var header);
+            if (header is null || header.gameTick <= ticket.SavedGameTick)
+            {
+                return;
+            }
+
+            ticket.LifecycleState = FlightCheckpointLifecycleStates.Retired;
+            ticket.RetiredAtGameTick = header.gameTick;
+            ticket.RetiredAtUtc = DateTimeOffset.UtcNow;
+            if (TryPersistLifecycle(
+                    ticket,
+                    "retire a checkpoint superseded by a newer exact primary save",
+                    out _))
+            {
+                _logger.LogInfo("Spherewright retired a flight checkpoint whose exact primary save already covered a newer timeline");
+            }
+        }
+        catch (Exception exception) when (
+            exception is IOException
+            || exception is UnauthorizedAccessException
+            || exception is ArgumentException)
+        {
+            _logger.LogWarning($"Spherewright could not compare the exact primary save with its flight checkpoint ({exception.GetType().Name})");
         }
     }
 
@@ -296,4 +524,28 @@ internal sealed class FlightCheckpointTicket
     public string StarSystemStateHash { get; set; } = string.Empty;
 
     public DateTimeOffset IssuedAtUtc { get; set; }
+
+    public DateTimeOffset ExpiresAtUtc { get; set; }
+
+    public string LifecycleState { get; set; } = string.Empty;
+
+    public string LastAttemptActionId { get; set; } = string.Empty;
+
+    public long? LastAttemptStartedAtGameTick { get; set; }
+
+    public long? RecoveryRequiredAtGameTick { get; set; }
+
+    public long? SuccessfulFlightAtGameTick { get; set; }
+
+    public long? RetiredAtGameTick { get; set; }
+
+    public DateTimeOffset? RetiredAtUtc { get; set; }
+}
+
+internal static class FlightCheckpointLifecycleStates
+{
+    public const string Active = "active";
+    public const string RecoveryRequired = "recovery_required";
+    public const string FlightSucceeded = "flight_succeeded";
+    public const string Retired = "retired";
 }

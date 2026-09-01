@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using Spherewright.Bridge.Core.Safety;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Errors;
@@ -274,6 +276,19 @@ internal sealed class FlightCheckpointReloadCoordinator
                 rejection = "An active game may be replaced only by a checkpoint bound to that exact owned save.";
                 return false;
             }
+
+            if (!FlightCheckpointStore.IsRecoveryRequired(ticket))
+            {
+                rejection = "The bound flight has not reached a persisted recovery-required state.";
+                return false;
+            }
+
+            if (!session.CurrentSessionLoadedFromFlightCheckpoint
+                && !_normalActions.HasRecoveryRequiredFlightOnMainThread(ticket.CheckpointId))
+            {
+                rejection = "The current process has no terminal failed-flight evidence for this checkpoint.";
+                return false;
+            }
         }
         else
         {
@@ -283,9 +298,36 @@ internal sealed class FlightCheckpointReloadCoordinator
                 rejection = readiness.Message;
                 return false;
             }
+
+            if (!FlightCheckpointStore.IsRecoveryRequired(ticket)
+                && !(FlightCheckpointStore.IsAttemptInFlight(ticket)
+                     && !IsLiveDspProcess(ticket.SourceProcessId)))
+            {
+                rejection = "The checkpoint is neither recovery-required nor an interrupted in-flight attempt from a terminated DSP process.";
+                return false;
+            }
         }
 
         return _normalActions.CanReloadFlightCheckpointOnMainThread(ticket, out rejection);
+    }
+
+    private static bool IsLiveDspProcess(int processId)
+    {
+        try
+        {
+            using (var process = Process.GetProcessById(processId))
+            {
+                return !process.HasExited
+                    && string.Equals(process.ProcessName, "DSPGAME", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException
+            || exception is InvalidOperationException
+            || exception is Win32Exception)
+        {
+            return false;
+        }
     }
 
     private static FlightCheckpointReloadResult CloneAsReplay(FlightCheckpointReloadResult result) =>

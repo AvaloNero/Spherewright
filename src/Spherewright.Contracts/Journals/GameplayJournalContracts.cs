@@ -32,6 +32,12 @@ public sealed class GameplayJournalSnapshot
 
     public long CapturedAtGameTick { get; set; }
 
+    public long DurableThroughSequence { get; set; }
+
+    public bool PersistencePending { get; set; }
+
+    public string? PersistenceError { get; set; }
+
     public List<GameplayJournalEntry> Entries { get; set; } = new List<GameplayJournalEntry>();
 }
 

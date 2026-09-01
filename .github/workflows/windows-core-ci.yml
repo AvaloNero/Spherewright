@@ -1,0 +1,39 @@
+name: Windows Core CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    name: Contracts, Core, and MCP
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+
+      - name: Restore locked dependencies
+        run: dotnet restore Spherewright.Core.slnf --locked-mode
+
+      - name: Build Core solution
+        run: dotnet build Spherewright.Core.slnf --configuration Release --no-restore
+
+      - name: Run Core tests
+        run: dotnet test Spherewright.Core.slnf --configuration Release --no-build --logger "console;verbosity=normal"

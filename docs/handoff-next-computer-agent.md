@@ -4,12 +4,12 @@
 
 交接分支：`main`
 
-当前里程碑：M0 — First Red Matrix
+当前里程碑：Post-M0 Logistics（M0 已冻结完成，黄糖自动转换已完成）
 
 ## 2026-09-01 当前运行状态（当前权威）
 
-- 当前 active owned session 为 `905747a6-21cd-4782-81c0-9abeb5b5536a`，planet `104`、和平、1x、关闭沙盒、写入健康；结构矩阵里程碑普通保存已把同一主档持久化到 tick `6905142`，revision `455 -> 456`，并再次签发受保护的正常重启票据。换用另一个 Steam 账号后仍只通过本地受保护的同档证明恢复，Steam/Windows 账号信息从未作为授权或存档归属证明。已重建的科研 sorter `722`、结构矩阵科技 `1124`，以及金刚石、电动机、水、有机晶体、钛晶石和结构矩阵线都已越过最新保存边界。
-- 当前离线源码/MCP 注册面为 44 个工具；除既有精确 quarantine reconciliation、一次性同档恢复、同星系原生飞行和可重复的精确飞行检查点读档外，新增 owned-session 限定的逐存档首次事件日记读取。同档恢复优先 fresh fixed LastExit；若停滞关闭未刷新 LastExit，只能退到 protected ticket 内唯一、时间新鲜且不早于 minimum tick 的高熵主档，绝不接受/枚举存档名。检查点接口同样只能使用起飞提交内部生成并落盘的高熵 token；日记不返回原始存档名或绝对路径。
+- 当前同一 owned world 位于 planet `104`、和平、1x、关闭沙盒、写入健康；返航第三次从同一 checkpoint 稳定落地后，部署前主档保存到 tick `7198197`。新 Release 的健康 planned restart 只加载 ticket-bound exact primary，并恢复到不低于该 tick；Steam/Windows 账号信息从未作为授权或存档归属证明。结构矩阵线、科研 sorter `722` 和新钢炉实体 `791–794` 均越过保存边界。
+- 当前源码/MCP 注册面仍为 44 个工具。飞行 checkpoint 现在有 24 小时过期与 `active/recovery_required/flight_succeeded/retired` 生命周期；成功立即移除 reload capability，覆盖成功的 primary save 再 retire，启动时更晚精确主档也会淘汰 legacy ticket。健康恢复只选精确 primary，quarantine 才选 LastExit，两者 commit 前检查 header tick；一次性消费先写 token-hash tombstone。日记新增 `durableThroughSequence/persistencePending/persistenceError`，本次 live 为 `20/false/null`。
 - Gate C 的同位置分拣器归属修复已部署并实机验证：旧 `164` 与新 `181` 共享精炼厂 `141` 的源端姿态，但分别输出至 `163` 与 `170`，新 action 只归属 `181`，会话未隔离。
 - Gate D 已完成。研究站 `256` 配方 `18` 在接料前能量矩阵 item `6002` 为 0；石墨链 `114 -> 257 -> 256` 与氢链 `165 -> 205…255 -> 258 -> 256` 接通后，同一输出 buffer 依次读到 3、6，后续继续积累至 10。post-M0 输出链 `256 -> 261 -> 260` 已接通，仓库 `260` 复读到 22 个能量矩阵，研究站输出清空并恢复工作。
 - 两次从活跃氢带末端续接路径各把 1 氢正常回收到玩家，已单独记账并排除在自动产出证据之外；首个红矩阵只以研究站 `256` 的 `0 -> 6` 验收。
@@ -31,7 +31,7 @@
 - 动力引擎流水线已完成：主仓 `26 -> 289 -> 285(recipe 105) -> 288 -> 287`，专用仓产量由 9 增至 30，网络 1 在 `31981/65000` 下满供电。仓 `286` 落点合法但与 `285` 的基础分拣器连接为 `TooFar`，保持空置工具仓，不属于产线。机甲核心 I (`2101`) 与驱动引擎 I (`2901`) 已正常完成；后者消耗仓 `287` 的 50 动力引擎与煤节点 `316` 的 150 煤。
 - 机甲核心 II (`2102`) 已在 tick `3932513` 解锁，驱动引擎 II (`2902`) 已在 tick `4013644` 解锁，核心容量为 `400 MJ`，已具备星际航行科技；当时的空研究队列后来已被当前 `1403 -> 1701` 队列取代。玩家曾从高能石墨仓 `114` 守恒取出并加注 100 个，为受保护的往返飞行提供正常燃料。
 - 旧 DLL 返程曾暴露终态残留 Move：即使以 100/200 MJ 出发，中途仍被尾随耗能拖到近零。普通生产路点只有约 80 kW 基础恢复，不是充电覆盖；无线塔 `180` 的真实位置约 `(-108.25,-28.83,-165.93)`，动作 `91d7e745-4397-4371-ad1d-e2f4e387b871` 到其 2.47 m 内后 8 秒净增约 20.765 MJ。修复版部署前，地面长途仍必须满电或带燃料起步，并逐段立即检查速度/位置/能量。
-- 当前部署必须视为同一 Release 批次：Plugin/Core/Contracts SHA-256 分别为 `0B5D3D2144C637827995D6AE2C44B1219D6BC5403D7D1FFE4AA65621EB8468E2`、`739AE3DB1254FB3CFD0780060A8CC61E82BCF4E2DA140CE1019C1CF06E3E463C`、`6431C5CC6CE4F608702FEAF725588AE36C1A3FCD2ACF2208210EFAA91916B5B0`。完整构建 0 warning / 0 error，72 tests passed（Contracts 4、Bridge.Core 55、MCP 13）。只替换 Plugin 曾在恢复路径触发 `TypeLoadException`，所以今后 Core/Contracts ABI 有变化时不得单 DLL 部署。`water-pump` 目录分类、普通手搓、DSP 原生水面施工和连续出水都已由当前 DLL live 验证。
+- 当前部署必须视为同一 Release 批次：Plugin/Core/Contracts SHA-256 分别为 `3BD98E6CA5A129173F0870259F56286084E43B3C6ECD59D0B027685B13AE7BB9`、`22D088E5540B77E69C3A949D0253C6DBE08FFD7BAE8E9E9423C781A147AF3E4A`、`88C8F76840EF5A214561CCC579BC2923021D828FCFF8F20E9F72AE01921BF4C1`。Release 完整构建 0 warning / 0 error，76 tests passed（Contracts 4、Bridge.Core 59、MCP 13）。只替换 Plugin 曾在恢复路径触发 `TypeLoadException`，所以今后仍须同批部署三个程序集。
 - 用户要求后续无异常时持续使用同一存档；每完成一种新产物流水线，先结构化复读产出、普通保存，再提交并推送对应代码和经验。红糖、动力引擎、塑料、钛块、金刚石、齿轮、电动机、水、有机晶体、钛晶石和结构矩阵流水线已经完成。当前研究队列为空，黄糖里程碑已保存；下一步优先检查并选择行星物流/星际物流的正常科技链，制造行星物流运输站所需前置产物，再把跨星球钛输入从守恒人工搬运升级为物流自动化。完整细节以 `docs/m0-status.md` 与 `docs/experience-ledger.md` 为准。
 
 ## 2026-08-31 历史接手补充（已被上节取代）

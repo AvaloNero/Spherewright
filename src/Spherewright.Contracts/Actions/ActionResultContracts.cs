@@ -56,4 +56,8 @@ public sealed class ActionResultSnapshot
     public string? FlightCheckpointReloadToken { get; set; }
 
     public long? FlightCheckpointGameTick { get; set; }
+
+    public bool Stalled { get; set; }
+
+    public bool RecoveryRequired { get; set; }
 }

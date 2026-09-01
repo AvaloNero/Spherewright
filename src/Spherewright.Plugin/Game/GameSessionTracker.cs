@@ -466,6 +466,15 @@ internal sealed class GameSessionTracker
             _ownedSaveState = OwnedSaveStates.Saved;
             _ownedSaveError = null;
             _lastOwnedSaveGameTick = GameMain.gameTick;
+            if (!_flightCheckpoints.TryRetireAfterPrimarySave(
+                    _ownedSaveName!,
+                    _lastOwnedSaveGameTick.Value,
+                    out _,
+                    out var checkpointRetirementError))
+            {
+                _logger.LogWarning($"Spherewright could not finalize flight-checkpoint retirement after the covering primary save: {checkpointRetirementError}");
+            }
+
             if (string.Equals(_writeHealth, WriteHealthStates.Healthy, StringComparison.Ordinal)
                 && !string.IsNullOrWhiteSpace(_sessionId)
                 && GameMain.localPlanet?.id is int localPlanetId
@@ -578,6 +587,17 @@ internal sealed class GameSessionTracker
         _currentFlightCheckpointId = ticket.CheckpointId;
         _currentSessionLoadedFromFlightCheckpoint = false;
         _flightCheckpointAdoptionError = null;
+    }
+
+    public void ForgetCurrentFlightCheckpoint(string checkpointId)
+    {
+        if (!string.IsNullOrWhiteSpace(checkpointId)
+            && string.Equals(_currentFlightCheckpointId, checkpointId, StringComparison.Ordinal))
+        {
+            _currentFlightCheckpointId = null;
+            _currentSessionLoadedFromFlightCheckpoint = false;
+            _flightCheckpointAdoptionError = null;
+        }
     }
 
     public bool CanReuseFlightCheckpointForCurrentSession(FlightCheckpointTicket ticket)

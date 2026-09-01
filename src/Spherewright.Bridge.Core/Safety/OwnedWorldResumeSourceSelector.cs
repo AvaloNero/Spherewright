@@ -10,27 +10,37 @@ public enum OwnedWorldResumeSourceKind
 public static class OwnedWorldResumeSourceSelector
 {
     public static OwnedWorldResumeSourceKind Select(
+        bool quarantineRecovery,
+        long minimumGameTick,
         DateTimeOffset ticketIssuedAtUtc,
         DateTimeOffset? lastExitWrittenAtUtc,
+        long? lastExitGameTick,
         DateTimeOffset? ownedPrimaryWrittenAtUtc,
+        long? ownedPrimaryGameTick,
         TimeSpan timestampTolerance)
     {
+        if (minimumGameTick < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(minimumGameTick));
+        }
+
         if (timestampTolerance < TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(timestampTolerance));
         }
 
         var minimumWrittenAt = ticketIssuedAtUtc - timestampTolerance;
-        if (lastExitWrittenAtUtc >= minimumWrittenAt)
+        if (quarantineRecovery)
         {
-            return OwnedWorldResumeSourceKind.LastExit;
+            return lastExitWrittenAtUtc >= minimumWrittenAt
+                   && lastExitGameTick >= minimumGameTick
+                ? OwnedWorldResumeSourceKind.LastExit
+                : OwnedWorldResumeSourceKind.None;
         }
 
-        if (ownedPrimaryWrittenAtUtc >= minimumWrittenAt)
-        {
-            return OwnedWorldResumeSourceKind.OwnedPrimary;
-        }
-
-        return OwnedWorldResumeSourceKind.None;
+        return ownedPrimaryWrittenAtUtc >= minimumWrittenAt
+               && ownedPrimaryGameTick >= minimumGameTick
+            ? OwnedWorldResumeSourceKind.OwnedPrimary
+            : OwnedWorldResumeSourceKind.None;
     }
 }

@@ -67,6 +67,9 @@ public sealed class ProtocolContractTests
             CreatedAtActualTime = "2026-09-01T00:00:00+08:00",
             TrackingStartedAtGameTick = 120,
             TrackingStartedAtGameTime = "000d 00:00:02",
+            DurableThroughSequence = 0,
+            PersistencePending = true,
+            PersistenceError = "IOException",
             Entries = new List<GameplayJournalEntry>
             {
                 new GameplayJournalEntry
@@ -87,6 +90,9 @@ public sealed class ProtocolContractTests
 
         Assert.Equal("2026-09-01T00:00:01+08:00", entry.GetProperty("actualTime").GetString());
         Assert.Equal(180, entry.GetProperty("gameTick").GetInt64());
+        Assert.Equal(0, parsed.RootElement.GetProperty("durableThroughSequence").GetInt64());
+        Assert.True(parsed.RootElement.GetProperty("persistencePending").GetBoolean());
+        Assert.Equal("IOException", parsed.RootElement.GetProperty("persistenceError").GetString());
         Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("filePath", json, StringComparison.OrdinalIgnoreCase);
     }

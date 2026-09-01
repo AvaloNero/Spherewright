@@ -98,10 +98,11 @@
 - 直接证据：钻石线备料时，第一次 `storage-to-player` 已提交成功，但后处理对不存在的空聚合 `.Sum` 取值产生 PowerShell 非终止错误，遮住了动作输出。下一次 fresh read 已明确看到玩家持有 200 石墨、源仓为 2683；只有在这个新终态已经明确后，才以新意图额外取 200，动作 `51e4ff7b-b2f7-4ab9-a0f3-2a9b54e17eea` 守恒得到玩家 400/源仓 2483。随后单独动作 `97da398f-a37b-412f-8a90-18ff1ffc1bd5` 把玩家 `400 -> 0`、钻石输入仓 `716` 的石墨 `0 -> 400`。这再次证明“包装报错”不能作为未执行证据，也暴露非终止 PowerShell 错误仍可能让同一脚本继续运行；公共 action client 因此默认设置 `$ErrorActionPreference = 'Stop'`。
 - 直接证据：抽水站 build commit 完成后，一次性报告代码在访问 ActionResult 中不存在的 `createdObjectIds` 时因 StrictMode 抛错，因而没有显示已取得的 action 终态。没有重放 commit；fresh player read 证明背包 pump `1 -> 0`，按 item `2306` 的实体快照又只找到准备坐标上的唯一新泵 `752`，且其内部已有 30 水、网络 1 供电比 1.0。后续输出中再次对空 `Measure-Object` 结果直接取 `.Sum` 也报错，但只读泵列表不受影响。一次性验证脚本今后应先单独保留 `actionId/state`，对可选字段先用 `PSObject.Properties` 或数组计数保护，再做展示；任何展示异常仍回到 fresh 结构化终态，不把“异常发生在 commit 之后”猜成动作失败。
 - 直接证据：粒子容器备料时，`storage-to-player` helper 已完成后，调用方因把 PowerShell 的 `return $r.result` 误写成 `return$r.result` 才抛出本地语法/命令错误。没有重放整段；fresh 三端复读显示玩家已持有 20 个 item `1204`、活跃源仓仍有 11 个（生产并发继续补货）、目标仓仍为原先 20 个，明确证明只完成了取货半程。随后仅提交一次 `player-to-storage`，目标仓精确 `20 -> 40`、玩家归零。以后多段搬运的 commit 后客户端异常必须复读玩家、源仓、目标仓三端，并只补结构化状态明确缺失的半程；不能从脚本退出位置推断动作边界。
+- 直接证据：最终关机保存的唯一 `prepare_save/commit_save` 已返回到调用方后，展示代码才因读取不存在的 `prepared.expectedRevision` 在 StrictMode 下报错。没有重放保存；fresh session 将旧边界 `lastOwnedSaveGameTick=8123715`、revision `676` 明确推进为 tick `8340400`、revision `677`，同时报告 `ownedSaveState=saved`、`writeHealth=healthy` 和 `restartResumeAvailable=true`。这把相同规则扩展到 save API：结果展示失败也必须先用主档 tick/revision/票据核销，不能生成第二次保存来“确认”。
 - 限制或反例：若 prepare 在任何 commit 前明确失败且无 action ID，可按普通 prepare 失败处理。
 - 复验触发：客户端响应模型、ActionResult 字段或脚本 helper 变化。
 - 关联：`src/Spherewright.Contracts/Actions/ActionResultContracts.cs`、`docs/protocol.md`、`docs/safety-model.md`。
-- 最近复验：2026-09-01（涡轮取货完成后才发生 PowerShell 包装错误；三端复读确认只缺入仓半程，未重复取货）。
+- 最近复验：2026-09-01（正常保存完成后才发生 PowerShell 字段展示错误；fresh 主档 tick/revision/票据核销成功，未重复保存）。
 
 ### EXP-008 — 施工无人机会使玩家状态哈希短时变化
 
@@ -865,15 +866,16 @@
 - 状态：`validated`
 - 日期：2026-09-01
 - 适用范围：为部署新 Plugin 而对健康 owned 世界进行的计划内正常关闭/重启、fixed LastExit 恢复和受保护 runtime-handoff。
-- 当前结论：不应只在 quarantine 时才签发 resume ticket。每次正常 save API 成功且 session 仍为 owned/healthy/和平/非沙盒/1x 时，Plugin 应用高熵 token 绑定当前高熵主档身份、session/process/bridge/game version、planet 和该次正常保存 tick，原子写入 Plugin 可见的固定受保护 handoff 目录。只有这张票据签发成功、游戏正常关闭且 LastExit 新于签发时刻后才启动新 DLL；恢复后仍要复读 `gameTick >= minimumGameTick`、目标星球/模式/健康与日记门槛。票据一次消费，不枚举也不读取任何其他存档。
+- 当前结论：不应只在 quarantine 时才签发 resume ticket。每次正常 save API 成功且 session 仍为 owned/healthy/和平/非沙盒/1x 时，Plugin 应用高熵 token 绑定当前高熵主档身份、session/process/bridge/game version、planet 和该次正常保存 tick，原子写入 Plugin 可见的固定受保护 handoff 目录。健康 planned restart 在源进程正常退出后只加载 ticket 内封存的 exact primary，不再依赖 LastExit 新鲜度；只有 quarantine recovery 才允许 fresh fixed LastExit 保存未正常落盘的进度，详见 EXP-084。两类恢复后都要复读 `gameTick >= minimumGameTick`、目标星球/模式/健康与日记门槛。票据一次消费，不枚举也不读取任何其他存档。
 - 直接证据：当前正常保存动作 `fc75686b-6399-4bb1-bfa8-a63bd0ba9e33` 将同一 owned 主档保存到 tick `5938815`，revision `100 -> 101`、`ownedSaveState=saved`、`writeHealth=healthy`。已过期的旧 quarantine ticket 没有被复用；新 `scripts/arm-planned-restart-handoff.ps1` 只从当前认证 Bridge 的结构化 session/descriptor 生成 version 1 交接，未打印 token 或主档名。它已在固定 handoff 目录成功落下 planet `104`、minimum tick `5938815` 的新票据，目录与文件均关闭继承且无其他 SID 允许规则。
 - 直接证据：源码已增加 `ArmFromHealthySavedOwnedSession`；健康 save 成功后以当前 `_lastOwnedSaveGameTick` 签发，并同时原子持久到运行目录和固定 handoff 目录。完整 solution 编译 0 warning/0 error；连接槽同批回归后 Core/Contracts/MCP 共 65 测试通过。这部分尚未部署到当前进程，所以本条在新 DLL 首次自动签发与二次重启复验前保持 observed。
 - 直接证据：新 DLL 以 SHA-256 `AE418B0DE09A6FF8812175BE714720F95777E688E8B13EC41340E821A7E5F45B` 安装后，主菜单直接读到 bootstrap `restartResumeAvailable=true`。动作 `3a5bead7-3521-490d-8279-8d82eb04ad18` 经 fixed LastExit 完成，新 session `8d8c930c-f483-454b-9f3d-552072459918` 为 planet `104`、和平/非沙盒/1x、healthy，初次 tick `5965040 >= 5938815`；日记仍仅 8 条且序号 8 是自动钛块，新熔炉/仓/分拣器 `715…719` 也全部存在，排除回档。恢复后的自动正常保存到 tick `5965043`，session 随即读到新 `restartResumeAvailable=true`；固定 handoff 文件在该时刻更新、ACL 关闭继承且无其他 SID allow。
 - 直接证据：第二次部署前没有再运行 bootstrap；旧进程虽因已明确的虚拟 belt 槽验收缺陷进入 quarantine，仍接受正常窗口关闭并由 DSP 更新 fixed LastExit。新版 Plugin 安装后，主菜单直接提供上一次 Plugin 自签发票据；恢复 prepare 保留 planet `104` 且 minimum tick 不低于 `5965043`，动作 `4098eea2-82bf-4546-929d-aa6c675e9aa4` 完成。新 session `9698faef-9cf1-4d0f-bba4-f4abad92b69f` 在 tick `6028386` 为和平/非沙盒/1x、healthy；隔离前新建的 sorter `720/721`、背包仅余 4 sorter、玩家位置和 8 条日记均保留，随后 `lastOwnedSaveGameTick=6028336` 且再次可见新的 restart handoff。这完成“Plugin 自签发→正常关闭→一次消费→同档精确恢复→再次自签发”的闭环。
-- 限制或反例：本次第一次部署仍需一个由当前已认证健康 session 生成的 bootstrap handoff，因为旧 DLL 没有计划内签发能力；这不授权在游戏关闭后伪造/修改票据，也不授权从存档文件推断身份。只有当前活跃 Bridge 能复读健康正常保存时才允许 bootstrap，目标票据已存在则拒绝覆盖。
+- 直接证据：本次关机前的普通保存把主档推进到 tick `8340400`、revision `677`；fresh session 明确报告 `restartResumeAvailable=true`。进程 `35504` 随后接受 `CloseMainWindow` 并正常退出，运行时 descriptor 降为 `0`，固定受保护 handoff 票据在退出后仍存在。只读的脱敏票据复核确认 minimum tick `8340400`、planet `104`、非 quarantine，并将现行 24 小时期限落实为本地 `2026-09-02T23:16:11.8559867+08:00`。没有运行 bootstrap、没有打印 token/主档名、没有强杀进程。
+- 限制或反例：历史首次部署曾需要由已认证健康 session 生成 bootstrap handoff，因为旧 DLL 没有计划内签发能力；当前部署已经自动签发，不能再运行 bootstrap 覆盖它。现行票据固定 24 小时过期，过期后不能在离线状态延长或伪造；若长期关机需求反复出现，应在下一次仍有效的正常恢复后把 planned-restart lifetime 改为受测试的配置，再由新的健康保存签发新票据。任何路径都不授权从存档文件推断身份。planned 与 quarantine 的载入源必须按 EXP-084 分流。
 - 复验触发：ticket ACL/路径变化、LastExit 时间门槛失败、不同宿主/Windows 用户，或日记/最新 tick/实体门槛不匹配。
 - 关联：EXP-004、EXP-005、EXP-006、EXP-038、EXP-047、EXP-064、`src/Spherewright.Plugin/RuntimeDescriptor/OwnedWorldResumeTicketStore.cs`、`src/Spherewright.Plugin/Game/GameSessionTracker.cs`、`scripts/arm-planned-restart-handoff.ps1`。
-- 最近复验：2026-09-01（Plugin 自签发票据的第二次真实重启消费、退出状态保留和恢复后再次签发）。
+- 最近复验：2026-09-01（tick `8340400` 健康保存自动签票并正常退出；票据保留、descriptor 清零，等待下一次消费闭环）。
 
 ### EXP-070 — 传送带分拣器附着方位是虚拟 slot，完工反查必须扫描实际连接槽
 
@@ -1213,6 +1215,8 @@
 - 最近复验：2026-09-01（600 聚合满仓仍因槽位变化接受异物；泄压后确认现役上游已按油/氢过滤，中继氢清零且两条临时出口锁氢，但历史混料清仓与 sorter `906` 过滤仍待收敛）。
 
 ## 修订记录
+
+- 2026-09-01：复验 EXP-007/069。最终关机保存已经执行后，PowerShell 仅在展示不存在的 `expectedRevision` 字段时失败；fresh session 证明主档 tick `8340400`、revision `677`、healthy 且自动签发续玩票据，没有重放保存。DSP 正常接受窗口关闭并退出，descriptor 清零、固定票据保留；下次唯一恢复门槛更新为该 tick。
 
 - 2026-09-01：复验 EXP-048。垂直建造完成后正常选择粒子磁力阱 `1703`，日记新增 sequence `36`（tick `8244528`、`2026-09-01T22:49:32.806289+08:00`、本局 `001d 14:10:08`）并 durable through `36`、无 pending/error；新增 `docs/gameplay-timeline.md` 汇总从落地到当前的证据边界、全部科技/升级、首次事件和 96 条决策索引。
 

@@ -43,7 +43,38 @@ internal sealed class OwnedWorldResumeTicketStore
 
     public bool HasCurrentTicket => _currentTicket is not null;
 
+    public void ArmFromHealthySavedOwnedSession(
+        string ownedSaveName,
+        string sessionId,
+        int planetId,
+        long minimumGameTick)
+    {
+        Arm(
+            ownedSaveName,
+            sessionId,
+            planetId,
+            minimumGameTick,
+            quarantineActionId: string.Empty);
+        _logger.LogInfo("Spherewright armed a one-time exact planned-restart ticket from a healthy owned save");
+    }
+
     public void ArmFromQuarantinedOwnedSession(
+        string ownedSaveName,
+        string sessionId,
+        int planetId,
+        long minimumGameTick,
+        string quarantineActionId)
+    {
+        if (string.IsNullOrWhiteSpace(quarantineActionId))
+        {
+            throw new InvalidOperationException("A quarantined owned session requires its exact action identity.");
+        }
+
+        Arm(ownedSaveName, sessionId, planetId, minimumGameTick, quarantineActionId);
+        _logger.LogInfo("Spherewright armed a one-time exact quarantine-recovery ticket");
+    }
+
+    private void Arm(
         string ownedSaveName,
         string sessionId,
         int planetId,
@@ -52,7 +83,6 @@ internal sealed class OwnedWorldResumeTicketStore
     {
         if (string.IsNullOrWhiteSpace(ownedSaveName)
             || string.IsNullOrWhiteSpace(sessionId)
-            || string.IsNullOrWhiteSpace(quarantineActionId)
             || planetId <= 0
             || minimumGameTick < 0)
         {
@@ -78,7 +108,6 @@ internal sealed class OwnedWorldResumeTicketStore
         Persist(ticket);
         _currentTicket = ticket;
         _currentTicketPath = _ticketPath;
-        _logger.LogInfo("Spherewright armed a one-time exact owned-world restart-resume ticket");
     }
 
     public bool TryGetActiveTicket(
@@ -248,18 +277,30 @@ internal sealed class OwnedWorldResumeTicketStore
     private void Persist(OwnedWorldResumeTicket ticket)
     {
         WindowsCurrentUserSecurity.EnsureSecureDirectory(_runtimeDirectory);
-        var temporaryPath = Path.Combine(_runtimeDirectory, $".owned-world-resume-{Guid.NewGuid():N}.tmp");
+        PersistAtPath(_ticketPath, _runtimeDirectory, ticket);
+        var handoffDirectory = Path.GetDirectoryName(_handoffTicketPath)
+            ?? throw new InvalidOperationException("The owned-world handoff directory is unavailable.");
+        WindowsCurrentUserSecurity.EnsureSecureDirectory(handoffDirectory);
+        PersistAtPath(_handoffTicketPath, handoffDirectory, ticket);
+    }
+
+    private static void PersistAtPath(
+        string destinationPath,
+        string directory,
+        OwnedWorldResumeTicket ticket)
+    {
+        var temporaryPath = Path.Combine(directory, $".owned-world-resume-{Guid.NewGuid():N}.tmp");
         var bytes = new UTF8Encoding(false).GetBytes(PluginJson.Serialize(ticket));
         WindowsCurrentUserSecurity.WriteSecureNewFile(temporaryPath, bytes);
         try
         {
-            if (File.Exists(_ticketPath))
+            if (File.Exists(destinationPath))
             {
-                File.Replace(temporaryPath, _ticketPath, null, true);
+                File.Replace(temporaryPath, destinationPath, null, true);
             }
             else
             {
-                File.Move(temporaryPath, _ticketPath);
+                File.Move(temporaryPath, destinationPath);
             }
         }
         finally

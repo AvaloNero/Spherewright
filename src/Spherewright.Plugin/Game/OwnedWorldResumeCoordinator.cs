@@ -56,16 +56,16 @@ internal sealed class OwnedWorldResumeCoordinator
                 "Use only the one-time restartResumeToken issued for the exact quarantined Spherewright-owned session."));
         }
 
-        if (!TryValidateLastExitProvenance(ticket, out var rejection))
+        if (!TryResolveResumeSource(ticket, out var resumeSource, out var rejection))
         {
             return GameCallResult<PreparedOwnedWorldResumePlan>.Failed(BridgeError.Create(
                 BridgeErrorCodes.StaleState,
                 rejection,
                 false,
-                "Do not load LastExit; keep the ticket and inspect the normal shutdown/save evidence."));
+                "Keep the ticket and inspect the exact normal shutdown or latest healthy owned-save evidence."));
         }
 
-        var payload = new OwnedWorldResumePlanPayload(ticket);
+        var payload = new OwnedWorldResumePlanPayload(ticket, resumeSource);
         PreparedPlan<OwnedWorldResumePlanPayload> plan;
         try
         {
@@ -99,7 +99,7 @@ internal sealed class OwnedWorldResumeCoordinator
             MinimumGameTick = ticket.MinimumGameTick,
             CommitAllowedNow = blockers.Count == 0,
             CommitBlockers = blockers,
-            CompletionCondition = "DSP loads only its fixed LastExit slot; the payload is adopted only if its embedded high-entropy owned name, minimum game tick, planet, peaceful mode, non-sandbox mode, and 1x resources all match the one-time ticket.",
+            CompletionCondition = "DSP loads the fresh fixed LastExit slot, or only when LastExit was not updated, the exact fresh primary owned save named inside the protected ticket; adoption still requires the embedded high-entropy owned name, minimum game tick, planet, peaceful mode, non-sandbox mode, and 1x resources.",
         });
     }
 
@@ -167,32 +167,37 @@ internal sealed class OwnedWorldResumeCoordinator
         if (readinessError is not null
             || !_tickets.TryGetActiveTicket(payload.Ticket.ResumeToken, out var currentTicket, out _)
             || currentTicket is null
-            || !string.Equals(new OwnedWorldResumePlanPayload(currentTicket).Fingerprint, payload.Fingerprint, StringComparison.Ordinal)
-            || !TryValidateLastExitProvenance(currentTicket, out rejection))
+            || !TryResolveResumeSource(currentTicket, out var currentResumeSource, out rejection)
+            || currentResumeSource != payload.ResumeSource
+            || !string.Equals(new OwnedWorldResumePlanPayload(currentTicket, currentResumeSource).Fingerprint, payload.Fingerprint, StringComparison.Ordinal))
         {
             return GameCallResult<OwnedWorldResumeResult>.Failed(BridgeError.Create(
                 BridgeErrorCodes.StaleState,
                 readinessError?.Message ?? rejection,
                 false,
-                "Do not load LastExit; return to an idle main menu and prepare from the exact current ticket."));
+                "Do not load a save; return to an idle main menu and prepare from the exact current ticket."));
         }
 
         var action = new OwnedWorldResumeAction
         {
             ActionId = Guid.NewGuid().ToString("D"),
             Ticket = currentTicket,
+            ResumeSource = currentResumeSource,
         };
         try
         {
             _sessions.ExpectNextSessionToBeResumed(currentTicket);
-            DSPGame.StartGame(GameSave.LastExit);
+            DSPGame.StartGame(
+                currentResumeSource == OwnedWorldResumeSourceKind.LastExit
+                    ? GameSave.LastExit
+                    : currentTicket.OwnedSaveName);
         }
         catch (Exception exception)
         {
             _sessions.CancelExpectedResumedSession();
             return GameCallResult<OwnedWorldResumeResult>.Failed(BridgeError.Create(
                 BridgeErrorCodes.ActionFailed,
-                $"DSP rejected the exact LastExit resume through its normal loader ({exception.GetType().Name}).",
+                $"DSP rejected the exact protected owned-world resume through its normal loader ({exception.GetType().Name}).",
                 false,
                 "Inspect the local Spherewright and Unity logs; do not load another save."));
         }
@@ -233,7 +238,9 @@ internal sealed class OwnedWorldResumeCoordinator
             State = NormalActionStates.WaitingForGame,
             Terminal = false,
             Succeeded = false,
-            Message = "DSP accepted the fixed LastExit load; Spherewright is validating the one-time owned-world provenance proof.",
+            Message = action.ResumeSource == OwnedWorldResumeSourceKind.LastExit
+                ? "DSP accepted the fixed LastExit load; Spherewright is validating the one-time owned-world provenance proof."
+                : "DSP accepted the exact ticket-bound primary owned save because LastExit was not refreshed; Spherewright is validating the same one-time provenance proof.",
         };
         if (session.OwnedBySpherewright
             && session.LocalPlanetId == action.Ticket.ExpectedPlanetId
@@ -246,7 +253,9 @@ internal sealed class OwnedWorldResumeCoordinator
                 result.State = NormalActionStates.Completed;
                 result.Terminal = true;
                 result.Succeeded = true;
-                result.Message = "The exact owned LastExit payload passed provenance checks and was resaved under its high-entropy Spherewright name.";
+                result.Message = action.ResumeSource == OwnedWorldResumeSourceKind.LastExit
+                    ? "The exact owned LastExit payload passed provenance checks and was resaved under its high-entropy Spherewright name."
+                    : "The exact ticket-bound primary owned save passed provenance checks and was resaved under the same high-entropy Spherewright name.";
             }
             else
             {
@@ -263,30 +272,52 @@ internal sealed class OwnedWorldResumeCoordinator
         return true;
     }
 
-    private static bool TryValidateLastExitProvenance(OwnedWorldResumeTicket ticket, out string rejection)
+    private static bool TryResolveResumeSource(
+        OwnedWorldResumeTicket ticket,
+        out OwnedWorldResumeSourceKind resumeSource,
+        out string rejection)
     {
+        resumeSource = OwnedWorldResumeSourceKind.None;
         rejection = string.Empty;
         if (IsLiveDspProcess(ticket.SourceProcessId))
         {
-            rejection = "The source DSP process is still running; LastExit cannot yet prove a completed normal shutdown.";
+            rejection = "The source DSP process is still running; no restart source can yet prove a completed shutdown.";
             return false;
         }
 
-        var path = GameSave.SavePath(GameSave.LastExit);
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        var lastExitWrittenAt = TryReadSaveWrittenAt(GameSave.LastExit);
+        var ownedPrimaryWrittenAt = TryReadSaveWrittenAt(ticket.OwnedSaveName);
+        resumeSource = OwnedWorldResumeSourceSelector.Select(
+            ticket.IssuedAtUtc,
+            lastExitWrittenAt,
+            ownedPrimaryWrittenAt,
+            TimeSpan.FromSeconds(2));
+        if (resumeSource == OwnedWorldResumeSourceKind.None)
         {
-            rejection = "DSP's exact fixed LastExit slot does not exist.";
-            return false;
-        }
-
-        var writtenAt = new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
-        if (writtenAt < ticket.IssuedAtUtc.AddSeconds(-2))
-        {
-            rejection = "DSP's LastExit slot predates the authenticated source-session resume ticket.";
+            rejection = "Neither DSP's fixed LastExit slot nor the exact ticket-bound primary owned save is fresh enough for this authenticated source session.";
             return false;
         }
 
         return true;
+    }
+
+    private static DateTimeOffset? TryReadSaveWrittenAt(string saveName)
+    {
+        try
+        {
+            var path = GameSave.SavePath(saveName);
+            return string.IsNullOrWhiteSpace(path) || !File.Exists(path)
+                ? (DateTimeOffset?)null
+                : new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
+        }
+        catch (Exception exception) when (
+            exception is IOException
+            || exception is UnauthorizedAccessException
+            || exception is ArgumentException
+            || exception is NotSupportedException)
+        {
+            return null;
+        }
     }
 
     private static bool IsLiveDspProcess(int processId)
@@ -319,9 +350,12 @@ internal sealed class OwnedWorldResumeCoordinator
 
     private sealed class OwnedWorldResumePlanPayload
     {
-        public OwnedWorldResumePlanPayload(OwnedWorldResumeTicket ticket)
+        public OwnedWorldResumePlanPayload(
+            OwnedWorldResumeTicket ticket,
+            OwnedWorldResumeSourceKind resumeSource)
         {
             Ticket = ticket;
+            ResumeSource = resumeSource;
             Fingerprint = CanonicalStateHash.Combine(
                 "resume-owned-world",
                 ticket.ResumeToken,
@@ -334,10 +368,13 @@ internal sealed class OwnedWorldResumeCoordinator
                 ticket.MinimumGameTick,
                 ticket.QuarantineActionId,
                 ticket.IssuedAtUtc,
-                ticket.ExpiresAtUtc);
+                ticket.ExpiresAtUtc,
+                resumeSource);
         }
 
         public OwnedWorldResumeTicket Ticket { get; }
+
+        public OwnedWorldResumeSourceKind ResumeSource { get; }
 
         public string Fingerprint { get; }
     }
@@ -347,5 +384,7 @@ internal sealed class OwnedWorldResumeCoordinator
         public string ActionId { get; set; } = string.Empty;
 
         public OwnedWorldResumeTicket Ticket { get; set; } = null!;
+
+        public OwnedWorldResumeSourceKind ResumeSource { get; set; }
     }
 }

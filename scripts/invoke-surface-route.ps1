@@ -5,6 +5,7 @@ param(
     [Parameter(Mandatory)][double]$DestinationZ,
     [ValidateRange(10, 50)][double]$MaximumSegmentLength = 30,
     [ValidateRange(0.5, 5)][double]$ArrivalTolerance = 2.5,
+    [ValidateRange(0.1, 0.95)][double]$MinimumCoreEnergyRatio = 0.5,
     [ValidateRange(1, 1800)][int]$ActionTimeoutSeconds = 180
 )
 
@@ -25,10 +26,30 @@ function Get-VectorMagnitude([double[]]$Vector) {
     return [Math]::Sqrt($squaredMagnitude)
 }
 
+function Assert-CoreEnergyReserve([object]$Snapshot, [string]$Context) {
+    $capacity = [double]$Snapshot.coreEnergyCapacity
+    if ($capacity -le 0) {
+        throw "Surface route cannot prove a positive core-energy capacity ($Context)."
+    }
+
+    $ratio = [double]$Snapshot.coreEnergy / $capacity
+    if ($ratio -lt $MinimumCoreEnergyRatio) {
+        throw ("Surface route stopped at the configured energy reserve ({0:P1} < {1:P1}, {2}). Recharge before continuing." -f `
+            $ratio,
+            $MinimumCoreEnergyRatio,
+            $Context)
+    }
+}
+
 function Wait-ForSettledPlayer([int]$Seconds = 10) {
     $deadline = (Get-Date).AddSeconds($Seconds)
     do {
         $snapshot = Get-CurrentPlayerSnapshot
+        Assert-CoreEnergyReserve -Snapshot $snapshot -Context 'while waiting for movement to settle'
+        if ($snapshot.movementState -eq 'Drift') {
+            throw 'Surface route stopped immediately because the player entered Drift. Choose a verified Walk landing point before continuing.'
+        }
+
         if ($snapshot.movementState -eq 'Walk' -and [double]$snapshot.speed -le 0.1) {
             return $snapshot
         }
@@ -77,6 +98,7 @@ $player = Get-CurrentPlayerSnapshot
 if (-not $player.isAlive -or -not $player.isOnPlanet -or $player.movementState -ne 'Walk') {
     throw 'Surface routing requires a living, grounded player in Walk state.'
 }
+Assert-CoreEnergyReserve -Snapshot $player -Context 'before starting the route'
 
 $start = @(
     [double]$player.position.x,
@@ -112,6 +134,7 @@ for ($step = 1; $step -le $segmentCount; $step++) {
     $action = $null
     for ($prepareAttempt = 1; $prepareAttempt -le 20; $prepareAttempt++) {
         $player = Get-CurrentPlayerSnapshot
+        Assert-CoreEnergyReserve -Snapshot $player -Context "before segment $step"
         try {
             $action = Invoke-SpherewrightNormalAction `
                 -PrepareMethod 'prepare_move' `

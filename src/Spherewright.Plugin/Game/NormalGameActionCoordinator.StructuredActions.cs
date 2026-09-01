@@ -1370,6 +1370,29 @@ internal sealed partial class NormalGameActionCoordinator
                 rejection = $"Sorter readback was {inserter.pickTarget}->{inserter.insertTarget}, not {plan.SourceObjectId}->{plan.DestinationObjectId}.";
                 return false;
             }
+
+            var step = plan.BuildSteps[0];
+            if (!ObjectConnectionMatches(
+                    factory,
+                    plan.SourceObjectId,
+                    step.InputFromSlot,
+                    expectedIsOutput: true,
+                    entityIds[0]))
+            {
+                rejection = $"Prepared source slot {step.InputFromSlot} does not point to the built sorter {entityIds[0]}.";
+                return false;
+            }
+
+            if (!ObjectConnectionMatches(
+                    factory,
+                    plan.DestinationObjectId,
+                    step.OutputToSlot,
+                    expectedIsOutput: false,
+                    entityIds[0]))
+            {
+                rejection = $"Prepared destination slot {step.OutputToSlot} does not point to the built sorter {entityIds[0]}.";
+                return false;
+            }
         }
 
         if (plan.BuildKind == NormalBuildKinds.Belt)
@@ -1406,6 +1429,30 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         return true;
+    }
+
+    private static bool ObjectConnectionMatches(
+        PlanetFactory factory,
+        int objectId,
+        int slot,
+        bool expectedIsOutput,
+        int expectedOtherObjectId)
+    {
+        if (objectId <= 0)
+        {
+            return false;
+        }
+
+        foreach (var candidateSlot in BuildConnectionSlots.SelectVerificationCandidates(slot, 16))
+        {
+            factory.ReadObjectConn(objectId, candidateSlot, out var isOutput, out var otherObjectId, out _);
+            if (isOutput == expectedIsOutput && otherObjectId == expectedOtherObjectId)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private GameCallResult<PreparedNormalAction> PrepareStorageTransferOnMainThread(
@@ -2061,7 +2108,17 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         var slots = item.prefabDesc.slotPoses ?? Array.Empty<Pose>();
+        var occupiedSlots = new List<int>();
         for (var index = 0; index < slots.Length; index++)
+        {
+            factory.ReadObjectConn(snapshot.ObjectId, index, out _, out var otherObjectId, out _);
+            if (otherObjectId != 0)
+            {
+                occupiedSlots.Add(index);
+            }
+        }
+
+        foreach (var index in BuildConnectionSlots.SelectAvailable(slots.Length, occupiedSlots))
         {
             var transformed = slots[index].GetTransformedBy(new Pose(entity.pos, entity.rot));
             result.Add(new EndpointPoint(snapshot.ObjectId, index, transformed));

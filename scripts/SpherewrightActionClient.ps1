@@ -1,4 +1,5 @@
 Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'SpherewrightBridgeClient.ps1')
 

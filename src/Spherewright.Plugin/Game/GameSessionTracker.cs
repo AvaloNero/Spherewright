@@ -466,6 +466,25 @@ internal sealed class GameSessionTracker
             _ownedSaveState = OwnedSaveStates.Saved;
             _ownedSaveError = null;
             _lastOwnedSaveGameTick = GameMain.gameTick;
+            if (string.Equals(_writeHealth, WriteHealthStates.Healthy, StringComparison.Ordinal)
+                && !string.IsNullOrWhiteSpace(_sessionId)
+                && GameMain.localPlanet?.id is int localPlanetId
+                && localPlanetId > 0)
+            {
+                try
+                {
+                    _resumeTickets.ArmFromHealthySavedOwnedSession(
+                        _ownedSaveName!,
+                        _sessionId!,
+                        localPlanetId,
+                        _lastOwnedSaveGameTick.Value);
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogWarning($"Spherewright could not arm planned restart-resume after the healthy save ({exception.GetType().Name})");
+                }
+            }
+
             _logger.LogInfo("Spherewright saved the owned ordinary world");
             return true;
         }
@@ -739,13 +758,13 @@ internal sealed class GameSessionTracker
         rejection = string.Empty;
         if (!string.Equals(currentData.gameName, ticket.OwnedSaveName, StringComparison.Ordinal))
         {
-            rejection = "The LastExit payload did not contain the exact high-entropy owned save identity.";
+            rejection = "The resumed payload did not contain the exact high-entropy owned save identity.";
             return false;
         }
 
         if (GameMain.gameTick < ticket.MinimumGameTick)
         {
-            rejection = "The LastExit payload is older than the authenticated source-session ticket.";
+            rejection = "The resumed payload is older than the authenticated source-session ticket.";
             return false;
         }
 

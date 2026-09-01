@@ -1051,7 +1051,7 @@ public static class SpherewrightTools
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Validates a protected one-time ticket and only the freshness metadata of DSP's fixed LastExit slot. It never enumerates saves, accepts a save name, or loads anything during prepare.")]
+    [Description("Validates a protected one-time ticket and freshness metadata for DSP's fixed LastExit slot. If a failed shutdown did not refresh LastExit, it can fall back only to the exact fresh primary owned save whose high-entropy name is already sealed inside that ticket. It never enumerates saves, accepts a save name, or loads anything during prepare.")]
     public static async Task<CallToolResult> PrepareOwnedWorldResumeAsync(
         IBridgeClient bridgeClient,
         string resumeToken,
@@ -1060,7 +1060,7 @@ public static class SpherewrightTools
         var result = await bridgeClient.PrepareOwnedWorldResumeAsync(
             new PrepareOwnedWorldResumeRequest { ResumeToken = resumeToken },
             cancellationToken).ConfigureAwait(false);
-        return ToToolResult(result, "One-time exact owned-world resume plan prepared; no save was loaded.");
+        return ToToolResult(result, "One-time exact owned-world resume plan prepared; no save was loaded or enumerated.");
     }
 
     [McpServerTool(
@@ -1070,7 +1070,7 @@ public static class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Loads only DSP's fixed LastExit slot through DSPGame.StartGame and adopts it only when the one-time ticket's embedded high-entropy owned name, minimum tick, planet, peaceful/non-sandbox state, and 1x resources all match.")]
+    [Description("Loads DSP's fresh fixed LastExit slot, or after a failed shutdown only the exact fresh primary owned save sealed inside the protected ticket, through DSPGame.StartGame. Adoption still requires the ticket's embedded high-entropy owned name, minimum tick, planet, peaceful/non-sandbox state, and 1x resources to match.")]
     public static async Task<CallToolResult> CommitOwnedWorldResumeAsync(
         IBridgeClient bridgeClient,
         string planToken,
@@ -1084,7 +1084,7 @@ public static class SpherewrightTools
                 IdempotencyKey = idempotencyKey,
             },
             cancellationToken).ConfigureAwait(false);
-        return ToToolResult(result, "DSP accepted the exact fixed LastExit resume; poll actionId for provenance validation and high-entropy resave.");
+        return ToToolResult(result, "DSP accepted the exact protected owned-world resume; poll actionId for provenance validation and high-entropy resave.");
     }
 
     [McpServerTool(

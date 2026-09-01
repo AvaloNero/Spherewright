@@ -592,11 +592,11 @@
 - 日期：2026-09-01
 - 适用范围：当前 DSP `0.10.34.28529`、逐 owned-save 日记、机甲复制器、工厂生产统计以及科技树选择。
 - 当前结论：不能用背包增量区分“手搓”和“产线”。手搓以 `GameHistoryData.GetFeatureValue(2140000 + recipeId)` 的持久完成次数乘 runtime `Results/ResultCounts`；产线以刚完成游戏 tick 的 `FactoryProductionStat.productRegister` 为独立信号。两类 item ID 分别去重，所以同一物品可以各有一次首次记录。科技/升级首次选择从正常 `currentTech/techQueue` 观察，并按 `TechProto.page` 的 `0/1` 分类。每条记录同时保存带时区的 ISO 实际时间、原始 `GameMain.gameTick` 与 60 tick/s 格式化局内时间。
-- 直接证据：当前程序集 IL 显示每个 `ForgeTask.Produce` 后调用 `AddFeatureValue(2140000 + recipeId, 1)`，包括不触发顶层 `onTaskDelivery` 的嵌套前置手搓；`Mecha.AddProductionStat` 直接调用 `AddProductionToTotalArray`，不写 `productRegister`，而矿机、制造、分馏、研究站、物流、电力与戴森生产 tick 均引用该寄存器。`TechProto.page` 对 ID `<2000` 返回 0，否则返回 1。实现以 owned-save 内部身份的 SHA-256 派生日记 ID，在当前用户保护目录原子持久化，并新增 owned-only 只读 MCP 工具；完整解决方案 0 warning/0 error，62 tests passed（Contracts 4、Bridge.Core 45、MCP 13）。修复版部署并严格恢复同档后，日记以 `attached_existing_save`、`historicalCoverageComplete=false` 从 tick `4428079` 挂接，保护目录生成一个 SHA-256 派生文件；正常点选基础化工 `1121` 后新增 `technology_first_selected`，实际时间 `2026-09-01T00:49:36+08:00`、游戏 tick `4462081`、局内时间 `000d 20:39:28` 三者同时可读，未补造任何旧事件。
-- 限制或反例：当前主档早于该功能存在，无法从统计恢复过去事件的真实墙钟时间。首次附着会把已有手搓、生产和科研 ID 作为无时间的 historical seed，并明确返回 `historicalCoverageComplete=false`；不得把迁移时刻伪称旧物品的首次时刻。新档从 Spherewright 采用帧开始才具有完整覆盖。当前已验证文件创建、旧档迁移和首次科技选择；首次此前未出现物品的手搓/产线双事件、首次升级选择与下一次跨进程持续性仍待样本，因此本条暂不升级为完全 `validated`。
+- 直接证据：当前程序集 IL 显示每个 `ForgeTask.Produce` 后调用 `AddFeatureValue(2140000 + recipeId, 1)`，包括不触发顶层 `onTaskDelivery` 的嵌套前置手搓；`Mecha.AddProductionStat` 直接调用 `AddProductionToTotalArray`，不写 `productRegister`，而矿机、制造、分馏、研究站、物流、电力与戴森生产 tick 均引用该寄存器。`TechProto.page` 对 ID `<2000` 返回 0，否则返回 1。实现以 owned-save 内部身份的 SHA-256 派生日记 ID，在当前用户保护目录原子持久化，并新增 owned-only 只读 MCP 工具；完整解决方案 0 warning/0 error，62 tests passed（Contracts 4、Bridge.Core 45、MCP 13）。修复版部署并严格恢复同档后，日记以 `attached_existing_save`、`historicalCoverageComplete=false` 从 tick `4428079` 挂接，保护目录生成一个 SHA-256 派生文件；正常点选基础化工 `1121` 后新增 `technology_first_selected`，实际时间 `2026-09-01T00:49:36+08:00`、游戏 tick `4462081`、局内时间 `000d 20:39:28` 三者同时可读，未补造任何旧事件。此后日记已跨多轮正常保存/重启持续到 sequence `36`：化工厂/抽水站/高速分拣器给出 `manual_item_first`，塑料到推进器给出独立 `production_line_item_first`；首次选择升级页的垂直建造 `3701` 又在 tick `8155733` 记录 `upgrade_first_selected`（`2026-09-01T22:24:19.1590085+08:00`、本局 `001d 13:45:28`），随后粒子磁力阱 `1703` 于 tick `8244528` 形成 sequence `36` 科技选择事件，两条均 durable、无 pending/error。
+- 限制或反例：当前主档早于该功能存在，无法从统计恢复过去事件的真实墙钟时间。首次附着会把已有手搓、生产和科研 ID 作为无时间的 historical seed，并明确返回 `historicalCoverageComplete=false`；不得把迁移时刻伪称旧物品的首次时刻。新档从 Spherewright 采用帧开始才具有完整覆盖。当前已验证文件创建、旧档迁移、跨进程持续、手搓/产线各自首次事件以及科技/升级首次选择；但还没有在 live 中让同一个新物品先后获得手搓和产线两条独立事件，也没有新档完整覆盖样本，因此本条仍保留 `observed`。
 - 复验触发：本次安全部署、首次日记文件创建/读取、首个此前未出现物品的手搓与产线双事件、首次科技/升级选择、跨进程恢复、DSP 生产统计或 feature ID 行为变化。
 - 关联：EXP-005、EXP-037、`src/Spherewright.Plugin/Game/GameplayJournalManager.cs`、`src/Spherewright.Bridge.Core/Journals/GameplayFirstOccurrenceDetector.cs`、`docs/research/game-api-m0.md`。
-- 最近复验：2026-09-01（旧档挂接、保护文件和基础化工首次科技选择已 live；物品双事件与升级仍待复验）。
+- 最近复验：2026-09-01（日记已 durable through sequence `36`；垂直建造首次升级选择、粒子磁力阱科技选择、四类事件和跨进程持续均已 live；同物品双来源及新档完整覆盖仍待复验）。
 
 ### EXP-049 — 互为必需的两种原料不能无约束共用短带
 
@@ -1178,15 +1178,15 @@
 
 ### EXP-094 — 配方可在科技门控期预建，但未解锁物品的 sorter filter 必须延后
 
-- 状态：`observed`
+- 状态：`validated`
 - 日期：2026-09-01
 - 适用范围：目标配方保持 recipe `0` 的科技门控预建，其中至少一种输入物品本身由尚未完成的科技解锁。
 - 当前结论：空设备、空仓、端点和供电仍可按 EXP-091 预建；已经存在且可用的输入物品也可先设置精确 sorter filter。但若某种输入物品本身尚未解锁，`sorter-filter` prepare 会把它视为当前不可用，不能为了完成预建而绕过校验、提前装料或重复提交。应保留该 sorter 为空载 recipe `0`，等待科技结构化读回 `unlocked=true` 后 fresh inspect，只补这个缺失过滤，再装入对应物料或启用下游配方。
-- 直接证据：物流运输机制造台 `891` 在 recipe `94` 尚未解锁时保持 recipe `0`；空输入仓 `892` 的 sorter `895/896` 分别成功设置铁块 item `1101` 与既有自动处理器 item `1303`。第三条空载 sorter `897` 请求推进器 item `1405` 时，推进器科技 `1113` 尚未完成，prepare 明确返回 `ACTION_REJECTED: requested filter item is unavailable`，没有 action ID、没有 commit；fresh 复读确认前两个 filter 已保留，`897` 仍为空载 `filterItemId=null`，全部双端槽保持完整。
-- 限制或反例：当前只有“推进器作为物流运输机输入”一个锁物品样本，拒绝也同时使用了通用的 idle/empty/unavailable 错误文案；因此不能把它外推为所有科技、建筑或过滤 UI 的固定错误码。若物品已解锁而仍拒绝，必须分别检查 sorter 是否空载、是否空闲、端点是否变化，不能一律归因于科技。
+- 直接证据：物流运输机制造台 `891` 在 recipe `94` 尚未解锁时保持 recipe `0`；空输入仓 `892` 的 sorter `895/896` 分别成功设置铁块 item `1101` 与既有自动处理器 item `1303`。第三条空载 sorter `897` 请求推进器 item `1405` 时，推进器科技 `1113` 尚未完成，prepare 明确返回 `ACTION_REJECTED: requested filter item is unavailable`，没有 action ID、没有 commit；fresh 复读确认前两个 filter 已保留，`897` 仍为空载 `filterItemId=null`，全部双端槽保持完整。科技 `1113` 在 tick `8098237` 解锁并完成推进器里程碑后，对同一空载 `897` 的 fresh prepare/commit 成功，过滤项读回为 `1405`，阶段仍为 `Picking`、携货 `0`，连接仍是 `892 slot 4 -> 897 -> 891 slot 2`，写入健康。
+- 限制或反例：当前只有“推进器作为物流运输机输入”一个锁物品前后对照，拒绝也同时使用了通用的 idle/empty/unavailable 错误文案；因此不能把它外推为所有科技、建筑或过滤 UI 的固定错误码。若物品已解锁而仍拒绝，必须分别检查 sorter 是否空载、是否空闲、端点是否变化，不能一律归因于科技。
 - 复验触发：推进器 `1113` 解锁后对同一 sorter `897` 成功设为 item `1405`、下一种锁物品过滤、错误契约细分或 sorter UI 行为变化。
 - 关联：EXP-021、EXP-062、EXP-074、EXP-091。
-- 最近复验：2026-09-01（铁块/处理器过滤成功而未解锁推进器过滤在 prepare 前安全拒绝，设备与仓保持空载）。
+- 最近复验：2026-09-01（未解锁推进器过滤在 prepare 前安全拒绝；科技解锁后同一 sorter fresh 提交成功且双端/空载状态不变）。
 
 ### EXP-095 — 新设备投产后要把电网容量纳入产线验收
 
@@ -1206,13 +1206,19 @@
 - 日期：2026-09-01
 - 适用范围：双产物精炼厂汇入混料仓、试图把混料仓自动分流到两个普通储物仓，以及目标仓接近或达到槽位上限。
 - 当前结论：普通储物仓的可插入性按空槽/同物品堆叠共同决定，不能只看聚合总数或“600/600”就推断任意物品都无法进入。新建无过滤 sorter 一旦完工会立即按源仓当时可取物预取；之后即使目标暂时不能接受，它也可能长期持有该物品，使 sorter 不再满足空载过滤前提。永久分产必须在源仓稳定空、目标仓按物品留有容量且所有 sorter 均 `stack=0` 的 fresh 窗口中，先分别配置精炼油/氢过滤，再恢复流量；不能依赖“先建无过滤、以后再改”。
-- 直接证据：源仓 `163` 同时接收精炼油/氢。纯油中继 `784` 读到聚合 600 后，新 sorter `906` 仍先预取 1 氢并等待；只取 1 油没有形成空槽，取满一整栈 20 油后才开放一个格，sorter 随即把氢填入该格并改为手持 1 油。尝试捕获动态空窗时，候选 hash 在 prepare/commit 间变化而被正常 stale/reject，没有放宽校验。临时混料缓冲 `907` 与并行 sorter `908/909` 随后将源仓排空；当前 fresh 读回 `163` 为空，但 `906` 仍手持 1 油，`784/907` 仍是混合库存。下游 `790` 已恢复 filter `1114`，因此当前只做到“受控混料且下游只取油”，尚未宣称永久分产完成。
+- 直接证据：源仓 `163` 曾同时残留精炼油/氢。纯油中继 `784` 读到聚合 600 后，新 sorter `906` 仍先预取 1 氢并等待；只取 1 油没有形成空槽，取满一整栈 20 油后才开放一个格，sorter 随即把氢填入该格并改为手持 1 油。尝试捕获动态空窗时，候选 hash 在 prepare/commit 间变化而被正常 stale/reject，没有放宽校验。临时混料缓冲 `907` 与并行 sorter `908/909` 随后将源仓排空；两条空载 sorter 已分别在有界 fresh prepare 重试后成功设为 filter `1120`。中继中的 62 氢又经一次 exact transfer 守恒移入玩家，虽然 commit 后的空集合 `.Sum` 展示报错，fresh 复读仍明确为中继氢 `0`、玩家氢 `168`，没有重放。进一步反查当前设备图发现，`707 -> 709(filter 1114) -> 163` 是唯一现役输入，氢由 `707 -> 708(filter 1120) -> 170` 和 `141 -> 181(filter 1120) -> 170` 在上游分离；因此 `163` 当前新流入其实是纯油，原混料是有限历史残留。下游 `790` 也保持 filter `1114`，但 `907` 仍是混合库存、玩家仍暂存氢，sorter `906` 尚未取得空载配置窗口，故仍未宣称整理全部完成。
 - 限制或反例：本样本没有完成 sorter `906/908/909` 的最终双过滤与两仓纯度验收，不能把临时缓冲视为完成的生产物流。活跃双精炼厂会继续改变源仓 hash；过滤前仍须逐个 fresh 读 sorter 的 `filterItemId/inserterStage/inserterStackCount`，任何非空载对象都要先自然送达或守恒清理。
 - 复验触发：`163` 持续为空的稳定窗口、三个 sorter 全部空载、`784/907` 分别完成纯油/纯氢清理，或改用液罐/物流塔原生物品过滤。
 - 关联：EXP-056、EXP-065、EXP-074、EXP-078、EXP-094。
-- 最近复验：2026-09-01（600 聚合满仓仍因槽位变化接受异物，新 sorter 预取并造成持货；临时并行泄压后源仓清空，但永久分产尚待收敛）。
+- 最近复验：2026-09-01（600 聚合满仓仍因槽位变化接受异物；泄压后确认现役上游已按油/氢过滤，中继氢清零且两条临时出口锁氢，但历史混料清仓与 sorter `906` 过滤仍待收敛）。
 
 ## 修订记录
+
+- 2026-09-01：复验 EXP-048。垂直建造完成后正常选择粒子磁力阱 `1703`，日记新增 sequence `36`（tick `8244528`、`2026-09-01T22:49:32.806289+08:00`、本局 `001d 14:10:08`）并 durable through `36`、无 pending/error；新增 `docs/gameplay-timeline.md` 汇总从落地到当前的证据边界、全部科技/升级、首次事件和 96 条决策索引。
+
+- 2026-09-01：复验 EXP-048/096。垂直建造 `3701` 首次选择成为首个 live `upgrade_first_selected`（sequence `35`，三种时间字段完整且 durable）；混料区两条临时 sorter 锁氢、中继 62 氢守恒清零，设备图同时证明 `163` 当前仅由 filter `1114` 的 sorter `709` 输入，修正了“仍持续接收双产物”的旧假设。
+
+- 2026-09-01：EXP-094 升级为 `validated`。推进器解锁后，同一空载 sorter `897` 的 filter `1405` 成功应用，组件/sign 与双端连接复读一致，闭合了科技门控前拒绝、门控后只补缺失过滤的正反样本。
 
 - 2026-09-01：新增 EXP-095/096。推进器在科技解锁后启用预建 recipe，钢/铜下降、专用仓增至 60、日记 sequence `34` durable；发现 network `1` 欠供电后补建风机 `910–914` 恢复满供电，并正常保存 tick `8123715`。混料分流实验同时证明普通仓满载是槽位语义，新无过滤 sorter 会在过滤前预取并持货；当前只保留受控泄压和下游油过滤，不把未完成的永久分产误记为闭环。
 

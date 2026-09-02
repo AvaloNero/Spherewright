@@ -175,7 +175,16 @@ public StationStore[] StationComponent.storage
 public SlotData[] StationComponent.slots
 ```
 
-A station snapshot is accepted only when the positive factory entity still exists, `entity.stationId` is inside the current `stationCursor`, the pool entry's `id` equals that index, and its `entityId` and `planetId` match the factory entity and current local factory. The Plugin then deep-copies primitives and DTOs on Unity's main thread; no `StationComponent`, `StationStore`, `SlotData`, pool or Unity object leaves that thread.
+A station snapshot is accepted only when the positive factory entity still exists, `entity.stationId` is inside the current `stationCursor`, the pool entry's `id` equals that index, and its `entityId` matches the factory entity. Current-assembly decompilation plus the first live PLS exposed a type-specific planet identity rule: `StationComponent.Init(...)` assigns `id/entityId/pcId` and the entity's `stationId`, but does not assign `planetId`; `PlanetTransport.NewStationComponent(...)` calls `GalacticTransport.AddStationComponent(planet.id, station)` only for an interstellar station. A newly built planetary station therefore keeps the native raw sentinel `station.planetId == 0`, while an interstellar station must carry the exact factory planet ID. Spherewright accepts only `0` or the exact local planet for a non-interstellar station, and still requires the exact positive local planet for an interstellar station; another positive planet is rejected in both cases. The public DTO always reports the already bound local factory planet ID. The Plugin then deep-copies primitives and DTOs on Unity's main thread; no `StationComponent`, `StationStore`, `SlotData`, pool or Unity object leaves that thread.
+
+```text
+public void StationComponent.Init(
+  int id, int entityId, int pcId, PrefabDesc desc,
+  EntityData[] entityPool, int extraStorage, bool logisticShipWarpDrive)
+public StationComponent PlanetTransport.NewStationComponent(
+  int entityId, int pcId, PrefabDesc desc)
+public int GalacticTransport.AddStationComponent(int planetId, StationComponent station)
+```
 
 The current component exposes these read fields used by the first v0.3 slice:
 

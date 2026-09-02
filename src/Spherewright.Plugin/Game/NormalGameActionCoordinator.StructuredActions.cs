@@ -2068,7 +2068,10 @@ internal sealed partial class NormalGameActionCoordinator
         if (station is null
             || station.id != entity.stationId
             || station.entityId != entityId
-            || station.planetId != factory.planetId
+            || !LogisticsStationIdentityPolicy.MatchesLocalPlanet(
+                station.isStellar,
+                station.planetId,
+                factory.planetId)
             || station.isCollector
             || station.isVeinCollector
             || station.pcId <= 0
@@ -2136,7 +2139,10 @@ internal sealed partial class NormalGameActionCoordinator
         if (station is null
             || station.id != entity.stationId
             || station.entityId != entityId
-            || station.planetId != factory.planetId
+            || !LogisticsStationIdentityPolicy.MatchesLocalPlanet(
+                station.isStellar,
+                station.planetId,
+                factory.planetId)
             || station.isCollector
             || station.isVeinCollector
             || station.storage is null

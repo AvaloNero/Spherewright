@@ -5,7 +5,7 @@
 
 ## 结论与证据边界
 
-- 记录仍在。本局受保护日记共有 `42` 条，已经持久化到 sequence `42`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `107` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护日记共有 `42` 条，已经持久化到 sequence `42`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `108` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -281,9 +281,10 @@
 | EXP-105 | observed | 物流塔载具装载绑定工作中数量、原型容量与增产点损失边界 |
 | EXP-106 | validated | 物流运输机以科技门控、过滤输入、自动首产和普通保存闭环 |
 | EXP-107 | validated | 多数量建筑配方以完整输入批次、产出仓、durable journal 和普通保存验收 |
+| EXP-108 | observed | 本地 PLS 的 StationComponent.planetId 使用 0 哨兵，身份策略须与星际站分流 |
 
 ## 当前短期任务与关机续玩边界
 
 - DSP 当前正在同一受保护 owned world 中运行；产品里程碑保存为 tick `9413535`，正常部署恢复又自动重存到 tick `9413567`、fresh revision `1`；write health `healthy`，journal durable through `42`。后续继续使用该精确主档，不开新档。
-- 当前主线：46-tool build 已部署并恢复。下一步把仓 `900` 的站体按正常守恒路径取出，原生建造首座 PLS，再实测站点观察、槽位/充电配置和仓 `893` 无人机的 fleet transfer。
+- 当前主线：仓 `900` 的唯一站体已守恒取出并原生施工为实体 `916`，距玩家 `29.45 m`，没有再次夹脚。首次 inspect 暴露本地 PLS raw `station.planetId=0` 哨兵导致详情被旧判定误拒；源修复与 101 项测试已完成。下一步先正常保存/关闭、同批部署该修复并恢复，再实测站点观察、槽位/充电配置和仓 `893` 无人机的 fleet transfer。
 - 粒子容器、物流运输机和行星物流站三个产品里程碑均已越过自动输出、durable journal、普通保存与 commit+push 门槛；v0.3 仍需双星球 ILS、运输船真实运送钛/硅、黄糖稳定性和重启恢复全部通过后才创建 tag 和 GitHub Release。

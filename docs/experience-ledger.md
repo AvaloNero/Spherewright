@@ -1367,7 +1367,21 @@
 - 关联：EXP-062、EXP-074、EXP-094、EXP-095、`NormalGameActionCoordinator.Configure.cs`、`docs/gameplay-timeline.md`、ROADMAP v0.3。
 - 最近复验：2026-09-02（行星物流运输站首产、journal sequence 42、普通保存 tick 9413535）。
 
+### EXP-108 — 本地 PLS 的 StationComponent.planetId 使用 0 哨兵，不能套用星际站身份规则
+
+- 状态：`observed`
+- 日期：2026-09-02
+- 适用范围：当前 DSP `0.10.34.28529` 的 `PlanetTransport` 本地行星物流站身份读取，以及观察、槽位配置、充电配置和载具转移的共同入口；星际站仍要求精确 planet ID。
+- 当前结论：`entity.stationId -> PlanetTransport.stationPool[id]`、`station.id` 和 `station.entityId` 是本地站的主身份链；非星际站允许原生 raw `station.planetId == 0` 哨兵或精确本星 ID，但必须拒绝其他正 planet ID。星际站不允许 0，仍须等于当前 factory planet。公开 DTO 应使用已由 session/factory 绑定的本星 ID，不能把 raw 哨兵暴露成“未知星球”。
+- 直接证据：首座站体通过普通仓到玩家守恒转移和原生预建/施工完成为实体 `916`，位置与 prepare 候选一致、站体背包 `1 -> 0`、无预建残留且写健康；旧读取将其识别为 `componentKind=station`，但因 `station.planetId != factory.planetId` 返回 `logisticsStation=null`。当前程序集反编译证明 `StationComponent.Init(...)` 不赋 `planetId`，`PlanetTransport.NewStationComponent(...)` 只对 `isStellarStation` 调用 `GalacticTransport.AddStationComponent(planet.id, station)`。源码已把这一判定集中到 `LogisticsStationIdentityPolicy`，四个读写入口共用，并用 7 个正反用例覆盖 local 0/exact/foreign、stellar exact/0/foreign 和非法 factory；完整 Release build 0 warning / 0 error，101 tests passed（11/73/17）。
+- 限制或反例：修复尚未部署，当前 live 进程仍会把实体 `916` 的 station detail 读成 null；因此本条暂为 observed，不宣称配置或 fleet transfer 已可用。只接受 0 的规则也不能用于星际站，且其他 DSP 版本变化后必须重新反编译与实机验证。
+- 复验触发：下一次正常保存/关闭/同批部署后首次 inspect 实体 `916`，首次 PLS 槽位/充电配置、首次无人机装入与取出、首座 ILS 读回，或 DSP/程序集版本变化。
+- 关联：`LogisticsStationIdentityPolicy`、`GameStateReader.CaptureLogisticsStation`、两个站配置入口、`TryGetFleetStation`、`docs/research/game-api-m0.md`、EXP-097/098/099/101/105。
+- 最近复验：2026-09-02（首座 PLS live 反例、当前程序集调用链及 101 项离线测试；待部署 live 收口）。
+
 ## 修订记录
+
+- 2026-09-02：新增 EXP-108。首座正常施工 PLS 实体 `916` 暴露本地站 raw `planetId=0` 哨兵，旧“所有 station 都必须等于 factory planet”规则被 live 反例推翻。源修复仅对非星际站接受 0/exact、拒绝 foreign，星际站继续 exact；四入口共用纯策略，完整构建 0 warning / 0 error、101 项测试通过，等待正常部署复验。
 
 - 2026-09-02：完成 Plugin 部署/重启触发复核。产品里程碑主档先正常保存到 tick `9413535`，旧进程正常关闭且 descriptor 清零；Release Plugin/Core/Contracts 逐文件 SHA-256 匹配后同批部署。恢复动作 `ba335eeb-d6b6-47b5-8e29-4eb133d0dba4` 只载入票据绑定的精确主档并自动重存到 tick `9413567`。fresh 读回 planet `104`、和平、非沙盒、1×、healthy、journal `42/42`、仓 `893` 的 10 个 item `5001`、仓 `900` 的 1 个 item `2103`，且无 flight checkpoint capability；EXP-069/072/083/104/107 与新进程一致。EXP-105 更新为“已部署但仍待首塔动作”，不提前升级状态。新进程目前只有 resume/adoption 这一项成功游戏写入；下次累计 10 写仍从此计数。
 

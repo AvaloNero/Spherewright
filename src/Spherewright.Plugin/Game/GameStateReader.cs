@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Spherewright.Bridge.Core.Logistics;
 using Spherewright.Bridge.Core.Progression;
 using Spherewright.Bridge.Core.Safety;
 using Spherewright.Bridge.Core.Snapshots;
@@ -1415,7 +1416,10 @@ internal sealed class GameStateReader
         if (station is null
             || station.id != stationId
             || station.entityId != entity.id
-            || station.planetId != factory.planetId)
+            || !LogisticsStationIdentityPolicy.MatchesLocalPlanet(
+                station.isStellar,
+                station.planetId,
+                factory.planetId))
         {
             return;
         }

@@ -1355,7 +1355,21 @@
 - 关联：EXP-062、EXP-074、EXP-094、EXP-095、EXP-105、`docs/gameplay-timeline.md`、ROADMAP v0.3。
 - 最近复验：2026-09-02（自动产出 10、日记 durable sequence 41、普通保存 tick 9369181）。
 
+### EXP-107 — 多数量建筑配方必须等待完整批次到位，并以产物仓而非瞬时 working 判定完成
+
+- 状态：`validated`
+- 日期：2026-09-02
+- 适用范围：当前 DSP `0.10.34.28529`、owned 普通和平 1× 非沙盒世界中的行星物流运输站 item `2103`、recipe `93`、制造台 `898` 及四输入过滤拓扑；可类推为验收方法，但不直接证明其他高数量建筑配方。
+- 当前结论：高数量建筑配方启用后，sorter 会先把完整一轮原料逐步搬入制造台；中途 `isWorking=false/progress=0` 只说明批次尚未凑齐，不能误判断电或失败。必须继续复读供电和各输入总量，等完整批次开始并完成，再以来源耗尽、专用输出仓增加、durable journal 和普通保存共同收口。`production` 模式配置绑定设备完整 `stateHash`；专用 `configurationStateHash` 只用于 sorter filter 等明确模式，误用会在 prepare 阶段安全返回 `STALE_STATE` 而无副作用。
+- 直接证据：启用前仓 `899` 有钢材/钛块/处理器/粒子容器 `40/40/40/20`，sorter `902–905` 分别过滤 `1103/1106/1303/1206` 且空载。一次误用 configuration hash 的 prepare 被 `STALE_STATE` 拒绝；fresh 完整 state hash 随后令动作 `8f90d632-b90b-4ff1-b9d1-fe20850153c2` 一次启用 recipe `93`。首轮读回制造台各输入仅 19 且不工作，稍后增至钢/钛/处理器 31、粒子容器 20，供电比始终 1.0；完整批次到位后进度读到 `6690000/12000000`，最终源仓和设备输入清零、仓 `900` 增至 1 个 item `2103`。日记 sequence `42` 在 tick `9410766`（实际 `2026-09-02T20:20:29.8130148+08:00`、本局 `001d 19:34:06`）durable，保存动作 `8dedea0d-2003-4e3f-80be-71db3e5a176e` 确认 tick `9413535`、revision `115`、healthy。
+- 限制或反例：本轮只生产一座并耗尽一次性备料，证明配方转换闭环，不证明上游持续补料、站体施工、塔内配置或无人机运输。制造台处于批次边界时 `buffers=[]`/`isWorking=true`、完成后 `isWorking=false` 都是合法瞬时状态，必须结合前后数量和 journal 判断。
+- 复验触发：首次生产星际物流运输站、任一高数量建筑配方出现长时间等待、设备断电/配方重配、生产模式哈希规则变化，或 DSP/程序集版本变化。
+- 关联：EXP-062、EXP-074、EXP-094、EXP-095、`NormalGameActionCoordinator.Configure.cs`、`docs/gameplay-timeline.md`、ROADMAP v0.3。
+- 最近复验：2026-09-02（行星物流运输站首产、journal sequence 42、普通保存 tick 9413535）。
+
 ## 修订记录
+
+- 2026-09-02：新增并验证 EXP-107。四输入高数量建筑配方在完整批次到位前保持不工作是正常等待；行星物流站制造台随后满供电完成 recipe `93`，仓 `900` 得到首座 item `2103`、日记 sequence `42` durable，并正常保存到 tick `9413535`、revision `115`。同时记录 production 配置使用完整 state hash，误用 sorter 专用配置哈希会在 prepare 阶段无副作用拒绝。
 
 - 2026-09-02：新增并验证 EXP-106。行星物流 `1604` 原生解锁后，预建过滤链只启用一次 recipe `94`；三输入真实下降、输出 sorter 携带 item `5001`、专用仓达到 10、日记 sequence `41` durable，随后同一主档普通保存到 tick `9369181`、revision `112`、写健康正常。
 

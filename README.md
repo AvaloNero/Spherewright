@@ -6,7 +6,7 @@
 
 Spherewright is a structured, safety-first control bridge for **Dyson Sphere Program**. It lets an external MCP-capable Agent observe the live game and perform bounded actions through normal DSP systems—without embedding an LLM, editing saves, injecting items, or driving the UI with screenshots and keyboard/mouse macros.
 
-The project is experimental and under active development. The original **M0 — First Red Matrix** milestone is complete; the current development save has also validated automatic power-engine, plastic, titanium-ingot, diamond, gear, electric-motor, water, organic-crystal, titanium-crystal, structure-matrix, particle-container, and logistics-drone production plus same-star interplanetary flight. Development is now moving from the completed logistics-drone line toward planetary and interstellar logistics stations.
+The project is experimental and under active development. The original **M0 — First Red Matrix** milestone is complete; the current development save has also validated automatic power-engine, plastic, titanium-ingot, diamond, gear, electric-motor, water, organic-crystal, titanium-crystal, structure-matrix, particle-container, logistics-drone, and planetary-logistics-station production plus same-star interplanetary flight. Development is now moving from the completed station-production line to normally building, configuring, and operating planetary and interstellar logistics stations.
 
 Runtime evidence currently targets DSP `0.10.34.28529`, single-player peaceful mode, sandbox disabled, and 1× resources.
 
@@ -135,7 +135,7 @@ The detailed, evidence-backed status lives in [docs/m0-status.md](./docs/m0-stat
 - secure local Bridge and MCP surface: complete;
 - ordinary peaceful 1× owned-world observation and action primitives: complete for the validated DSP build;
 - first automatic red matrix: complete;
-- automatic power engine, plastic, titanium ingot, diamond, gear, electric motor, water, organic crystal, titanium crystal, structure matrix, electromagnetic turbine, high-purity silicon, microcrystalline component, sulfuric acid, processor, graphene, thruster, and particle container production: complete;
+- automatic power engine, plastic, titanium ingot, diamond, gear, electric motor, water, organic crystal, titanium crystal, structure matrix, electromagnetic turbine, high-purity silicon, microcrystalline component, sulfuric acid, processor, graphene, thruster, particle container, logistics drone, and planetary logistics station production: complete;
 - native same-star checkpointed flight: complete for the validated route;
 - planetary/interstellar logistics and broader compatibility: in progress.
 

@@ -5,7 +5,7 @@
 
 ## 结论与证据边界
 
-- 记录仍在。本局受保护日记共有 `43` 条，已经持久化到 sequence `43`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `112` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护日记共有 `43` 条，已经持久化到 sequence `43`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `114` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -174,7 +174,7 @@
 
 ## 完整决策/经验索引
 
-当前共 `112` 条：`validated=77`、`observed=32`、`invalidated=2`、`superseded=1`。`observed` 表示已有样本但仍需复验；`invalidated` 和 `superseded` 不能继续作为现行规则。每条的适用范围、当前结论、直接证据与复验触发在 [experience-ledger.md](./experience-ledger.md) 中完整保存。
+当前共 `114` 条：`validated=78`、`observed=33`、`invalidated=2`、`superseded=1`。`observed` 表示已有样本但仍需复验；`invalidated` 和 `superseded` 不能继续作为现行规则。每条的适用范围、当前结论、直接证据与复验触发在 [experience-ledger.md](./experience-ledger.md) 中完整保存。
 
 | ID | 状态 | 决策/经验 |
 |---|---|---|
@@ -290,9 +290,11 @@
 | EXP-110 | validated | PLS 可直接接输入带，带口存储编号为一基，需求侧 fleet 可独立取货 |
 | EXP-111 | observed | 阶段转入持续跨星物流时，资源航行应携带或就地补齐完整远端矿站包 |
 | EXP-112 | validated | 资源矿机选址比较全部原生合法姿态并最大化覆盖，低效矿机只经正常回收重建 |
+| EXP-113 | observed | 飞行 prepare 能量下限只是准入门，零能接触表面不等于稳定着陆 |
+| EXP-114 | validated | 海面 Drift 接触后用原生 MoveTo 走向最近且已证明的干燥邻域 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前正在同一受保护 owned world 中运行；最新普通保存为 tick `10126918`、revision `26`，write health `healthy`，journal durable through `43`，且新的 exact-primary restart ticket 已签发。后续继续使用该精确主档，不开新档。
-- 当前主线：PLS `916/918` 已完成真实 100 件钛块行星内运输；planet `102` 的钛/硅两条远端矿线也均已满供电并持续入仓。下一步按 v0.3 验收门返回母星，生产并部署双星球 ILS/运输船，让两种资源不再依赖伊卡洛斯人工搬运。
+- DSP 当前正在同一受保护 owned world 的 planet `104` 运行；第三次返航从同一 tick `10173149` checkpoint 出发，海面 Drift 通过 24.6 m 原生靠岸订单首试转为稳定 Walk。1100 钛石/651 硅石完整带回，普通保存 `a3944276-ad65-4e04-b680-4e267e26b056` 已持久化 tick `10182419`、revision `5`，write health `healthy`、checkpoint 已退役、exact-primary restart 可用，journal 仍 durable through `43`。后续继续使用同一世界，不开新档。
+- 当前主线：PLS `916/918` 已完成真实 100 件钛块行星内运输；planet `102` 的钛/硅两条远端矿线持续供料，首批 1100/651 原矿也已安全回到母星。下一步按 v0.3 验收门生产并部署双星球 ILS/运输船，让两种资源不再依赖伊卡洛斯人工搬运。
 - 粒子容器、物流运输机、行星物流站、真实行星内物流、远端钛矿和远端硅矿里程碑均已越过结构化验收与普通保存门槛；远端硅矿本次 commit+push 完成后，v0.3 仍需双星球 ILS、运输船真实运送钛/硅、黄糖稳定性和重启恢复全部通过，才创建 tag 和 GitHub Release。

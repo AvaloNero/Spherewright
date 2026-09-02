@@ -1249,6 +1249,7 @@ internal sealed partial class NormalGameActionCoordinator
     {
         if (action.ActionKind == NormalActionKinds.InterplanetaryFlight)
         {
+            AbortPlayerOrderIfOwned(action);
             ReleaseNativeAscentInput(action);
             var lifecycleRejection = "The bound checkpoint identity is missing.";
             if (string.IsNullOrWhiteSpace(action.FlightCheckpointId)
@@ -1286,6 +1287,7 @@ internal sealed partial class NormalGameActionCoordinator
     {
         if (action.ActionKind == NormalActionKinds.InterplanetaryFlight)
         {
+            AbortPlayerOrderIfOwned(action);
             ReleaseNativeAscentInput(action);
             if (!string.IsNullOrWhiteSpace(action.FlightCheckpointId))
             {
@@ -2017,6 +2019,8 @@ internal sealed partial class NormalGameActionCoordinator
         public long FlightBestDistanceAtGameTick { get; set; }
         public long FlightDestinationContactAtGameTick { get; set; }
         public long FlightStableLandingAtGameTick { get; set; }
+        public int FlightLandingOrderCount { get; set; }
+        public long? FlightLandingOrderReachedAtGameTick { get; set; }
         public bool FlightAscentInputOwned { get; set; }
         public float FlightOriginalVerticalInput { get; set; }
         public float FlightOriginalForwardInput { get; set; }

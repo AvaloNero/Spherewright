@@ -14,6 +14,13 @@ internal sealed partial class NormalGameActionCoordinator
     private const long MinimumFlightProgressStallTicks = 18000;
     private const long FlightLandingStableTicks = 600;
     private const long FlightLandingTimeoutTicks = 7200;
+    private const long FlightShoreTransitionGraceTicks = 120;
+    private const int FlightShoreMaximumOrders = 3;
+    private const float FlightShoreSearchMinimumDistance = 1f;
+    private const float FlightShoreSearchMaximumDistance = 120f;
+    private const float FlightShoreMinimumTerrainClearance = 0.2f;
+    private const float FlightShoreNeighborhoodMinimumClearance = -0.05f;
+    private const float FlightShoreNeighborhoodProbeDistance = 2f;
     private const float NativeSailEntryTargetAltitude = 100f;
 
     public GameCallResult<PreparedNormalAction> PrepareInterplanetaryFlightOnMainThread(
@@ -348,6 +355,7 @@ internal sealed partial class NormalGameActionCoordinator
 
             if (player.movementState == EMovementState.Walk)
             {
+                AbortPlayerOrderIfOwned(action);
                 if (player.speed <= 0.1f)
                 {
                     if (action.FlightStableLandingAtGameTick < 0L)
@@ -381,6 +389,11 @@ internal sealed partial class NormalGameActionCoordinator
             }
 
             action.FlightStableLandingAtGameTick = -1L;
+            if (player.movementState == EMovementState.Drift)
+            {
+                UpdateNativeShoreLanding(action, player, destination);
+                return;
+            }
         }
         else
         {
@@ -506,6 +519,263 @@ internal sealed partial class NormalGameActionCoordinator
             action.Stalled = true;
             Fail(action, $"Native sail made no new best-distance progress for {progressStallWindow} game ticks while {surfaceDistance:F0} m from planet {destination.id}; the bound checkpoint must be reloaded before another attempt.");
         }
+    }
+
+    private void UpdateNativeShoreLanding(ActionRecord action, Player player, PlanetData destination)
+    {
+        if (action.PlayerOrder is not null)
+        {
+            if (ReferenceEquals(player.currentOrder, action.PlayerOrder))
+            {
+                var wasPowerStarved = action.PowerStarvedAtGameTick.HasValue;
+                if (FailPowerStarvedPlayerOrder(action, "shore-landing movement"))
+                {
+                    return;
+                }
+
+                if (action.PowerStarvedAtGameTick.HasValue)
+                {
+                    return;
+                }
+
+                var remainingDistance = SurfaceDistance(
+                    player.position,
+                    action.PlayerOrder.target,
+                    destination.realRadius);
+                action.MovementProgress ??= new MovementProgressWatchdog(
+                    GameMain.gameTick,
+                    player.position.x,
+                    player.position.y,
+                    player.position.z,
+                    remainingDistance);
+                if (wasPowerStarved)
+                {
+                    action.MovementProgress.ResetWindow(
+                        GameMain.gameTick,
+                        player.position.x,
+                        player.position.y,
+                        player.position.z,
+                        remainingDistance);
+                }
+
+                var progress = action.MovementProgress.Observe(
+                    GameMain.gameTick,
+                    player.position.x,
+                    player.position.y,
+                    player.position.z,
+                    remainingDistance);
+                if (progress.Status != MovementProgressStatus.Progressing)
+                {
+                    AbortPlayerOrderIfOwned(action);
+                    Fail(action,
+                        $"Native Drift shore recovery stopped because its exact owned movement order made no safe physical progress for {progress.StalledGameTicks} game ticks; reload the bound pre-flight checkpoint before retrying.");
+                    return;
+                }
+
+                if (GameMain.gameTick % 120L == 0L)
+                {
+                    action.Message = $"Native Drift shore recovery is walking toward dry terrain on planet {destination.id}; {remainingDistance:F1} m remains on bounded order {action.FlightLandingOrderCount}/{FlightShoreMaximumOrders}.";
+                }
+
+                return;
+            }
+
+            if (player.currentOrder is not null)
+            {
+                Fail(action, "A different player order replaced the exact owned Drift shore-recovery order; the bound pre-flight checkpoint must be reloaded before retrying.");
+                return;
+            }
+
+            if (!action.PlayerOrder.targetReached)
+            {
+                Fail(action, "DSP cleared the exact owned Drift shore-recovery order before it reached the selected terrain; the bound pre-flight checkpoint must be reloaded before retrying.");
+                return;
+            }
+
+            action.FlightLandingOrderReachedAtGameTick ??= GameMain.gameTick;
+            if (GameMain.gameTick <= action.FlightLandingOrderReachedAtGameTick.Value + FlightShoreTransitionGraceTicks)
+            {
+                if (GameMain.gameTick % 30L == 0L)
+                {
+                    action.Message = $"Native Drift shore recovery reached its dry-terrain order and is waiting for DSP's ordinary Drift-to-Walk transition on planet {destination.id}.";
+                }
+
+                return;
+            }
+
+            action.PlayerOrder = null;
+            action.MovementProgress = null;
+            action.FlightLandingOrderReachedAtGameTick = null;
+        }
+
+        if (action.FlightLandingOrderCount >= FlightShoreMaximumOrders)
+        {
+            Fail(action, $"DSP remained in Drift after {FlightShoreMaximumOrders} bounded dry-terrain movement orders; reload the bound pre-flight checkpoint before retrying.");
+            return;
+        }
+
+        if (player.currentOrder is not null)
+        {
+            Fail(action, "A player order appeared before Drift shore recovery could claim the native movement channel; the bound pre-flight checkpoint must be reloaded before retrying.");
+            return;
+        }
+
+        Vector3 target;
+        float targetDistance;
+        float terrainClearance;
+        try
+        {
+            if (!TryFindNearestDryLandingTarget(
+                    destination,
+                    player.position,
+                    out target,
+                    out targetDistance,
+                    out terrainClearance))
+            {
+                Fail(action, $"No terrain with a verified dry neighborhood was found within {FlightShoreSearchMaximumDistance:F0} m of the ocean contact point on planet {destination.id}; reload the bound pre-flight checkpoint before retrying.");
+                return;
+            }
+        }
+        catch (Exception exception)
+        {
+            Fail(action, $"The current-version terrain query failed safely with {exception.GetType().Name} before a Drift shore-recovery order was issued; reload the bound pre-flight checkpoint before retrying.");
+            return;
+        }
+
+        action.PlayerOrder = OrderNode.MoveTo(target);
+        action.FlightLandingOrderCount++;
+        action.FlightLandingOrderReachedAtGameTick = null;
+        action.MovementProgress = new MovementProgressWatchdog(
+            GameMain.gameTick,
+            player.position.x,
+            player.position.y,
+            player.position.z,
+            targetDistance);
+        player.Order(action.PlayerOrder, false);
+        action.Message = $"Native landing contacted ocean on planet {destination.id}; DSP accepted bounded Drift movement order {action.FlightLandingOrderCount}/{FlightShoreMaximumOrders} toward the nearest verified dry neighborhood {targetDistance:F1} m away with {terrainClearance:F2} m terrain clearance.";
+    }
+
+    private static bool TryFindNearestDryLandingTarget(
+        PlanetData planet,
+        Vector3 currentPosition,
+        out Vector3 target,
+        out float surfaceDistance,
+        out float terrainClearance)
+    {
+        target = Vector3.zero;
+        surfaceDistance = 0f;
+        terrainClearance = 0f;
+        var rawData = planet.data;
+        var vertices = rawData?.vertices;
+        if (rawData is null
+            || vertices is null
+            || vertices.Length == 0
+            || rawData.heightData is null
+            || rawData.indexMap is null
+            || rawData.modData is null
+            || planet.realRadius <= 0f
+            || planet.scale <= 0f)
+        {
+            return false;
+        }
+
+        var currentNormal = currentPosition.normalized;
+        if (currentNormal.sqrMagnitude < 0.99f)
+        {
+            return false;
+        }
+
+        LandingShoreCandidateScore? selected = null;
+        Vector3 selectedDirection = Vector3.zero;
+        var selectedTerrainRadius = 0f;
+        var minimumDot = Math.Cos(FlightShoreSearchMaximumDistance / planet.realRadius);
+        var maximumDot = Math.Cos(FlightShoreSearchMinimumDistance / planet.realRadius);
+        for (var index = 0; index < vertices.Length; index++)
+        {
+            var direction = vertices[index];
+            if (direction.sqrMagnitude < 0.99f)
+            {
+                continue;
+            }
+
+            direction.Normalize();
+            var dot = Math.Max(-1d, Math.Min(1d, Vector3.Dot(currentNormal, direction)));
+            if (dot < minimumDot || dot > maximumDot)
+            {
+                continue;
+            }
+
+            var distance = Math.Acos(dot) * planet.realRadius;
+            var candidateTerrainRadius = rawData.QueryModifiedHeight(direction) * planet.scale;
+            var candidate = new LandingShoreCandidateScore
+            {
+                Index = index,
+                SurfaceDistance = distance,
+                TerrainClearance = candidateTerrainRadius - planet.realRadius,
+            };
+            if (!LandingShoreSelection.IsEligible(
+                    candidate,
+                    FlightShoreSearchMinimumDistance,
+                    FlightShoreSearchMaximumDistance,
+                    FlightShoreMinimumTerrainClearance)
+                || !LandingShoreSelection.IsPreferred(candidate, selected)
+                || !HasDryLandingNeighborhood(planet, direction))
+            {
+                continue;
+            }
+
+            selected = candidate;
+            selectedDirection = direction;
+            selectedTerrainRadius = candidateTerrainRadius;
+        }
+
+        if (selected is null)
+        {
+            return false;
+        }
+
+        target = selectedDirection * (selectedTerrainRadius + 0.2f);
+        surfaceDistance = (float)selected.SurfaceDistance;
+        terrainClearance = (float)selected.TerrainClearance;
+        return true;
+    }
+
+    private static bool HasDryLandingNeighborhood(PlanetData planet, Vector3 normal)
+    {
+        var rawData = planet.data;
+        if (rawData is null || planet.realRadius <= 0f)
+        {
+            return false;
+        }
+
+        var tangentX = Vector3.Cross(normal, Math.Abs(normal.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
+        var tangentY = Vector3.Cross(normal, tangentX).normalized;
+        var angularDistance = FlightShoreNeighborhoodProbeDistance / planet.realRadius;
+        var radialWeight = Mathf.Cos(angularDistance);
+        var tangentWeight = Mathf.Sin(angularDistance);
+        for (var sample = 0; sample < 8; sample++)
+        {
+            var heading = sample * Mathf.PI * 0.25f;
+            var tangent = tangentX * Mathf.Cos(heading) + tangentY * Mathf.Sin(heading);
+            var probe = (normal * radialWeight + tangent * tangentWeight).normalized;
+            var clearance = rawData.QueryModifiedHeight(probe) * planet.scale - planet.realRadius;
+            if (float.IsNaN(clearance)
+                || float.IsInfinity(clearance)
+                || clearance < FlightShoreNeighborhoodMinimumClearance)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static float SurfaceDistance(Vector3 first, Vector3 second, float radius)
+    {
+        var firstNormal = first.normalized;
+        var secondNormal = second.normalized;
+        var dot = Math.Max(-1d, Math.Min(1d, Vector3.Dot(firstNormal, secondNormal)));
+        return (float)(Math.Acos(dot) * radius);
     }
 
     private static void ControlNativeSailTowardPlanet(

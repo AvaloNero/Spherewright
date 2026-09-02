@@ -1439,7 +1439,41 @@
 - 关联：EXP-007、EXP-021、EXP-037、EXP-042、EXP-045、EXP-068、EXP-070、EXP-111、`ResourceCoverageSelection`、`NormalGameActionCoordinator.Dismantle.cs`。
 - 最近复验：2026-09-02（正常拆除精确回收、两节点→四节点重建、满供电出料、仓持续增长和普通保存均完成 live）。
 
+### EXP-113 — 飞行 prepare 的保守能量下限只是准入门，不是着陆余量保证
+
+- 状态：`observed`
+- 日期：2026-09-03
+- 适用范围：DSP `0.10.34.28529`、当前 same-star flight 控制器、planet `102 -> 104` 返航、400 MJ 核心、49 氢与 1100 钛石/651 硅石负载的单次现场样本；不外推为固定航程油耗。
+- 当前结论：`requiredFlightEnergy = max(1.5 × coreCapacity, distance × 1000)` 可用于拒绝明显无法起飞的状态，但通过 prepare 不得宣称抵达时仍有制动/着陆余量。若航行在核心归零后才接触目标表面并无法收敛到稳定 Walk，必须以 `recovery_required` 终止，只重载绑定检查点；不得将表面接触冒充成功或保存主档。后续用户现场确认两次落点其实都在海面，手动横走两步即可上岸，故现有证据更直接指向“控制器缺少 Drift 靠岸收尾”，不能把零核心误写成唯一根因。
+- 直接证据：动作 `1555c331-b5fb-4f29-b0ee-aa524304fcc7` 先确认独立检查点 tick `10173149`，再从 planet `102` 原生起飞。玩家在距 planet `104` 表面约 2502 m、速度约 868.1 m/s 时已为核心 `0/400 MJ`；后续进入目标表面 Drift，但在着陆窗口内始终未达成连续 600 tick Walk，终态为 `recovery_required`。恢复动作 `719d56d0-cd8f-485c-8c44-7309aba9b5a5` 随后只载入该精确检查点，新 session `9c8b74c0-24fc-4546-8d7e-b35860ba9eee` 复读为 planet `102`、Walk/0、核心 `400/400 MJ`、燃料格 49 氢、背包 1100 钛石/651 硅石且写入健康。同 checkpoint 第二次动作 `0e913bc5-1b70-4ad1-afcd-62c522075547` 虽以不同采样时序再次进入 planet `104` 表面，仍未从 Drift 收敛并于 tick `10188952` 返回 `recovery_required`。票据仍绑定原起点/终点和该精确 tick，主档未被任一失败航迹覆盖。
+- 限制或反例：本样本不能单独证明失败唯一由燃料不足造成；用户观察到的海面落点已经提供更强的替代解释。不得擅自把阈值硬编码为“必须 80 氢”；应先在同检查点验证原生 Drift 横移靠岸，再依据抵达后的真实能量决定是否仍需调整预算。
+- 复验触发：本次精确 checkpoint reload、同检查点重试、补充正常燃料后重试、稳定着陆/再次失败、飞行能量预算或 DSP/程序集版本变化。
+- 关联：EXP-035、EXP-047、EXP-050、EXP-052、EXP-079、EXP-082、`NormalGameActionCoordinator.InterplanetaryFlight.cs`、`FlightCheckpointStore.cs`。
+- 最近复验：2026-09-03（同一 49 氢 checkpoint 已两次接触目标表面但均以 Drift 收敛超时进入 `recovery_required`）。
+
+### EXP-114 — 海面 Drift 接触后应通过原生 MoveTo 横移到已证明的近岸地形
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：DSP `0.10.34.28529`、Assembly-CSharp SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`、实体星球着陆后的 `EMovementState.Drift`，不适用于气态巨行星或跨恒星航行。
+- 当前结论：目标星球身份已成立而玩家处于 Drift 时，不能原地等待 Walk。当前程序集的 `PlayerMove_Drift.GameTick` 明确读取 `player.currentOrder`，把 `OrderNode.MoveTo` 的目标投影到球面切向，以机甲 walkSpeed 生成 `rtsVelocity`，再经 `UseDriftEnergy` 和普通碰撞推进；`DetermineDrift` 会在离开水面条件后自然切回 Walk。因此安全收尾应从 `PlanetRawData.vertices` 与 `QueryModifiedHeight` 选择最近且有干燥邻域的地形，只签发有界、精确归属的原生 MoveTo，继续保留全局着陆超时、停滞 watchdog、断能检测和 checkpoint 失败回滚，禁止写位置或随机模拟按键。
+- 直接证据：用户现场确认前两次返航实际已落在海洋上，手动横走两步即可落地。针对当前 DLL 的 IL 复核同时确认 Drift 原生订单路径、`PlayerOrder.ReachTest` 的球面距离判定、`PlanetRawData.QueryModifiedHeight` 和 `PlanetAlgorithm.CalcLandPercent` 的地形高度依据。源码实现搜索范围最多 120 m，中心地形至少高出 realRadius 0.2 m，2 m 八方向邻域最低不低于 -0.05 m；最多 3 个原生订单，每个都做精确引用所有权、180-tick 物理/目标进展、断能与 120-tick Drift→Walk 过渡检查。部署后，恢复动作 `155f95a7-4c80-4e19-800c-f6f29f0581a1` 只载入同一 tick `10173149` checkpoint；返航动作 `f6b60009-3b77-4b34-b14c-fd89d4b13d71` 再次接触 planet `104` 海面后，结构化消息证明首次订单选中 24.6 m 外、中心 clearance 0.20 m 的最近干燥邻域。该原生 MoveTo 第一次即使状态转为 Walk/0，并连续稳定 600 tick 完成；额外 10 秒复读位置恒为 `(132.706726,-8.28753,-149.304672)`、速度 0，1100 钛石和 651 硅石完整守恒。普通保存 `a3944276-ad65-4e04-b680-4e267e26b056` 随后持久化 tick `10182419`，写入健康并确认 checkpoint capability 已移除。完整 solution 0 warning / 0 error，112 tests passed。
+- 限制或反例：地形高度只能证明干燥近岸候选，不能提前证明沿途没有临时建筑碰撞；因此 native order 仍必须受物理停滞 watchdog 约束。当前只有 planet `104` 的一个 24.6 m 海岸样本；120 m 搜索范围、0.2/-0.05 m 高度门槛和最多 3 单仍应在不同海洋/地形上复验，不能外推为全局寻路。
+- 复验触发：部署同批 Plugin/Core/Contracts、从 tick `10173149` 的同一 checkpoint 重试、出现 Drift 靠岸消息、稳定 Walk 600 tick、普通保存退役 checkpoint；或地形数组/DSP 程序集版本变化。
+- 关联：EXP-007、EXP-021、EXP-035、EXP-047、EXP-050、EXP-052、EXP-079、EXP-082、EXP-113、`LandingShoreSelection`、`NormalGameActionCoordinator.InterplanetaryFlight.cs`。
+- 最近复验：2026-09-03（同一 tick-`10173149` checkpoint 的第三次返航以 24.6 m 原生靠岸订单首试成功，稳定 Walk 600 tick并保存退役检查点）。
+
 ## 修订记录
+
+- 2026-09-03：EXP-114 升级为 `validated`。正常关闭旧进程后，同批 Release Plugin/Core/Contracts 经 SHA-256 一致性校验部署；恢复动作 `155f95a7-4c80-4e19-800c-f6f29f0581a1` 只载入原 tick `10173149` checkpoint。返航 `f6b60009-3b77-4b34-b14c-fd89d4b13d71` 在海面 Drift 自动选择 24.6 m 外干燥邻域，首个原生 MoveTo 即转入 Walk/0 并保持 600 tick；10 秒后位置仍完全一致，1100 钛石/651 硅石守恒。普通保存 `a3944276-ad65-4e04-b680-4e267e26b056` 确认 tick `10182419`、revision `5`、healthy，并退役该 checkpoint。用户对根因的判断得到实机证实。
+
+- 2026-09-03：新增 EXP-114，并修订 EXP-113 的因果边界。用户确认失败航迹其实已落到目标星球海面，手动横走两步就能上岸；当前 DLL 也证明 Drift 会消费普通 MoveTo。源码因此改为从原生地形高度选最近干燥邻域并签发最多 3 个有界订单，同时保留订单所有权、停滞、断能、总着陆超时和精确 checkpoint 回滚。离线完整 solution 0 warning / 0 error、112 tests passed；部署前仍只标记 observed。
+
+- 2026-09-03：EXP-113 增加第二个同检查点样本。动作 `0e913bc5-1b70-4ad1-afcd-62c522075547` 在精确恢复后再次原生起飞，同样接触 planet `104` 表面但没有达成连续 600 tick Walk，于 tick `10188952` 明确进入 `recovery_required`。当时曾保守计划补一栈煤再试；用户随后确认落点就在海面、横走两步即可上岸，因此该补煤计划被新证据降为备选，首选改为 EXP-114 的有界原生靠岸控制。任一失败仍只回 tick `10173149` 的同一 checkpoint，这不是宣称固定氢阈值或放弃失败档。
+
+- 2026-09-03：新增 EXP-113。返航动作 `1555c331-b5fb-4f29-b0ee-aa524304fcc7` 已在原生起飞前确认 tick `10173149` 的独立检查点，但 400 MJ 核心加 49 氢只足以在归零后接触 planet `104` 表面，未能在有界窗口内从 Drift 收敛到连续 600 tick Walk。本次不写主档、不宣称到达；恢复动作 `719d56d0-cd8f-485c-8c44-7309aba9b5a5` 已仅载入票据内同一 checkpoint，完整恢复负载/能源并保留重试 capability。
+
+- 2026-09-03：完成上一次提前审计后的 10 个成功游戏写动作复核：Move `a9bc0d39-6845-46b6-90d3-2a3c2157aff8` 到铁脉、手采 10 铁 `b9dfc8e3-f0db-4799-901e-26260006710d`、手搓电塔 `689ee3e3-f217-46d4-aa41-dd7d1749855a`、Move `886f626d-5a7d-47ad-8849-1f5f4bc8499b` 返回硅矿锦标、原生施工电塔 `c0a68108-f2fb-4726-b8d6-97e6304f4a62`、硅矿里程碑保存 `73f7dd77-e057-46ce-8156-0b7b3a3736f3`、三次原生单栈加氢 `6b60c009-a2ea-4810-9380-7e90777943ca` / `c915f3f2-e0df-4d9d-b8e3-d2084c8e818c` / `df0595b8-6d36-4a70-af88-386a0d82a51e`，以及仓 `15 -> player` 守恒转移 1100 钛石 `d87f3741-67c8-4762-b2ce-8d5356dbad94`。首个请求一次加注 49 氢被 prepare 以“原生本次只移动一栈 20”安全拒绝，无 commit；随后精确 `20 + 20 + 9` 使背包氢 `49 -> 0`、燃料格 `0 -> 49`，总数不变。fresh 复读为 session revision `30`、tick `10169058+`、planet `102`、Walk/0、核心 `400/400 MJ`、healthy、journal `43/43` durable、无 flight checkpoint；玩家背包有 1100 钛石、651 硅石且仍留 1 个空格，钛仓仍有 1090 且矿机持续供料。EXP-007/018/021/028/047/080/111/112 与当前动作守恒、航行能源、远端供料和保存边界一致；审计后才允许创建返航独立检查点并起飞。
 
 - 2026-09-02：EXP-112 升级为 `validated`。live 动作正常回收旧矿机及 50 个内部硅石，新 prepare 给出 `245/249/252/256` 四点覆盖且完工集合精确一致；两台风机与电塔 `27/42` 使矿机/sorter 满供电，12 段新带接回旧主干后仓 `25` 从空仓增长到 50。普通保存动作 `73f7dd77-e057-46ce-8156-0b7b3a3736f3` 确认 tick `10126918`、revision `26`、healthy。journal 保持 `43/43` 而未造新事件，因为硅石生产寄存器在本次远端矿机前已有历史；保留真实边界而不把“本次新矿机”冒充“本局第一次产线硅石”。
 

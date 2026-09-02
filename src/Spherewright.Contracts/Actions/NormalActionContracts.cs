@@ -37,6 +37,14 @@ public static class BuildingConfigurationModes
     public const string Production = "production";
     public const string Research = "research";
     public const string SorterFilter = "sorter-filter";
+    public const string LogisticsStationStorage = "logistics-station-storage";
+}
+
+public static class LogisticsStorageLogics
+{
+    public const string None = "none";
+    public const string Supply = "supply";
+    public const string Demand = "demand";
 }
 
 public static class NormalActionStates
@@ -151,6 +159,18 @@ public sealed class PrepareConfigureBuildingRequest
     public int TechId { get; set; }
 
     public int FilterItemId { get; set; }
+
+    public int StationStorageIndex { get; set; } = -1;
+
+    public int StationItemId { get; set; }
+
+    public int StationMaximumCount { get; set; }
+
+    public string StationLocalLogic { get; set; } = LogisticsStorageLogics.None;
+
+    public string StationRemoteLogic { get; set; } = LogisticsStorageLogics.None;
+
+    public string ExpectedStationConfigurationStateHash { get; set; } = string.Empty;
 
     public string ExpectedFactoryStateHash { get; set; } = string.Empty;
 

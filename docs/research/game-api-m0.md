@@ -175,7 +175,25 @@ int[] needs
 
 `StationStore` contains `itemId`, `count`, `inc`, `localOrder`, `remoteOrder`, `max`, `keepMode`, `keepIncRatio`, `localLogic` and `remoteLogic`, plus pure count getters for local/remote supply and demand. The current `ELogisticStorage` values are `None=0`, `Supply=1`, `Demand=2`. Each `SlotData` contains `dir`, `beltId`, `storageIdx` and `counter`; `IODir` is `None=0`, `Output=1`, `Input=2`. A nonzero belt component is additionally resolved through `CargoTraffic.beltPool[beltId]` and accepted only when its component ID matches before copying its entity ID.
 
-The public DTO deliberately labels `tripRangeDrones`, `tripRangeShips`, `warpEnableDist`, `deliveryDrones` and `deliveryShips` as raw/settings values. Method names such as `UIStationWindow.OnMaxTripDroneSliderValueChange`, `OnMinDeliverDroneValueChange` and `OnWarperDistanceValueChange` prove these fields are UI-controlled, but the complete scaling and normal business write path have not yet been adopted. `PlanetTransport.SetStationStorage(int,int,int,int,ELogisticStorage,ELogisticStorage,Player)` is a future write-path candidate only; its existence does not authorize a call until its UI call chain, item handling, costs and readback invariants are separately documented and tested.
+Current-assembly decompilation proves the storage UI business path rather than merely the method's existence:
+
+```text
+UIStationStorage.OnItemPickerReturn
+  -> PlanetTransport.SetStationStorage(station.id, index, itemId,
+       stationMaxItemCount + researchedExtra, Supply,
+       station.isStellar ? Supply : None, GameMain.mainPlayer)
+UIStationStorage.OnMaxSliderValueChange
+  -> SetStationStorage(..., round(slider * 100), current local/remote logic, player)
+UIStationStorage.OnOptionButton*Click
+  -> SetStationStorage(..., current item/max, selected local/remote logic, player)
+public void PlanetTransport.SetStationStorage(
+  int stationId, int storageIdx, int itemId, int itemCountMax,
+  ELogisticStorage localLogic, ELogisticStorage remoteLogic, Player player)
+```
+
+`SetStationStorage` clamps the maximum to the model capacity plus the currently researched local/remote storage bonus, forces remote logic to `None` for a planetary station, and refreshes local/galactic traffic when logic changes. Its dangerous branch is equally important: when the requested item differs from a nonempty slot, it calls `Player.TryAddItemToPackage(..., throwTrash:true)`, clears count/inc/orders, and may drop overflow. Spherewright therefore adopts only the safe subset: item ID must be normally unlocked; limits must be positive 100-item UI steps within the current researched capacity; duplicate station items are rejected; the slot must be empty or already assigned to the same item; and both orders must be zero. Clear and replace are not exposed. Prepare binds the separate station configuration hash. Commit snapshots slot count/inc plus every package and in-hand item/count/inc tuple, calls `SetStationStorage` once, and requires exact item/max/logic readback with those inventory fingerprints unchanged; any ambiguous result follows normal write quarantine.
+
+The other UI transforms are now documented but remain read-only in this slice: max charge writes `consumer.workEnergyPerTick = round(50000 * slider)`; drone range stores `cos(degrees / 180 * pi)`; vessel range stores `2400000 * mappedLightYears`; warp distance stores `40000 * mappedAU`; and minimum drone delivery stores `round(slider * 10)` percent with a minimum of one. The public DTO still labels these values raw/settings because no route-setting action has yet adopted their full bounds and readback matrix.
 
 The observation DTO provides two versioned hashes. The live hash covers energy, inventory, orders, fleet activity and needs. The configuration hash excludes those tick-volatile values while binding station identity/type, capacity settings, storage item/limit/logic, route settings and belt topology. This split lets future prepare logic avoid becoming stale merely because a vessel moved while still rejecting a changed station configuration.
 

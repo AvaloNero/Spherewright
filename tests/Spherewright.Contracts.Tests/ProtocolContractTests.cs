@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Journals;
 using Spherewright.Contracts.Logistics;
@@ -123,5 +124,31 @@ public sealed class ProtocolContractTests
         Assert.Equal("sha256:config", parsed.RootElement.GetProperty("configurationStateHash").GetString());
         Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("filePath", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void LogisticsStationConfiguration_BindsSeparateConfigurationHashAndSlotIntent()
+    {
+        var request = new PrepareConfigureBuildingRequest
+        {
+            PlanetId = 104,
+            EntityId = 920,
+            Mode = BuildingConfigurationModes.LogisticsStationStorage,
+            StationStorageIndex = 1,
+            StationItemId = 1106,
+            StationMaximumCount = 5_000,
+            StationLocalLogic = LogisticsStorageLogics.Demand,
+            StationRemoteLogic = LogisticsStorageLogics.Supply,
+            ExpectedFactoryStateHash = "sha256:factory",
+            ExpectedStationConfigurationStateHash = "sha256:station-config",
+        };
+
+        var json = JsonSerializer.Serialize(request, JsonOptions);
+        using var parsed = JsonDocument.Parse(json);
+
+        Assert.Equal("logistics-station-storage", parsed.RootElement.GetProperty("mode").GetString());
+        Assert.Equal(1, parsed.RootElement.GetProperty("stationStorageIndex").GetInt32());
+        Assert.Equal("demand", parsed.RootElement.GetProperty("stationLocalLogic").GetString());
+        Assert.Equal("sha256:station-config", parsed.RootElement.GetProperty("expectedStationConfigurationStateHash").GetString());
     }
 }

@@ -521,6 +521,8 @@ internal sealed partial class NormalGameActionCoordinator
                             ? plan.TransferItemId
                             : plan.FuelItemId > 0
                                 ? plan.FuelItemId
+                                : plan.ConfigureStationItemId > 0
+                                    ? plan.ConfigureStationItemId
                                 : plan.ConfigureRecipeId > 0
                                     ? plan.ConfigureRecipeId
                                     : plan.ConfigureFilterItemId > 0
@@ -703,6 +705,8 @@ internal sealed partial class NormalGameActionCoordinator
                     ? plan.ConfigureFilterItemId
                     : plan.ConfigureMode == BuildingConfigurationModes.Research
                         ? plan.ConfigureTechId
+                        : plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
+                            ? plan.ConfigureStationItemId
                         : plan.ConfigureRecipeId;
                 var configured = _reader.InspectFactoryEntityOnMainThread(
                     plan.SessionId,
@@ -714,7 +718,9 @@ internal sealed partial class NormalGameActionCoordinator
                         && !IsLabInResearchMode(plan.EntityId, plan.ConfigureTechId))
                     || (plan.ConfigureMode == BuildingConfigurationModes.SorterFilter
                         && ((configured.Value.FilterItemId ?? 0) != plan.ConfigureFilterItemId
-                            || !IsSorterFilterApplied(plan.EntityId, plan.ConfigureFilterItemId))))
+                            || !IsSorterFilterApplied(plan.EntityId, plan.ConfigureFilterItemId)))
+                    || (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
+                        && !IsLogisticsStationStorageConfigurationApplied(configured.Value, plan)))
                 {
                     throw new InvalidOperationException("The configured device mode could not be proven by immediate readback.");
                 }
@@ -723,8 +729,12 @@ internal sealed partial class NormalGameActionCoordinator
                     ? "The current-version sorter UI setting path applied the item filter and component/sign readback matched."
                     : plan.ConfigureMode == BuildingConfigurationModes.Research
                         ? "The current-version lab setting path applied research mode and active-technology readback matched."
+                        : plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
+                            ? "PlanetTransport.SetStationStorage applied the unlocked item, capacity, and local/remote logic once; immediate readback matched and the call preserved slot inventory."
                         : "The current-version device configuration path applied the unlocked recipe and readback matched.");
-                action.AfterStateHash = configured.Value.StateHash;
+                action.AfterStateHash = plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
+                    ? configured.Value.LogisticsStation?.ConfigurationStateHash
+                    : configured.Value.StateHash;
                 break;
             default:
                 throw new InvalidOperationException("Unsupported normal-game action kind.");
@@ -1055,9 +1065,10 @@ internal sealed partial class NormalGameActionCoordinator
                 }
 
                 if (!string.Equals(configureSnapshot.Value.StateHash, plan.FactoryStateHash, StringComparison.Ordinal)
-                    || configureSnapshot.Value.Progress != 0
-                    || configureSnapshot.Value.IsWorking
-                    || configureSnapshot.Value.Buffers.Any(buffer => buffer.Count != 0))
+                    || (plan.ConfigureMode != BuildingConfigurationModes.LogisticsStationStorage
+                        && (configureSnapshot.Value.Progress != 0
+                            || configureSnapshot.Value.IsWorking
+                            || configureSnapshot.Value.Buffers.Any(buffer => buffer.Count != 0))))
                 {
                     return Stale("Device identity, buffers, progress, unlock, or recipe state changed after prepare.");
                 }
@@ -1390,6 +1401,27 @@ internal sealed partial class NormalGameActionCoordinator
         return result;
     }
 
+    private static string CapturePlayerPackageState(Player player)
+    {
+        var fields = new List<object?>();
+        var grids = player?.package?.grids ?? Array.Empty<StorageComponent.GRID>();
+        var size = player?.package?.size ?? 0;
+        fields.Add(size);
+        for (var index = 0; index < Math.Min(size, grids.Length); index++)
+        {
+            var grid = grids[index];
+            fields.Add(index);
+            fields.Add(grid.itemId);
+            fields.Add(grid.count);
+            fields.Add(grid.inc);
+        }
+
+        fields.Add(player?.inhandItemId ?? 0);
+        fields.Add(player?.inhandItemCount ?? 0);
+        fields.Add(player?.inhandItemInc ?? 0);
+        return CanonicalStateHash.Combine("player-package-v1", fields.ToArray());
+    }
+
     private static Dictionary<int, int> GetRecipeProducts(int recipeId, int count)
     {
         var result = new Dictionary<int, int>();
@@ -1685,6 +1717,55 @@ internal sealed partial class NormalGameActionCoordinator
             return;
         }
 
+        if (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage)
+        {
+            if (!TryParseLogisticsStorageLogic(plan.ConfigureStationLocalLogic, out var localLogic)
+                || !TryParseLogisticsStorageLogic(plan.ConfigureStationRemoteLogic, out var remoteLogic))
+            {
+                throw new InvalidOperationException("The logistics-station storage logic is invalid.");
+            }
+
+            if (!CanConfigureLogisticsStationStorage(
+                    factory,
+                    plan.EntityId,
+                    plan.ConfigureStationStorageIndex,
+                    plan.ConfigureStationItemId,
+                    plan.ConfigureStationMaximumCount,
+                    localLogic,
+                    remoteLogic,
+                    out var stationReason))
+            {
+                throw new InvalidOperationException(stationReason);
+            }
+
+            var station = factory.transport.GetStationComponent(entity.stationId)
+                ?? throw new InvalidOperationException("The logistics station disappeared before configuration.");
+            var beforeSlot = station.storage[plan.ConfigureStationStorageIndex];
+            var beforeInventoryState = CapturePlayerPackageState(GameMain.mainPlayer);
+            factory.transport.SetStationStorage(
+                station.id,
+                plan.ConfigureStationStorageIndex,
+                plan.ConfigureStationItemId,
+                plan.ConfigureStationMaximumCount,
+                localLogic,
+                remoteLogic,
+                GameMain.mainPlayer);
+            var afterSlot = station.storage[plan.ConfigureStationStorageIndex];
+            var afterInventoryState = CapturePlayerPackageState(GameMain.mainPlayer);
+            if (afterSlot.itemId != plan.ConfigureStationItemId
+                || afterSlot.max != plan.ConfigureStationMaximumCount
+                || afterSlot.localLogic != localLogic
+                || afterSlot.remoteLogic != remoteLogic
+                || afterSlot.count != beforeSlot.count
+                || afterSlot.inc != beforeSlot.inc
+                || !string.Equals(beforeInventoryState, afterInventoryState, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("The station configuration call did not preserve and prove the exact slot and player inventory state.");
+            }
+
+            return;
+        }
+
         var recipe = LDB.recipes.Select(plan.ConfigureRecipeId)
             ?? throw new InvalidOperationException("The configured recipe disappeared.");
         if (!CanDeviceRunRecipe(factory, plan.EntityId, recipe, out var reason))
@@ -1917,6 +1998,12 @@ internal sealed partial class NormalGameActionCoordinator
         public string ConfigureMode { get; private set; } = BuildingConfigurationModes.Production;
         public int ConfigureTechId { get; private set; }
         public int ConfigureFilterItemId { get; private set; }
+        public string StationConfigurationStateHash { get; private set; } = string.Empty;
+        public int ConfigureStationStorageIndex { get; private set; } = -1;
+        public int ConfigureStationItemId { get; private set; }
+        public int ConfigureStationMaximumCount { get; private set; }
+        public string ConfigureStationLocalLogic { get; private set; } = LogisticsStorageLogics.None;
+        public string ConfigureStationRemoteLogic { get; private set; } = LogisticsStorageLogics.None;
         public string TransferDirection { get; private set; } = string.Empty;
         public int TransferStorageEntityId { get; private set; }
         public int TransferItemId { get; private set; }
@@ -2054,7 +2141,13 @@ internal sealed partial class NormalGameActionCoordinator
             int recipeId,
             string mode,
             int techId,
-            int filterItemId) => new NormalActionPlanPayload
+            int filterItemId,
+            string stationConfigurationStateHash,
+            int stationStorageIndex,
+            int stationItemId,
+            int stationMaximumCount,
+            string stationLocalLogic,
+            string stationRemoteLogic) => new NormalActionPlanPayload
             {
                 ActionKind = NormalActionKinds.ConfigureBuilding,
                 SessionId = sessionId,
@@ -2066,6 +2159,12 @@ internal sealed partial class NormalGameActionCoordinator
                 ConfigureMode = mode,
                 ConfigureTechId = techId,
                 ConfigureFilterItemId = filterItemId,
+                StationConfigurationStateHash = stationConfigurationStateHash,
+                ConfigureStationStorageIndex = stationStorageIndex,
+                ConfigureStationItemId = stationItemId,
+                ConfigureStationMaximumCount = stationMaximumCount,
+                ConfigureStationLocalLogic = stationLocalLogic,
+                ConfigureStationRemoteLogic = stationRemoteLogic,
             };
     }
 }

@@ -313,7 +313,7 @@ public static class SpherewrightTools
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Re-reads one exact idle built device with empty buffers and prepares either a production recipe, matrix-research mode, or sorter item filter without changing it.")]
+    [Description("Re-reads one exact built device and prepares a production recipe, matrix-research mode, sorter item filter, or logistics-station storage-slot configuration without changing it. Station slots bind the separate configuration hash and may only select an empty slot or update the same item; this action never clears, replaces, or fills station inventory.")]
     public static async Task<CallToolResult> PrepareConfigureBuildingAsync(
         IBridgeClient bridgeClient,
         string sessionId,
@@ -324,6 +324,12 @@ public static class SpherewrightTools
         string mode = BuildingConfigurationModes.Production,
         int techId = 0,
         int filterItemId = 0,
+        int stationStorageIndex = -1,
+        int stationItemId = 0,
+        int stationMaximumCount = 0,
+        string stationLocalLogic = LogisticsStorageLogics.None,
+        string stationRemoteLogic = LogisticsStorageLogics.None,
+        string expectedStationConfigurationStateHash = "",
         int stateHashVersion = 1,
         CancellationToken cancellationToken = default)
     {
@@ -337,11 +343,17 @@ public static class SpherewrightTools
                 Mode = mode,
                 TechId = techId,
                 FilterItemId = filterItemId,
+                StationStorageIndex = stationStorageIndex,
+                StationItemId = stationItemId,
+                StationMaximumCount = stationMaximumCount,
+                StationLocalLogic = stationLocalLogic,
+                StationRemoteLogic = stationRemoteLogic,
+                ExpectedStationConfigurationStateHash = expectedStationConfigurationStateHash,
                 ExpectedFactoryStateHash = expectedFactoryStateHash,
                 StateHashVersion = stateHashVersion,
             },
             cancellationToken).ConfigureAwait(false);
-        return ToToolResult(result, "Idle empty-device configuration plan prepared; device state is unchanged.");
+        return ToToolResult(result, "Device configuration plan prepared; device and station inventory state are unchanged.");
     }
 
     [McpServerTool(
@@ -351,7 +363,7 @@ public static class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Applies the prepared recipe, matrix-research mode, or sorter filter once through the current-version UI/business path, then rereads the exact device.")]
+    [Description("Applies the prepared recipe, matrix-research mode, sorter filter, or logistics-station storage-slot configuration once through the current-version UI/business path, then rereads the exact device and proves the requested configuration. Station inventory is never directly written.")]
     public static async Task<CallToolResult> CommitConfigureBuildingAsync(
         IBridgeClient bridgeClient,
         string sessionId,

@@ -6,7 +6,13 @@
 
 当前里程碑：Post-M0 Logistics（M0 已冻结完成，黄糖自动转换已完成）
 
-## 2026-09-01 当前运行状态（当前权威）
+## 2026-09-02 当前运行状态（当前权威）
+
+- DSP 进程 `32744` 已消费上一节记录的受保护续玩票据，恢复动作只接受 minimum tick `8340400`、planet `104` 的 ticket-bound exact primary，并以 `completed/succeeded` 终结；新 session 为 `e888efcf-bbbf-4bbe-b520-abdbe6ae1403`。恢复后实际复读从 tick `8342796` 开始，`confirmed_peaceful`、`confirmed_disabled`、1×、owned、healthy、journal `36/false/null` 全部成立，未枚举或选择其他存档。恢复采用后主档已自动重新保存，revision 从新进程的 `1` 开始计数。
+- tick `8383290` 时粒子磁力阱 `1703` 继续正常研究至 `138993/288000`，没有直接解锁；三台预建制造台 `883/891/898` 均为 recipe `0`、network `1`、consumer ratio `1.0`。解锁后仍按上一节顺序只启用 `883 recipe 99`，再完成粒子容器、物流运输机和行星物流站里程碑。
+- commit `952df0c` 的物流塔只读切片已随当前游戏进程部署；当前同档尚无完成物流站，因此还没有 live station DTO。后续源码又完成 `logistics-station-storage` 安全子集：空槽/同 item、禁止清槽换品、configuration hash、100 步进、零订单与玩家/槽位库存守恒；完整 Release build 为 0 warning / 0 error，80 tests passed（Contracts 6、Core 60、MCP 14）。这后一切片尚未部署，必须先普通保存并正常关闭当前游戏，再同批替换 Plugin/Core/Contracts；首座空塔出现前无需为它中断当前科研和产品线。
+
+## 2026-09-01 关机交接状态（已由上节恢复状态取代）
 
 - DSP 当前已经正常关闭，没有活跃游戏进程或 Bridge descriptor。关闭前，同一 owned world 仍在 planet `104`、和平、1x、关闭沙盒、写入健康；唯一普通保存把推进器里程碑后的升级、科研选择、过滤、预建、备料和混料整理全部持久化到 tick `8340400`（本局 `001d 14:36:46`）、revision `676 -> 677`。保存后的展示脚本因访问不存在的 `expectedRevision` 字段报错，但没有重放；fresh session 明确读回 `lastOwnedSaveGameTick=8340400`、revision `677`、`ownedSaveState=saved`、`writeHealth=healthy`、`restartResumeAvailable=true`。随后进程 `35504` 接受 `CloseMainWindow` 并退出，运行时 descriptor 数量为 `0`，固定受保护 handoff 票据仍存在。该票据当前绑定 minimum tick `8340400`，有效期到本地时间 `2026-09-02T23:16:11.8559867+08:00`；下次只能在有效期内消费其 ticket-bound exact primary，恢复后必须证明 tick `>=8340400`、planet `104`、和平/非沙盒/1x、healthy、journal durable through `>=36`。若票据过期则停下处理恢复能力，不得开新档、篡改票据或使用 Steam/Windows 身份作归属证明。
 - 关机前玩家在 `(-81.45276,-51.77528,-175.41849)`，grounded `Walk`、速度 `0`、核心能量 `400/400 MJ`。总电网需求/容量为 `118062/181000`，三个网络 consumer ratio 均为 `1.0`；network 1 为 `104734/141000`，network 2 为 `12828/30000`，network 4 为 `500/10000`。没有能量、移动或供电恢复工作遗留。

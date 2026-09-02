@@ -172,23 +172,55 @@ public sealed class SpherewrightToolsTests
         var bridge = new FakeBridgeClient(SuccessResult());
 
         var result = await SpherewrightTools.PrepareConfigureBuildingAsync(
-            bridge,
-            "session-filter",
-            103,
-            12,
-            0,
-            "sha256:factory",
-            BuildingConfigurationModes.SorterFilter,
-            0,
-            1120,
-            1,
-            CancellationToken.None);
+            bridgeClient: bridge,
+            sessionId: "session-filter",
+            planetId: 103,
+            entityId: 12,
+            recipeId: 0,
+            expectedFactoryStateHash: "sha256:factory",
+            mode: BuildingConfigurationModes.SorterFilter,
+            filterItemId: 1120,
+            stateHashVersion: 1,
+            cancellationToken: CancellationToken.None);
 
         Assert.False(result.IsError);
         Assert.Equal("session-filter", bridge.LastSessionId);
         Assert.Equal(BuildingConfigurationModes.SorterFilter, bridge.LastConfigureRequest?.Mode);
         Assert.Equal(1120, bridge.LastConfigureRequest?.FilterItemId);
         Assert.Equal("sha256:factory", bridge.LastConfigureRequest?.ExpectedFactoryStateHash);
+    }
+
+    [Fact]
+    public async Task ConfigureBuildingTool_MapsLogisticsStationStorageMode()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.PrepareConfigureBuildingAsync(
+            bridgeClient: bridge,
+            sessionId: "session-station",
+            planetId: 104,
+            entityId: 920,
+            recipeId: 0,
+            expectedFactoryStateHash: "sha256:factory",
+            mode: BuildingConfigurationModes.LogisticsStationStorage,
+            stationStorageIndex: 2,
+            stationItemId: 1106,
+            stationMaximumCount: 5_000,
+            stationLocalLogic: LogisticsStorageLogics.Demand,
+            stationRemoteLogic: LogisticsStorageLogics.Supply,
+            expectedStationConfigurationStateHash: "sha256:station-config",
+            stateHashVersion: 1,
+            cancellationToken: CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("session-station", bridge.LastSessionId);
+        Assert.Equal(BuildingConfigurationModes.LogisticsStationStorage, bridge.LastConfigureRequest?.Mode);
+        Assert.Equal(2, bridge.LastConfigureRequest?.StationStorageIndex);
+        Assert.Equal(1106, bridge.LastConfigureRequest?.StationItemId);
+        Assert.Equal(5_000, bridge.LastConfigureRequest?.StationMaximumCount);
+        Assert.Equal(LogisticsStorageLogics.Demand, bridge.LastConfigureRequest?.StationLocalLogic);
+        Assert.Equal(LogisticsStorageLogics.Supply, bridge.LastConfigureRequest?.StationRemoteLogic);
+        Assert.Equal("sha256:station-config", bridge.LastConfigureRequest?.ExpectedStationConfigurationStateHash);
     }
 
     [Fact]

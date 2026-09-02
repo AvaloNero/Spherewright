@@ -1696,9 +1696,19 @@ internal sealed partial class NormalGameActionCoordinator
 
         if (request.Mode != BuildingConfigurationModes.Production
             && request.Mode != BuildingConfigurationModes.Research
-            && request.Mode != BuildingConfigurationModes.SorterFilter)
+            && request.Mode != BuildingConfigurationModes.SorterFilter
+            && request.Mode != BuildingConfigurationModes.LogisticsStationStorage)
         {
-            return InvalidPlan("Configuration mode must be production, research, or sorter-filter.");
+            return InvalidPlan("Configuration mode must be production, research, sorter-filter, or logistics-station-storage.");
+        }
+
+        var stationLocalLogic = ELogisticStorage.None;
+        var stationRemoteLogic = ELogisticStorage.None;
+        if (request.Mode == BuildingConfigurationModes.LogisticsStationStorage
+            && (!TryParseLogisticsStorageLogic(request.StationLocalLogic, out stationLocalLogic)
+                || !TryParseLogisticsStorageLogic(request.StationRemoteLogic, out stationRemoteLogic)))
+        {
+            return InvalidPlan("Station local and remote logic must each be none, supply, or demand.");
         }
 
         var snapshotResult = _reader.InspectFactoryEntityOnMainThread(
@@ -1715,14 +1725,21 @@ internal sealed partial class NormalGameActionCoordinator
             return StalePlan("Building mode, recipe, progress, buffers, or identity changed after inspection.");
         }
 
-        if (snapshot.ObjectKind != FactoryObjectKinds.Entity || snapshot.Progress != 0
-            || snapshot.IsWorking || snapshot.Buffers.Any(buffer => buffer.Count != 0))
+        var stationMode = request.Mode == BuildingConfigurationModes.LogisticsStationStorage;
+        if (snapshot.ObjectKind != FactoryObjectKinds.Entity
+            || (!stationMode && (snapshot.Progress != 0
+                || snapshot.IsWorking
+                || snapshot.Buffers.Any(buffer => buffer.Count != 0))))
         {
             return GameCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
                 BridgeErrorCodes.ActionRejected,
-                "M0 only configures a fully idle built device with empty input, output, and internal buffers.",
+                stationMode
+                    ? "The logistics-station target is not a completed built entity."
+                    : "Only a fully idle built device with empty input, output, and internal buffers can be configured.",
                 true,
-                "Wait for the exact device to become idle and empty, then inspect and prepare again."));
+                stationMode
+                    ? "Wait for normal construction to finish, then inspect the exact station entity again."
+                    : "Wait for the exact device to become idle and empty, then inspect and prepare again."));
         }
 
         var factory = GameMain.localPlanet?.factory;
@@ -1771,6 +1788,37 @@ internal sealed partial class NormalGameActionCoordinator
                 true,
                 "Wait until the exact sorter is idle and carrying no cargo, then inspect and prepare again with an unlocked filter item or zero to clear it."));
         }
+        else if (request.Mode == BuildingConfigurationModes.LogisticsStationStorage)
+        {
+            if (snapshot.LogisticsStation is null
+                || !string.Equals(
+                    request.ExpectedStationConfigurationStateHash,
+                    snapshot.LogisticsStation.ConfigurationStateHash,
+                    StringComparison.Ordinal))
+            {
+                return StalePlan("The logistics-station identity, storage-slot configuration, route settings, or belt topology changed after inspection.");
+            }
+
+            if (!CanConfigureLogisticsStationStorage(
+                    factory,
+                    request.EntityId,
+                    request.StationStorageIndex,
+                    request.StationItemId,
+                    request.StationMaximumCount,
+                    stationLocalLogic,
+                    stationRemoteLogic,
+                    out var stationReason))
+            {
+                return GameCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
+                    BridgeErrorCodes.ActionRejected,
+                    stationReason,
+                    true,
+                    "Choose an unlocked item and an empty or same-item slot with no outstanding orders; use 100-item limit steps within the station's current researched capacity."));
+            }
+        }
+
+        var normalizedStationLocalLogic = ToContractLogisticsStorageLogic(stationLocalLogic);
+        var normalizedStationRemoteLogic = ToContractLogisticsStorageLogic(stationRemoteLogic);
 
         var expectedHash = CanonicalStateHash.Combine(
             NormalActionKinds.ConfigureBuilding,
@@ -1781,7 +1829,13 @@ internal sealed partial class NormalGameActionCoordinator
             request.Mode,
             request.RecipeId,
             request.TechId,
-            request.FilterItemId);
+            request.FilterItemId,
+            request.ExpectedStationConfigurationStateHash,
+            request.StationStorageIndex,
+            request.StationItemId,
+            request.StationMaximumCount,
+            normalizedStationLocalLogic,
+            normalizedStationRemoteLogic);
         var payload = NormalActionPlanPayload.Configure(
             _sessions.SessionId!,
             request.PlanetId,
@@ -1791,7 +1845,13 @@ internal sealed partial class NormalGameActionCoordinator
             request.RecipeId,
             request.Mode,
             request.TechId,
-            request.FilterItemId);
+            request.FilterItemId,
+            request.ExpectedStationConfigurationStateHash,
+            request.StationStorageIndex,
+            request.StationItemId,
+            request.StationMaximumCount,
+            normalizedStationLocalLogic,
+            normalizedStationRemoteLogic);
         var prepared = AddPreparedPlan(
             payload,
             common.Session!,
@@ -1800,6 +1860,8 @@ internal sealed partial class NormalGameActionCoordinator
                 ? "The exact empty matrix lab reports research mode and the active technology after the UI/business setting path is called once."
                 : request.Mode == BuildingConfigurationModes.SorterFilter
                     ? "The exact idle sorter reports the target item filter and matching entity sign after the current-version UI setting path is applied once."
+                    : request.Mode == BuildingConfigurationModes.LogisticsStationStorage
+                        ? "The exact station slot reports the selected unlocked item, 100-step limit, and local/remote logic after PlanetTransport.SetStationStorage is called once; item count and proliferator points remain unchanged by the call."
                     : "The exact idle device reports the target recipe after the current-version UI/business setting path is called once.");
         if (prepared.Success && prepared.Value is not null && recipe is not null)
         {
@@ -1809,7 +1871,7 @@ internal sealed partial class NormalGameActionCoordinator
         return prepared;
     }
 
-    private static BridgeError? RevalidateStructuredConfigurationOnMainThread(NormalActionPlanPayload plan)
+    private BridgeError? RevalidateStructuredConfigurationOnMainThread(NormalActionPlanPayload plan)
     {
         var factory = GameMain.localPlanet?.factory;
         if (factory is null)
@@ -1829,6 +1891,37 @@ internal sealed partial class NormalGameActionCoordinator
             return CanSetSorterFilter(factory, plan.EntityId, plan.ConfigureFilterItemId, out _)
                 ? null
                 : Stale("The exact sorter identity, idle state, cargo state, or filter item changed after preparation.");
+        }
+
+        if (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage)
+        {
+            var snapshotResult = _reader.InspectFactoryEntityOnMainThread(
+                plan.SessionId,
+                new InspectFactoryEntityRequest { PlanetId = plan.PlanetId, ObjectId = plan.EntityId });
+            var stationSnapshot = snapshotResult.Value?.LogisticsStation;
+            if (!snapshotResult.Success
+                || stationSnapshot is null
+                || !string.Equals(
+                    stationSnapshot.ConfigurationStateHash,
+                    plan.StationConfigurationStateHash,
+                    StringComparison.Ordinal))
+            {
+                return Stale("The exact station identity or configuration changed after preparation.");
+            }
+
+            return TryParseLogisticsStorageLogic(plan.ConfigureStationLocalLogic, out var localLogic)
+                   && TryParseLogisticsStorageLogic(plan.ConfigureStationRemoteLogic, out var remoteLogic)
+                   && CanConfigureLogisticsStationStorage(
+                       factory,
+                       plan.EntityId,
+                       plan.ConfigureStationStorageIndex,
+                       plan.ConfigureStationItemId,
+                       plan.ConfigureStationMaximumCount,
+                       localLogic,
+                       remoteLogic,
+                       out _)
+                ? null
+                : Stale("The exact station slot, item unlock, capacity, current item, or outstanding orders changed after preparation.");
         }
 
         var recipe = LDB.recipes.Select(plan.ConfigureRecipeId);
@@ -1860,6 +1953,142 @@ internal sealed partial class NormalGameActionCoordinator
                && tech.IsLabTech
                && GameMain.history.currentTech == techId
                && !GameMain.history.TechUnlocked(techId);
+    }
+
+    private static bool TryParseLogisticsStorageLogic(string? value, out ELogisticStorage logic)
+    {
+        if (string.Equals(value, LogisticsStorageLogics.None, StringComparison.OrdinalIgnoreCase))
+        {
+            logic = ELogisticStorage.None;
+            return true;
+        }
+
+        if (string.Equals(value, LogisticsStorageLogics.Supply, StringComparison.OrdinalIgnoreCase))
+        {
+            logic = ELogisticStorage.Supply;
+            return true;
+        }
+
+        if (string.Equals(value, LogisticsStorageLogics.Demand, StringComparison.OrdinalIgnoreCase))
+        {
+            logic = ELogisticStorage.Demand;
+            return true;
+        }
+
+        logic = ELogisticStorage.None;
+        return false;
+    }
+
+    private static string ToContractLogisticsStorageLogic(ELogisticStorage logic) => logic switch
+    {
+        ELogisticStorage.Supply => LogisticsStorageLogics.Supply,
+        ELogisticStorage.Demand => LogisticsStorageLogics.Demand,
+        _ => LogisticsStorageLogics.None,
+    };
+
+    private static bool CanConfigureLogisticsStationStorage(
+        PlanetFactory factory,
+        int entityId,
+        int storageIndex,
+        int itemId,
+        int maximumCount,
+        ELogisticStorage localLogic,
+        ELogisticStorage remoteLogic,
+        out string reason)
+    {
+        reason = "The exact logistics-station storage slot is unavailable for this configuration.";
+        if (entityId <= 0
+            || entityId >= factory.entityCursor
+            || entityId >= factory.entityPool.Length
+            || itemId <= 0
+            || maximumCount <= 0
+            || maximumCount % 100 != 0)
+        {
+            return false;
+        }
+
+        ref var entity = ref factory.entityPool[entityId];
+        if (entity.id != entityId || entity.stationId <= 0)
+        {
+            return false;
+        }
+
+        var station = factory.transport?.GetStationComponent(entity.stationId);
+        if (station is null
+            || station.id != entity.stationId
+            || station.entityId != entityId
+            || station.planetId != factory.planetId
+            || station.isCollector
+            || station.isVeinCollector
+            || station.storage is null
+            || storageIndex < 0
+            || storageIndex >= station.storage.Length)
+        {
+            return false;
+        }
+
+        if (!station.isStellar && remoteLogic != ELogisticStorage.None)
+        {
+            reason = "A planetary logistics station requires remote logic none.";
+            return false;
+        }
+
+        if (LDB.items.Select(itemId) is null || !GameMain.history.ItemUnlocked(itemId))
+        {
+            reason = "The requested station item does not exist or is not normally unlocked.";
+            return false;
+        }
+
+        var model = LDB.models.Select(entity.modelIndex);
+        var baseCapacity = model?.prefabDesc?.stationMaxItemCount ?? 0;
+        var researchedExtraCapacity = station.isStellar
+            ? GameMain.history.remoteStationExtraStorage
+            : GameMain.history.localStationExtraStorage;
+        var capacity = baseCapacity + researchedExtraCapacity;
+        if (capacity <= 0 || maximumCount > capacity)
+        {
+            reason = $"The requested maximum {maximumCount} exceeds the station's current researched capacity {capacity}.";
+            return false;
+        }
+
+        for (var index = 0; index < station.storage.Length; index++)
+        {
+            if (index != storageIndex && station.storage[index].itemId == itemId)
+            {
+                reason = "The requested item is already assigned to another slot in this station.";
+                return false;
+            }
+        }
+
+        var current = station.storage[storageIndex];
+        if (current.itemId != 0 && current.itemId != itemId)
+        {
+            reason = "This action never replaces or clears an occupied station slot; choose an empty slot or keep the same item.";
+            return false;
+        }
+
+        if (current.localOrder != 0 || current.remoteOrder != 0)
+        {
+            reason = "The station slot has outstanding logistics orders and must become idle before configuration.";
+            return false;
+        }
+
+        if (current.itemId == 0 && (current.count != 0 || current.inc != 0))
+        {
+            reason = "The nominally empty station slot contains unexplained inventory state.";
+            return false;
+        }
+
+        if (current.itemId == itemId
+            && current.max == maximumCount
+            && current.localLogic == localLogic
+            && current.remoteLogic == remoteLogic)
+        {
+            reason = "The requested station storage configuration is already applied.";
+            return false;
+        }
+
+        return true;
     }
 
     private static bool CanSetSorterFilter(
@@ -1947,6 +2176,19 @@ internal sealed partial class NormalGameActionCoordinator
                && sign.iconType == (filterItemId > 0 ? 1u : 0u);
     }
 
+    private static bool IsLogisticsStationStorageConfigurationApplied(
+        FactoryEntitySnapshot snapshot,
+        NormalActionPlanPayload plan)
+    {
+        var slot = snapshot.LogisticsStation?.StorageSlots.FirstOrDefault(candidate =>
+            candidate.Index == plan.ConfigureStationStorageIndex);
+        return slot is not null
+               && slot.ItemId == plan.ConfigureStationItemId
+               && slot.MaximumCount == plan.ConfigureStationMaximumCount
+               && string.Equals(slot.LocalLogic, plan.ConfigureStationLocalLogic, StringComparison.OrdinalIgnoreCase)
+               && string.Equals(slot.RemoteLogic, plan.ConfigureStationRemoteLogic, StringComparison.OrdinalIgnoreCase);
+    }
+
     private string? CaptureStructuredAfterStateHash(ActionRecord action)
     {
         if (action.ActionKind == NormalActionKinds.ConfigureBuilding)
@@ -1954,7 +2196,9 @@ internal sealed partial class NormalGameActionCoordinator
             var snapshot = _reader.InspectFactoryEntityOnMainThread(
                 action.SessionId,
                 new InspectFactoryEntityRequest { PlanetId = action.PlanetId, ObjectId = action.Plan.EntityId });
-            return snapshot.Value?.StateHash;
+            return action.Plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
+                ? snapshot.Value?.LogisticsStation?.ConfigurationStateHash
+                : snapshot.Value?.StateHash;
         }
 
         if (action.ActionKind == NormalActionKinds.Build && action.TargetObjectIds.Count > 0)

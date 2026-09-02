@@ -1221,12 +1221,26 @@
 - 适用范围：DSP `0.10.34.28529`、Assembly-CSharp SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`、v0.3 行星/星际物流塔只读观察。
 - 当前结论：不能只用工厂实体 ID 或 `EntityData.stationId` 单点认领物流塔。读取必须同时证明正实体仍存在、stationId 位于当前 `PlanetTransport.stationPool/stationCursor`、池项 `id` 等于索引，并且池项的 `entityId/planetId` 与当前实体和本地工厂一致；随后只在 Unity 主线程把站点能量、舰队、原始运输设置、每个 `StationStore` 和 `SlotData` 深拷贝到 DTO。实时能量/库存/订单/舰队变化与配置变化采用两个独立哈希，避免未来配置 prepare 因正常运输 tick 无意义失效，同时仍能识别槽位、供需和带口被改动。
 - 直接证据：当前程序集元数据确认 `PlanetFactory.transport -> PlanetTransport.stationPool`、`EntityData.stationId`、`StationComponent.id/gid/entityId/planetId/storage/slots` 和 `StationStore`/`SlotData` 的完整字段；源码已在现有 factory list/inspect 响应中加入 `logisticsStation` 深拷贝，并用 Core 测试证明仅实时 count/energy 变化不改变 configuration hash、槽位上限变化会改变它。Release 完整 solution 为 0 warning / 0 error，78 tests passed（Contracts 5、Core 60、MCP 13）。
-- 限制或反例：游戏当前离线，尚无真实行星/星际物流塔 DTO 复读，因此本条不能升级为 `validated`；`tripRange*`、`warpEnableDist`、`delivery*` 仍按 raw/setting 暴露，不能在 UI 缩放和业务调用链证明前解释为固定单位或直接用于写入。发现 `PlanetTransport.SetStationStorage(...)` 只构成候选，不构成调用授权。
+- 限制或反例：同档恢复后仍没有已完成的行星/星际物流塔可供 DTO 复读，因此本条不能升级为 `validated`；`tripRange*`、`warpEnableDist`、`delivery*` 继续按 raw/setting 暴露。其 UI 缩放已经完成源码复核，但路线参数写入仍未实现或授权。
 - 复验触发：同档首座行星物流站完工、首座星际物流站完工、首次站点槽位配置、运输机/运输船活动、UI 缩放语义完成反编译或 DSP/程序集版本变化。
 - 关联：`src/Spherewright.Contracts/Logistics/LogisticsStationContracts.cs`、`GameStateReader.CaptureLogisticsStation`、`CanonicalStateHash.LogisticsStation*`、`docs/research/game-api-m0.md`。
 - 最近复验：2026-09-02（程序集字段、身份链、编译和自动测试已复核；等待同档首站 live 复读）。
 
+### EXP-098 — 物流塔槽位配置只能采用 SetStationStorage 的不换品子集
+
+- 状态：`observed`
+- 日期：2026-09-02
+- 适用范围：DSP `0.10.34.28529`、行星/星际物流站的物品选择、容量上限和本地/远程供需配置；不覆盖轨道采集器、矿机型物流站、直接装货或路线参数。
+- 当前结论：`PlanetTransport.SetStationStorage(...)` 是当前 UI 选择物品、拖动容量和切换供需逻辑共同使用的业务方法，但它不是无条件安全的“配置 setter”。当目标 item 与原槽不同且原槽有货时，它会调用 `Player.TryAddItemToPackage(..., throwTrash:true)`，随后清空 count/inc/orders，背包不足还可能产生地面掉落。因此 Spherewright 只允许空槽选品或同 item 改配置，永不暴露清槽/换品；item 必须正常解锁、不与同塔其他槽重复，容量必须为当前科技容量内的正 100 步进，行星站 remote 必须 `none`，且槽位不能有未结订单。prepare 绑定独立 configuration hash，避免正常能量/运输 tick 导致无意义 stale；commit 前再次验证，调用一次后要求 item/max/logic 精确命中，并证明槽 count/inc 及背包/手持每个 item/count/inc 元组均未改变。
+- 直接证据：`UIStationStorage.OnItemPickerReturn`、`OnMaxSliderValueChange`、`OnOptionButton*Click` 均反编译到同一 `SetStationStorage` 调用；当前方法体证明最大值会按 model capacity + 已研究 bonus 截断、行星站强制 remote None、换品分支会退货/可能 throwTrash、同 item 分支只改 max/localLogic/remoteLogic。源码已将 `logistics-station-storage` 接入既有 configure prepare/commit，Contracts/MCP 映射测试覆盖独立配置哈希和槽位意图；完整 Release solution 0 warning / 0 error，80 tests passed（Contracts 6、Core 60、MCP 14）。
+- 限制或反例：当前世界尚无完成物流站，新的写入批次没有部署或 live commit，故本条不能升级为 `validated`；同 item 且有库存但无订单的配置虽然方法体不会主动改库存，首次实机仍应从全空新塔开始。充电、航程、最低配送、补充开关、分组和路线优先级只完成读取/UI 变换研究，不包含在本动作。
+- 复验触发：首座行星物流站完成后的空槽首次配置、配置后装货、保存/恢复后配置持久、同 item 调整上限、任何背包/槽位差异或 DSP/程序集版本变化。
+- 关联：EXP-021、EXP-097、`docs/research/game-api-m0.md`、`BuildingConfigurationModes.LogisticsStationStorage`。
+- 最近复验：2026-09-02（UI 调用链、危险换品分支、安全子集、构建与离线测试已复核；等待空新塔 live prepare/commit/readback）。
+
 ## 修订记录
+
+- 2026-09-02：新增 EXP-098。采用 `SetStationStorage` 的空槽/同物品安全子集，禁止清槽/换品，绑定配置哈希与库存守恒；完整构建 0 warning / 0 error、80 tests passed，等待首座空物流站实机验证。
 
 - 2026-09-02：新增 EXP-097。v0.3 首个切片把物流塔只读状态接入现有 factory list/inspect 工具，采用 entity/station/planet 交叉身份和实时/配置双哈希；完整构建 0 warning / 0 error、78 tests passed，live 仍等待恢复同档并完成首座站点。
 

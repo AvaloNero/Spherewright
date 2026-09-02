@@ -1315,7 +1315,21 @@
 - 关联：EXP-007、EXP-048、EXP-090、EXP-102、`MechaLab.ManageSupply/ManageTakeback/GameTick`、`PlayerStateSnapshot.MechaResearchItemBuffer`。
 - 最近复验：2026-09-02（停机部署后同档 live DTO 直接复读蓝矩阵 903600 points = 251 个、余数 0，背包 42；公式与容器归属闭环）。
 
+### EXP-104 — 自包含发布包必须在干净提交上完成清单、整包哈希和 MCP 协议三层复验
+
+- 状态：`validated`
+- 日期：2026-09-02
+- 适用范围：当前 Windows `win-x64` 自包含 MCP 发布包的可重建性、静态完整性与脱离 .NET SDK 的进程级协议冒烟；不等于已完成真实 BepInEx 安装或游戏内握手。
+- 当前结论：发布候选必须从干净 Git 提交以 locked restore 和完整 Release build 生成，包内每个文件由 manifest 单独绑定 SHA-256，zip 另有 sidecar SHA-256。解包后必须重新校验路径安全与所有文件哈希，再实际启动包内自包含 MCP，完成 JSON-RPC `initialize` 和 `tools/list`。只要目标 RID 未进入 lock file、源码不干净、任一哈希不符、MCP 未启动或工具面不完整，均不能把包作为版本 Release 资产。
+- 直接证据：第一次 `0.3.0-preview.1` 预演在 locked restore 阶段以 `NU1004` 安全失败，暴露 `win-x64` 尚未进入 lock file；为三个可发布项目显式声明 RuntimeIdentifier 并重建 lock groups 后，预演包成功。随后在干净提交 `5cb465a` 上重新生成 `0.3.0-preview.2`，manifest 顶层报告 `sourceDirty=false`、233 个总文件和已验证整包 SHA-256；独立解包复验确认 232 个 manifest 条目全部匹配，并从包内可执行文件完成协议版本 `2025-06-18` 初始化，服务名 `Spherewright.Mcp`、版本 `0.3.0.0`、44 个工具且 session/station 工具存在。打包过程完整 solution build 为 0 warning / 0 error；关联测试共 90 项通过。
+- 限制或反例：游戏当前仍在运行，安装器按设计拒绝覆盖已加载 Plugin，因此本条只验证“构建、包完整性、自包含 MCP 启动与工具面”，不验证全新 BepInEx 目录安装、Plugin 加载、Bridge 握手、卸载或升级。`preview.2` 只是本地预发布验证资产，不是 tag 或 GitHub Release；v0.3.0 仍须完成全部物流塔实机门槛后重新从最终干净提交构建正式包。
+- 复验触发：任一项目/RID/依赖/锁文件/manifest/安装布局/MCP 工具面改变，创建任何 tag 或 GitHub Release 前，以及首次在干净受支持游戏安装上验证 installer 时。
+- 关联：`scripts/package-release.ps1`、`scripts/test-release-package.ps1`、`scripts/install-release.ps1`、`docs/release-installation.md`、`Directory.Packages.props` 与三个可发布项目的 `packages.lock.json`。
+- 最近复验：2026-09-02（干净提交 preview.2 生成、独立完整性复验和包内 MCP 协议冒烟均通过；真实游戏安装仍待版本完成前单独验证）。
+
 ## 修订记录
+
+- 2026-09-02：新增 EXP-104。自包含发布预演先由 locked restore 的 `NU1004` 暴露缺失 RID 锁定，再在干净提交 `5cb465a` 生成 `sourceDirty=false` 的 `0.3.0-preview.2`；232 个 manifest 文件、zip sidecar、包内 MCP initialize 与 44-tool surface 独立复验通过。明确保留“真实 BepInEx 安装/Bridge 握手尚未验证”的边界，未创建 tag 或 Release。
 
 - 2026-09-02：上一复核后的第二组 10 个成功游戏写动作复核完成（石墨烯/铜续入粒子容器线，磁铁/铁/铜补回过滤共享仓 `723`，500 自动电路板接回蓝糖仓）。EXP-028/073/074/080 与端点、过滤、玩家中转、设备缓存和科研 hash 一致；EXP-073 由第二个独立最终消费者窗口升级为 `validated`。全程无 quarantine、outcome unknown、串料或未解释正增量。
 

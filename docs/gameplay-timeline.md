@@ -281,10 +281,10 @@
 | EXP-105 | observed | 物流塔载具装载绑定工作中数量、原型容量与增产点损失边界 |
 | EXP-106 | validated | 物流运输机以科技门控、过滤输入、自动首产和普通保存闭环 |
 | EXP-107 | validated | 多数量建筑配方以完整输入批次、产出仓、durable journal 和普通保存验收 |
-| EXP-108 | observed | 本地 PLS 的 StationComponent.planetId 使用 0 哨兵，身份策略须与星际站分流 |
+| EXP-108 | validated | 本地 PLS 的 StationComponent.planetId 使用 0 哨兵，身份策略须与星际站分流 |
 
 ## 当前短期任务与关机续玩边界
 
 - DSP 当前正在同一受保护 owned world 中运行；产品里程碑保存为 tick `9413535`，正常部署恢复又自动重存到 tick `9413567`、fresh revision `1`；write health `healthy`，journal durable through `42`。后续继续使用该精确主档，不开新档。
-- 当前主线：仓 `900` 的唯一站体已守恒取出并原生施工为实体 `916`，距玩家 `29.45 m`，没有再次夹脚。首次 inspect 暴露本地 PLS raw `station.planetId=0` 哨兵导致详情被旧判定误拒；源修复与 101 项测试已完成。下一步先正常保存/关闭、同批部署该修复并恢复，再实测站点观察、槽位/充电配置和仓 `893` 无人机的 fleet transfer。
+- 当前主线：仓 `900` 的唯一站体已守恒取出并原生施工为实体 `916`，距玩家 `29.45 m`，没有再次夹脚。local-station identity 修复已在正常保存/关闭后同批部署并从 exact primary 恢复；实体现返回完整 station DTO。下一步先接通供电，再实测槽位/充电配置和仓 `893` 无人机的 fleet transfer。
 - 粒子容器、物流运输机和行星物流站三个产品里程碑均已越过自动输出、durable journal、普通保存与 commit+push 门槛；v0.3 仍需双星球 ILS、运输船真实运送钛/硅、黄糖稳定性和重启恢复全部通过后才创建 tag 和 GitHub Release。

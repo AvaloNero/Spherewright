@@ -8,10 +8,10 @@
 
 ## 2026-09-02 当前运行状态（当前权威）
 
-- DSP 新进程 `38644` 已在正常停机部署后恢复同一受保护 owned world、planet `104`；当前和平、非沙盒、1×、owned 约束未变。产品里程碑保存动作 `8dedea0d-2003-4e3f-80be-71db3e5a176e` 先持久化 tick `9413535`，恢复动作 `ba335eeb-d6b6-47b5-8e29-4eb133d0dba4` 只载入票据绑定的 exact primary 并自动重存到 tick `9413567`、fresh revision `1`。`ownedSaveState=saved`、`writeHealth=healthy`、`restartResumeAvailable=true`；日记 durable through sequence `42`、无 pending/error，且旧 flight checkpoint capability 不存在。继续使用此档，不开新档。
+- DSP 新进程 `14532` 已在第二次正常停机部署后恢复同一受保护 owned world、planet `104`；当前和平、非沙盒、1×、owned 约束未变。首塔施工保存动作 `90c234d4-d8a0-4b51-a935-fc5639597feb` 持久化 tick `9462208`，恢复动作 `df1ae62a-548a-49fe-a9a1-fbd6d1aca764` 只载入票据绑定的 exact primary 并自动重存到 tick `9462240`、fresh revision `1`。`ownedSaveState=saved`、`writeHealth=healthy`、`restartResumeAvailable=true`；日记 durable through sequence `42`、无 pending/error，且旧 flight checkpoint capability 不存在。继续使用此档，不开新档。
 - 行星物流 `1604` 已在 tick `8836460` 正常完成。物流运输机链 `892 -> 895/896/897 -> 891(recipe 94) -> 894 -> 893` 已产出 10 个 item `5001`；行星物流站链 `899 -> 902/903/904/905(filter 1103/1106/1303/1206) -> 898(recipe 93) -> 901 -> 900` 又完整消耗钢材/钛块/处理器/粒子容器 `40/40/40/20`，仓 `900` 产出 1 座 item `2103`。动作 `8f90d632-b90b-4ff1-b9d1-fe20850153c2` 只配置一次已解锁配方，设备供电比 1.0；日记 sequence `42` 在 tick `9410766`（本局 `001d 19:34:06`）持久化首次自动站体。
 - 当前研究仍为加力推进器 `1114`，tick `9418796` 时 `172595/288000`，其后排队 `1414`。玩家停在 `(-83.50541,-93.56301,-156.0761)`、Walk/0、核心 `400/400 MJ`；站体仍在仓 `900`，无人机仍在仓 `893`，尚未取出或建造。
-- 仓 `900` 的唯一站体已正常守恒取到玩家，并由普通预建/施工在候选位置 `(-94.14333,-112.529091,-136.214081)` 完工为实体 `916`；距玩家 `29.45 m`，背包站体 `1 -> 0`、无预建残留、写健康。首次 inspect 发现旧读取虽标记 `componentKind=station`，却因本地 PLS 的原生 raw `station.planetId=0` 被错误的全局精确 planet 检查挡掉，`logisticsStation=null`。程序集调用链已确认只有 stellar station 经 `GalacticTransport.AddStationComponent` 获得正 planet ID；源修复对非星际站只接受 0/exact、仍拒绝 foreign，星际站继续 exact，完整 Release build 0 warning / 0 error、101 tests passed（Contracts 11、Core 73、MCP 17）。当前运行 DLL 尚未热替换。
+- 仓 `900` 的唯一站体已正常守恒取到玩家，并由普通预建/施工在候选位置 `(-94.14333,-112.529091,-136.214081)` 完工为实体 `916`；距玩家 `29.45 m`，背包站体 `1 -> 0`、无预建残留、写健康。local-station raw `planetId=0` 修复已同批部署，完整 Release build 0 warning / 0 error、101 tests passed（Contracts 11、Core 73、MCP 17）。fresh inspect 现在返回公开 planet `104`、station `1`、gid `0`、PLS、4 空槽、无人机容量 50、运输船容量 0、能量 `0/180 MJ`、最大充电功率 12 MW及独立配置/fleet hash；实体目前 `powerNetworkId=0`，必须先正常接电。
 
 ## 2026-09-01 关机交接状态（已由上节恢复状态取代）
 
@@ -50,7 +50,7 @@
 - 机甲核心 II (`2102`) 已在 tick `3932513` 解锁，驱动引擎 II (`2902`) 已在 tick `4013644` 解锁，核心容量为 `400 MJ`，已具备星际航行科技；当时的空研究队列后来已被当前 `1403 -> 1701` 队列取代。玩家曾从高能石墨仓 `114` 守恒取出并加注 100 个，为受保护的往返飞行提供正常燃料。
 - 旧 DLL 返程曾暴露终态残留 Move：即使以 100/200 MJ 出发，中途仍被尾随耗能拖到近零。普通生产路点只有约 80 kW 基础恢复，不是充电覆盖；无线塔 `180` 的真实位置约 `(-108.25,-28.83,-165.93)`，动作 `91d7e745-4397-4371-ad1d-e2f4e387b871` 到其 2.47 m 内后 8 秒净增约 20.765 MJ。修复版部署前，地面长途仍必须满电或带燃料起步，并逐段立即检查速度/位置/能量。
 - 当前部署必须视为同一 Release 批次：Plugin/Core/Contracts SHA-256 分别为 `3BD98E6CA5A129173F0870259F56286084E43B3C6ECD59D0B027685B13AE7BB9`、`22D088E5540B77E69C3A949D0253C6DBE08FFD7BAE8E9E9423C781A147AF3E4A`、`88C8F76840EF5A214561CCC579BC2923021D828FCFF8F20E9F72AE01921BF4C1`。Release 完整构建 0 warning / 0 error，76 tests passed（Contracts 4、Bridge.Core 59、MCP 13）。只替换 Plugin 曾在恢复路径触发 `TypeLoadException`，所以今后仍须同批部署三个程序集。
-- 用户要求后续无异常时持续使用同一存档；每完成一种新产物流水线，先结构化复读产出、普通保存，再提交并推送对应代码和经验。粒子容器、物流运输机和行星物流站三个当前产品里程碑均已完成并保存；产品边界为 tick `9413535`，部署恢复后的主档为 tick `9413567`、journal durable `42`。首座 PLS 实体 `916` 已建成；下一主线是在再次部署前先普通保存这一施工，再正常关闭、同批安装 local-station identity 修复并从 exact primary 恢复，确认实体 `916` 出现完整 station DTO 后依次验证槽位/充电配置和仓 `893` 的 fleet transfer。完整总时间线见 `docs/gameplay-timeline.md`，拓扑证据仍以 `docs/m0-status.md` 与 `docs/experience-ledger.md` 为准。
+- 用户要求后续无异常时持续使用同一存档；每完成一种新产物流水线，先结构化复读产出、普通保存，再提交并推送对应代码和经验。粒子容器、物流运输机和行星物流站三个当前产品里程碑均已完成并保存；首塔施工边界为 tick `9462208`，部署恢复后的当前主档为 tick `9462240`、journal durable `42`。实体 `916` 的完整 station DTO 已验证；下一主线是正常接电，再依次验证槽位/充电配置和仓 `893` 的 fleet transfer。完整总时间线见 `docs/gameplay-timeline.md`，拓扑证据仍以 `docs/m0-status.md` 与 `docs/experience-ledger.md` 为准。
 
 ## 2026-08-31 历史接手补充（已被上节取代）
 

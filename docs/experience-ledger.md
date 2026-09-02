@@ -1369,17 +1369,19 @@
 
 ### EXP-108 — 本地 PLS 的 StationComponent.planetId 使用 0 哨兵，不能套用星际站身份规则
 
-- 状态：`observed`
+- 状态：`validated`
 - 日期：2026-09-02
 - 适用范围：当前 DSP `0.10.34.28529` 的 `PlanetTransport` 本地行星物流站身份读取，以及观察、槽位配置、充电配置和载具转移的共同入口；星际站仍要求精确 planet ID。
 - 当前结论：`entity.stationId -> PlanetTransport.stationPool[id]`、`station.id` 和 `station.entityId` 是本地站的主身份链；非星际站允许原生 raw `station.planetId == 0` 哨兵或精确本星 ID，但必须拒绝其他正 planet ID。星际站不允许 0，仍须等于当前 factory planet。公开 DTO 应使用已由 session/factory 绑定的本星 ID，不能把 raw 哨兵暴露成“未知星球”。
-- 直接证据：首座站体通过普通仓到玩家守恒转移和原生预建/施工完成为实体 `916`，位置与 prepare 候选一致、站体背包 `1 -> 0`、无预建残留且写健康；旧读取将其识别为 `componentKind=station`，但因 `station.planetId != factory.planetId` 返回 `logisticsStation=null`。当前程序集反编译证明 `StationComponent.Init(...)` 不赋 `planetId`，`PlanetTransport.NewStationComponent(...)` 只对 `isStellarStation` 调用 `GalacticTransport.AddStationComponent(planet.id, station)`。源码已把这一判定集中到 `LogisticsStationIdentityPolicy`，四个读写入口共用，并用 7 个正反用例覆盖 local 0/exact/foreign、stellar exact/0/foreign 和非法 factory；完整 Release build 0 warning / 0 error，101 tests passed（11/73/17）。
-- 限制或反例：修复尚未部署，当前 live 进程仍会把实体 `916` 的 station detail 读成 null；因此本条暂为 observed，不宣称配置或 fleet transfer 已可用。只接受 0 的规则也不能用于星际站，且其他 DSP 版本变化后必须重新反编译与实机验证。
+- 直接证据：首座站体通过普通仓到玩家守恒转移和原生预建/施工完成为实体 `916`，位置与 prepare 候选一致、站体背包 `1 -> 0`、无预建残留且写健康；旧读取将其识别为 `componentKind=station`，但因 `station.planetId != factory.planetId` 返回 `logisticsStation=null`。当前程序集反编译证明 `StationComponent.Init(...)` 不赋 `planetId`，`PlanetTransport.NewStationComponent(...)` 只对 `isStellarStation` 调用 `GalacticTransport.AddStationComponent(planet.id, station)`。源码把这一判定集中到 `LogisticsStationIdentityPolicy`，四个读写入口共用，并用 7 个正反用例覆盖 local 0/exact/foreign、stellar exact/0/foreign 和非法 factory；完整 Release build 0 warning / 0 error，101 tests passed（11/73/17）。正常保存 tick `9462208` 后同批部署 Plugin `0086A970…`、Contracts `0A244DCA…`、Core `058E3EFD…`，恢复动作 `df1ae62a-548a-49fe-a9a1-fbd6d1aca764` 只载入 exact primary；fresh inspect 随即返回实体 `916` 的完整 DTO：公开 planet `104`、station `1`、gid `0`、`isInterstellar=false`、4 个空槽、无人机容量 50、运输船容量 0、能量上限 180 MJ及独立配置/fleet hash。
+- 限制或反例：本次只 live 验证本地 PLS 的读取与归一化身份，尚未验证首次槽位、充电和 fleet commit；0 哨兵绝不能用于星际站，后者仍必须精确匹配当前 planet。其他 DSP 版本变化后必须重新反编译与实机验证。
 - 复验触发：下一次正常保存/关闭/同批部署后首次 inspect 实体 `916`，首次 PLS 槽位/充电配置、首次无人机装入与取出、首座 ILS 读回，或 DSP/程序集版本变化。
 - 关联：`LogisticsStationIdentityPolicy`、`GameStateReader.CaptureLogisticsStation`、两个站配置入口、`TryGetFleetStation`、`docs/research/game-api-m0.md`、EXP-097/098/099/101/105。
-- 最近复验：2026-09-02（首座 PLS live 反例、当前程序集调用链及 101 项离线测试；待部署 live 收口）。
+- 最近复验：2026-09-02（修复版同批部署、exact-primary 恢复及实体 916 完整 station DTO live 收口）。
 
 ## 修订记录
+
+- 2026-09-02：EXP-108 升级为 validated。首塔施工正常保存 tick `9462208` 后，同批部署哈希与新 Release 输出一致；exact-primary 恢复动作 `df1ae62a-548a-49fe-a9a1-fbd6d1aca764` 成功并自动重存 tick `9462240`。实体 `916` 从旧版 `logisticsStation=null` 变为完整本地站 DTO（planet `104`、station `1`、gid `0`、4 空槽、drone capacity 50），journal `42/42`、无 checkpoint、写健康。部署/重启复核确认 EXP-069/072/083/104/108 仍成立；当前新进程成功写计数从 resume/adoption 这一项开始。
 
 - 2026-09-02：新增 EXP-108。首座正常施工 PLS 实体 `916` 暴露本地站 raw `planetId=0` 哨兵，旧“所有 station 都必须等于 factory planet”规则被 live 反例推翻。源修复仅对非星际站接受 0/exact、拒绝 foreign，星际站继续 exact；四入口共用纯策略，完整构建 0 warning / 0 error、101 项测试通过，等待正常部署复验。
 

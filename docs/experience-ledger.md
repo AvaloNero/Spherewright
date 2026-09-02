@@ -1238,7 +1238,21 @@
 - 关联：EXP-021、EXP-097、`docs/research/game-api-m0.md`、`BuildingConfigurationModes.LogisticsStationStorage`。
 - 最近复验：2026-09-02（UI 调用链、危险换品分支、安全子集、构建与离线测试已复核；等待空新塔 live prepare/commit/readback）。
 
+### EXP-099 — 物流塔 energyPerTick 是实时请求而非充电上限，配置值在 PowerConsumer
+
+- 状态：`observed`
+- 日期：2026-09-02
+- 适用范围：物流塔充电读取、实时/配置哈希拆分，以及未来最大充电功率 prepare；DSP `0.10.34.28529`。
+- 当前结论：不能把 `StationComponent.energyPerTick` 命名或哈希为稳定充电配置。`StationComponent.SetPCState(PowerConsumerComponent[])` 每 tick 根据 `energy/energyMax` 调用 consumer 的 `SetRequiredEnergy(...)`，随后把 `consumer.requiredEnergy` 复制到 `station.energyPerTick`；塔接近充满时它会自然变化。UI 的最大充电滑块读写的是同一 `pcId` 对应 `consumer.workEnergyPerTick`，显示功率为该值乘 60。DTO 必须分别暴露 current requested energy/power 与 configured maximum energy/power，实时哈希包含前者，配置哈希只包含后者。
+- 直接证据：当前程序集方法体明确显示 `SetPCState` 的赋值顺序；`UIStationWindow._OnOpen` 以 `workEnergyPerTick/50000` 初始化滑块并显示 `workEnergyPerTick*60`，`OnMaxChargePowerSliderValueChange` 写 `round(50000*slider)`。源码已把旧 `EnergyPerTick` 拆为 `RequestedChargeEnergyPerTick/PowerWatts` 和 `MaximumChargeEnergyPerTick/PowerWatts`，并扩展 Core 测试证明 requested 变化只改变 live hash、maximum 变化必定改变 configuration hash；完整构建/80 tests 仍通过。
+- 限制或反例：当前同档尚无完成物流站，因此数值尚未 live 复读；`workEnergyPerTick` 的 UI min/max 还取决于建筑 prefab 的 `workEnergyPerTick / 2` 到 `*5`，未来写入仍需绑定具体 station prefab 与 consumer 身份，不能只接受任意瓦数。
+- 复验触发：首站从低电量充满的连续采样、调整最大充电功率、保存恢复、consumer/network 身份变化或 DSP 版本变化。
+- 关联：EXP-017、EXP-097、EXP-098、`StationComponent.SetPCState`、`UIStationWindow.OnMaxChargePowerSliderValueChange`。
+- 最近复验：2026-09-02（字段写入者、UI 配置源、60 tick/s 显示换算、双哈希语义和自动测试已复核；等待首站 live）。
+
 ## 修订记录
+
+- 2026-09-02：新增 EXP-099。修正物流塔充电字段语义：station `energyPerTick` 为实时 requested，consumer `workEnergyPerTick` 才是配置 maximum；DTO 与双哈希已拆分，避免正常充电造成配置 stale。
 
 - 2026-09-02：新增 EXP-098。采用 `SetStationStorage` 的空槽/同物品安全子集，禁止清槽/换品，绑定配置哈希与库存守恒；完整构建 0 warning / 0 error、80 tests passed，等待首座空物流站实机验证。
 

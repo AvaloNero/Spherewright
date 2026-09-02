@@ -146,7 +146,10 @@ public sealed class CanonicalStateHashTests
             IsInterstellar = true,
             Energy = 100,
             EnergyCapacity = 10_000,
-            EnergyPerTick = 200,
+            RequestedChargeEnergyPerTick = 100,
+            RequestedChargePowerWatts = 6_000,
+            MaximumChargeEnergyPerTick = 200,
+            MaximumChargePowerWatts = 12_000,
             IdleDroneCount = 10,
             DroneTripRangeRaw = 180d,
             VesselTripRangeRaw = 12d,
@@ -175,10 +178,17 @@ public sealed class CanonicalStateHashTests
         var configuration = CanonicalStateHash.LogisticsStationConfiguration(snapshot);
 
         snapshot.Energy = 500;
+        snapshot.RequestedChargeEnergyPerTick = 150;
+        snapshot.RequestedChargePowerWatts = 9_000;
         snapshot.StorageSlots[0].Count = 40;
         snapshot.BeltSlots[0].Counter = 4;
         Assert.NotEqual(live, CanonicalStateHash.LogisticsStation(snapshot));
         Assert.Equal(configuration, CanonicalStateHash.LogisticsStationConfiguration(snapshot));
+
+        snapshot.MaximumChargeEnergyPerTick = 300;
+        snapshot.MaximumChargePowerWatts = 18_000;
+        Assert.NotEqual(configuration, CanonicalStateHash.LogisticsStationConfiguration(snapshot));
+        configuration = CanonicalStateHash.LogisticsStationConfiguration(snapshot);
 
         snapshot.StorageSlots[0].MaximumCount = 2_000;
         Assert.NotEqual(configuration, CanonicalStateHash.LogisticsStationConfiguration(snapshot));

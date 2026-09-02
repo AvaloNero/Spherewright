@@ -1391,6 +1391,20 @@ internal sealed class GameStateReader
             return;
         }
 
+        var maximumChargeEnergyPerTick = 0L;
+        var consumerId = station.pcId;
+        if (consumerId > 0
+            && consumerId == entity.powerConId
+            && consumerId < factory.powerSystem.consumerCursor
+            && consumerId < factory.powerSystem.consumerPool.Length)
+        {
+            ref var consumer = ref factory.powerSystem.consumerPool[consumerId];
+            if (consumer.id == consumerId && consumer.entityId == entity.id)
+            {
+                maximumChargeEnergyPerTick = consumer.workEnergyPerTick;
+            }
+        }
+
         var result = new LogisticsStationSnapshot
         {
             SessionId = _sessions.SessionId!,
@@ -1408,7 +1422,10 @@ internal sealed class GameStateReader
             PowerServeRatio = snapshot.PowerServeRatio,
             Energy = station.energy,
             EnergyCapacity = station.energyMax,
-            EnergyPerTick = station.energyPerTick,
+            RequestedChargeEnergyPerTick = station.energyPerTick,
+            RequestedChargePowerWatts = station.energyPerTick * 60L,
+            MaximumChargeEnergyPerTick = maximumChargeEnergyPerTick,
+            MaximumChargePowerWatts = maximumChargeEnergyPerTick * 60L,
             WarperCount = station.warperCount,
             WarperCapacity = station.warperMaxCount,
             IdleDroneCount = station.idleDroneCount,

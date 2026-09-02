@@ -5,7 +5,7 @@
 
 ## 结论与证据边界
 
-- 记录仍在。本局受保护日记共有 `36` 条，已经持久化到 sequence `36`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `98` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护日记共有 `36` 条，已经持久化到 sequence `36`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `99` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；

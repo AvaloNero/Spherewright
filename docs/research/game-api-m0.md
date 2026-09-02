@@ -162,6 +162,7 @@ The current component exposes these read fields used by the first v0.3 slice:
 ```text
 bool isStellar, isCollector, isVeinCollector
 long energy, energyPerTick, energyMax
+int pcId -> PowerSystem.consumerPool[pcId].workEnergyPerTick/requiredEnergy
 int warperCount, warperMaxCount
 int idleDroneCount, workDroneCount, idleShipCount, workShipCount
 double tripRangeDrones, tripRangeShips, warpEnableDist
@@ -193,7 +194,9 @@ public void PlanetTransport.SetStationStorage(
 
 `SetStationStorage` clamps the maximum to the model capacity plus the currently researched local/remote storage bonus, forces remote logic to `None` for a planetary station, and refreshes local/galactic traffic when logic changes. Its dangerous branch is equally important: when the requested item differs from a nonempty slot, it calls `Player.TryAddItemToPackage(..., throwTrash:true)`, clears count/inc/orders, and may drop overflow. Spherewright therefore adopts only the safe subset: item ID must be normally unlocked; limits must be positive 100-item UI steps within the current researched capacity; duplicate station items are rejected; the slot must be empty or already assigned to the same item; and both orders must be zero. Clear and replace are not exposed. Prepare binds the separate station configuration hash. Commit snapshots slot count/inc plus every package and in-hand item/count/inc tuple, calls `SetStationStorage` once, and requires exact item/max/logic readback with those inventory fingerprints unchanged; any ambiguous result follows normal write quarantine.
 
-The other UI transforms are now documented but remain read-only in this slice: max charge writes `consumer.workEnergyPerTick = round(50000 * slider)`; drone range stores `cos(degrees / 180 * pi)`; vessel range stores `2400000 * mappedLightYears`; warp distance stores `40000 * mappedAU`; and minimum drone delivery stores `round(slider * 10)` percent with a minimum of one. The public DTO still labels these values raw/settings because no route-setting action has yet adopted their full bounds and readback matrix.
+`StationComponent.energyPerTick` is live demand, not the configured maximum. `StationComponent.SetPCState` calls `PowerConsumerComponent.SetRequiredEnergy(...)` from the station's current fill ratio and then assigns `energyPerTick = consumer.requiredEnergy` every tick. The UI instead initializes and writes the maximum through `consumer.workEnergyPerTick`; its display multiplies that per-tick value by 60. The observation DTO therefore reports `requestedChargeEnergyPerTick/requestedChargePowerWatts` as live state and `maximumChargeEnergyPerTick/maximumChargePowerWatts` as configuration. Only the maximum belongs to `configurationStateHash`.
+
+The other UI transforms are now documented but remain read-only in this slice: max charge writes `consumer.workEnergyPerTick = round(50000 * slider)`; drone range stores `cos(degrees / 180 * pi)`; vessel range stores `2400000 * mappedLightYears`; warp distance stores `40000 * mappedAU`; and minimum drone delivery stores `round(slider * 10)` percent with a minimum of one. The public DTO still labels route values raw/settings because no route-setting action has yet adopted their full bounds and readback matrix.
 
 The observation DTO provides two versioned hashes. The live hash covers energy, inventory, orders, fleet activity and needs. The configuration hash excludes those tick-volatile values while binding station identity/type, capacity settings, storage item/limit/logic, route settings and belt topology. This split lets future prepare logic avoid becoming stale merely because a vessel moved while still rejecting a changed station configuration.
 

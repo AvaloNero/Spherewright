@@ -110,6 +110,10 @@ public sealed class ProtocolContractTests
             StationId = 2,
             GalacticStationId = 7,
             BuildingItemId = 2104,
+            RequestedChargeEnergyPerTick = 50_000,
+            RequestedChargePowerWatts = 3_000_000,
+            MaximumChargeEnergyPerTick = 100_000,
+            MaximumChargePowerWatts = 6_000_000,
             DroneTripRangeRaw = 180d,
             VesselTripRangeRaw = 12d,
             WarpEnableDistanceRaw = 0.5d,
@@ -121,6 +125,8 @@ public sealed class ProtocolContractTests
         using var parsed = JsonDocument.Parse(json);
 
         Assert.Equal(180d, parsed.RootElement.GetProperty("droneTripRangeRaw").GetDouble());
+        Assert.Equal(50_000, parsed.RootElement.GetProperty("requestedChargeEnergyPerTick").GetInt64());
+        Assert.Equal(6_000_000, parsed.RootElement.GetProperty("maximumChargePowerWatts").GetInt64());
         Assert.Equal("sha256:config", parsed.RootElement.GetProperty("configurationStateHash").GetString());
         Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("filePath", json, StringComparison.OrdinalIgnoreCase);

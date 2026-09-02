@@ -183,9 +183,10 @@ public static class CanonicalStateHash
     {
         var value = new StringBuilder();
         AppendLogisticsStationConfiguration(value, snapshot, "logistics-station-v1");
-        Append(value, "live", snapshot.PowerServeRatio, snapshot.Energy, snapshot.WarperCount,
-            snapshot.IdleDroneCount, snapshot.WorkingDroneCount, snapshot.IdleVesselCount,
-            snapshot.WorkingVesselCount);
+        Append(value, "live", snapshot.PowerServeRatio, snapshot.Energy,
+            snapshot.RequestedChargeEnergyPerTick, snapshot.RequestedChargePowerWatts,
+            snapshot.WarperCount, snapshot.IdleDroneCount, snapshot.WorkingDroneCount,
+            snapshot.IdleVesselCount, snapshot.WorkingVesselCount);
         foreach (var slot in snapshot.StorageSlots.OrderBy(slot => slot.Index))
         {
             Append(value, "storage-live", slot.Index, slot.Count, slot.Inc, slot.LocalOrder,
@@ -222,7 +223,8 @@ public static class CanonicalStateHash
             snapshot.StationId, snapshot.GalacticStationId, snapshot.BuildingItemId,
             F(snapshot.Position.X), F(snapshot.Position.Y), F(snapshot.Position.Z),
             snapshot.IsInterstellar, snapshot.IsCollector, snapshot.IsVeinCollector,
-            snapshot.PowerNetworkId, snapshot.EnergyCapacity, snapshot.EnergyPerTick,
+            snapshot.PowerNetworkId, snapshot.EnergyCapacity,
+            snapshot.MaximumChargeEnergyPerTick, snapshot.MaximumChargePowerWatts,
             snapshot.WarperCapacity, F(snapshot.DroneTripRangeRaw), F(snapshot.VesselTripRangeRaw),
             snapshot.IncludeOrbitCollectors, F(snapshot.WarpEnableDistanceRaw), snapshot.WarpersRequired,
             snapshot.DroneDeliverySetting, snapshot.VesselDeliverySetting, snapshot.PilerCount,

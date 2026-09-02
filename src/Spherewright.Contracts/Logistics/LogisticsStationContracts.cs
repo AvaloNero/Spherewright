@@ -34,7 +34,13 @@ public sealed class LogisticsStationSnapshot
 
     public long EnergyCapacity { get; set; }
 
-    public long EnergyPerTick { get; set; }
+    public long RequestedChargeEnergyPerTick { get; set; }
+
+    public long RequestedChargePowerWatts { get; set; }
+
+    public long MaximumChargeEnergyPerTick { get; set; }
+
+    public long MaximumChargePowerWatts { get; set; }
 
     public int WarperCount { get; set; }
 

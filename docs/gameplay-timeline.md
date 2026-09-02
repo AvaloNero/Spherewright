@@ -1,11 +1,11 @@
 # 本局从落地到当前：决策、科技与首次产出总时间线
 
 更新时间：2026-09-03（Asia/Singapore）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界仍在 planet `104` 健康运行。星际物流系统 `1605` 已于 tick `11122095` 正常选择，journal sequence `44` durable；当前受单线蓝矩阵吞吐限制。等待科研期间，满电熔炉 `1491(recipe 66)` 经三条精确过滤输入和独立输出仓自动产出 8 个钛合金；journal sequence `45` 在 tick `11172619` durable 记录首次产线产出，普通保存已覆盖到 tick `11175248`。20 硫酸已经耗尽到只余设备内 4，下一主线先恢复硫酸持续供给并补足两座 ILS/运输船所需钛合金，再补粒子容器和 PLS。会话 write health healthy、无 flight checkpoint。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界仍在 planet `104` 健康运行。星际物流系统 `1605` 已于 tick `11122095` 正常选择，journal sequence `44` durable。新 8 点铁矿机、熔炉、专仓与长距离无重叠旁路已经永久接回旧电路板/蓝矩阵链；两端分拣器实际携铁、蓝矩阵输出分拣器实际携货，科技跨多个观察窗从 `12317` 推进到 `18101/216000`。该终态已正常保存到 tick `11388372`、revision `342`；journal `45/45` durable、三张电网全供电、write health healthy、无 flight checkpoint。当前仍受单线蓝矩阵吞吐限速；等待期间恢复硫酸与钛合金持续供给，为两座 ILS 和运输船备料。
 
 ## 结论与证据边界
 
-- 记录仍在。本局受保护日记共有 `45` 条，已经持久化到 sequence `45`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `129` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护日记共有 `45` 条，已经持久化到 sequence `45`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `133` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -187,7 +187,7 @@
 
 ## 完整决策/经验索引
 
-当前共 `129` 条：`validated=84`、`observed=42`、`invalidated=2`、`superseded=1`。`observed` 表示已有样本但仍需复验；`invalidated` 和 `superseded` 不能继续作为现行规则。每条的适用范围、当前结论、直接证据与复验触发在 [experience-ledger.md](./experience-ledger.md) 中完整保存。
+当前共 `133` 条：`validated=85`、`observed=45`、`invalidated=2`、`superseded=1`。`observed` 表示已有样本但仍需复验；`invalidated` 和 `superseded` 不能继续作为现行规则。每条的适用范围、当前结论、直接证据与复验触发在 [experience-ledger.md](./experience-ledger.md) 中完整保存。
 
 | ID | 状态 | 决策/经验 |
 |---|---|---|
@@ -314,15 +314,19 @@
 | EXP-121 | observed | 原生可建不等于玩家净空，带路应按完整 plannedPath 复核建筑距离 |
 | EXP-122 | observed | 传送带可跨水，沿带移动仍必须逐段验证 Walk |
 | EXP-123 | observed | 带路实体 ID 顺序不是拓扑顺序，自由末端必须以连接和位置复读 |
-| EXP-124 | observed | 原生带路 prepare 可能回折到既有输入带，候选器必须排除旧带重叠 |
+| EXP-124 | validated | 原生带路 prepare/commit 可能与既有带重叠，提交前必须全厂排除旧带占位 |
 | EXP-125 | observed | 无副作用 prepare 仍占短期计划容量，密集候选扫描必须分批等待过期 |
 | EXP-126 | validated | 长带连通不代表末端分拣器有电，通料前必须逐个复读供电 |
 | EXP-127 | observed | 供料链持续工作不等于具备下一科技的吞吐余量 |
 | EXP-128 | observed | Move 目标未达不等于已取得的安全位移必须作废 |
 | EXP-129 | observed | 复用过滤多料仓能防串料，但不能保证同物料的产线分配优先级 |
+| EXP-130 | observed | 单个矿点锚定的最优姿态不等于整簇矿脉的最优姿态 |
+| EXP-131 | observed | 普通矿机原生出料先接传送带，不能假设可直接接分拣器 |
+| EXP-132 | observed | 未取得动作终态时，单次 fresh 实体扫描仍可能处于预建筑收尾中 |
+| EXP-133 | observed | 既有带占位无法绕开时，可用独立带段和受电分拣器做显式拓扑桥 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前正在同一受保护 owned world 的 planet `104` 运行；首次自动钛合金与当前科研状态已普通保存到 tick `11175248`，write health `healthy`、无 flight checkpoint、exact-primary restart 可用，journal durable through `45`。后续继续使用同一世界，不开新档。
-- 当前主线：`1605` 正常研究但受蓝矩阵吞吐限速；等待期间先恢复硫酸线，为钛合金补足持续输入。现有钛合金仓有 8，熔炉内余钛/钢/酸 `8/8/4`，源仓酸为 0；多料仓中的剩余钛/钢同时被合法 PLS 支路预装，下一批不能假设全部归钛合金。恢复足量硫酸后按独立可解释批次补钛/钢，再生产两座 PLS、两座 ILS 和首批运输船，最后在 planet `104/102` 完成真实跨星钛/硅运输。下一次飞行前仍须单独保存 flight checkpoint，任何失败只重载该检查点继续。
+- DSP 当前正在同一受保护 owned world 的 planet `104` 运行；永久铁供给和科研恢复已普通保存到 tick `11388372`、revision `342`，write health `healthy`、无 flight checkpoint、journal `45/45` durable 且无 pending/error。后续继续使用同一世界，不开新档。
+- 当前主线：`1605` 正常研究到至少 `18101/216000`，仍受单线蓝矩阵吞吐限速。新 8 点矿机 `1496`、熔炉 `1500`、专仓 `1511` 经无重叠旁路和满电 sorter `1593/1656` 永久接入旧仓 `28`；跨窗口已追到电路板台 `36`、蓝矩阵台 `76`、输出 sorter `78` 和科技 hash 增长，不再依赖临时手投铁块。等待科研期间恢复硫酸和钛合金持续供给，补足两座 ILS/运输船所需材料；再生产两座 PLS、两座 ILS 和首批运输船，在 planet `104/102` 完成真实跨星钛/硅运输。下一次飞行前仍须单独保存 flight checkpoint，任何失败只重载该检查点继续。
 - 粒子容器、物流运输机、行星物流站、真实行星内物流、远端钛/硅矿以及黄糖本地双原料供料均已越过结构化验收与普通保存门槛；v0.3 仍需双星球 ILS、运输船真实运送钛/硅、黄糖上游持续性、重启恢复和干净安装包握手全部通过，才创建 tag 和 GitHub Release。

@@ -52,6 +52,7 @@ public static class BuildingConfigurationModes
     public const string Research = "research";
     public const string SorterFilter = "sorter-filter";
     public const string LogisticsStationStorage = "logistics-station-storage";
+    public const string LogisticsStationBelt = "logistics-station-belt";
     public const string LogisticsStationCharge = "logistics-station-charge";
 }
 
@@ -176,6 +177,10 @@ public sealed class PrepareConfigureBuildingRequest
     public int FilterItemId { get; set; }
 
     public int StationStorageIndex { get; set; } = -1;
+
+    public int StationBeltSlotIndex { get; set; } = -1;
+
+    public int StationBeltStorageIndex { get; set; } = -1;
 
     public int StationItemId { get; set; }
 

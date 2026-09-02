@@ -47,6 +47,7 @@ dotnet test Spherewright.sln --no-build --no-restore
 
 ## Current verification result
 
+- On 2026-09-03, the station output-selector batch built with 0 warnings / 0 errors and 114 tests passed (Contracts 13, Bridge.Core 82, MCP 19). After normal save tick `10449537` and an orderly game exit, Release Plugin `941951FA0F5B8ADDEE16EF1B66B0ABA98664BF79474F49AEFACD6668071B0C76`, Contracts `1DD0C244463FBB78EA4C769990341E8699E3372E4F4155693869961B77097274`, and Bridge.Core `F032394C60CC9840FEE854A2ADC3702D7EA942378DBA75D939EE24894999DDF6` matched the deployed files byte-for-byte. Exact-primary resume and live PLS output selection then restored titanium-crystal production; normal save tick `10456408` covers the result.
 - Full solution build: succeeded with 0 warnings and 0 errors.
 - Automated tests after checkpoint lifecycle, resume-source, movement recovery, belt free-end, and journal durability changes: 76 passed (Contracts 4, Bridge.Core 59, MCP 13).
 - BepInEx load: verified in DSP at the main menu and in a current-process-created world.

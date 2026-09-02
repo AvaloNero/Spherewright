@@ -282,6 +282,29 @@ public sealed class ProtocolContractTests
     }
 
     [Fact]
+    public void LogisticsStationBeltConfiguration_BindsOutputPortAndPublicStorageIndex()
+    {
+        var request = new PrepareConfigureBuildingRequest
+        {
+            PlanetId = 104,
+            EntityId = 920,
+            Mode = BuildingConfigurationModes.LogisticsStationBelt,
+            StationBeltSlotIndex = 3,
+            StationBeltStorageIndex = 0,
+            ExpectedFactoryStateHash = "sha256:factory",
+            ExpectedStationConfigurationStateHash = "sha256:station-config",
+        };
+
+        var json = JsonSerializer.Serialize(request, JsonOptions);
+        using var parsed = JsonDocument.Parse(json);
+
+        Assert.Equal("logistics-station-belt", parsed.RootElement.GetProperty("mode").GetString());
+        Assert.Equal(3, parsed.RootElement.GetProperty("stationBeltSlotIndex").GetInt32());
+        Assert.Equal(0, parsed.RootElement.GetProperty("stationBeltStorageIndex").GetInt32());
+        Assert.Equal("sha256:station-config", parsed.RootElement.GetProperty("expectedStationConfigurationStateHash").GetString());
+    }
+
+    [Fact]
     public void Dismantle_BindsStableEndpointAndPlayerHashes()
     {
         var request = new PrepareDismantleRequest

@@ -372,6 +372,10 @@ public sealed class CanonicalStateHashTests
 
         snapshot.StorageSlots[0].MaximumCount = 2_000;
         Assert.NotEqual(configuration, CanonicalStateHash.LogisticsStationConfiguration(snapshot));
+        configuration = CanonicalStateHash.LogisticsStationConfiguration(snapshot);
+
+        snapshot.BeltSlots[0].StorageIndex = 1;
+        Assert.NotEqual(configuration, CanonicalStateHash.LogisticsStationConfiguration(snapshot));
     }
 
     [Fact]

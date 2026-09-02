@@ -273,6 +273,33 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public async Task ConfigureBuildingTool_MapsLogisticsStationBeltMode()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.PrepareConfigureBuildingAsync(
+            bridgeClient: bridge,
+            sessionId: "session-station-belt",
+            planetId: 104,
+            entityId: 920,
+            recipeId: 0,
+            expectedFactoryStateHash: "sha256:factory",
+            mode: BuildingConfigurationModes.LogisticsStationBelt,
+            stationBeltSlotIndex: 3,
+            stationBeltStorageIndex: 0,
+            expectedStationConfigurationStateHash: "sha256:station-config",
+            stateHashVersion: 1,
+            cancellationToken: CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("session-station-belt", bridge.LastSessionId);
+        Assert.Equal(BuildingConfigurationModes.LogisticsStationBelt, bridge.LastConfigureRequest?.Mode);
+        Assert.Equal(3, bridge.LastConfigureRequest?.StationBeltSlotIndex);
+        Assert.Equal(0, bridge.LastConfigureRequest?.StationBeltStorageIndex);
+        Assert.Equal("sha256:station-config", bridge.LastConfigureRequest?.ExpectedStationConfigurationStateHash);
+    }
+
+    [Fact]
     public async Task DismantleTool_MapsStableEndpointAndPlayerHashes()
     {
         var bridge = new FakeBridgeClient(SuccessResult());

@@ -1729,9 +1729,10 @@ internal sealed partial class NormalGameActionCoordinator
             && request.Mode != BuildingConfigurationModes.Research
             && request.Mode != BuildingConfigurationModes.SorterFilter
             && request.Mode != BuildingConfigurationModes.LogisticsStationStorage
+            && request.Mode != BuildingConfigurationModes.LogisticsStationBelt
             && request.Mode != BuildingConfigurationModes.LogisticsStationCharge)
         {
-            return InvalidPlan("Configuration mode must be production, research, sorter-filter, logistics-station-storage, or logistics-station-charge.");
+            return InvalidPlan("Configuration mode must be production, research, sorter-filter, logistics-station-storage, logistics-station-belt, or logistics-station-charge.");
         }
 
         var stationLocalLogic = ELogisticStorage.None;
@@ -1764,6 +1765,7 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         var stationMode = request.Mode == BuildingConfigurationModes.LogisticsStationStorage
+                          || request.Mode == BuildingConfigurationModes.LogisticsStationBelt
                           || request.Mode == BuildingConfigurationModes.LogisticsStationCharge;
         if (snapshot.ObjectKind != FactoryObjectKinds.Entity
             || (!stationMode && !sorterFilterMode && (snapshot.Progress != 0
@@ -1788,6 +1790,7 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         RecipeProto? recipe = null;
+        var stationBeltItemId = 0;
         if (request.Mode == BuildingConfigurationModes.Production)
         {
             recipe = LDB.recipes.Select(request.RecipeId);
@@ -1870,6 +1873,22 @@ internal sealed partial class NormalGameActionCoordinator
                     true,
                     "Choose a different 3 MW UI step within one-half through five times this exact station prefab's default charging energy."));
             }
+
+            if (request.Mode == BuildingConfigurationModes.LogisticsStationBelt
+                && !CanConfigureLogisticsStationBelt(
+                    factory,
+                    request.EntityId,
+                    request.StationBeltSlotIndex,
+                    request.StationBeltStorageIndex,
+                    out stationBeltItemId,
+                    out var beltReason))
+            {
+                return GameCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
+                    BridgeErrorCodes.ActionRejected,
+                    beltReason,
+                    true,
+                    "Choose an empty connected output port and a configured unlocked station storage slot; existing nonzero output selectors are never replaced."));
+            }
         }
 
         var normalizedStationLocalLogic = ToContractLogisticsStorageLogic(stationLocalLogic);
@@ -1887,6 +1906,9 @@ internal sealed partial class NormalGameActionCoordinator
             request.FilterItemId,
             request.ExpectedStationConfigurationStateHash,
             request.StationStorageIndex,
+            request.StationBeltSlotIndex,
+            request.StationBeltStorageIndex,
+            stationBeltItemId,
             request.StationItemId,
             request.StationMaximumCount,
             normalizedStationLocalLogic,
@@ -1904,6 +1926,9 @@ internal sealed partial class NormalGameActionCoordinator
             request.FilterItemId,
             request.ExpectedStationConfigurationStateHash,
             request.StationStorageIndex,
+            request.StationBeltSlotIndex,
+            request.StationBeltStorageIndex,
+            stationBeltItemId,
             request.StationItemId,
             request.StationMaximumCount,
             normalizedStationLocalLogic,
@@ -1919,6 +1944,8 @@ internal sealed partial class NormalGameActionCoordinator
                     ? "The exact connected cargo-free sorter reports the target item filter and matching entity sign after the current-version UI setting path is applied once."
                     : request.Mode == BuildingConfigurationModes.LogisticsStationStorage
                         ? "The exact station slot reports the selected unlocked item, 100-step limit, and local/remote logic after PlanetTransport.SetStationStorage is called once; item count and proliferator points remain unchanged by the call."
+                    : request.Mode == BuildingConfigurationModes.LogisticsStationBelt
+                        ? "The exact connected station output port reports the selected storage slot after the current-version UI field path is applied once; station inventory, player inventory, port topology, and every unrelated selector remain unchanged."
                     : request.Mode == BuildingConfigurationModes.LogisticsStationCharge
                         ? "The exact station power consumer reports the requested UI-step maximum charging power after the current-version UI field path is applied once; station and player inventory remain unchanged."
                     : "The exact idle device reports the target recipe after the current-version UI/business setting path is called once.");
@@ -1966,6 +1993,7 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         if (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
+            || plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationBelt
             || plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationCharge)
         {
             var snapshotResult = _reader.InspectFactoryEntityOnMainThread(
@@ -1992,6 +2020,20 @@ internal sealed partial class NormalGameActionCoordinator
                     out _)
                     ? null
                     : Stale("The exact station prefab, power-consumer identity, charging bound, or current maximum changed after preparation.");
+            }
+
+            if (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationBelt)
+            {
+                return CanConfigureLogisticsStationBelt(
+                           factory,
+                           plan.EntityId,
+                           plan.ConfigureStationBeltSlotIndex,
+                           plan.ConfigureStationBeltStorageIndex,
+                           out var stationBeltItemId,
+                           out _)
+                       && stationBeltItemId == plan.ConfigureStationBeltItemId
+                    ? null
+                    : Stale("The exact station output port, connected belt, selected storage item, or selector state changed after preparation.");
             }
 
             return TryParseLogisticsStorageLogic(plan.ConfigureStationLocalLogic, out var localLogic)
@@ -2246,6 +2288,107 @@ internal sealed partial class NormalGameActionCoordinator
         return true;
     }
 
+    private static bool CanConfigureLogisticsStationBelt(
+        PlanetFactory factory,
+        int entityId,
+        int beltSlotIndex,
+        int storageIndex,
+        out int selectedItemId,
+        out string reason)
+    {
+        selectedItemId = 0;
+        reason = "The exact logistics-station output port or storage slot is unavailable for this configuration.";
+        if (entityId <= 0
+            || entityId >= factory.entityCursor
+            || entityId >= factory.entityPool.Length)
+        {
+            return false;
+        }
+
+        ref var entity = ref factory.entityPool[entityId];
+        if (entity.id != entityId || entity.stationId <= 0)
+        {
+            return false;
+        }
+
+        var station = factory.transport?.GetStationComponent(entity.stationId);
+        if (station is null
+            || station.id != entity.stationId
+            || station.entityId != entityId
+            || !LogisticsStationIdentityPolicy.MatchesLocalPlanet(
+                station.isStellar,
+                station.planetId,
+                factory.planetId)
+            || station.isCollector
+            || station.isVeinCollector
+            || station.storage is null
+            || station.slots is null
+            || beltSlotIndex < 0
+            || beltSlotIndex >= station.slots.Length
+            || storageIndex < 0
+            || storageIndex >= station.storage.Length)
+        {
+            return false;
+        }
+
+        ref var slot = ref station.slots[beltSlotIndex];
+        var desiredStorageIndex = storageIndex + 1;
+        if (slot.dir != IODir.Output || slot.beltId <= 0 || slot.counter != 0)
+        {
+            reason = "The requested station port must be a connected output with no pending port cargo.";
+            return false;
+        }
+
+        var traffic = factory.cargoTraffic;
+        if (traffic?.beltPool is null
+            || slot.beltId >= traffic.beltCursor
+            || slot.beltId >= traffic.beltPool.Length)
+        {
+            reason = "The output port's connected belt component is no longer current.";
+            return false;
+        }
+
+        ref var belt = ref traffic.beltPool[slot.beltId];
+        if (belt.id != slot.beltId
+            || belt.entityId <= 0
+            || belt.entityId >= factory.entityCursor
+            || belt.entityId >= factory.entityPool.Length)
+        {
+            reason = "The output port's connected belt identity is invalid.";
+            return false;
+        }
+
+        ref var beltEntity = ref factory.entityPool[belt.entityId];
+        if (beltEntity.id != belt.entityId || beltEntity.beltId != slot.beltId)
+        {
+            reason = "The output port no longer resolves back to the same built belt entity.";
+            return false;
+        }
+
+        selectedItemId = station.storage[storageIndex].itemId;
+        if (selectedItemId <= 0
+            || LDB.items.Select(selectedItemId) is null
+            || !GameMain.history.ItemUnlocked(selectedItemId))
+        {
+            reason = "The requested station storage slot must contain a normally unlocked configured item.";
+            return false;
+        }
+
+        if (slot.storageIdx == desiredStorageIndex)
+        {
+            reason = "The requested station output selector is already applied.";
+            return false;
+        }
+
+        if (slot.storageIdx != 0)
+        {
+            reason = "This action never replaces an existing nonzero station output selector.";
+            return false;
+        }
+
+        return true;
+    }
+
     private static bool CanSetSorterFilter(
         PlanetFactory factory,
         int entityId,
@@ -2353,6 +2496,80 @@ internal sealed partial class NormalGameActionCoordinator
         NormalActionPlanPayload plan) => snapshot.LogisticsStation is not null
             && snapshot.LogisticsStation.MaximumChargePowerWatts == plan.ConfigureStationMaximumChargePowerWatts;
 
+    private static bool IsLogisticsStationBeltConfigurationApplied(
+        FactoryEntitySnapshot snapshot,
+        NormalActionPlanPayload plan)
+    {
+        var station = snapshot.LogisticsStation;
+        var beltSlot = station?.BeltSlots.FirstOrDefault(candidate =>
+            candidate.Index == plan.ConfigureStationBeltSlotIndex);
+        var storageSlot = station?.StorageSlots.FirstOrDefault(candidate =>
+            candidate.Index == plan.ConfigureStationBeltStorageIndex);
+        return beltSlot is not null
+               && storageSlot is not null
+               && string.Equals(beltSlot.Direction, IODir.Output.ToString(), StringComparison.Ordinal)
+               && beltSlot.BeltComponentId > 0
+               && beltSlot.BeltEntityId > 0
+               && beltSlot.StorageIndex == plan.ConfigureStationBeltStorageIndex + 1
+               && storageSlot.ItemId == plan.ConfigureStationBeltItemId;
+    }
+
+    private static string CaptureLogisticsStationBeltSelectorInvariantState(
+        StationComponent station,
+        int targetBeltSlotIndex)
+    {
+        var values = new List<object?>
+        {
+            station.id,
+            station.gid,
+            station.entityId,
+            station.planetId,
+            station.isStellar,
+            station.isCollector,
+            station.isVeinCollector,
+            station.energy,
+            station.energyPerTick,
+            station.energyMax,
+            station.warperCount,
+            station.idleDroneCount,
+            station.workDroneCount,
+            station.idleShipCount,
+            station.workShipCount,
+            station.tripRangeDrones,
+            station.tripRangeShips,
+            station.includeOrbitCollector,
+            station.warpEnableDist,
+            station.warperNecessary,
+            station.deliveryDrones,
+            station.deliveryShips,
+            station.pilerCount,
+            station.droneAutoReplenish,
+            station.shipAutoReplenish,
+            station.remoteGroupMask,
+            station.routePriority,
+        };
+        var needs = station.needs ?? Array.Empty<int>();
+        values.Add(needs.Length);
+        foreach (var itemId in needs)
+        {
+            values.Add(itemId);
+        }
+
+        var slots = station.slots ?? Array.Empty<SlotData>();
+        values.Add(slots.Length);
+        for (var index = 0; index < slots.Length; index++)
+        {
+            var slot = slots[index];
+            values.Add(index);
+            values.Add(slot.dir);
+            values.Add(slot.beltId);
+            values.Add(index == targetBeltSlotIndex ? 0 : slot.storageIdx);
+            values.Add(slot.counter);
+        }
+
+        return CanonicalStateHash.Combine("logistics-station-belt-selector-invariant-v1", values.ToArray());
+    }
+
     private static string CaptureLogisticsStationStorageState(StationComponent station)
     {
         var stores = station.storage ?? Array.Empty<StationStore>();
@@ -2395,6 +2612,7 @@ internal sealed partial class NormalGameActionCoordinator
                 action.SessionId,
                 new InspectFactoryEntityRequest { PlanetId = action.PlanetId, ObjectId = action.Plan.EntityId });
             return action.Plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
+                   || action.Plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationBelt
                    || action.Plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationCharge
                 ? snapshot.Value?.LogisticsStation?.ConfigurationStateHash
                 : snapshot.Value?.StateHash;

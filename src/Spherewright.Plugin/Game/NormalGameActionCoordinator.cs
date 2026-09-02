@@ -726,6 +726,8 @@ internal sealed partial class NormalGameActionCoordinator
                         ? plan.ConfigureTechId
                         : plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
                             ? plan.ConfigureStationItemId
+                            : plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationBelt
+                                ? plan.ConfigureStationBeltItemId
                             : plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationCharge
                                 ? (int?)null
                                 : plan.ConfigureRecipeId;
@@ -742,6 +744,8 @@ internal sealed partial class NormalGameActionCoordinator
                             || !IsSorterFilterApplied(plan.EntityId, plan.ConfigureFilterItemId)))
                     || (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
                         && !IsLogisticsStationStorageConfigurationApplied(configured.Value, plan))
+                    || (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationBelt
+                        && !IsLogisticsStationBeltConfigurationApplied(configured.Value, plan))
                     || (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationCharge
                         && !IsLogisticsStationChargeConfigurationApplied(configured.Value, plan)))
                 {
@@ -754,10 +758,13 @@ internal sealed partial class NormalGameActionCoordinator
                         ? "The current-version lab setting path applied research mode and active-technology readback matched."
                         : plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
                             ? "PlanetTransport.SetStationStorage applied the unlocked item, capacity, and local/remote logic once; immediate readback matched and the call preserved slot inventory."
+                        : plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationBelt
+                            ? "The current-version station UI field path selected the configured item for the exact output port; immediate topology and inventory readback matched."
                         : plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationCharge
                             ? "The current-version station UI field path applied the maximum charge power once; immediate power-consumer readback matched and station/player inventory remained unchanged."
                         : "The current-version device configuration path applied the unlocked recipe and readback matched.");
                 action.AfterStateHash = plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
+                                        || plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationBelt
                                         || plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationCharge
                     ? configured.Value.LogisticsStation?.ConfigurationStateHash
                     : configured.Value.StateHash;
@@ -1101,6 +1108,7 @@ internal sealed partial class NormalGameActionCoordinator
                 if (!string.Equals(currentConfigurationHash, plan.FactoryStateHash, StringComparison.Ordinal)
                     || (!sorterFilterMode
                         && plan.ConfigureMode != BuildingConfigurationModes.LogisticsStationStorage
+                        && plan.ConfigureMode != BuildingConfigurationModes.LogisticsStationBelt
                         && plan.ConfigureMode != BuildingConfigurationModes.LogisticsStationCharge
                         && (configureSnapshot.Value.Progress != 0
                             || configureSnapshot.Value.IsWorking
@@ -1846,6 +1854,54 @@ internal sealed partial class NormalGameActionCoordinator
             return;
         }
 
+        if (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationBelt)
+        {
+            if (!CanConfigureLogisticsStationBelt(
+                    factory,
+                    plan.EntityId,
+                    plan.ConfigureStationBeltSlotIndex,
+                    plan.ConfigureStationBeltStorageIndex,
+                    out var stationBeltItemId,
+                    out var stationBeltReason)
+                || stationBeltItemId != plan.ConfigureStationBeltItemId)
+            {
+                throw new InvalidOperationException(stationBeltReason);
+            }
+
+            var station = factory.transport.GetStationComponent(entity.stationId)
+                ?? throw new InvalidOperationException("The logistics station disappeared before output-selector configuration.");
+            ref var beforeSlot = ref station.slots[plan.ConfigureStationBeltSlotIndex];
+            var beforeDirection = beforeSlot.dir;
+            var beforeBeltId = beforeSlot.beltId;
+            var beforeCounter = beforeSlot.counter;
+            var beforeStationStorageState = CaptureLogisticsStationStorageState(station);
+            var beforeBeltInvariantState = CaptureLogisticsStationBeltSelectorInvariantState(
+                station,
+                plan.ConfigureStationBeltSlotIndex);
+            var beforePackageState = CapturePlayerPackageState(GameMain.mainPlayer);
+
+            station.slots[plan.ConfigureStationBeltSlotIndex].storageIdx =
+                plan.ConfigureStationBeltStorageIndex + 1;
+
+            ref var afterSlot = ref station.slots[plan.ConfigureStationBeltSlotIndex];
+            if (afterSlot.dir != beforeDirection
+                || afterSlot.dir != IODir.Output
+                || afterSlot.beltId != beforeBeltId
+                || afterSlot.counter != beforeCounter
+                || afterSlot.storageIdx != plan.ConfigureStationBeltStorageIndex + 1
+                || !string.Equals(beforeStationStorageState, CaptureLogisticsStationStorageState(station), StringComparison.Ordinal)
+                || !string.Equals(
+                    beforeBeltInvariantState,
+                    CaptureLogisticsStationBeltSelectorInvariantState(station, plan.ConfigureStationBeltSlotIndex),
+                    StringComparison.Ordinal)
+                || !string.Equals(beforePackageState, CapturePlayerPackageState(GameMain.mainPlayer), StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("The station output-selector assignment did not preserve and prove port topology, station inventory, and player inventory.");
+            }
+
+            return;
+        }
+
         var recipe = LDB.recipes.Select(plan.ConfigureRecipeId)
             ?? throw new InvalidOperationException("The configured recipe disappeared.");
         if (!CanDeviceRunRecipe(factory, plan.EntityId, recipe, out var reason))
@@ -2082,6 +2138,9 @@ internal sealed partial class NormalGameActionCoordinator
         public int ConfigureFilterItemId { get; private set; }
         public string StationConfigurationStateHash { get; private set; } = string.Empty;
         public int ConfigureStationStorageIndex { get; private set; } = -1;
+        public int ConfigureStationBeltSlotIndex { get; private set; } = -1;
+        public int ConfigureStationBeltStorageIndex { get; private set; } = -1;
+        public int ConfigureStationBeltItemId { get; private set; }
         public int ConfigureStationItemId { get; private set; }
         public int ConfigureStationMaximumCount { get; private set; }
         public string ConfigureStationLocalLogic { get; private set; } = LogisticsStorageLogics.None;
@@ -2231,6 +2290,9 @@ internal sealed partial class NormalGameActionCoordinator
             int filterItemId,
             string stationConfigurationStateHash,
             int stationStorageIndex,
+            int stationBeltSlotIndex,
+            int stationBeltStorageIndex,
+            int stationBeltItemId,
             int stationItemId,
             int stationMaximumCount,
             string stationLocalLogic,
@@ -2249,6 +2311,9 @@ internal sealed partial class NormalGameActionCoordinator
                 ConfigureFilterItemId = filterItemId,
                 StationConfigurationStateHash = stationConfigurationStateHash,
                 ConfigureStationStorageIndex = stationStorageIndex,
+                ConfigureStationBeltSlotIndex = stationBeltSlotIndex,
+                ConfigureStationBeltStorageIndex = stationBeltStorageIndex,
+                ConfigureStationBeltItemId = stationBeltItemId,
                 ConfigureStationItemId = stationItemId,
                 ConfigureStationMaximumCount = stationMaximumCount,
                 ConfigureStationLocalLogic = stationLocalLogic,

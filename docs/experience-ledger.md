@@ -1337,11 +1337,11 @@
 - 日期：2026-09-02
 - 适用范围：当前 DSP `0.10.34.28529` 的普通行星/星际物流站无人机与运输船槽、玩家背包双向转移；不覆盖轨道采集器、矿物采集站、翘曲器槽或塔内货物槽。
 - 当前结论：无人机/运输船容量必须按 `idle + working` 占用计算，运输船只适用于 `isStellar`，取出只能减少 idle。塔内载具计数不能保存增产点，因此玩家到塔的载具只在该物品聚合 inc 为 0 时接受。安全动作必须独立绑定 fleet hash，提交前以背包副本证明精确容量，提交后证明玩家与 idle 等量反向变化、working 与另一类载具不变、总数守恒，且塔货物/订单/能量/翘曲器/配置、手持物和无关背包格均不变。
-- 直接证据：当前程序集反编译的 `UIStationWindow.OnDroneIconClick(int)` / `OnShipIconClick(int)` 分别固定 item `5001/5002`，从建筑 prefab 读取 `stationMaxDroneCount/stationMaxShipCount`，以 idle+work 计算余量，存入时只增加 idle 并从手持扣除 `split_inc`，取出时只使用 idle；`StorageComponent.TakeItem/AddItemStacked` 与 `Player.NotifyPackageAddItem` 的完整签名也已复核。源码新增纯策略、独立 fleet hash、DTO 容量字段、Bridge/MCP prepare/commit、主线程双向守恒与无关状态复读；完整 solution 0 warning / 0 error，94 tests passed（Contracts 11、Core 66、MCP 17），MCP 注册面为 46。
-- 限制或反例：当前游戏进程仍加载旧 44-tool DLL，且本档尚无完成物流塔；因此本条不宣称 live validated。原生 UI 的 shift/control 取出路径会把全部 idle 清零，Spherewright 只采用经背包副本证明的有界精确子集，不依赖其可能部分接收的行为。
+- 直接证据：当前程序集反编译的 `UIStationWindow.OnDroneIconClick(int)` / `OnShipIconClick(int)` 分别固定 item `5001/5002`，从建筑 prefab 读取 `stationMaxDroneCount/stationMaxShipCount`，以 idle+work 计算余量，存入时只增加 idle 并从手持扣除 `split_inc`，取出时只使用 idle；`StorageComponent.TakeItem/AddItemStacked` 与 `Player.NotifyPackageAddItem` 的完整签名也已复核。源码新增纯策略、独立 fleet hash、DTO 容量字段、Bridge/MCP prepare/commit、主线程双向守恒与无关状态复读；完整 solution 0 warning / 0 error，94 tests passed（Contracts 11、Core 66、MCP 17），MCP 注册面为 46。产品里程碑保存后已正常关闭旧进程并同批部署新 Plugin/Core/Contracts，逐文件部署哈希与 Release 输出一致；受保护恢复动作 `ba335eeb-d6b6-47b5-8e29-4eb133d0dba4` 成功，证明含该动作的新 Bridge build 已进入当前健康会话。
+- 限制或反例：46-tool build 已 live 部署，但本档完成的是“物流站物品”，尚未把它正常施工为可检查的 station entity，因此 fleet transfer 仍没有 live 成功样本，本条不提前升级为 validated。原生 UI 的 shift/control 取出路径会把全部 idle 清零，Spherewright 只采用经背包副本证明的有界精确子集，不依赖其可能部分接收的行为。
 - 复验触发：下一次正常保存/关闭后的整组 DLL 部署、首座 PLS/ILS 完成、首次装入与取出无人机/运输船、载具在途时、自动补充开关变化或 DSP/程序集版本变化。
 - 关联：`LogisticsStationFleetTransferPolicy`、`CanonicalStateHash.LogisticsStationFleet`、`NormalGameActionCoordinator.LogisticsStationFleet.cs`、`docs/research/game-api-m0.md`、ROADMAP v0.3。
-- 最近复验：2026-09-02（当前程序集反编译、完整构建及 94 项离线测试；live 待部署）。
+- 最近复验：2026-09-02（46-tool 三程序集同批 live 部署并从精确主档健康恢复；首塔 fleet transfer 仍待验证）。
 
 ### EXP-106 — 物流运输机产线仍以科技门控、过滤输入、自动首产与普通保存闭环
 
@@ -1368,6 +1368,8 @@
 - 最近复验：2026-09-02（行星物流运输站首产、journal sequence 42、普通保存 tick 9413535）。
 
 ## 修订记录
+
+- 2026-09-02：完成 Plugin 部署/重启触发复核。产品里程碑主档先正常保存到 tick `9413535`，旧进程正常关闭且 descriptor 清零；Release Plugin/Core/Contracts 逐文件 SHA-256 匹配后同批部署。恢复动作 `ba335eeb-d6b6-47b5-8e29-4eb133d0dba4` 只载入票据绑定的精确主档并自动重存到 tick `9413567`。fresh 读回 planet `104`、和平、非沙盒、1×、healthy、journal `42/42`、仓 `893` 的 10 个 item `5001`、仓 `900` 的 1 个 item `2103`，且无 flight checkpoint capability；EXP-069/072/083/104/107 与新进程一致。EXP-105 更新为“已部署但仍待首塔动作”，不提前升级状态。新进程目前只有 resume/adoption 这一项成功游戏写入；下次累计 10 写仍从此计数。
 
 - 2026-09-02：新增并验证 EXP-107。四输入高数量建筑配方在完整批次到位前保持不工作是正常等待；行星物流站制造台随后满供电完成 recipe `93`，仓 `900` 得到首座 item `2103`、日记 sequence `42` durable，并正常保存到 tick `9413535`、revision `115`。同时记录 production 配置使用完整 state hash，误用 sorter 专用配置哈希会在 prepare 阶段无副作用拒绝。
 

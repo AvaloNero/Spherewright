@@ -1231,39 +1231,41 @@
 
 ### EXP-097 — 物流塔观察必须交叉绑定实体、站点池和星球身份，并区分实时与配置指纹
 
-- 状态：`observed`
+- 状态：`validated`
 - 日期：2026-09-02
 - 适用范围：DSP `0.10.34.28529`、Assembly-CSharp SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`、v0.3 行星/星际物流塔只读观察。
 - 当前结论：不能只用工厂实体 ID 或 `EntityData.stationId` 单点认领物流塔。读取必须同时证明正实体仍存在、stationId 位于当前 `PlanetTransport.stationPool/stationCursor`、池项 `id` 等于索引，并且池项的 `entityId/planetId` 与当前实体和本地工厂一致；随后只在 Unity 主线程把站点能量、舰队、原始运输设置、每个 `StationStore` 和 `SlotData` 深拷贝到 DTO。实时能量/库存/订单/舰队变化与配置变化采用两个独立哈希，避免未来配置 prepare 因正常运输 tick 无意义失效，同时仍能识别槽位、供需和带口被改动。
-- 直接证据：当前程序集元数据确认 `PlanetFactory.transport -> PlanetTransport.stationPool`、`EntityData.stationId`、`StationComponent.id/gid/entityId/planetId/storage/slots` 和 `StationStore`/`SlotData` 的完整字段；源码已在现有 factory list/inspect 响应中加入 `logisticsStation` 深拷贝，并用 Core 测试证明仅实时 count/energy 变化不改变 configuration hash、槽位上限变化会改变它。Release 完整 solution 为 0 warning / 0 error，78 tests passed（Contracts 5、Core 60、MCP 13）。
-- 限制或反例：同档恢复后仍没有已完成的行星/星际物流塔可供 DTO 复读，因此本条不能升级为 `validated`；`tripRange*`、`warpEnableDist`、`delivery*` 继续按 raw/setting 暴露。其 UI 缩放已经完成源码复核，但路线参数写入仍未实现或授权。
+- 直接证据：当前程序集元数据确认 `PlanetFactory.transport -> PlanetTransport.stationPool`、`EntityData.stationId`、`StationComponent.id/gid/entityId/planetId/storage/slots` 和 `StationStore`/`SlotData` 的完整字段；源码已在现有 factory list/inspect 响应中加入 `logisticsStation` 深拷贝，并用 Core 测试证明仅实时 count/energy 变化不改变 configuration hash、槽位上限变化会改变它。Release 完整 solution 为 0 warning / 0 error，78 tests passed（Contracts 5、Core 60、MCP 13）。修复本地站 0 哨兵身份后，实体 `916` 在当前版本连续返回 entity/station/planet、4 个槽、12 个带口、能量、供电、无人机容量及三类独立哈希；后续自然充电、槽位配置、充电上限配置和 fleet 往返均只改变各自应变的字段/哈希。
+- 限制或反例：当前只完成本地 PLS 的 live 观察；星际站、运输船、在途订单与带口实际接入仍待后续样本。`tripRange*`、`warpEnableDist`、`delivery*` 继续按 raw/setting 暴露；其 UI 缩放虽已完成源码复核，路线参数写入仍未实现或授权。
 - 复验触发：同档首座行星物流站完工、首座星际物流站完工、首次站点槽位配置、运输机/运输船活动、UI 缩放语义完成反编译或 DSP/程序集版本变化。
 - 关联：`src/Spherewright.Contracts/Logistics/LogisticsStationContracts.cs`、`GameStateReader.CaptureLogisticsStation`、`CanonicalStateHash.LogisticsStation*`、`docs/research/game-api-m0.md`。
-- 最近复验：2026-09-02（程序集字段、身份链、编译和自动测试已复核；等待同档首站 live 复读）。
+- 最近复验：2026-09-02（实体 `916` 完整 DTO、自然充电、槽位/充电配置和无人机 fleet 往返均已结构化 live 复读）。
 
 ### EXP-098 — 物流塔槽位配置只能采用 SetStationStorage 的不换品子集
 
-- 状态：`observed`
+- 状态：`validated`
 - 日期：2026-09-02
 - 适用范围：DSP `0.10.34.28529`、行星/星际物流站的物品选择、容量上限和本地/远程供需配置；不覆盖轨道采集器、矿机型物流站、直接装货或路线参数。
 - 当前结论：`PlanetTransport.SetStationStorage(...)` 是当前 UI 选择物品、拖动容量和切换供需逻辑共同使用的业务方法，但它不是无条件安全的“配置 setter”。当目标 item 与原槽不同且原槽有货时，它会调用 `Player.TryAddItemToPackage(..., throwTrash:true)`，随后清空 count/inc/orders，背包不足还可能产生地面掉落。因此 Spherewright 只允许空槽选品或同 item 改配置，永不暴露清槽/换品；item 必须正常解锁、不与同塔其他槽重复，容量必须为当前科技容量内的正 100 步进，行星站 remote 必须 `none`，且槽位不能有未结订单。prepare 绑定独立 configuration hash，避免正常能量/运输 tick 导致无意义 stale；commit 前再次验证，调用一次后要求 item/max/logic 精确命中，并证明槽 count/inc 及背包/手持每个 item/count/inc 元组均未改变。
 - 直接证据：`UIStationStorage.OnItemPickerReturn`、`OnMaxSliderValueChange`、`OnOptionButton*Click` 均反编译到同一 `SetStationStorage` 调用；当前方法体证明最大值会按 model capacity + 已研究 bonus 截断、行星站强制 remote None、换品分支会退货/可能 throwTrash、同 item 分支只改 max/localLogic/remoteLogic。源码已将 `logistics-station-storage` 接入既有 configure prepare/commit，Contracts/MCP 映射测试覆盖独立配置哈希和槽位意图；完整 Release solution 0 warning / 0 error，80 tests passed（Contracts 6、Core 60、MCP 14）。
-- 限制或反例：当前世界尚无完成物流站，新的写入批次没有部署或 live commit，故本条不能升级为 `validated`；同 item 且有库存但无订单的配置虽然方法体不会主动改库存，首次实机仍应从全空新塔开始。充电、航程、最低配送、补充开关、分组和路线优先级只完成读取/UI 变换研究，不包含在本动作。
+- 实机复验：实体 `916` 的空槽 0 以动作 `d6937f52-c03e-4045-93ac-5025b7ebdba1` 一次配置为钛块 `1106`、上限 `100`、本地需求、远程无；fresh 读回 `count/inc/order=0`、其他三槽仍空、玩家背包和写健康不变。随后充电配置和三次 fleet 转移后，该槽仍精确保持上述配置与空库存。
+- 限制或反例：当前只 live 验证“空槽首次选品”的最窄子集；同 item 且已有库存时调整上限、已有真实订单时的拒绝、保存后的重启恢复持久性和星际站 remote 逻辑仍待验证。充电、航程、最低配送、补充开关、分组和路线优先级不包含在本动作。
 - 复验触发：首座行星物流站完成后的空槽首次配置、配置后装货、保存/恢复后配置持久、同 item 调整上限、任何背包/槽位差异或 DSP/程序集版本变化。
 - 关联：EXP-021、EXP-097、`docs/research/game-api-m0.md`、`BuildingConfigurationModes.LogisticsStationStorage`。
-- 最近复验：2026-09-02（UI 调用链、危险换品分支、安全子集、构建与离线测试已复核；等待空新塔 live prepare/commit/readback）。
+- 最近复验：2026-09-02（PLS `916` 空槽 0 的钛块/100/本地需求首次 prepare、commit 与多轮 fresh 不变量读回通过）。
 
 ### EXP-099 — 物流塔 energyPerTick 是实时请求而非充电上限，配置值在 PowerConsumer
 
-- 状态：`observed`
+- 状态：`validated`
 - 日期：2026-09-02
 - 适用范围：物流塔充电读取、实时/配置哈希拆分，以及未来最大充电功率 prepare；DSP `0.10.34.28529`。
 - 当前结论：不能把 `StationComponent.energyPerTick` 命名或哈希为稳定充电配置。`StationComponent.SetPCState(PowerConsumerComponent[])` 每 tick 根据 `energy/energyMax` 调用 consumer 的 `SetRequiredEnergy(...)`，随后把 `consumer.requiredEnergy` 复制到 `station.energyPerTick`；塔接近充满时它会自然变化。UI 的最大充电滑块读写的是同一 `pcId` 对应 `consumer.workEnergyPerTick`，显示功率为该值乘 60。DTO 必须分别暴露 current requested energy/power 与 configured maximum energy/power，实时哈希包含前者，配置哈希只包含后者。
 - 直接证据：当前程序集方法体明确显示 `SetPCState` 的赋值顺序；`UIStationWindow._OnOpen` 以 `workEnergyPerTick/50000` 初始化滑块并显示 `workEnergyPerTick*60`，`OnMaxChargePowerSliderValueChange` 写 `round(50000*slider)`。源码已把旧 `EnergyPerTick` 拆为 `RequestedChargeEnergyPerTick/PowerWatts` 和 `MaximumChargeEnergyPerTick/PowerWatts`，并扩展 Core 测试证明 requested 变化只改变 live hash、maximum 变化必定改变 configuration hash；完整构建/80 tests 仍通过。
-- 限制或反例：当前同档尚无完成物流站，因此数值尚未 live 复读；`workEnergyPerTick` 的 UI min/max 还取决于建筑 prefab 的 `workEnergyPerTick / 2` 到 `*5`，未来写入仍需绑定具体 station prefab 与 consumer 身份，不能只接受任意瓦数。
+- 实机复验：PLS `916` 在未接电时为 `0/180 MJ`；电塔 `917` 接入 network 1 后自然充到 `147470607/180000000`，当时 requested 为 `2814780 W`、maximum 仍为 `12000000 W`；充满后 energy 保持 `180000000`、requested 降为原生保底 `60000 W`。随后只把 maximum 改为 `6000000 W`，energy/requested 未被写入，证明实时请求与配置上限是不同状态。
+- 限制或反例：当前只覆盖一座 PLS 的低电到满电和一次最大功率调整；`workEnergyPerTick` 的 UI min/max 仍取决于具体建筑 prefab 的 `workEnergyPerTick / 2` 到 `*5`，不能把 PLS 数值外推到 ILS 或接受任意瓦数。
 - 复验触发：首站从低电量充满的连续采样、调整最大充电功率、保存恢复、consumer/network 身份变化或 DSP 版本变化。
 - 关联：EXP-017、EXP-097、EXP-098、`StationComponent.SetPCState`、`UIStationWindow.OnMaxChargePowerSliderValueChange`。
-- 最近复验：2026-09-02（字段写入者、UI 配置源、60 tick/s 显示换算、双哈希语义和自动测试已复核；等待首站 live）。
+- 最近复验：2026-09-02（PLS `916` 从 0 经 network 1 自然充满，并独立完成 12 MW→6 MW 配置；requested/maximum live 分离得到实证）。
 
 ### EXP-100 — 选科技必须使用不含自然科研上传量的专用状态哈希
 
@@ -1281,15 +1283,16 @@
 
 ### EXP-101 — 物流塔最大充电功率要绑定 prefab UI 刻度与 power consumer 身份
 
-- 状态：`observed`
+- 状态：`validated`
 - 日期：2026-09-02
 - 适用范围：DSP `0.10.34.28529` 的行星/星际物流站最大充电功率；不覆盖当前实时请求功率、充电能量注入、采集器或其他运输参数。
 - 当前结论：`StationComponent.energyPerTick` 不能写作配置；最大值只位于 station `pcId` 对应的 `PowerConsumerComponent.workEnergyPerTick`。安全动作必须同时绑定 entity/station/planet、`station.pcId == entity.powerConId`、consumer `id/entityId` 和具体 item prefab。输入使用 UI 显示瓦数，只接受 3 MW 整步进，并按 UI 的整数范围限制在 `prefab workEnergyPerTick` 的 0.5×–5×。prepare 绑定独立 configuration hash；commit 只执行与 `UIStationWindow.OnMaxChargePowerSliderValueChange` 相同的 field assignment，并立即证明 maximum readback，同时保持 consumer identity/current required energy、station requested energy/存能/全部槽字段以及玩家背包不变。
 - 直接证据：当前程序集反编译确认 UI 打开时把 slider `min/max/value` 分别设为 `(prefab/2)/50000`、`(prefab*5)/50000`、`consumer.workEnergyPerTick/50000`，回调只写 `round(50000*value)`，显示为 `round(3000000*value)` W。源码新增 `logistics-station-charge` 模式、UI 范围纯函数、交叉身份与同主线程不变量读回；Core 测试覆盖 6/12/60 MW 合法和 7/63 MW 拒绝，Contracts/MCP 覆盖显式 watts 与 configuration hash。Release solution 0 warning / 0 error，86 tests passed（Contracts 8、Core 62、MCP 16）。
-- 限制或反例：当前同档尚无完成物流站，且本批 DLL 未部署，所以不能升级为 `validated`。首次实机从空新塔和其默认值出发，只选择另一个合法 UI 刻度；必须连续复读 maximum 改变、requested 随正常充电自行变化、库存不变及保存/恢复持久。无人机航程、运输船航程、曲速距离、最低配送和自动补充仍保持只读。
+- 实机复验：满电 PLS `916` 以动作 `cd332730-12ef-45a2-947f-0716a4eb9ca6` 一次把 maximum 从默认 `12000000 W` 调为合法 UI 刻度 `6000000 W`。即时和 fleet 往返后的 fresh 读回均保持 `6000000 W`，同时 energy `180000000`、requested `60000 W`、钛块槽全部字段、其余槽、玩家物品和写健康不变。
+- 限制或反例：当前只验证 PLS 的 12→6 MW 单步配置，保存后的重启恢复持久性、ILS prefab 范围及其他合法刻度仍待验证。无人机航程、运输船航程、曲速距离、最低配送和自动补充仍保持只读。
 - 复验触发：首座物流站完工、首次 charge prepare/commit、塔从低电充满、保存恢复、prefab 默认功耗或 DSP UI 变换变化。
 - 关联：EXP-017、EXP-097–099、`LogisticsStationChargePolicy`、`UIStationWindow.OnMaxChargePowerSliderValueChange`。
-- 最近复验：2026-09-02（UI 刻度、字段写入者、身份链、读回不变量与 86 项自动测试完成；等待首塔 live）。
+- 最近复验：2026-09-02（PLS `916` 的 12 MW→6 MW prepare/commit、即时读回及后续跨动作不变量通过）。
 
 ### EXP-102 — 活跃分拣器过滤应绑定配置指纹与零携货，不绑定返程进度
 
@@ -1333,15 +1336,16 @@
 
 ### EXP-105 — 物流塔载具装载必须绑定工作中数量、原型容量和增产点损失边界
 
-- 状态：`observed`
+- 状态：`validated`
 - 日期：2026-09-02
 - 适用范围：当前 DSP `0.10.34.28529` 的普通行星/星际物流站无人机与运输船槽、玩家背包双向转移；不覆盖轨道采集器、矿物采集站、翘曲器槽或塔内货物槽。
 - 当前结论：无人机/运输船容量必须按 `idle + working` 占用计算，运输船只适用于 `isStellar`，取出只能减少 idle。塔内载具计数不能保存增产点，因此玩家到塔的载具只在该物品聚合 inc 为 0 时接受。安全动作必须独立绑定 fleet hash，提交前以背包副本证明精确容量，提交后证明玩家与 idle 等量反向变化、working 与另一类载具不变、总数守恒，且塔货物/订单/能量/翘曲器/配置、手持物和无关背包格均不变。
 - 直接证据：当前程序集反编译的 `UIStationWindow.OnDroneIconClick(int)` / `OnShipIconClick(int)` 分别固定 item `5001/5002`，从建筑 prefab 读取 `stationMaxDroneCount/stationMaxShipCount`，以 idle+work 计算余量，存入时只增加 idle 并从手持扣除 `split_inc`，取出时只使用 idle；`StorageComponent.TakeItem/AddItemStacked` 与 `Player.NotifyPackageAddItem` 的完整签名也已复核。源码新增纯策略、独立 fleet hash、DTO 容量字段、Bridge/MCP prepare/commit、主线程双向守恒与无关状态复读；完整 solution 0 warning / 0 error，94 tests passed（Contracts 11、Core 66、MCP 17），MCP 注册面为 46。产品里程碑保存后已正常关闭旧进程并同批部署新 Plugin/Core/Contracts，逐文件部署哈希与 Release 输出一致；受保护恢复动作 `ba335eeb-d6b6-47b5-8e29-4eb133d0dba4` 成功，证明含该动作的新 Bridge build 已进入当前健康会话。
-- 限制或反例：46-tool build 已 live 部署，但本档完成的是“物流站物品”，尚未把它正常施工为可检查的 station entity，因此 fleet transfer 仍没有 live 成功样本，本条不提前升级为 validated。原生 UI 的 shift/control 取出路径会把全部 idle 清零，Spherewright 只采用经背包副本证明的有界精确子集，不依赖其可能部分接收的行为。
+- 实机复验：自动产线仓 `893` 的 10 架未增产无人机先经普通 storage→player 动作 `105e2c4e-003a-4ce6-a590-f5069afaa1c3` 守恒进入背包；fleet 动作 `b2c9f159-c2de-494d-8ef9-01b6e1dc8867` 令 player `10->0`、idle `0->10`，动作 `f3579b24-f55c-4a88-8d43-e7ab94cb6a0c` 令 player `0->1`、idle `10->9`，动作 `b1927cf7-eefb-43a2-9946-700537f4e34d` 再令 player `1->0`、idle `9->10`。三次均保持 working `0`、energy `180 MJ`、charge `6 MW`、全部货槽/订单及写健康不变。
+- 限制或反例：当前只 live 验证无在途订单的 PLS 无人机；运输船、ILS、working>0、自动补充和容量边界反例仍待验证。原生 UI 的 shift/control 取出路径会把全部 idle 清零，Spherewright 只采用经背包副本证明的有界精确子集，不依赖其可能部分接收的行为。
 - 复验触发：下一次正常保存/关闭后的整组 DLL 部署、首座 PLS/ILS 完成、首次装入与取出无人机/运输船、载具在途时、自动补充开关变化或 DSP/程序集版本变化。
 - 关联：`LogisticsStationFleetTransferPolicy`、`CanonicalStateHash.LogisticsStationFleet`、`NormalGameActionCoordinator.LogisticsStationFleet.cs`、`docs/research/game-api-m0.md`、ROADMAP v0.3。
-- 最近复验：2026-09-02（46-tool 三程序集同批 live 部署并从精确主档健康恢复；首塔 fleet transfer 仍待验证）。
+- 最近复验：2026-09-02（PLS `916` 完成无人机 `0→10→9→10` 与玩家对应 `10→0→1→0` 的三次双边守恒 live 闭环）。
 
 ### EXP-106 — 物流运输机产线仍以科技门控、过滤输入、自动首产与普通保存闭环
 
@@ -1350,10 +1354,10 @@
 - 适用范围：当前 owned 普通和平 1× 非沙盒世界中 item `5001`、recipe `94`、制造台 `891` 及其过滤备料/专用输出；不等于载具已装入物流塔或形成实际运输路线。
 - 当前结论：物流运输机可以和其他科技门控产品一致，先在 recipe 0 下完成空载拓扑与三项过滤备料，等行星物流 `1604` 原生解锁后只启用一次。里程碑必须同时证明三类输入下降、制造台/输出 sorter 实际带货、专用仓正增长、首次产线事件持久化以及同一主档普通保存；仅看到科技解锁或 recipe 字段不足以完成验收。
 - 直接证据：`1604` 于 tick `8836460` 正常解锁；动作 `532666d4-de0d-4ea9-abfc-6a44657fe555` 把制造台 `891` 从 recipe 0 配置为 `94`。链路 `892 -> 895(filter 1101)/896(filter 1303)/897(filter 1405) -> 891 -> 894 -> 893` 满供电运行，首次复读时三项设备 buffer 为铁块 3、处理器 4、推进器 4，sorter `894` 正携带 item `5001`；最终输入仓与设备输入均清空，专用仓 `893` 达到 10 个、inc 0。日记 sequence `41` 在 tick `9346766`、实际时间 `2026-09-02T20:02:42.8990067+08:00`、本局 `001d 19:16:19` 持久化；保存动作 `e8d96a21-75d7-4f7c-a60b-598646f7f754` 确认 tick `9369181`、revision `112`、healthy。
-- 限制或反例：本批只用预先守恒备好的 50 铁块、20 处理器、20 推进器生产 10 个物流运输机，证明自动转换与过滤拓扑，不证明三种上游已由物流塔持续补给。当前载具仍在仓 `893`，尚未验证 EXP-105 的塔装载动作。
+- 限制或反例：本批只用预先守恒备好的 50 铁块、20 处理器、20 推进器生产 10 个物流运输机，证明自动转换与过滤拓扑，不证明三种上游已由物流塔持续补给。10 架成品后来已从仓 `893` 守恒装入 PLS `916`，但尚无第二站和实际运输订单，不能声称物流路线闭环。
 - 复验触发：正常重启部署后首次读取仓 `893`，首座 PLS 完成并装入无人机时，任一输入链重接/矿枯竭/断电，或 DSP/程序集版本变化。
 - 关联：EXP-062、EXP-074、EXP-094、EXP-095、EXP-105、`docs/gameplay-timeline.md`、ROADMAP v0.3。
-- 最近复验：2026-09-02（自动产出 10、日记 durable sequence 41、普通保存 tick 9369181）。
+- 最近复验：2026-09-02（自动产出 10、日记 durable sequence 41、普通保存 tick 9369181；随后仓到玩家再到 PLS 的总数守恒闭环完成）。
 
 ### EXP-107 — 多数量建筑配方必须等待完整批次到位，并以产物仓而非瞬时 working 判定完成
 
@@ -1362,7 +1366,7 @@
 - 适用范围：当前 DSP `0.10.34.28529`、owned 普通和平 1× 非沙盒世界中的行星物流运输站 item `2103`、recipe `93`、制造台 `898` 及四输入过滤拓扑；可类推为验收方法，但不直接证明其他高数量建筑配方。
 - 当前结论：高数量建筑配方启用后，sorter 会先把完整一轮原料逐步搬入制造台；中途 `isWorking=false/progress=0` 只说明批次尚未凑齐，不能误判断电或失败。必须继续复读供电和各输入总量，等完整批次开始并完成，再以来源耗尽、专用输出仓增加、durable journal 和普通保存共同收口。`production` 模式配置绑定设备完整 `stateHash`；专用 `configurationStateHash` 只用于 sorter filter 等明确模式，误用会在 prepare 阶段安全返回 `STALE_STATE` 而无副作用。
 - 直接证据：启用前仓 `899` 有钢材/钛块/处理器/粒子容器 `40/40/40/20`，sorter `902–905` 分别过滤 `1103/1106/1303/1206` 且空载。一次误用 configuration hash 的 prepare 被 `STALE_STATE` 拒绝；fresh 完整 state hash 随后令动作 `8f90d632-b90b-4ff1-b9d1-fe20850153c2` 一次启用 recipe `93`。首轮读回制造台各输入仅 19 且不工作，稍后增至钢/钛/处理器 31、粒子容器 20，供电比始终 1.0；完整批次到位后进度读到 `6690000/12000000`，最终源仓和设备输入清零、仓 `900` 增至 1 个 item `2103`。日记 sequence `42` 在 tick `9410766`（实际 `2026-09-02T20:20:29.8130148+08:00`、本局 `001d 19:34:06`）durable，保存动作 `8dedea0d-2003-4e3f-80be-71db3e5a176e` 确认 tick `9413535`、revision `115`、healthy。
-- 限制或反例：本轮只生产一座并耗尽一次性备料，证明配方转换闭环，不证明上游持续补料、站体施工、塔内配置或无人机运输。制造台处于批次边界时 `buffers=[]`/`isWorking=true`、完成后 `isWorking=false` 都是合法瞬时状态，必须结合前后数量和 journal 判断。
+- 限制或反例：本轮只生产一座并耗尽一次性备料，证明配方转换闭环，不证明上游持续补料。该成品后来已正常施工、接电、配置并装入 10 架无人机，但尚无第二站和真实搬运订单；制造台处于批次边界时 `buffers=[]`/`isWorking=true`、完成后 `isWorking=false` 都是合法瞬时状态，必须结合前后数量和 journal 判断。
 - 复验触发：首次生产星际物流运输站、任一高数量建筑配方出现长时间等待、设备断电/配方重配、生产模式哈希规则变化，或 DSP/程序集版本变化。
 - 关联：EXP-062、EXP-074、EXP-094、EXP-095、`NormalGameActionCoordinator.Configure.cs`、`docs/gameplay-timeline.md`、ROADMAP v0.3。
 - 最近复验：2026-09-02（行星物流运输站首产、journal sequence 42、普通保存 tick 9413535）。
@@ -1374,12 +1378,29 @@
 - 适用范围：当前 DSP `0.10.34.28529` 的 `PlanetTransport` 本地行星物流站身份读取，以及观察、槽位配置、充电配置和载具转移的共同入口；星际站仍要求精确 planet ID。
 - 当前结论：`entity.stationId -> PlanetTransport.stationPool[id]`、`station.id` 和 `station.entityId` 是本地站的主身份链；非星际站允许原生 raw `station.planetId == 0` 哨兵或精确本星 ID，但必须拒绝其他正 planet ID。星际站不允许 0，仍须等于当前 factory planet。公开 DTO 应使用已由 session/factory 绑定的本星 ID，不能把 raw 哨兵暴露成“未知星球”。
 - 直接证据：首座站体通过普通仓到玩家守恒转移和原生预建/施工完成为实体 `916`，位置与 prepare 候选一致、站体背包 `1 -> 0`、无预建残留且写健康；旧读取将其识别为 `componentKind=station`，但因 `station.planetId != factory.planetId` 返回 `logisticsStation=null`。当前程序集反编译证明 `StationComponent.Init(...)` 不赋 `planetId`，`PlanetTransport.NewStationComponent(...)` 只对 `isStellarStation` 调用 `GalacticTransport.AddStationComponent(planet.id, station)`。源码把这一判定集中到 `LogisticsStationIdentityPolicy`，四个读写入口共用，并用 7 个正反用例覆盖 local 0/exact/foreign、stellar exact/0/foreign 和非法 factory；完整 Release build 0 warning / 0 error，101 tests passed（11/73/17）。正常保存 tick `9462208` 后同批部署 Plugin `0086A970…`、Contracts `0A244DCA…`、Core `058E3EFD…`，恢复动作 `df1ae62a-548a-49fe-a9a1-fbd6d1aca764` 只载入 exact primary；fresh inspect 随即返回实体 `916` 的完整 DTO：公开 planet `104`、station `1`、gid `0`、`isInterstellar=false`、4 个空槽、无人机容量 50、运输船容量 0、能量上限 180 MJ及独立配置/fleet hash。
-- 限制或反例：本次只 live 验证本地 PLS 的读取与归一化身份，尚未验证首次槽位、充电和 fleet commit；0 哨兵绝不能用于星际站，后者仍必须精确匹配当前 planet。其他 DSP 版本变化后必须重新反编译与实机验证。
+- 实机复验：同一实体 `916` 的归一化身份随后通过槽位配置动作 `d6937f52-c03e-4045-93ac-5025b7ebdba1`、充电配置动作 `cd332730-12ef-45a2-947f-0716a4eb9ca6` 以及三次无人机 fleet 往返；四个读写入口都接受本地 raw 0 哨兵并持续公开 planet `104`，未出现错误跨星球认领。
+- 限制或反例：本次仍只 live 验证本地 PLS；0 哨兵绝不能用于星际站，后者仍必须精确匹配当前 planet。其他 DSP 版本变化后必须重新反编译与实机验证。
 - 复验触发：下一次正常保存/关闭/同批部署后首次 inspect 实体 `916`，首次 PLS 槽位/充电配置、首次无人机装入与取出、首座 ILS 读回，或 DSP/程序集版本变化。
 - 关联：`LogisticsStationIdentityPolicy`、`GameStateReader.CaptureLogisticsStation`、两个站配置入口、`TryGetFleetStation`、`docs/research/game-api-m0.md`、EXP-097/098/099/101/105。
-- 最近复验：2026-09-02（修复版同批部署、exact-primary 恢复及实体 916 完整 station DTO live 收口）。
+- 最近复验：2026-09-02（修复版同批部署、exact-primary 恢复，以及实体 `916` 的观察、槽位、充电、fleet 四入口 live 收口）。
+
+### EXP-109 — 首座 PLS 投运必须拆分站体、供电、配置、机队和真实路线五道证据门
+
+- 状态：`validated`
+- 日期：2026-09-02
+- 适用范围：当前 owned 普通和平 1× 非沙盒世界中首座 PLS 的最小投运顺序与里程碑宣称；不把一座本地站外推为双站运输或星际物流。
+- 当前结论：物流站产物、站体完工、接入电网并充能、槽位/充电配置、载具装入、真实订单搬运是六个可分别失败的状态；验收和保存不能用其中一个替代另一个。对空新塔应先证明原生施工和身份，再正常补电并等待稳定能量，随后用独立 configuration/fleet 哈希做配置和载具守恒；只有第二个可达站点和实际货物形成订单、无人机 working/往返、源减目标增后，才可声称行星物流路线完成。
+- 直接证据：item `2103` 已由 recipe `93` 自动产出并原生施工为实体 `916`；初始 `powerNetworkId=0`、energy `0/180 MJ`。从仓 `829` 守恒取得 2 铁、以真实原料手搓电塔并原生施工实体 `917` 后，站点接入 network 1、service `1.0`，能量自然经历至少 `147470607 -> 180000000`。随后槽 0 配为钛块/100/本地需求、最大充电功率 12→6 MW、10 架无人机从产线仓守恒装入并完成取 1/还 1 复验；全程货物 count/order 仍为 0。普通保存动作 `0cdbefd4-3c57-4c9b-abbf-4b958814350c` 已把该单站状态持久化到 tick `9522204`；故当前只完成“可运营单站”，没有误报真实路线。
+- 限制或反例：只有一个站点、idle 无人机或一个 demand 槽都不会自行产生运输；下一步仍需正常生产/建造第二座 PLS，配置互补 supply/demand 并提供真实货物。ILS、运输船和跨星球塔运是后续独立证据门。
+- 复验触发：第二座 PLS 完工、首次真实本地订单、无人机 working>0、源站/目标站货物变化、首座 ILS 或保存恢复。
+- 关联：EXP-017、EXP-021、EXP-097–099、EXP-101、EXP-105–108、ROADMAP v0.3。
+- 最近复验：2026-09-02（实体 `916/917`、满电、钛块槽、6 MW 与 10 架 idle 无人机均已 fresh 复读；真实路线明确仍未开始）。
 
 ## 修订记录
+
+- 2026-09-02：10 写复核完成后，普通保存动作 `0cdbefd4-3c57-4c9b-abbf-4b958814350c` 把首座 PLS 的 network 1、`180/180 MJ`、钛块/100/本地需求槽、6 MW 上限和 10 架 idle 无人机持久化到 tick `9522204`、revision `15`；fresh 读回仍为 healthy，自动签发的新 exact-primary restart ticket 可用，journal 保持 `42/42`、无 pending/error。保存是新一组成功写计数的第 1 项。
+
+- 2026-09-02：完成当前同批部署后的 10 个成功游戏写动作复核：exact-primary resume/adoption、从仓 `829` 守恒取得 2 铁、正常手搓电塔、原生施工电塔 `917`、PLS `916` 的钛块需求槽配置、12→6 MW 充电配置、仓 `893` 的 10 架无人机守恒转入玩家、fleet 存入 10、取出 1、放回 1。复读确认 planet `104`、和平、非沙盒、1×、站点 network 1/full energy、槽/订单、玩家/仓/机队总数和 write health 全部一致；无 quarantine、outcome unknown 或未解释物品正增量。EXP-007/018/021/069/072/097–101/105–108 均与新证据一致，EXP-097/098/099/101/105 升级为 `validated`，新增 EXP-109。此复核完成后才允许执行下一次游戏写入（普通保存）。
 
 - 2026-09-02：EXP-108 升级为 validated。首塔施工正常保存 tick `9462208` 后，同批部署哈希与新 Release 输出一致；exact-primary 恢复动作 `df1ae62a-548a-49fe-a9a1-fbd6d1aca764` 成功并自动重存 tick `9462240`。实体 `916` 从旧版 `logisticsStation=null` 变为完整本地站 DTO（planet `104`、station `1`、gid `0`、4 空槽、drone capacity 50），journal `42/42`、无 checkpoint、写健康。部署/重启复核确认 EXP-069/072/083/104/108 仍成立；当前新进程成功写计数从 resume/adoption 这一项开始。
 

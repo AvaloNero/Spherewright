@@ -1,11 +1,11 @@
 # 本局从落地到当前：决策、科技与首次产出总时间线
 
-更新时间：2026-09-02 20:22（Asia/Singapore）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界仍在健康运行；行星物流 `1604` 已在 tick `8836460` 正常完成，物流运输机流水线已自动产出 10 个，行星物流运输站流水线也已自动产出 1 座并普通保存到 tick `9413535`、revision `115`。46-tool build 已在正常停机后同批部署，只从受保护 exact primary 恢复并自动重存到 tick `9413567`；当前科技为加力推进器 `1114`，下一步是建造并实测首座物流站。
+更新时间：2026-09-02 21:03（Asia/Singapore）
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界仍在健康运行；首座自动产出的行星物流站已原生施工为实体 `916`，由电塔 `917` 满供电并自然充满，槽 0 配为钛块/100/本地需求，最大充电功率为 6 MW，10 架自动产出的物流运输机已守恒装入并通过取 1/还 1 复验。普通保存动作已持久化 tick `9522204`、revision `15`；当前科技为加力推进器 `1114`，下一步是第二座 PLS 和真实本地运输订单。
 
 ## 结论与证据边界
 
-- 记录仍在。本局受保护日记共有 `42` 条，已经持久化到 sequence `42`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `108` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护日记共有 `42` 条，已经持久化到 sequence `42`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `109` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -270,21 +270,22 @@
 | EXP-094 | validated | 配方可在科技门控期预建，但未解锁物品的 sorter filter 必须延后 |
 | EXP-095 | validated | 新设备投产后要把电网容量纳入产线验收 |
 | EXP-096 | observed | 满仓是槽位语义；新 sorter 可能在过滤前预取混料 |
-| EXP-097 | observed | 物流塔观察交叉绑定实体、站点池和星球并拆分实时/配置指纹 |
-| EXP-098 | observed | 物流塔槽位配置只采用 SetStationStorage 不换品子集 |
-| EXP-099 | observed | 物流塔 energyPerTick 是实时请求，充电上限位于 PowerConsumer |
+| EXP-097 | validated | 物流塔观察交叉绑定实体、站点池和星球并拆分实时/配置指纹 |
+| EXP-098 | validated | 物流塔槽位配置只采用 SetStationStorage 不换品子集 |
+| EXP-099 | validated | 物流塔 energyPerTick 是实时请求，充电上限位于 PowerConsumer |
 | EXP-100 | validated | 选科技使用排除自然上传量但保留队列/解锁/前置的专用哈希 |
-| EXP-101 | observed | 物流塔最大充电功率绑定 prefab UI 刻度和 consumer 身份 |
+| EXP-101 | validated | 物流塔最大充电功率绑定 prefab UI 刻度和 consumer 身份 |
 | EXP-102 | validated | 活跃分拣器过滤绑定零携货配置指纹，不绑定返程进度 |
 | EXP-103 | validated | 自动管理研究物品会先把背包矩阵保留到 MechaLab |
 | EXP-104 | validated | 自包含发布包需通过干净提交、清单哈希和 MCP 协议三层复验 |
-| EXP-105 | observed | 物流塔载具装载绑定工作中数量、原型容量与增产点损失边界 |
+| EXP-105 | validated | 物流塔载具装载绑定工作中数量、原型容量与增产点损失边界 |
 | EXP-106 | validated | 物流运输机以科技门控、过滤输入、自动首产和普通保存闭环 |
 | EXP-107 | validated | 多数量建筑配方以完整输入批次、产出仓、durable journal 和普通保存验收 |
 | EXP-108 | validated | 本地 PLS 的 StationComponent.planetId 使用 0 哨兵，身份策略须与星际站分流 |
+| EXP-109 | validated | 首座 PLS 投运拆分站体、供电、配置、机队和真实路线证据门 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前正在同一受保护 owned world 中运行；产品里程碑保存为 tick `9413535`，正常部署恢复又自动重存到 tick `9413567`、fresh revision `1`；write health `healthy`，journal durable through `42`。后续继续使用该精确主档，不开新档。
-- 当前主线：仓 `900` 的唯一站体已守恒取出并原生施工为实体 `916`，距玩家 `29.45 m`，没有再次夹脚。local-station identity 修复已在正常保存/关闭后同批部署并从 exact primary 恢复；实体现返回完整 station DTO。下一步先接通供电，再实测槽位/充电配置和仓 `893` 无人机的 fleet transfer。
+- DSP 当前正在同一受保护 owned world 中运行；最新普通保存为 tick `9522204`、revision `15`，write health `healthy`，journal durable through `42`，且新的 exact-primary restart ticket 已签发。后续继续使用该精确主档，不开新档。
+- 当前主线：PLS `916` 已由电塔 `917` 接入 network 1、满电，槽 0 为钛块/100/本地需求、最大充电 6 MW，10 架无人机已装入并完成双向守恒复验。下一步正常生产/建造第二座 PLS，配置互补供需并用真实钛块触发本地订单；单站 idle fleet 不算路线完成。
 - 粒子容器、物流运输机和行星物流站三个产品里程碑均已越过自动输出、durable journal、普通保存与 commit+push 门槛；v0.3 仍需双星球 ILS、运输船真实运送钛/硅、黄糖稳定性和重启恢复全部通过后才创建 tag 和 GitHub Release。

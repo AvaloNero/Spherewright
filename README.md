@@ -55,7 +55,7 @@ Spherewright deliberately does not use:
 
 All DSP and Unity access runs on Unity's main thread. Only deep-copied DTOs leave that thread. Ambiguous write outcomes quarantine further commits until the exact retained action can be proved or the same owned world is safely restarted from protected evidence.
 
-See [docs/protocol.md](./docs/protocol.md), [docs/m0-status.md](./docs/m0-status.md), and [docs/experience-ledger.md](./docs/experience-ledger.md) for the protocol, live validation status, and accumulated operational evidence.
+See [ROADMAP.md](./ROADMAP.md), [docs/protocol.md](./docs/protocol.md), [docs/m0-status.md](./docs/m0-status.md), and [docs/experience-ledger.md](./docs/experience-ledger.md) for the approved 0.3–0.9 plan, protocol, live validation status, and accumulated operational evidence.
 
 ## Requirements
 

@@ -36,7 +36,7 @@ M0 — First Red Matrix 已完成并冻结；蓝糖、红糖和黄糖的自动�
 
 不要猜测 DSP 内部字段或方法名。必须检查本机当前版本 Assembly-CSharp.dll，把类型、签名、调用路径和哈希证据记录到 docs/research/。
 
-禁止 git reset --hard、git clean -fd、force push、覆盖用户已有改动、自动发布包、创建远程仓库、PR 或 Release。
+禁止 git reset --hard、git clean -fd、force push、覆盖用户已有改动、创建远程仓库或 PR。当前用户已明确授权按 ROADMAP.md 直接在 main 开发：每个 0.x.0 的全部验收门通过、最终提交推送 main 后，创建对应 annotated tag 和 GitHub Release；不得提前发布。Thunderstore 或其他注册表发布仍需用户另行明确授权。
 
 缺少游戏、BepInEx、权限或必要程序集时，把相应的游戏内验证标为 blocked，但继续完成不依赖游戏 DLL 的 Core、MCP 和自动化测试。最终报告必须指出当前 Post-M0 Logistics 的最早未完成工作项。
 ```
@@ -1240,8 +1240,8 @@ spherewright_get_m0_progress
 - 不覆盖、不回滚用户已有修改。
 - 禁止 `git reset --hard`、`git clean -fd`、强制 checkout 和 force push。
 - 不提交游戏 DLL、反编译源码、存档、runtime descriptor、token、BepInEx 日志或本机路径。
-- 不自动创建 GitHub 远程仓库、Issue、PR、Release 或 Thunderstore 包。
-- 不自动 commit，除非用户明确要求。
+- 不自动创建 GitHub 远程仓库、Issue 或 PR。Release 只允许按 `ROADMAP.md` 的版本门执行：全部验收通过、最终提交已推送 `main` 后创建对应 annotated tag 和 GitHub Release；不得提前发布。Thunderstore 或其他注册表仍需用户另行明确授权。
+- 当前用户已明确要求直接在 `main` 开发、提交并推送；仍须保持提交单一目的、可审阅且不夹带无关改动。
 - 生成文件必须可由脚本重建。
 - 引用社区代码时记录仓库、文件、许可证和采用方式；不得把 GPL 实现复制进计划采用宽松许可证的代码库。
 - 用户未确认许可证前不创建 `LICENSE`。

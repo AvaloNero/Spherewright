@@ -1,6 +1,6 @@
 # Spherewright 跨电脑 Agent 接手说明
 
-更新时间：2026-09-02 11:03（Asia/Singapore）
+更新时间：2026-09-02 11:12（Asia/Singapore）
 
 交接分支：`main`
 
@@ -9,8 +9,8 @@
 ## 2026-09-02 当前运行状态（当前权威）
 
 - DSP 进程 `32744` 已消费上一节记录的受保护续玩票据，恢复动作只接受 minimum tick `8340400`、planet `104` 的 ticket-bound exact primary，并以 `completed/succeeded` 终结；新 session 为 `e888efcf-bbbf-4bbe-b520-abdbe6ae1403`。恢复后实际复读从 tick `8342796` 开始，`confirmed_peaceful`、`confirmed_disabled`、1×、owned、healthy、journal `36/false/null` 全部成立，未枚举或选择其他存档。恢复采用后主档已自动重新保存，revision 从新进程的 `1` 开始计数。
-- tick `8474662` 时粒子磁力阱 `1703` 继续正常研究至 `221818/288000`，没有直接解锁；三台预建制造台 `883/891/898` 均为 recipe `0`、network `1`、consumer ratio `1.0`。既有处理器线自然补产 10 个后，仓 `899` 已有钢/处理器/钛块各 40，只欠 20 粒子容器；普通保存动作 `dd2fc858-6720-46fb-86d9-12a9b11d525e` 持久化到 tick `8474115`、revision `30`。解锁后仍按上一节顺序只启用 `883 recipe 99`，再完成粒子容器、物流运输机和行星物流站里程碑。
-- commit `952df0c` 的物流塔只读切片已随当前游戏进程部署；当前同档尚无完成物流站，因此还没有 live station DTO。后续源码又完成 `logistics-station-storage` 安全子集、充电请求/上限语义拆分和研究 selection hash。旧进程中追加 `1604` 的 1+80 次 fresh prepare 均因活跃 `HashUploaded` 竞争而在 commit 前安全 stale，队列未变；新源码只从选科技指纹排除上传量，仍绑定队列/解锁/前置并在 prepare/commit 调用 `CanEnqueueTech`。完整 Release build 为 0 warning / 0 error，83 tests passed（Contracts 7、Core 61、MCP 15）。这些后续切片尚未部署，必须先普通保存并正常关闭当前游戏，再同批替换 Plugin/Core/Contracts；首座空塔出现前无需为它中断当前科研和产品线。
+- tick `8503993` 时粒子磁力阱 `1703` 继续正常研究至 `242820/288000`，没有直接解锁；三台预建制造台 `883/891/898` 均为 recipe `0`、network `1`、consumer ratio `1.0`。既有处理器线自然补产 10 个后，仓 `899` 已有钢/处理器/钛块各 40，只欠 20 粒子容器；普通保存动作 `dd2fc858-6720-46fb-86d9-12a9b11d525e` 持久化到 tick `8474115`、revision `30`。解锁后仍按上一节顺序只启用 `883 recipe 99`，再完成粒子容器、物流运输机和行星物流站里程碑。
+- commit `952df0c` 的物流塔只读切片已随当前游戏进程部署；当前同档尚无完成物流站，因此还没有 live station DTO。后续源码又完成 `logistics-station-storage`、`logistics-station-charge` 安全子集、充电请求/上限语义拆分和研究 selection hash。旧进程中追加 `1604` 的 1+80 次 fresh prepare 均因活跃 `HashUploaded` 竞争而在 commit 前安全 stale，队列未变；新源码只从选科技指纹排除上传量，仍绑定队列/解锁/前置并在 prepare/commit 调用 `CanEnqueueTech`。充电写入只接受 prefab UI 范围内的 3 MW 步进，并保持 requested/库存不变量。完整 Release build 为 0 warning / 0 error，86 tests passed（Contracts 8、Core 62、MCP 16）。这些后续切片尚未部署，必须先普通保存并正常关闭当前游戏，再同批替换 Plugin/Core/Contracts；首座空塔出现前无需为它中断当前科研和产品线。
 
 ## 2026-09-01 关机交接状态（已由上节恢复状态取代）
 

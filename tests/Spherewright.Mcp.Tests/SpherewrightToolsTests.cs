@@ -244,6 +244,31 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public async Task ConfigureBuildingTool_MapsLogisticsStationChargeMode()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.PrepareConfigureBuildingAsync(
+            bridgeClient: bridge,
+            sessionId: "session-station-charge",
+            planetId: 104,
+            entityId: 920,
+            recipeId: 0,
+            expectedFactoryStateHash: "sha256:factory",
+            mode: BuildingConfigurationModes.LogisticsStationCharge,
+            stationMaximumChargePowerWatts: 12_000_000,
+            expectedStationConfigurationStateHash: "sha256:station-config",
+            stateHashVersion: 1,
+            cancellationToken: CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("session-station-charge", bridge.LastSessionId);
+        Assert.Equal(BuildingConfigurationModes.LogisticsStationCharge, bridge.LastConfigureRequest?.Mode);
+        Assert.Equal(12_000_000, bridge.LastConfigureRequest?.StationMaximumChargePowerWatts);
+        Assert.Equal("sha256:station-config", bridge.LastConfigureRequest?.ExpectedStationConfigurationStateHash);
+    }
+
+    [Fact]
     public async Task PrepareQuarantineReconciliation_MapsExactActionAndRevision()
     {
         var bridge = new FakeBridgeClient(SuccessResult());

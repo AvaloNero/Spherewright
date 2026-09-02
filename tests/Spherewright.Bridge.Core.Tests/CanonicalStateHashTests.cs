@@ -1,4 +1,5 @@
 using Spherewright.Bridge.Core.Safety;
+using Spherewright.Bridge.Core.Logistics;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Logistics;
 using Spherewright.Contracts.Players;
@@ -9,6 +10,45 @@ namespace Spherewright.Bridge.Core.Tests;
 
 public sealed class CanonicalStateHashTests
 {
+    [Fact]
+    public void LogisticsStationChargePolicy_MirrorsBoundedThreeMegawattUiSteps()
+    {
+        Assert.True(LogisticsStationChargePolicy.TryNormalizeUiPower(
+            200_000,
+            12_000_000,
+            out var requested,
+            out var minimum,
+            out var maximum));
+        Assert.Equal(200_000, requested);
+        Assert.Equal(100_000, minimum);
+        Assert.Equal(1_000_000, maximum);
+
+        Assert.True(LogisticsStationChargePolicy.TryNormalizeUiPower(
+            200_000,
+            6_000_000,
+            out _,
+            out _,
+            out _));
+        Assert.True(LogisticsStationChargePolicy.TryNormalizeUiPower(
+            200_000,
+            60_000_000,
+            out _,
+            out _,
+            out _));
+        Assert.False(LogisticsStationChargePolicy.TryNormalizeUiPower(
+            200_000,
+            7_000_000,
+            out _,
+            out _,
+            out _));
+        Assert.False(LogisticsStationChargePolicy.TryNormalizeUiPower(
+            200_000,
+            63_000_000,
+            out _,
+            out _,
+            out _));
+    }
+
     [Fact]
     public void ProgressionSelection_IgnoresNaturalUpload_ButBindsQueueAndEligibility()
     {

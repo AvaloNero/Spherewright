@@ -313,7 +313,7 @@ public static class SpherewrightTools
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Re-reads one exact built device and prepares a production recipe, matrix-research mode, sorter item filter, or logistics-station storage-slot configuration without changing it. Station slots bind the separate configuration hash and may only select an empty slot or update the same item; this action never clears, replaces, or fills station inventory.")]
+    [Description("Re-reads one exact built device and prepares a production recipe, matrix-research mode, sorter item filter, logistics-station storage slot, or logistics-station maximum charge setting without changing it. Station modes bind the separate configuration hash; they never clear, replace, or fill station inventory.")]
     public static async Task<CallToolResult> PrepareConfigureBuildingAsync(
         IBridgeClient bridgeClient,
         string sessionId,
@@ -329,6 +329,7 @@ public static class SpherewrightTools
         int stationMaximumCount = 0,
         string stationLocalLogic = LogisticsStorageLogics.None,
         string stationRemoteLogic = LogisticsStorageLogics.None,
+        long stationMaximumChargePowerWatts = 0,
         string expectedStationConfigurationStateHash = "",
         int stateHashVersion = 1,
         CancellationToken cancellationToken = default)
@@ -348,6 +349,7 @@ public static class SpherewrightTools
                 StationMaximumCount = stationMaximumCount,
                 StationLocalLogic = stationLocalLogic,
                 StationRemoteLogic = stationRemoteLogic,
+                StationMaximumChargePowerWatts = stationMaximumChargePowerWatts,
                 ExpectedStationConfigurationStateHash = expectedStationConfigurationStateHash,
                 ExpectedFactoryStateHash = expectedFactoryStateHash,
                 StateHashVersion = stateHashVersion,
@@ -363,7 +365,7 @@ public static class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Applies the prepared recipe, matrix-research mode, sorter filter, or logistics-station storage-slot configuration once through the current-version UI/business path, then rereads the exact device and proves the requested configuration. Station inventory is never directly written.")]
+    [Description("Applies the prepared recipe, matrix-research mode, sorter filter, logistics-station storage slot, or maximum charge setting once through the current-version UI/business path, then rereads the exact device and proves the requested configuration. Station inventory is never directly written.")]
     public static async Task<CallToolResult> CommitConfigureBuildingAsync(
         IBridgeClient bridgeClient,
         string sessionId,

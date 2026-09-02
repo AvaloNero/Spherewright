@@ -38,6 +38,7 @@ public static class BuildingConfigurationModes
     public const string Research = "research";
     public const string SorterFilter = "sorter-filter";
     public const string LogisticsStationStorage = "logistics-station-storage";
+    public const string LogisticsStationCharge = "logistics-station-charge";
 }
 
 public static class LogisticsStorageLogics
@@ -169,6 +170,8 @@ public sealed class PrepareConfigureBuildingRequest
     public string StationLocalLogic { get; set; } = LogisticsStorageLogics.None;
 
     public string StationRemoteLogic { get; set; } = LogisticsStorageLogics.None;
+
+    public long StationMaximumChargePowerWatts { get; set; }
 
     public string ExpectedStationConfigurationStateHash { get; set; } = string.Empty;
 

@@ -1263,7 +1263,21 @@
 - 关联：EXP-063、EXP-074、`CanonicalStateHash.ProgressionSelection`、`PrepareSelectResearchRequest.ExpectedSelectionStateHash`。
 - 最近复验：2026-09-02（81 次无副作用 stale 已复现；专用哈希、契约映射和自动测试完成，等待同档下一次安全部署 live）。
 
+### EXP-101 — 物流塔最大充电功率要绑定 prefab UI 刻度与 power consumer 身份
+
+- 状态：`observed`
+- 日期：2026-09-02
+- 适用范围：DSP `0.10.34.28529` 的行星/星际物流站最大充电功率；不覆盖当前实时请求功率、充电能量注入、采集器或其他运输参数。
+- 当前结论：`StationComponent.energyPerTick` 不能写作配置；最大值只位于 station `pcId` 对应的 `PowerConsumerComponent.workEnergyPerTick`。安全动作必须同时绑定 entity/station/planet、`station.pcId == entity.powerConId`、consumer `id/entityId` 和具体 item prefab。输入使用 UI 显示瓦数，只接受 3 MW 整步进，并按 UI 的整数范围限制在 `prefab workEnergyPerTick` 的 0.5×–5×。prepare 绑定独立 configuration hash；commit 只执行与 `UIStationWindow.OnMaxChargePowerSliderValueChange` 相同的 field assignment，并立即证明 maximum readback，同时保持 consumer identity/current required energy、station requested energy/存能/全部槽字段以及玩家背包不变。
+- 直接证据：当前程序集反编译确认 UI 打开时把 slider `min/max/value` 分别设为 `(prefab/2)/50000`、`(prefab*5)/50000`、`consumer.workEnergyPerTick/50000`，回调只写 `round(50000*value)`，显示为 `round(3000000*value)` W。源码新增 `logistics-station-charge` 模式、UI 范围纯函数、交叉身份与同主线程不变量读回；Core 测试覆盖 6/12/60 MW 合法和 7/63 MW 拒绝，Contracts/MCP 覆盖显式 watts 与 configuration hash。Release solution 0 warning / 0 error，86 tests passed（Contracts 8、Core 62、MCP 16）。
+- 限制或反例：当前同档尚无完成物流站，且本批 DLL 未部署，所以不能升级为 `validated`。首次实机从空新塔和其默认值出发，只选择另一个合法 UI 刻度；必须连续复读 maximum 改变、requested 随正常充电自行变化、库存不变及保存/恢复持久。无人机航程、运输船航程、曲速距离、最低配送和自动补充仍保持只读。
+- 复验触发：首座物流站完工、首次 charge prepare/commit、塔从低电充满、保存恢复、prefab 默认功耗或 DSP UI 变换变化。
+- 关联：EXP-017、EXP-097–099、`LogisticsStationChargePolicy`、`UIStationWindow.OnMaxChargePowerSliderValueChange`。
+- 最近复验：2026-09-02（UI 刻度、字段写入者、身份链、读回不变量与 86 项自动测试完成；等待首塔 live）。
+
 ## 修订记录
+
+- 2026-09-02：新增 EXP-101。采用物流塔最大充电功率的 3 MW UI 步进安全子集，绑定 prefab/consumer/configuration hash 并保持 station/player 库存不变；完整构建 0 warning / 0 error、86 tests passed，等待首塔 live。
 
 - 2026-09-02：复验 EXP-007。自动补产 10 个处理器后，20 电路板/20 铜块和 40 钛块全部经普通双端守恒转移；钛块入仓后的空集合展示错误由 fresh 三端状态核销，未重放，行星物流站预备仓现有钢/处理器/钛块各 40，普通保存到 tick `8474115`、revision `30`。
 

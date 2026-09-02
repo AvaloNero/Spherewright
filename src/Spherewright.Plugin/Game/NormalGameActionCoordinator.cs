@@ -1,4 +1,5 @@
 using Spherewright.Bridge.Core.Safety;
+using Spherewright.Bridge.Core.Logistics;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
@@ -707,7 +708,9 @@ internal sealed partial class NormalGameActionCoordinator
                         ? plan.ConfigureTechId
                         : plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
                             ? plan.ConfigureStationItemId
-                        : plan.ConfigureRecipeId;
+                            : plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationCharge
+                                ? (int?)null
+                                : plan.ConfigureRecipeId;
                 var configured = _reader.InspectFactoryEntityOnMainThread(
                     plan.SessionId,
                     new InspectFactoryEntityRequest { PlanetId = plan.PlanetId, ObjectId = plan.EntityId });
@@ -720,7 +723,9 @@ internal sealed partial class NormalGameActionCoordinator
                         && ((configured.Value.FilterItemId ?? 0) != plan.ConfigureFilterItemId
                             || !IsSorterFilterApplied(plan.EntityId, plan.ConfigureFilterItemId)))
                     || (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
-                        && !IsLogisticsStationStorageConfigurationApplied(configured.Value, plan)))
+                        && !IsLogisticsStationStorageConfigurationApplied(configured.Value, plan))
+                    || (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationCharge
+                        && !IsLogisticsStationChargeConfigurationApplied(configured.Value, plan)))
                 {
                     throw new InvalidOperationException("The configured device mode could not be proven by immediate readback.");
                 }
@@ -731,8 +736,11 @@ internal sealed partial class NormalGameActionCoordinator
                         ? "The current-version lab setting path applied research mode and active-technology readback matched."
                         : plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
                             ? "PlanetTransport.SetStationStorage applied the unlocked item, capacity, and local/remote logic once; immediate readback matched and the call preserved slot inventory."
+                        : plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationCharge
+                            ? "The current-version station UI field path applied the maximum charge power once; immediate power-consumer readback matched and station/player inventory remained unchanged."
                         : "The current-version device configuration path applied the unlocked recipe and readback matched.");
                 action.AfterStateHash = plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
+                                        || plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationCharge
                     ? configured.Value.LogisticsStation?.ConfigurationStateHash
                     : configured.Value.StateHash;
                 break;
@@ -1066,6 +1074,7 @@ internal sealed partial class NormalGameActionCoordinator
 
                 if (!string.Equals(configureSnapshot.Value.StateHash, plan.FactoryStateHash, StringComparison.Ordinal)
                     || (plan.ConfigureMode != BuildingConfigurationModes.LogisticsStationStorage
+                        && plan.ConfigureMode != BuildingConfigurationModes.LogisticsStationCharge
                         && (configureSnapshot.Value.Progress != 0
                             || configureSnapshot.Value.IsWorking
                             || configureSnapshot.Value.Buffers.Any(buffer => buffer.Count != 0))))
@@ -1717,6 +1726,48 @@ internal sealed partial class NormalGameActionCoordinator
             return;
         }
 
+        if (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationCharge)
+        {
+            if (!CanConfigureLogisticsStationCharge(
+                    factory,
+                    plan.EntityId,
+                    plan.ConfigureStationMaximumChargePowerWatts,
+                    out var maximumChargeEnergyPerTick,
+                    out var chargeReason))
+            {
+                throw new InvalidOperationException(chargeReason);
+            }
+
+            var station = factory.transport.GetStationComponent(entity.stationId)
+                ?? throw new InvalidOperationException("The logistics station disappeared before charge configuration.");
+            ref var consumer = ref factory.powerSystem.consumerPool[station.pcId];
+            var beforePackageState = CapturePlayerPackageState(GameMain.mainPlayer);
+            var beforeStationStorageState = CaptureLogisticsStationStorageState(station);
+            var beforeStationEnergy = station.energy;
+            var beforeStationRequestedEnergy = station.energyPerTick;
+            var beforeConsumerRequiredEnergy = consumer.requiredEnergy;
+            var beforeConsumerIdleEnergy = consumer.idleEnergyPerTick;
+            var beforeConsumerNetworkId = consumer.networkId;
+
+            consumer.workEnergyPerTick = maximumChargeEnergyPerTick;
+
+            if (consumer.workEnergyPerTick != maximumChargeEnergyPerTick
+                || consumer.id != station.pcId
+                || consumer.entityId != plan.EntityId
+                || consumer.networkId != beforeConsumerNetworkId
+                || consumer.requiredEnergy != beforeConsumerRequiredEnergy
+                || consumer.idleEnergyPerTick != beforeConsumerIdleEnergy
+                || station.energy != beforeStationEnergy
+                || station.energyPerTick != beforeStationRequestedEnergy
+                || !string.Equals(beforeStationStorageState, CaptureLogisticsStationStorageState(station), StringComparison.Ordinal)
+                || !string.Equals(beforePackageState, CapturePlayerPackageState(GameMain.mainPlayer), StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("The station maximum-charge assignment did not preserve and prove the exact power-consumer, station inventory, and player inventory state.");
+            }
+
+            return;
+        }
+
         if (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage)
         {
             if (!TryParseLogisticsStorageLogic(plan.ConfigureStationLocalLogic, out var localLogic)
@@ -2004,6 +2055,7 @@ internal sealed partial class NormalGameActionCoordinator
         public int ConfigureStationMaximumCount { get; private set; }
         public string ConfigureStationLocalLogic { get; private set; } = LogisticsStorageLogics.None;
         public string ConfigureStationRemoteLogic { get; private set; } = LogisticsStorageLogics.None;
+        public long ConfigureStationMaximumChargePowerWatts { get; private set; }
         public string TransferDirection { get; private set; } = string.Empty;
         public int TransferStorageEntityId { get; private set; }
         public int TransferItemId { get; private set; }
@@ -2147,7 +2199,8 @@ internal sealed partial class NormalGameActionCoordinator
             int stationItemId,
             int stationMaximumCount,
             string stationLocalLogic,
-            string stationRemoteLogic) => new NormalActionPlanPayload
+            string stationRemoteLogic,
+            long stationMaximumChargePowerWatts) => new NormalActionPlanPayload
             {
                 ActionKind = NormalActionKinds.ConfigureBuilding,
                 SessionId = sessionId,
@@ -2165,6 +2218,7 @@ internal sealed partial class NormalGameActionCoordinator
                 ConfigureStationMaximumCount = stationMaximumCount,
                 ConfigureStationLocalLogic = stationLocalLogic,
                 ConfigureStationRemoteLogic = stationRemoteLogic,
+                ConfigureStationMaximumChargePowerWatts = stationMaximumChargePowerWatts,
             };
     }
 }

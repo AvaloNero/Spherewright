@@ -1,11 +1,11 @@
 # 本局从落地到当前：决策、科技与首次产出总时间线
 
-更新时间：2026-09-02 11:03（Asia/Singapore）
-当前截面：受保护票据已精确恢复同一 Spherewright-owned 普通和平 1× 非沙盒世界；恢复计划门槛为 tick `>=8340400`、planet `104`，实际采用后重新保存并建立新 session。tick `8474662` 时 write health `healthy`，粒子磁力阱 `1703` 为 `221818/288000`；物流站预备仓缺料已收敛为 20 粒子容器。
+更新时间：2026-09-02 11:12（Asia/Singapore）
+当前截面：受保护票据已精确恢复同一 Spherewright-owned 普通和平 1× 非沙盒世界；恢复计划门槛为 tick `>=8340400`、planet `104`，实际采用后重新保存并建立新 session。tick `8503993` 时 write health `healthy`，粒子磁力阱 `1703` 为 `242820/288000`；物流站预备仓缺料已收敛为 20 粒子容器。
 
 ## 结论与证据边界
 
-- 记录仍在。本局受保护日记共有 `36` 条，已经持久化到 sequence `36`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `100` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护日记共有 `36` 条，已经持久化到 sequence `36`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `101` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；

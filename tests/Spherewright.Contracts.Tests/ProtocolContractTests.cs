@@ -182,4 +182,25 @@ public sealed class ProtocolContractTests
         Assert.Equal("demand", parsed.RootElement.GetProperty("stationLocalLogic").GetString());
         Assert.Equal("sha256:station-config", parsed.RootElement.GetProperty("expectedStationConfigurationStateHash").GetString());
     }
+
+    [Fact]
+    public void LogisticsStationChargeConfiguration_UsesExplicitPowerAndConfigurationHash()
+    {
+        var request = new PrepareConfigureBuildingRequest
+        {
+            PlanetId = 104,
+            EntityId = 920,
+            Mode = BuildingConfigurationModes.LogisticsStationCharge,
+            StationMaximumChargePowerWatts = 12_000_000,
+            ExpectedFactoryStateHash = "sha256:factory",
+            ExpectedStationConfigurationStateHash = "sha256:station-config",
+        };
+
+        var json = JsonSerializer.Serialize(request, JsonOptions);
+        using var parsed = JsonDocument.Parse(json);
+
+        Assert.Equal("logistics-station-charge", parsed.RootElement.GetProperty("mode").GetString());
+        Assert.Equal(12_000_000, parsed.RootElement.GetProperty("stationMaximumChargePowerWatts").GetInt64());
+        Assert.Equal("sha256:station-config", parsed.RootElement.GetProperty("expectedStationConfigurationStateHash").GetString());
+    }
 }

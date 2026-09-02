@@ -144,6 +144,7 @@ internal sealed partial class NormalGameActionCoordinator
             prepared.Value.PlannedPosition = Snapshot(preparation.Steps[0].Position);
             prepared.Value.PlannedYaw = preparation.Steps[0].Yaw;
             prepared.Value.PlannedPath = preparation.Steps.Select(step => Snapshot(step.Position)).ToList();
+            prepared.Value.PlannedResourceNodeIds = preparation.ResourceNodeIds.ToList();
             prepared.Value.ItemBudget.Add(new ActionItemBudget
             {
                 ItemId = item.ID,
@@ -309,6 +310,7 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         var last = "No resource-building candidate was accepted.";
+        var acceptedCandidates = new List<BuildStepPlan>();
         foreach (var candidate in candidates)
         {
             if (TryValidateClickBuild(
@@ -320,11 +322,26 @@ internal sealed partial class NormalGameActionCoordinator
                     out var accepted,
                     out last))
             {
-                var result = BuildPreparation.Succeeded(NormalBuildKinds.Resource, new[] { accepted });
-                result.ResourceNodeId = resource.NodeId;
-                result.ResourceStateHash = resource.StateHash;
-                return result;
+                acceptedCandidates.Add(accepted);
             }
+        }
+
+        if (acceptedCandidates.Count > 0)
+        {
+            var scores = acceptedCandidates.Select((candidate, index) => new ResourceCoverageCandidateScore
+            {
+                Index = index,
+                CoveredNodeCount = candidate.Parameters.Where(nodeId => nodeId > 0).Distinct().Count(),
+                DistanceToBoundNode = Vector3.Distance(candidate.Position, target),
+                Yaw = candidate.Yaw,
+            }).ToArray();
+            var selectedIndex = ResourceCoverageSelection.SelectBestIndex(scores);
+            var selected = acceptedCandidates[selectedIndex];
+            var result = BuildPreparation.Succeeded(NormalBuildKinds.Resource, new[] { selected });
+            result.ResourceNodeId = resource.NodeId;
+            result.ResourceStateHash = resource.StateHash;
+            result.ResourceNodeIds.AddRange(selected.Parameters.Where(nodeId => nodeId > 0).Distinct().OrderBy(nodeId => nodeId));
+            return result;
         }
 
         return BuildPreparation.Failed(BridgeErrorCodes.BuildLocationInvalid, last);
@@ -1349,9 +1366,22 @@ internal sealed partial class NormalGameActionCoordinator
             }
 
             ref var miner = ref factory.factorySystem.minerPool[entity.minerId];
-            if (miner.veins is null || !miner.veins.Take(Math.Min(miner.veinCount, miner.veins.Length)).Contains(plan.BuildResourceNodeId))
+            var actualNodeIds = miner.veins is null
+                ? Array.Empty<int>()
+                : miner.veins.Take(Math.Min(miner.veinCount, miner.veins.Length))
+                    .Where(nodeId => nodeId > 0)
+                    .Distinct()
+                    .OrderBy(nodeId => nodeId)
+                    .ToArray();
+            var expectedNodeIds = plan.BuildSteps[0].Parameters
+                .Where(nodeId => nodeId > 0)
+                .Distinct()
+                .OrderBy(nodeId => nodeId)
+                .ToArray();
+            if (!actualNodeIds.Contains(plan.BuildResourceNodeId)
+                || !actualNodeIds.SequenceEqual(expectedNodeIds))
             {
-                rejection = "The built miner did not bind the exact prepared resource node.";
+                rejection = "The built miner did not retain the exact prepared resource-node coverage.";
                 return false;
             }
         }
@@ -2779,6 +2809,7 @@ internal sealed partial class NormalGameActionCoordinator
         public List<BuildStepPlan> Steps { get; } = new List<BuildStepPlan>();
         public int ResourceNodeId { get; set; }
         public string ResourceStateHash { get; set; } = string.Empty;
+        public List<int> ResourceNodeIds { get; } = new List<int>();
         public int SourceObjectId { get; set; }
         public string SourceEndpointHash { get; set; } = string.Empty;
         public int DestinationObjectId { get; set; }

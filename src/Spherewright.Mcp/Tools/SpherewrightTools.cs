@@ -457,6 +457,59 @@ public static class SpherewrightTools
     }
 
     [McpServerTool(
+        Name = "spherewright_prepare_dismantle",
+        Title = "Prepare one normal resource-miner dismantle",
+        ReadOnly = false,
+        Destructive = false,
+        Idempotent = false,
+        OpenWorld = false)]
+    [Description("Re-reads one exact completed resource miner and the settled local player, verifies the stable endpoint identity, normal build range, and conservative package capacity. Prepare removes nothing and returns no item.")]
+    public static async Task<CallToolResult> PrepareDismantleAsync(
+        IBridgeClient bridgeClient,
+        string sessionId,
+        int planetId,
+        int objectId,
+        string expectedEndpointStateHash,
+        string expectedPlayerStateHash,
+        int stateHashVersion = 1,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.PrepareDismantleAsync(
+            sessionId,
+            new PrepareDismantleRequest
+            {
+                PlanetId = planetId,
+                ObjectId = objectId,
+                ExpectedEndpointStateHash = expectedEndpointStateHash,
+                ExpectedPlayerStateHash = expectedPlayerStateHash,
+                StateHashVersion = stateHashVersion,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Normal resource-miner dismantle prepared with no side effect.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_commit_dismantle",
+        Title = "Dismantle one exact resource miner normally",
+        ReadOnly = false,
+        Destructive = true,
+        Idempotent = true,
+        OpenWorld = false)]
+    [Description("Calls DSP's normal PlayerAction_Build.DoDismantleObject path once, then proves the exact resource miner disappeared and its building item plus live internal cargo were returned to the player without any unexplained inventory delta.")]
+    public static async Task<CallToolResult> CommitDismantleAsync(
+        IBridgeClient bridgeClient,
+        string sessionId,
+        int planetId,
+        string planToken,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        var request = CreateCommitRequest(sessionId, planetId, planToken, idempotencyKey);
+        var result = await bridgeClient.CommitDismantleAsync(sessionId, request, cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Normal resource-miner dismantle completed with disappearance and recovery readback.");
+    }
+
+    [McpServerTool(
         Name = "spherewright_prepare_transfer",
         Title = "Prepare an exact player-storage transfer",
         ReadOnly = false,

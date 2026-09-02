@@ -381,6 +381,11 @@ internal sealed partial class NormalGameActionCoordinator
         PrepareBuildRequest request)
         => PrepareStructuredBuildOnMainThread(requestedSessionId, request);
 
+    public GameCallResult<PreparedNormalAction> PrepareDismantleOnMainThread(
+        string? requestedSessionId,
+        PrepareDismantleRequest request)
+        => PrepareDismantlePlanOnMainThread(requestedSessionId, request);
+
     public GameCallResult<PreparedNormalAction> PrepareConfigureBuildingOnMainThread(
         string? requestedSessionId,
         PrepareConfigureBuildingRequest request)
@@ -696,6 +701,9 @@ internal sealed partial class NormalGameActionCoordinator
                 action.TargetItemId = plan.BuildingItemId;
                 action.State = NormalActionStates.WaitingForGame;
                 action.Message = $"DSP created {action.PrebuildIds.Count} ordinary prebuild(s) and consumed the owned building items; construction drones now own completion.";
+                break;
+            case NormalActionKinds.Dismantle:
+                ExecuteDismantleOnMainThread(action);
                 break;
             case NormalActionKinds.Transfer:
                 ExecuteStorageTransferOnMainThread(action);
@@ -1067,6 +1075,8 @@ internal sealed partial class NormalGameActionCoordinator
                     : Stale("Technology state, prerequisites, or queue changed after prepare.");
             case NormalActionKinds.Build:
                 return RevalidateStructuredBuildOnMainThread(plan);
+            case NormalActionKinds.Dismantle:
+                return RevalidateDismantlePlanOnMainThread(plan);
             case NormalActionKinds.Transfer:
                 return RevalidateStorageTransferOnMainThread(plan);
             case NormalActionKinds.LogisticsStationFleetTransfer:

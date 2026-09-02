@@ -130,6 +130,16 @@ public interface IBridgeClient
         CommitNormalActionRequest request,
         CancellationToken cancellationToken);
 
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareDismantleAsync(
+        string sessionId,
+        PrepareDismantleRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitDismantleAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
     Task<BridgeCallResult<PreparedNormalAction>> PrepareConfigureBuildingAsync(
         string sessionId,
         PrepareConfigureBuildingRequest request,

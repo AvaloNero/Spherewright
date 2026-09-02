@@ -32,6 +32,8 @@ public static class BridgeMethods
     public const string CommitSelectResearch = "commit_select_research";
     public const string PrepareBuild = "prepare_build";
     public const string CommitBuild = "commit_build";
+    public const string PrepareDismantle = "prepare_dismantle";
+    public const string CommitDismantle = "commit_dismantle";
     public const string PrepareConfigureBuilding = "prepare_configure_building";
     public const string CommitConfigureBuilding = "commit_configure_building";
     public const string PrepareTransfer = "prepare_transfer";

@@ -280,4 +280,30 @@ public sealed class ProtocolContractTests
         Assert.Equal(12_000_000, parsed.RootElement.GetProperty("stationMaximumChargePowerWatts").GetInt64());
         Assert.Equal("sha256:station-config", parsed.RootElement.GetProperty("expectedStationConfigurationStateHash").GetString());
     }
+
+    [Fact]
+    public void Dismantle_BindsStableEndpointAndPlayerHashes()
+    {
+        var request = new PrepareDismantleRequest
+        {
+            PlanetId = 102,
+            ObjectId = 17,
+            ExpectedEndpointStateHash = "sha256:endpoint",
+            ExpectedPlayerStateHash = "sha256:player",
+        };
+        var prepared = new PreparedNormalAction
+        {
+            ActionKind = NormalActionKinds.Dismantle,
+            TargetObjectId = 17,
+            PlannedResourceNodeIds = new List<int> { 245, 249, 252, 255, 256 },
+        };
+
+        using var requestJson = JsonDocument.Parse(JsonSerializer.Serialize(request, JsonOptions));
+        using var preparedJson = JsonDocument.Parse(JsonSerializer.Serialize(prepared, JsonOptions));
+
+        Assert.Equal("sha256:endpoint", requestJson.RootElement.GetProperty("expectedEndpointStateHash").GetString());
+        Assert.Equal("sha256:player", requestJson.RootElement.GetProperty("expectedPlayerStateHash").GetString());
+        Assert.Equal(17, preparedJson.RootElement.GetProperty("targetObjectId").GetInt32());
+        Assert.Equal(5, preparedJson.RootElement.GetProperty("plannedResourceNodeIds").GetArrayLength());
+    }
 }

@@ -11,6 +11,7 @@ public static class NormalActionKinds
     public const string Handcraft = "handcraft";
     public const string SelectResearch = "select-research";
     public const string Build = "build";
+    public const string Dismantle = "dismantle";
     public const string Transfer = "transfer";
     public const string LogisticsStationFleetTransfer = "logistics-station-fleet-transfer";
     public const string ConfigureBuilding = "configure-building";
@@ -234,6 +235,19 @@ public sealed class PrepareSaveRequest
     public int StateHashVersion { get; set; } = 1;
 }
 
+public sealed class PrepareDismantleRequest
+{
+    public int PlanetId { get; set; }
+
+    public int ObjectId { get; set; }
+
+    public string ExpectedEndpointStateHash { get; set; } = string.Empty;
+
+    public string ExpectedPlayerStateHash { get; set; } = string.Empty;
+
+    public int StateHashVersion { get; set; } = 1;
+}
+
 public sealed class PrepareLogisticsStationFleetTransferRequest
 {
     public int PlanetId { get; set; }
@@ -322,11 +336,15 @@ public sealed class PreparedNormalAction
 
     public string? BuildKind { get; set; }
 
+    public int? TargetObjectId { get; set; }
+
     public int? SourceObjectId { get; set; }
 
     public int? DestinationObjectId { get; set; }
 
     public List<Vector3Snapshot> PlannedPath { get; set; } = new List<Vector3Snapshot>();
+
+    public List<int> PlannedResourceNodeIds { get; set; } = new List<int>();
 
     public string? ReconcilesActionId { get; set; }
 

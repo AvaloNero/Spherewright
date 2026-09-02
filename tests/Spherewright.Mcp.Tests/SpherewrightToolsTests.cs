@@ -35,6 +35,7 @@ public sealed class SpherewrightToolsTests
             {
                 "spherewright_commit_build",
                 "spherewright_commit_configure_building",
+                "spherewright_commit_dismantle",
                 "spherewright_commit_handcraft",
                 "spherewright_commit_harvest",
                 "spherewright_commit_interplanetary_flight",
@@ -66,6 +67,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_list_resource_nodes",
                 "spherewright_prepare_build",
                 "spherewright_prepare_configure_building",
+                "spherewright_prepare_dismantle",
                 "spherewright_prepare_handcraft",
                 "spherewright_prepare_harvest",
                 "spherewright_prepare_interplanetary_flight",
@@ -271,6 +273,29 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public async Task DismantleTool_MapsStableEndpointAndPlayerHashes()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.PrepareDismantleAsync(
+            bridge,
+            "session-dismantle",
+            102,
+            17,
+            "sha256:endpoint",
+            "sha256:player",
+            1,
+            CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("session-dismantle", bridge.LastSessionId);
+        Assert.Equal(102, bridge.LastDismantleRequest?.PlanetId);
+        Assert.Equal(17, bridge.LastDismantleRequest?.ObjectId);
+        Assert.Equal("sha256:endpoint", bridge.LastDismantleRequest?.ExpectedEndpointStateHash);
+        Assert.Equal("sha256:player", bridge.LastDismantleRequest?.ExpectedPlayerStateHash);
+    }
+
+    [Fact]
     public async Task PrepareStationFleetTransfer_MapsExactFleetHashAndDirection()
     {
         var bridge = new FakeBridgeClient(SuccessResult());
@@ -388,6 +413,8 @@ public sealed class SpherewrightToolsTests
         public ListResourceNodesRequest? LastResourceListRequest { get; private set; }
 
         public PrepareConfigureBuildingRequest? LastConfigureRequest { get; private set; }
+
+        public PrepareDismantleRequest? LastDismantleRequest { get; private set; }
 
         public PrepareLogisticsStationFleetTransferRequest? LastFleetTransferRequest { get; private set; }
 
@@ -628,6 +655,21 @@ public sealed class SpherewrightToolsTests
             string sessionId,
             CommitNormalActionRequest request,
             CancellationToken cancellationToken) => Committed(sessionId, request, NormalActionKinds.Build);
+
+        public Task<BridgeCallResult<PreparedNormalAction>> PrepareDismantleAsync(
+            string sessionId,
+            PrepareDismantleRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastSessionId = sessionId;
+            LastDismantleRequest = request;
+            return Prepared(sessionId, NormalActionKinds.Dismantle);
+        }
+
+        public Task<BridgeCallResult<NormalActionCommitResult>> CommitDismantleAsync(
+            string sessionId,
+            CommitNormalActionRequest request,
+            CancellationToken cancellationToken) => Committed(sessionId, request, NormalActionKinds.Dismantle);
 
         public Task<BridgeCallResult<PreparedNormalAction>> PrepareConfigureBuildingAsync(
             string sessionId,

@@ -99,10 +99,11 @@
 - 直接证据：抽水站 build commit 完成后，一次性报告代码在访问 ActionResult 中不存在的 `createdObjectIds` 时因 StrictMode 抛错，因而没有显示已取得的 action 终态。没有重放 commit；fresh player read 证明背包 pump `1 -> 0`，按 item `2306` 的实体快照又只找到准备坐标上的唯一新泵 `752`，且其内部已有 30 水、网络 1 供电比 1.0。后续输出中再次对空 `Measure-Object` 结果直接取 `.Sum` 也报错，但只读泵列表不受影响。一次性验证脚本今后应先单独保留 `actionId/state`，对可选字段先用 `PSObject.Properties` 或数组计数保护，再做展示；任何展示异常仍回到 fresh 结构化终态，不把“异常发生在 commit 之后”猜成动作失败。
 - 直接证据：粒子容器备料时，`storage-to-player` helper 已完成后，调用方因把 PowerShell 的 `return $r.result` 误写成 `return$r.result` 才抛出本地语法/命令错误。没有重放整段；fresh 三端复读显示玩家已持有 20 个 item `1204`、活跃源仓仍有 11 个（生产并发继续补货）、目标仓仍为原先 20 个，明确证明只完成了取货半程。随后仅提交一次 `player-to-storage`，目标仓精确 `20 -> 40`、玩家归零。以后多段搬运的 commit 后客户端异常必须复读玩家、源仓、目标仓三端，并只补结构化状态明确缺失的半程；不能从脚本退出位置推断动作边界。
 - 直接证据：最终关机保存的唯一 `prepare_save/commit_save` 已返回到调用方后，展示代码才因读取不存在的 `prepared.expectedRevision` 在 StrictMode 下报错。没有重放保存；fresh session 将旧边界 `lastOwnedSaveGameTick=8123715`、revision `676` 明确推进为 tick `8340400`、revision `677`，同时报告 `ownedSaveState=saved`、`writeHealth=healthy` 和 `restartResumeAvailable=true`。这把相同规则扩展到 save API：结果展示失败也必须先用主档 tick/revision/票据核销，不能生成第二次保存来“确认”。
+- 直接证据：v0.3 物流站备料的 `player-to-storage` 已正常返回后，报告代码又对玩家空钛块集合直接读取 `.Sum`，StrictMode 才抛错。没有重放；fresh 三端复读证明玩家钛块为 `0`、目标仓 `899` 新增且仅有 `40` 钛块，会话 `writeHealth=healthy`、revision `29`。随后普通保存动作 `dd2fc858-6720-46fb-86d9-12a9b11d525e` 把该终态持久化到 tick `8474115`、revision `30`。这再次确认可选聚合必须先判断数组计数，并且客户端后处理错误只用 fresh 终态核销。
 - 限制或反例：若 prepare 在任何 commit 前明确失败且无 action ID，可按普通 prepare 失败处理。
 - 复验触发：客户端响应模型、ActionResult 字段或脚本 helper 变化。
 - 关联：`src/Spherewright.Contracts/Actions/ActionResultContracts.cs`、`docs/protocol.md`、`docs/safety-model.md`。
-- 最近复验：2026-09-01（正常保存完成后才发生 PowerShell 字段展示错误；fresh 主档 tick/revision/票据核销成功，未重复保存）。
+- 最近复验：2026-09-02（钛块入仓完成后才发生空集合 `.Sum` 展示错误；fresh 玩家/目标仓/会话核销并普通保存，未重复入仓）。
 
 ### EXP-008 — 施工无人机会使玩家状态哈希短时变化
 
@@ -1263,6 +1264,8 @@
 - 最近复验：2026-09-02（81 次无副作用 stale 已复现；专用哈希、契约映射和自动测试完成，等待同档下一次安全部署 live）。
 
 ## 修订记录
+
+- 2026-09-02：复验 EXP-007。自动补产 10 个处理器后，20 电路板/20 铜块和 40 钛块全部经普通双端守恒转移；钛块入仓后的空集合展示错误由 fresh 三端状态核销，未重放，行星物流站预备仓现有钢/处理器/钛块各 40，普通保存到 tick `8474115`、revision `30`。
 
 - 2026-09-02：新增 EXP-100。活跃科研下 81 次选科技 prepare 均被上传量竞争安全拒绝；新增稳定 selection hash，保留队列/解锁/前置校验，完整构建 0 warning / 0 error、83 tests passed，live 部署待当前产线窗口结束。
 

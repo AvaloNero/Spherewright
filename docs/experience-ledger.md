@@ -1214,7 +1214,21 @@
 - 关联：EXP-056、EXP-065、EXP-074、EXP-078、EXP-094。
 - 最近复验：2026-09-01（600 聚合满仓仍因槽位变化接受异物；泄压后确认现役上游已按油/氢过滤，中继氢清零且两条临时出口锁氢，但历史混料清仓与 sorter `906` 过滤仍待收敛）。
 
+### EXP-097 — 物流塔观察必须交叉绑定实体、站点池和星球身份，并区分实时与配置指纹
+
+- 状态：`observed`
+- 日期：2026-09-02
+- 适用范围：DSP `0.10.34.28529`、Assembly-CSharp SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`、v0.3 行星/星际物流塔只读观察。
+- 当前结论：不能只用工厂实体 ID 或 `EntityData.stationId` 单点认领物流塔。读取必须同时证明正实体仍存在、stationId 位于当前 `PlanetTransport.stationPool/stationCursor`、池项 `id` 等于索引，并且池项的 `entityId/planetId` 与当前实体和本地工厂一致；随后只在 Unity 主线程把站点能量、舰队、原始运输设置、每个 `StationStore` 和 `SlotData` 深拷贝到 DTO。实时能量/库存/订单/舰队变化与配置变化采用两个独立哈希，避免未来配置 prepare 因正常运输 tick 无意义失效，同时仍能识别槽位、供需和带口被改动。
+- 直接证据：当前程序集元数据确认 `PlanetFactory.transport -> PlanetTransport.stationPool`、`EntityData.stationId`、`StationComponent.id/gid/entityId/planetId/storage/slots` 和 `StationStore`/`SlotData` 的完整字段；源码已在现有 factory list/inspect 响应中加入 `logisticsStation` 深拷贝，并用 Core 测试证明仅实时 count/energy 变化不改变 configuration hash、槽位上限变化会改变它。Release 完整 solution 为 0 warning / 0 error，78 tests passed（Contracts 5、Core 60、MCP 13）。
+- 限制或反例：游戏当前离线，尚无真实行星/星际物流塔 DTO 复读，因此本条不能升级为 `validated`；`tripRange*`、`warpEnableDist`、`delivery*` 仍按 raw/setting 暴露，不能在 UI 缩放和业务调用链证明前解释为固定单位或直接用于写入。发现 `PlanetTransport.SetStationStorage(...)` 只构成候选，不构成调用授权。
+- 复验触发：同档首座行星物流站完工、首座星际物流站完工、首次站点槽位配置、运输机/运输船活动、UI 缩放语义完成反编译或 DSP/程序集版本变化。
+- 关联：`src/Spherewright.Contracts/Logistics/LogisticsStationContracts.cs`、`GameStateReader.CaptureLogisticsStation`、`CanonicalStateHash.LogisticsStation*`、`docs/research/game-api-m0.md`。
+- 最近复验：2026-09-02（程序集字段、身份链、编译和自动测试已复核；等待同档首站 live 复读）。
+
 ## 修订记录
+
+- 2026-09-02：新增 EXP-097。v0.3 首个切片把物流塔只读状态接入现有 factory list/inspect 工具，采用 entity/station/planet 交叉身份和实时/配置双哈希；完整构建 0 warning / 0 error、78 tests passed，live 仍等待恢复同档并完成首座站点。
 
 - 2026-09-01：复验 EXP-007/069。最终关机保存已经执行后，PowerShell 仅在展示不存在的 `expectedRevision` 字段时失败；fresh session 证明主档 tick `8340400`、revision `677`、healthy 且自动签发续玩票据，没有重放保存。DSP 正常接受窗口关闭并退出，descriptor 清零、固定票据保留；下次唯一恢复门槛更新为该 tick。
 

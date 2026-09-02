@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Spherewright.Contracts.Factory;
+using Spherewright.Contracts.Logistics;
 using Spherewright.Contracts.Players;
 using Spherewright.Contracts.Progression;
 using Spherewright.Contracts.Resources;
@@ -176,6 +177,68 @@ public static class CanonicalStateHash
         }
 
         return Hash(value);
+    }
+
+    public static string LogisticsStation(LogisticsStationSnapshot snapshot)
+    {
+        var value = new StringBuilder();
+        AppendLogisticsStationConfiguration(value, snapshot, "logistics-station-v1");
+        Append(value, "live", snapshot.PowerServeRatio, snapshot.Energy, snapshot.WarperCount,
+            snapshot.IdleDroneCount, snapshot.WorkingDroneCount, snapshot.IdleVesselCount,
+            snapshot.WorkingVesselCount);
+        foreach (var slot in snapshot.StorageSlots.OrderBy(slot => slot.Index))
+        {
+            Append(value, "storage-live", slot.Index, slot.Count, slot.Inc, slot.LocalOrder,
+                slot.RemoteOrder, slot.TotalOrdered, slot.LocalSupplyCount, slot.LocalDemandCount,
+                slot.RemoteSupplyCount, slot.RemoteDemandCount);
+        }
+
+        foreach (var itemId in snapshot.NeededItemIds.OrderBy(itemId => itemId))
+        {
+            Append(value, "need", itemId);
+        }
+
+        foreach (var slot in snapshot.BeltSlots.OrderBy(slot => slot.Index))
+        {
+            Append(value, "belt-live", slot.Index, slot.Counter);
+        }
+
+        return Hash(value);
+    }
+
+    public static string LogisticsStationConfiguration(LogisticsStationSnapshot snapshot)
+    {
+        var value = new StringBuilder();
+        AppendLogisticsStationConfiguration(value, snapshot, "logistics-station-config-v1");
+        return Hash(value);
+    }
+
+    private static void AppendLogisticsStationConfiguration(
+        StringBuilder value,
+        LogisticsStationSnapshot snapshot,
+        string domain)
+    {
+        Append(value, domain, snapshot.SessionId, snapshot.PlanetId, snapshot.EntityId,
+            snapshot.StationId, snapshot.GalacticStationId, snapshot.BuildingItemId,
+            F(snapshot.Position.X), F(snapshot.Position.Y), F(snapshot.Position.Z),
+            snapshot.IsInterstellar, snapshot.IsCollector, snapshot.IsVeinCollector,
+            snapshot.PowerNetworkId, snapshot.EnergyCapacity, snapshot.EnergyPerTick,
+            snapshot.WarperCapacity, F(snapshot.DroneTripRangeRaw), F(snapshot.VesselTripRangeRaw),
+            snapshot.IncludeOrbitCollectors, F(snapshot.WarpEnableDistanceRaw), snapshot.WarpersRequired,
+            snapshot.DroneDeliverySetting, snapshot.VesselDeliverySetting, snapshot.PilerCount,
+            snapshot.DroneAutoReplenish, snapshot.VesselAutoReplenish, snapshot.RemoteGroupMask,
+            snapshot.RemoteRoutePriority);
+        foreach (var slot in snapshot.StorageSlots.OrderBy(slot => slot.Index))
+        {
+            Append(value, "storage-config", slot.Index, slot.ItemId, slot.MaximumCount,
+                slot.LocalLogic, slot.RemoteLogic, slot.KeepMode, F(slot.KeepIncRatio));
+        }
+
+        foreach (var slot in snapshot.BeltSlots.OrderBy(slot => slot.Index))
+        {
+            Append(value, "belt-slot", slot.Index, slot.Direction, slot.BeltComponentId,
+                slot.BeltEntityId, slot.StorageIndex);
+        }
     }
 
     public static string Combine(string actionKind, params object?[] fields)

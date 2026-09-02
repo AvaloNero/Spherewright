@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Journals;
+using Spherewright.Contracts.Logistics;
 using Spherewright.Contracts.Protocol;
 using Spherewright.Contracts.Sessions;
 using Xunit;
@@ -93,6 +94,33 @@ public sealed class ProtocolContractTests
         Assert.Equal(0, parsed.RootElement.GetProperty("durableThroughSequence").GetInt64());
         Assert.True(parsed.RootElement.GetProperty("persistencePending").GetBoolean());
         Assert.Equal("IOException", parsed.RootElement.GetProperty("persistenceError").GetString());
+        Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("filePath", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void LogisticsStation_UsesExplicitRawSettingsAndStableHashes()
+    {
+        var station = new LogisticsStationSnapshot
+        {
+            SessionId = "session",
+            PlanetId = 104,
+            EntityId = 920,
+            StationId = 2,
+            GalacticStationId = 7,
+            BuildingItemId = 2104,
+            DroneTripRangeRaw = 180d,
+            VesselTripRangeRaw = 12d,
+            WarpEnableDistanceRaw = 0.5d,
+            StateHash = "sha256:live",
+            ConfigurationStateHash = "sha256:config",
+        };
+
+        var json = JsonSerializer.Serialize(station, JsonOptions);
+        using var parsed = JsonDocument.Parse(json);
+
+        Assert.Equal(180d, parsed.RootElement.GetProperty("droneTripRangeRaw").GetDouble());
+        Assert.Equal("sha256:config", parsed.RootElement.GetProperty("configurationStateHash").GetString());
         Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("filePath", json, StringComparison.OrdinalIgnoreCase);
     }

@@ -6,6 +6,7 @@ using Spherewright.Bridge.Core.Snapshots;
 using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
+using Spherewright.Contracts.Logistics;
 using Spherewright.Contracts.Players;
 using Spherewright.Contracts.Power;
 using Spherewright.Contracts.Progression;
@@ -1085,6 +1086,7 @@ internal sealed class GameStateReader
         CaptureLab(factory, ref entity, snapshot);
         CaptureMiner(factory, ref entity, snapshot);
         CaptureStorage(factory, ref entity, snapshot);
+        CaptureLogisticsStation(factory, ref entity, snapshot);
         CaptureTank(factory, ref entity, snapshot);
         CaptureInserter(factory, ref entity, snapshot);
         snapshot.StateHash = CanonicalStateHash.Factory(snapshot);
@@ -1363,6 +1365,141 @@ internal sealed class GameStateReader
                 Inc = grid.inc,
             });
         }
+    }
+
+    private void CaptureLogisticsStation(
+        PlanetFactory factory,
+        ref EntityData entity,
+        FactoryEntitySnapshot snapshot)
+    {
+        var stationId = entity.stationId;
+        var transport = factory.transport;
+        if (stationId <= 0
+            || transport?.stationPool is null
+            || stationId >= transport.stationCursor
+            || stationId >= transport.stationPool.Length)
+        {
+            return;
+        }
+
+        var station = transport.stationPool[stationId];
+        if (station is null
+            || station.id != stationId
+            || station.entityId != entity.id
+            || station.planetId != factory.planetId)
+        {
+            return;
+        }
+
+        var result = new LogisticsStationSnapshot
+        {
+            SessionId = _sessions.SessionId!,
+            PlanetId = factory.planetId,
+            EntityId = entity.id,
+            StationId = station.id,
+            GalacticStationId = station.gid,
+            BuildingItemId = entity.protoId,
+            BuildingName = GetItemName(entity.protoId),
+            Position = CaptureVector(entity.pos),
+            IsInterstellar = station.isStellar,
+            IsCollector = station.isCollector,
+            IsVeinCollector = station.isVeinCollector,
+            PowerNetworkId = snapshot.PowerNetworkId,
+            PowerServeRatio = snapshot.PowerServeRatio,
+            Energy = station.energy,
+            EnergyCapacity = station.energyMax,
+            EnergyPerTick = station.energyPerTick,
+            WarperCount = station.warperCount,
+            WarperCapacity = station.warperMaxCount,
+            IdleDroneCount = station.idleDroneCount,
+            WorkingDroneCount = station.workDroneCount,
+            IdleVesselCount = station.idleShipCount,
+            WorkingVesselCount = station.workShipCount,
+            DroneTripRangeRaw = station.tripRangeDrones,
+            VesselTripRangeRaw = station.tripRangeShips,
+            IncludeOrbitCollectors = station.includeOrbitCollector,
+            WarpEnableDistanceRaw = station.warpEnableDist,
+            WarpersRequired = station.warperNecessary,
+            DroneDeliverySetting = station.deliveryDrones,
+            VesselDeliverySetting = station.deliveryShips,
+            PilerCount = station.pilerCount,
+            DroneAutoReplenish = station.droneAutoReplenish,
+            VesselAutoReplenish = station.shipAutoReplenish,
+            RemoteGroupMask = station.remoteGroupMask,
+            RemoteRoutePriority = station.routePriority.ToString(),
+            CapturedAtGameTick = GameMain.gameTick,
+        };
+
+        foreach (var itemId in station.needs ?? Array.Empty<int>())
+        {
+            if (itemId > 0 && !result.NeededItemIds.Contains(itemId))
+            {
+                result.NeededItemIds.Add(itemId);
+            }
+        }
+
+        var stores = station.storage ?? Array.Empty<StationStore>();
+        for (var index = 0; index < stores.Length; index++)
+        {
+            var store = stores[index];
+            result.StorageSlots.Add(new LogisticsStationStorageSlotSnapshot
+            {
+                Index = index,
+                ItemId = store.itemId,
+                ItemName = store.itemId > 0 ? GetItemName(store.itemId) : null,
+                Count = store.count,
+                Inc = store.inc,
+                MaximumCount = store.max,
+                LocalOrder = store.localOrder,
+                RemoteOrder = store.remoteOrder,
+                TotalOrdered = store.totalOrdered,
+                LocalSupplyCount = store.localSupplyCount,
+                LocalDemandCount = store.localDemandCount,
+                RemoteSupplyCount = store.remoteSupplyCount,
+                RemoteDemandCount = store.remoteDemandCount,
+                LocalLogic = store.localLogic.ToString(),
+                RemoteLogic = store.remoteLogic.ToString(),
+                KeepMode = store.keepMode,
+                KeepIncRatio = store.keepIncRatio,
+            });
+        }
+
+        var beltSlots = station.slots ?? Array.Empty<SlotData>();
+        for (var index = 0; index < beltSlots.Length; index++)
+        {
+            var slot = beltSlots[index];
+            result.BeltSlots.Add(new LogisticsStationBeltSlotSnapshot
+            {
+                Index = index,
+                Direction = slot.dir.ToString(),
+                BeltComponentId = slot.beltId,
+                BeltEntityId = ResolveBeltEntityId(factory, slot.beltId),
+                StorageIndex = slot.storageIdx,
+                Counter = slot.counter,
+            });
+        }
+
+        result.NeededItemIds.Sort();
+        result.StateHash = CanonicalStateHash.LogisticsStation(result);
+        result.StateHashVersion = CanonicalStateHash.Version;
+        result.ConfigurationStateHash = CanonicalStateHash.LogisticsStationConfiguration(result);
+        result.ConfigurationStateHashVersion = CanonicalStateHash.Version;
+        snapshot.LogisticsStation = result;
+    }
+
+    private static int ResolveBeltEntityId(PlanetFactory factory, int beltId)
+    {
+        var traffic = factory.cargoTraffic;
+        if (beltId <= 0
+            || traffic?.beltPool is null
+            || beltId >= traffic.beltCursor
+            || beltId >= traffic.beltPool.Length)
+        {
+            return 0;
+        }
+
+        ref var belt = ref traffic.beltPool[beltId];
+        return belt.id == beltId ? belt.entityId : 0;
     }
 
     public GameCallResult<LocalStarSystemSnapshot> GetLocalStarSystemOnMainThread(

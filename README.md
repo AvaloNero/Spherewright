@@ -13,7 +13,7 @@ Runtime evidence currently targets DSP `0.10.34.28529`, single-player peaceful m
 ## What it provides
 
 - An authenticated, current-user-only Named Pipe between the game Plugin and the local MCP server.
-- Structured reads for the player, progression, recipes, build catalog, resources, factory entities, power, the local star system, actions, and the per-save gameplay journal.
+- Structured reads for the player, progression, recipes, build catalog, resources, factory entities—including detailed logistics-station state—power, the local star system, actions, and the per-save gameplay journal.
 - Two-phase `prepare → commit` actions for movement, harvesting, handcrafting, research, construction, building configuration, transfers, refuelling, saving, and recovery.
 - Native-tick same-star flight with a separately saved, expiring pre-flight checkpoint that remains reusable only while that exact flight needs recovery, then loses its capability on success and retires after the covering primary save.
 - Exact owned-world restart handoff: healthy planned restarts load only the ticket-bound primary save, while quarantine recovery alone may use a fresh fixed LastExit whose header already proves the minimum tick. Spherewright never exposes a save picker or enumerates unrelated saves.

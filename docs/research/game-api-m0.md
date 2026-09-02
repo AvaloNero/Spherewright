@@ -138,6 +138,47 @@ Both entity and component IDs are cross-checked before a DTO is copied. Recipe/b
 
 The live build catalog enumerates `LDB.items.dataArray` and `LDB.recipes.dataArray`, filters on current `PrefabDesc` flags and `ERecipeType`, and uses `GameHistoryData.ItemUnlocked(int)` / `RecipeUnlocked(int)`. No prototype ID is hard-coded into the action.
 
+## v0.3 logistics-station observation path
+
+Targeted reflection-only metadata inspection of the validated `Assembly-CSharp.dll` SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85` established the current local-station ownership chain:
+
+```text
+public PlanetTransport PlanetFactory.transport
+public int EntityData.stationId
+public StationComponent[] PlanetTransport.stationPool
+public int PlanetTransport.stationCursor
+public int StationComponent.id
+public int StationComponent.gid
+public int StationComponent.entityId
+public int StationComponent.planetId
+public StationStore[] StationComponent.storage
+public SlotData[] StationComponent.slots
+```
+
+A station snapshot is accepted only when the positive factory entity still exists, `entity.stationId` is inside the current `stationCursor`, the pool entry's `id` equals that index, and its `entityId` and `planetId` match the factory entity and current local factory. The Plugin then deep-copies primitives and DTOs on Unity's main thread; no `StationComponent`, `StationStore`, `SlotData`, pool or Unity object leaves that thread.
+
+The current component exposes these read fields used by the first v0.3 slice:
+
+```text
+bool isStellar, isCollector, isVeinCollector
+long energy, energyPerTick, energyMax
+int warperCount, warperMaxCount
+int idleDroneCount, workDroneCount, idleShipCount, workShipCount
+double tripRangeDrones, tripRangeShips, warpEnableDist
+bool includeOrbitCollector, warperNecessary
+int deliveryDrones, deliveryShips, pilerCount
+bool droneAutoReplenish, shipAutoReplenish
+long remoteGroupMask
+ERemoteRoutePriority routePriority
+int[] needs
+```
+
+`StationStore` contains `itemId`, `count`, `inc`, `localOrder`, `remoteOrder`, `max`, `keepMode`, `keepIncRatio`, `localLogic` and `remoteLogic`, plus pure count getters for local/remote supply and demand. The current `ELogisticStorage` values are `None=0`, `Supply=1`, `Demand=2`. Each `SlotData` contains `dir`, `beltId`, `storageIdx` and `counter`; `IODir` is `None=0`, `Output=1`, `Input=2`. A nonzero belt component is additionally resolved through `CargoTraffic.beltPool[beltId]` and accepted only when its component ID matches before copying its entity ID.
+
+The public DTO deliberately labels `tripRangeDrones`, `tripRangeShips`, `warpEnableDist`, `deliveryDrones` and `deliveryShips` as raw/settings values. Method names such as `UIStationWindow.OnMaxTripDroneSliderValueChange`, `OnMinDeliverDroneValueChange` and `OnWarperDistanceValueChange` prove these fields are UI-controlled, but the complete scaling and normal business write path have not yet been adopted. `PlanetTransport.SetStationStorage(int,int,int,int,ELogisticStorage,ELogisticStorage,Player)` is a future write-path candidate only; its existence does not authorize a call until its UI call chain, item handling, costs and readback invariants are separately documented and tested.
+
+The observation DTO provides two versioned hashes. The live hash covers energy, inventory, orders, fleet activity and needs. The configuration hash excludes those tick-volatile values while binding station identity/type, capacity settings, storage item/limit/logic, route settings and belt topology. This split lets future prepare logic avoid becoming stale merely because a vessel moved while still rejecting a changed station configuration.
+
 ## Research-result acknowledgement UI
 
 The current assembly exposes the same path used by the visible confirm button and Escape handling:

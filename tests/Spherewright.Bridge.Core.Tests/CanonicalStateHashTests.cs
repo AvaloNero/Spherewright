@@ -1,5 +1,6 @@
 using Spherewright.Bridge.Core.Safety;
 using Spherewright.Contracts.Factory;
+using Spherewright.Contracts.Logistics;
 using Spherewright.Contracts.Players;
 using Xunit;
 
@@ -129,5 +130,57 @@ public sealed class CanonicalStateHashTests
             OtherSlot = 1,
         });
         Assert.NotEqual(endpoint, CanonicalStateHash.FactoryEndpoint(snapshot));
+    }
+
+    [Fact]
+    public void LogisticsStation_SeparatesVolatileInventoryFromConfiguration()
+    {
+        var snapshot = new LogisticsStationSnapshot
+        {
+            SessionId = "session",
+            PlanetId = 103,
+            EntityId = 12,
+            StationId = 4,
+            GalacticStationId = 9,
+            BuildingItemId = 2104,
+            IsInterstellar = true,
+            Energy = 100,
+            EnergyCapacity = 10_000,
+            EnergyPerTick = 200,
+            IdleDroneCount = 10,
+            DroneTripRangeRaw = 180d,
+            VesselTripRangeRaw = 12d,
+            RemoteRoutePriority = "Ignore",
+        };
+        snapshot.StorageSlots.Add(new LogisticsStationStorageSlotSnapshot
+        {
+            Index = 0,
+            ItemId = 1004,
+            Count = 20,
+            MaximumCount = 1_000,
+            LocalLogic = "Supply",
+            RemoteLogic = "Demand",
+        });
+        snapshot.BeltSlots.Add(new LogisticsStationBeltSlotSnapshot
+        {
+            Index = 0,
+            Direction = "Input",
+            BeltComponentId = 8,
+            BeltEntityId = 19,
+            StorageIndex = 0,
+            Counter = 3,
+        });
+
+        var live = CanonicalStateHash.LogisticsStation(snapshot);
+        var configuration = CanonicalStateHash.LogisticsStationConfiguration(snapshot);
+
+        snapshot.Energy = 500;
+        snapshot.StorageSlots[0].Count = 40;
+        snapshot.BeltSlots[0].Counter = 4;
+        Assert.NotEqual(live, CanonicalStateHash.LogisticsStation(snapshot));
+        Assert.Equal(configuration, CanonicalStateHash.LogisticsStationConfiguration(snapshot));
+
+        snapshot.StorageSlots[0].MaximumCount = 2_000;
+        Assert.NotEqual(configuration, CanonicalStateHash.LogisticsStationConfiguration(snapshot));
     }
 }

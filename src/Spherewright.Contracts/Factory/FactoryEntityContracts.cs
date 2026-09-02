@@ -1,3 +1,5 @@
+using Spherewright.Contracts.Logistics;
+
 namespace Spherewright.Contracts.Factory;
 
 public static class FactoryObjectKinds
@@ -86,6 +88,8 @@ public sealed class FactoryEntitySnapshot
     public List<FactoryBufferSnapshot> Buffers { get; set; } = new List<FactoryBufferSnapshot>();
 
     public List<int> ResourceNodeIds { get; set; } = new List<int>();
+
+    public LogisticsStationSnapshot? LogisticsStation { get; set; }
 
     public int? PickTargetObjectId { get; set; }
 

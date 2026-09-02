@@ -236,13 +236,13 @@ public static class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Lists an immutable bounded snapshot of built factory entities and legal prebuilds, including component identity, position, recipe, buffers, connections, and power state where applicable.")]
+    [Description("Lists an immutable bounded snapshot of built factory entities and legal prebuilds, including component identity, position, recipe, buffers, connections, and power state where applicable. Use componentKind=station to receive detailed logistics-station storage, fleet, route, belt-slot, and energy state for completed stations.")]
     public static async Task<CallToolResult> ListFactoryEntitiesAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,
         [Description("Current local planet ID returned by spherewright_get_session_state.")] int planetId,
         [Description("Optional object kind: entity or prebuild.")] string objectKind = "",
-        [Description("Optional component kind such as miner, assembler, lab, inserter, belt, storage, or power-generator.")] string componentKind = "",
+        [Description("Optional component kind such as miner, assembler, lab, inserter, belt, storage, station, or power-generator.")] string componentKind = "",
         [Description("Optional exact building item ID; use zero for no item filter.")] int itemId = 0,
         [Description("Page size from 1 through 100.")] int limit = 50,
         [Description("Opaque continuation cursor, or empty to create a new snapshot.")] string cursor = "",
@@ -270,7 +270,7 @@ public static class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Re-reads one built entity (positive objectId) or prebuild (negative objectId) on Unity's main thread.")]
+    [Description("Re-reads one built entity (positive objectId) or prebuild (negative objectId) on Unity's main thread. Completed station entities include detailed logisticsStation state and independent live/configuration hashes.")]
     public static async Task<CallToolResult> InspectFactoryEntityAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,

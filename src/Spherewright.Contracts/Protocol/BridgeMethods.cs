@@ -36,6 +36,8 @@ public static class BridgeMethods
     public const string CommitConfigureBuilding = "commit_configure_building";
     public const string PrepareTransfer = "prepare_transfer";
     public const string CommitTransfer = "commit_transfer";
+    public const string PrepareLogisticsStationFleetTransfer = "prepare_logistics_station_fleet_transfer";
+    public const string CommitLogisticsStationFleetTransfer = "commit_logistics_station_fleet_transfer";
     public const string PrepareRefuel = "prepare_refuel";
     public const string CommitRefuel = "commit_refuel";
     public const string PrepareSave = "prepare_save";

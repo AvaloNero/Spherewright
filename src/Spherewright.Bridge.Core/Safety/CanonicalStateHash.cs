@@ -261,6 +261,20 @@ public static class CanonicalStateHash
         return Hash(value);
     }
 
+    public static string LogisticsStationFleet(LogisticsStationSnapshot snapshot)
+    {
+        var value = new StringBuilder();
+        Append(value, "logistics-station-fleet-v1", snapshot.SessionId, snapshot.PlanetId,
+            snapshot.EntityId, snapshot.StationId, snapshot.GalacticStationId,
+            snapshot.BuildingItemId, F(snapshot.Position.X), F(snapshot.Position.Y),
+            F(snapshot.Position.Z), snapshot.IsInterstellar, snapshot.IsCollector,
+            snapshot.IsVeinCollector, snapshot.DroneCapacity, snapshot.VesselCapacity,
+            snapshot.IdleDroneCount, snapshot.WorkingDroneCount,
+            snapshot.IdleVesselCount, snapshot.WorkingVesselCount,
+            snapshot.DroneAutoReplenish, snapshot.VesselAutoReplenish);
+        return Hash(value);
+    }
+
     private static void AppendLogisticsStationConfiguration(
         StringBuilder value,
         LogisticsStationSnapshot snapshot,

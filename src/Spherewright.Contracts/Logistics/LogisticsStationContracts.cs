@@ -48,9 +48,13 @@ public sealed class LogisticsStationSnapshot
 
     public int IdleDroneCount { get; set; }
 
+    public int DroneCapacity { get; set; }
+
     public int WorkingDroneCount { get; set; }
 
     public int IdleVesselCount { get; set; }
+
+    public int VesselCapacity { get; set; }
 
     public int WorkingVesselCount { get; set; }
 
@@ -95,6 +99,10 @@ public sealed class LogisticsStationSnapshot
     public string ConfigurationStateHash { get; set; } = string.Empty;
 
     public int ConfigurationStateHashVersion { get; set; } = 1;
+
+    public string FleetStateHash { get; set; } = string.Empty;
+
+    public int FleetStateHashVersion { get; set; } = 1;
 }
 
 public sealed class LogisticsStationStorageSlotSnapshot

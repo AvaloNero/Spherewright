@@ -12,6 +12,7 @@ public static class NormalActionKinds
     public const string SelectResearch = "select-research";
     public const string Build = "build";
     public const string Transfer = "transfer";
+    public const string LogisticsStationFleetTransfer = "logistics-station-fleet-transfer";
     public const string ConfigureBuilding = "configure-building";
     public const string Refuel = "refuel";
     public const string Save = "save";
@@ -30,6 +31,18 @@ public static class TransferDirections
 {
     public const string PlayerToStorage = "player-to-storage";
     public const string StorageToPlayer = "storage-to-player";
+}
+
+public static class LogisticsStationFleetTransferDirections
+{
+    public const string PlayerToStation = "player-to-station";
+    public const string StationToPlayer = "station-to-player";
+}
+
+public static class LogisticsFleetItemIds
+{
+    public const int Drone = 5001;
+    public const int Vessel = 5002;
 }
 
 public static class BuildingConfigurationModes
@@ -217,6 +230,25 @@ public sealed class PrepareSaveRequest
     public int PlanetId { get; set; }
 
     public long ExpectedRevision { get; set; }
+
+    public int StateHashVersion { get; set; } = 1;
+}
+
+public sealed class PrepareLogisticsStationFleetTransferRequest
+{
+    public int PlanetId { get; set; }
+
+    public int StationEntityId { get; set; }
+
+    public string Direction { get; set; } = string.Empty;
+
+    public int ItemId { get; set; }
+
+    public int Count { get; set; } = 1;
+
+    public string ExpectedPlayerStateHash { get; set; } = string.Empty;
+
+    public string ExpectedStationFleetStateHash { get; set; } = string.Empty;
 
     public int StateHashVersion { get; set; } = 1;
 }

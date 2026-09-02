@@ -559,6 +559,31 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                 case BridgeMethods.CommitTransfer:
                     await DispatchNormalCommitAsync(pipe, header, requestJson, NormalActionKinds.Transfer, cancellationToken).ConfigureAwait(false);
                     break;
+                case BridgeMethods.PrepareLogisticsStationFleetTransfer:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<PrepareLogisticsStationFleetTransferRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            header.SessionId,
+                            () => _normalActionCoordinator.PrepareLogisticsStationFleetTransferOnMainThread(header.SessionId, request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                case BridgeMethods.CommitLogisticsStationFleetTransfer:
+                    await DispatchNormalCommitAsync(
+                        pipe,
+                        header,
+                        requestJson,
+                        NormalActionKinds.LogisticsStationFleetTransfer,
+                        cancellationToken).ConfigureAwait(false);
+                    break;
                 case BridgeMethods.PrepareRefuel:
                     {
                         var request = PluginJson.Deserialize<BridgeRequestEnvelope<PrepareRefuelRequest>>(requestJson);

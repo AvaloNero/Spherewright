@@ -1331,7 +1331,23 @@
 - 关联：`scripts/package-release.ps1`、`scripts/test-release-package.ps1`、`scripts/install-release.ps1`、`docs/release-installation.md`、`Directory.Packages.props` 与三个可发布项目的 `packages.lock.json`。
 - 最近复验：2026-09-02（干净提交 preview.2 生成、独立完整性复验和包内 MCP 协议冒烟均通过；真实游戏安装仍待版本完成前单独验证）。
 
+### EXP-105 — 物流塔载具装载必须绑定工作中数量、原型容量和增产点损失边界
+
+- 状态：`observed`
+- 日期：2026-09-02
+- 适用范围：当前 DSP `0.10.34.28529` 的普通行星/星际物流站无人机与运输船槽、玩家背包双向转移；不覆盖轨道采集器、矿物采集站、翘曲器槽或塔内货物槽。
+- 当前结论：无人机/运输船容量必须按 `idle + working` 占用计算，运输船只适用于 `isStellar`，取出只能减少 idle。塔内载具计数不能保存增产点，因此玩家到塔的载具只在该物品聚合 inc 为 0 时接受。安全动作必须独立绑定 fleet hash，提交前以背包副本证明精确容量，提交后证明玩家与 idle 等量反向变化、working 与另一类载具不变、总数守恒，且塔货物/订单/能量/翘曲器/配置、手持物和无关背包格均不变。
+- 直接证据：当前程序集反编译的 `UIStationWindow.OnDroneIconClick(int)` / `OnShipIconClick(int)` 分别固定 item `5001/5002`，从建筑 prefab 读取 `stationMaxDroneCount/stationMaxShipCount`，以 idle+work 计算余量，存入时只增加 idle 并从手持扣除 `split_inc`，取出时只使用 idle；`StorageComponent.TakeItem/AddItemStacked` 与 `Player.NotifyPackageAddItem` 的完整签名也已复核。源码新增纯策略、独立 fleet hash、DTO 容量字段、Bridge/MCP prepare/commit、主线程双向守恒与无关状态复读；完整 solution 0 warning / 0 error，94 tests passed（Contracts 11、Core 66、MCP 17），MCP 注册面为 46。
+- 限制或反例：当前游戏进程仍加载旧 44-tool DLL，且本档尚无完成物流塔；因此本条不宣称 live validated。原生 UI 的 shift/control 取出路径会把全部 idle 清零，Spherewright 只采用经背包副本证明的有界精确子集，不依赖其可能部分接收的行为。
+- 复验触发：下一次正常保存/关闭后的整组 DLL 部署、首座 PLS/ILS 完成、首次装入与取出无人机/运输船、载具在途时、自动补充开关变化或 DSP/程序集版本变化。
+- 关联：`LogisticsStationFleetTransferPolicy`、`CanonicalStateHash.LogisticsStationFleet`、`NormalGameActionCoordinator.LogisticsStationFleet.cs`、`docs/research/game-api-m0.md`、ROADMAP v0.3。
+- 最近复验：2026-09-02（当前程序集反编译、完整构建及 94 项离线测试；live 待部署）。
+
 ## 修订记录
+
+- 2026-09-02：完成上一账本复核后的 10 个成功游戏写动作复核：一次 Drift 候选及精确 Walk 回收、返回已验证风机 `713`、钛块/钻石/塑料的五次守恒中转、动作 `0ee30c94-8b75-4a9e-a20e-1ba25665882a` 到风机 `130` 的正常 Walk，以及动作 `532666d4-de0d-4ea9-abfc-6a44657fe555` 在科技 `1604` 正常解锁后单次启用制造台 `891(recipe 94)`。EXP-061/066/080/093/100 与 fresh 动作终态、背包/仓储、Walk/Drift、能源、科技和写健康一致；第十次提交后先完成本复核，再允许下一次游戏写入。制造台随后自然取得三类输入并由输出 sorter `894` 携带 item `5001`，未出现 quarantine、outcome unknown、串料或未解释正增量。
+
+- 2026-09-02：新增 EXP-105。当前程序集确认无人机/运输船 UI 以 idle+work 占用 prefab 容量、只从 idle 取出且存入会丢弃载具增产点；源码新增 46-tool 双阶段精确 fleet transfer、专用 fleet hash、容量/类型/范围/空手/背包副本检查和提交后完整守恒复读。完整 solution 0 warning / 0 error，94 项测试通过；运行游戏仍是旧 44-tool DLL，首塔前不提前声称 live。
 
 - 2026-09-02：完成上一复核后的 10 个成功游戏写动作复核（60 有机晶体双段守恒进入钛晶石线、五段有效 Walk/局部脱困、一次 Drift 目标与精确 Walk 回收）。EXP-007/061/066/080/093 与 fresh 玩家、仓/设备缓冲、动作终态、能量和写健康一致；新增证据明确 180-tick 看门狗会在满电时识别路上卡死，而至少 8.17 m 非带实体净空仍不证明陆地。两次碰撞失败和一次 Drift 均未重放，无 quarantine、outcome unknown 或未解释物品差量。
 

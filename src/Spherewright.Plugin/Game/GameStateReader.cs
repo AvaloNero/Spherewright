@@ -1458,8 +1458,10 @@ internal sealed class GameStateReader
             WarperCount = station.warperCount,
             WarperCapacity = station.warperMaxCount,
             IdleDroneCount = station.idleDroneCount,
+            DroneCapacity = LDB.items.Select(entity.protoId)?.prefabDesc?.stationMaxDroneCount ?? 0,
             WorkingDroneCount = station.workDroneCount,
             IdleVesselCount = station.idleShipCount,
+            VesselCapacity = LDB.items.Select(entity.protoId)?.prefabDesc?.stationMaxShipCount ?? 0,
             WorkingVesselCount = station.workShipCount,
             DroneTripRangeRaw = station.tripRangeDrones,
             VesselTripRangeRaw = station.tripRangeShips,
@@ -1530,6 +1532,8 @@ internal sealed class GameStateReader
         result.StateHashVersion = CanonicalStateHash.Version;
         result.ConfigurationStateHash = CanonicalStateHash.LogisticsStationConfiguration(result);
         result.ConfigurationStateHashVersion = CanonicalStateHash.Version;
+        result.FleetStateHash = CanonicalStateHash.LogisticsStationFleet(result);
+        result.FleetStateHashVersion = CanonicalStateHash.Version;
         snapshot.LogisticsStation = result;
     }
 

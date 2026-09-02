@@ -516,6 +516,68 @@ public static class SpherewrightTools
     }
 
     [McpServerTool(
+        Name = "spherewright_prepare_logistics_station_fleet_transfer",
+        Title = "Prepare an exact logistics-station fleet transfer",
+        ReadOnly = false,
+        Destructive = false,
+        Idempotent = false,
+        OpenWorld = false)]
+    [Description("Re-reads the player package and one exact station fleet, then verifies item type, idle/working counts, prefab capacity, range, empty player hand, proliferator safety, and exact destination capacity without moving a craft.")]
+    public static async Task<CallToolResult> PrepareLogisticsStationFleetTransferAsync(
+        IBridgeClient bridgeClient,
+        string sessionId,
+        int planetId,
+        int stationEntityId,
+        string direction,
+        int itemId,
+        int count,
+        string expectedPlayerStateHash,
+        string expectedStationFleetStateHash,
+        int stateHashVersion = 1,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.PrepareLogisticsStationFleetTransferAsync(
+            sessionId,
+            new PrepareLogisticsStationFleetTransferRequest
+            {
+                PlanetId = planetId,
+                StationEntityId = stationEntityId,
+                Direction = direction,
+                ItemId = itemId,
+                Count = count,
+                ExpectedPlayerStateHash = expectedPlayerStateHash,
+                ExpectedStationFleetStateHash = expectedStationFleetStateHash,
+                StateHashVersion = stateHashVersion,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Exact player-station fleet transfer prepared; the player package and station remain unchanged.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_commit_logistics_station_fleet_transfer",
+        Title = "Commit an exact logistics-station fleet transfer",
+        ReadOnly = false,
+        Destructive = true,
+        Idempotent = true,
+        OpenWorld = false)]
+    [Description("Moves the prepared logistics drones or vessels between the player package and a station's idle fleet using the current UI counter semantics, then proves equal-and-opposite counts and preservation of working craft, storage, energy, and unrelated inventory.")]
+    public static async Task<CallToolResult> CommitLogisticsStationFleetTransferAsync(
+        IBridgeClient bridgeClient,
+        string sessionId,
+        int planetId,
+        string planToken,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        var request = CreateCommitRequest(sessionId, planetId, planToken, idempotencyKey);
+        var result = await bridgeClient.CommitLogisticsStationFleetTransferAsync(
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Player-station fleet transfer completed with exact conservation readback.");
+    }
+
+    [McpServerTool(
         Name = "spherewright_prepare_refuel",
         Title = "Prepare a normal mecha refuel transfer",
         ReadOnly = false,

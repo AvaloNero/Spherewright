@@ -38,6 +38,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_commit_handcraft",
                 "spherewright_commit_harvest",
                 "spherewright_commit_interplanetary_flight",
+                "spherewright_commit_logistics_station_fleet_transfer",
                 "spherewright_commit_move",
                 "spherewright_commit_new_game",
                 "spherewright_commit_quarantine_reconciliation",
@@ -68,6 +69,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_prepare_handcraft",
                 "spherewright_prepare_harvest",
                 "spherewright_prepare_interplanetary_flight",
+                "spherewright_prepare_logistics_station_fleet_transfer",
                 "spherewright_prepare_move",
                 "spherewright_prepare_new_game",
                 "spherewright_prepare_quarantine_reconciliation",
@@ -269,6 +271,32 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public async Task PrepareStationFleetTransfer_MapsExactFleetHashAndDirection()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.PrepareLogisticsStationFleetTransferAsync(
+            bridge,
+            "session-fleet",
+            104,
+            920,
+            LogisticsStationFleetTransferDirections.PlayerToStation,
+            LogisticsFleetItemIds.Drone,
+            10,
+            "sha256:player",
+            "sha256:fleet",
+            1,
+            CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("session-fleet", bridge.LastSessionId);
+        Assert.Equal(920, bridge.LastFleetTransferRequest?.StationEntityId);
+        Assert.Equal(LogisticsStationFleetTransferDirections.PlayerToStation, bridge.LastFleetTransferRequest?.Direction);
+        Assert.Equal(LogisticsFleetItemIds.Drone, bridge.LastFleetTransferRequest?.ItemId);
+        Assert.Equal("sha256:fleet", bridge.LastFleetTransferRequest?.ExpectedStationFleetStateHash);
+    }
+
+    [Fact]
     public async Task PrepareQuarantineReconciliation_MapsExactActionAndRevision()
     {
         var bridge = new FakeBridgeClient(SuccessResult());
@@ -360,6 +388,8 @@ public sealed class SpherewrightToolsTests
         public ListResourceNodesRequest? LastResourceListRequest { get; private set; }
 
         public PrepareConfigureBuildingRequest? LastConfigureRequest { get; private set; }
+
+        public PrepareLogisticsStationFleetTransferRequest? LastFleetTransferRequest { get; private set; }
 
         public PrepareQuarantineReconciliationRequest? LastReconciliationRequest { get; private set; }
 
@@ -622,6 +652,21 @@ public sealed class SpherewrightToolsTests
             string sessionId,
             CommitNormalActionRequest request,
             CancellationToken cancellationToken) => Committed(sessionId, request, NormalActionKinds.Transfer);
+
+        public Task<BridgeCallResult<PreparedNormalAction>> PrepareLogisticsStationFleetTransferAsync(
+            string sessionId,
+            PrepareLogisticsStationFleetTransferRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastFleetTransferRequest = request;
+            return Prepared(sessionId, NormalActionKinds.LogisticsStationFleetTransfer);
+        }
+
+        public Task<BridgeCallResult<NormalActionCommitResult>> CommitLogisticsStationFleetTransferAsync(
+            string sessionId,
+            CommitNormalActionRequest request,
+            CancellationToken cancellationToken) =>
+            Committed(sessionId, request, NormalActionKinds.LogisticsStationFleetTransfer);
 
         public Task<BridgeCallResult<PreparedNormalAction>> PrepareRefuelAsync(
             string sessionId,

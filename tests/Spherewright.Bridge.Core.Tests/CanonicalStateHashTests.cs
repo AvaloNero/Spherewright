@@ -1,5 +1,6 @@
 using Spherewright.Bridge.Core.Safety;
 using Spherewright.Bridge.Core.Logistics;
+using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Logistics;
 using Spherewright.Contracts.Players;
@@ -371,5 +372,89 @@ public sealed class CanonicalStateHashTests
 
         snapshot.StorageSlots[0].MaximumCount = 2_000;
         Assert.NotEqual(configuration, CanonicalStateHash.LogisticsStationConfiguration(snapshot));
+    }
+
+    [Fact]
+    public void LogisticsStationFleet_HashesOnlyFleetIdentityAndCounters()
+    {
+        var snapshot = new LogisticsStationSnapshot
+        {
+            SessionId = "session",
+            PlanetId = 104,
+            EntityId = 920,
+            StationId = 2,
+            GalacticStationId = 7,
+            BuildingItemId = 2104,
+            IsInterstellar = true,
+            DroneCapacity = 50,
+            VesselCapacity = 10,
+            IdleDroneCount = 10,
+            WorkingDroneCount = 2,
+            IdleVesselCount = 3,
+            WorkingVesselCount = 1,
+        };
+
+        var fleet = CanonicalStateHash.LogisticsStationFleet(snapshot);
+        snapshot.Energy = 10_000;
+        snapshot.StorageSlots.Add(new LogisticsStationStorageSlotSnapshot { Index = 0, Count = 100 });
+        Assert.Equal(fleet, CanonicalStateHash.LogisticsStationFleet(snapshot));
+
+        snapshot.IdleDroneCount++;
+        Assert.NotEqual(fleet, CanonicalStateHash.LogisticsStationFleet(snapshot));
+    }
+
+    [Fact]
+    public void LogisticsStationFleetTransferPolicy_EnforcesUiCapacityIdleAndProliferatorRules()
+    {
+        Assert.True(LogisticsStationFleetTransferPolicy.TryValidate(
+            true, false, false,
+            LogisticsStationFleetTransferDirections.PlayerToStation,
+            LogisticsFleetItemIds.Drone,
+            10, 10, 0,
+            30, 10, 50,
+            2, 1, 10,
+            true,
+            out _));
+
+        Assert.False(LogisticsStationFleetTransferPolicy.TryValidate(
+            true, false, false,
+            LogisticsStationFleetTransferDirections.PlayerToStation,
+            LogisticsFleetItemIds.Drone,
+            10, 10, 1,
+            30, 10, 50,
+            2, 1, 10,
+            true,
+            out var proliferated));
+        Assert.Contains("Proliferated", proliferated, StringComparison.Ordinal);
+
+        Assert.False(LogisticsStationFleetTransferPolicy.TryValidate(
+            false, false, false,
+            LogisticsStationFleetTransferDirections.PlayerToStation,
+            LogisticsFleetItemIds.Vessel,
+            1, 1, 0,
+            0, 0, 50,
+            0, 0, 0,
+            true,
+            out _));
+
+        Assert.False(LogisticsStationFleetTransferPolicy.TryValidate(
+            true, false, false,
+            LogisticsStationFleetTransferDirections.StationToPlayer,
+            LogisticsFleetItemIds.Vessel,
+            3, 0, 0,
+            0, 0, 50,
+            2, 1, 10,
+            true,
+            out _));
+
+        Assert.True(LogisticsStationFleetTransferPolicy.TryValidate(
+            true, false, false,
+            LogisticsStationFleetTransferDirections.StationToPlayer,
+            LogisticsFleetItemIds.Vessel,
+            2, 0, 0,
+            0, 0, 50,
+            2, 1, 10,
+            true,
+            out _));
     }
 }

@@ -391,6 +391,11 @@ internal sealed partial class NormalGameActionCoordinator
         PrepareTransferRequest request)
         => PrepareStorageTransferOnMainThread(requestedSessionId, request);
 
+    public GameCallResult<PreparedNormalAction> PrepareLogisticsStationFleetTransferOnMainThread(
+        string? requestedSessionId,
+        PrepareLogisticsStationFleetTransferRequest request)
+        => PrepareStationFleetTransferOnMainThread(requestedSessionId, request);
+
     public GameCallResult<PreparedNormalAction> PrepareRefuelOnMainThread(
         string? requestedSessionId,
         PrepareRefuelRequest request)
@@ -520,17 +525,19 @@ internal sealed partial class NormalGameActionCoordinator
                         ? plan.BuildingItemId
                         : plan.TransferItemId > 0
                             ? plan.TransferItemId
-                            : plan.FuelItemId > 0
-                                ? plan.FuelItemId
-                                : plan.ConfigureStationItemId > 0
-                                    ? plan.ConfigureStationItemId
-                                : plan.ConfigureRecipeId > 0
-                                    ? plan.ConfigureRecipeId
-                                    : plan.ConfigureFilterItemId > 0
-                                        ? plan.ConfigureFilterItemId
-                                        : plan.ConfigureTechId > 0
-                                            ? plan.ConfigureTechId
-                                            : (int?)null,
+                            : plan.FleetTransferItemId > 0
+                                ? plan.FleetTransferItemId
+                                : plan.FuelItemId > 0
+                                    ? plan.FuelItemId
+                                    : plan.ConfigureStationItemId > 0
+                                        ? plan.ConfigureStationItemId
+                                        : plan.ConfigureRecipeId > 0
+                                            ? plan.ConfigureRecipeId
+                                            : plan.ConfigureFilterItemId > 0
+                                                ? plan.ConfigureFilterItemId
+                                                : plan.ConfigureTechId > 0
+                                                    ? plan.ConfigureTechId
+                                                    : (int?)null,
             RequestedCount = plan.Count > 0 ? plan.Count : (int?)null,
             BeforeTargetAmount = plan.ResourceRemaining > 0 ? plan.ResourceRemaining : (int?)null,
             BeforeInventory = CaptureInventory(GameMain.mainPlayer),
@@ -692,6 +699,9 @@ internal sealed partial class NormalGameActionCoordinator
                 break;
             case NormalActionKinds.Transfer:
                 ExecuteStorageTransferOnMainThread(action);
+                break;
+            case NormalActionKinds.LogisticsStationFleetTransfer:
+                ExecuteStationFleetTransferOnMainThread(action);
                 break;
             case NormalActionKinds.Refuel:
                 ExecuteRefuelOnMainThread(action);
@@ -1059,6 +1069,8 @@ internal sealed partial class NormalGameActionCoordinator
                 return RevalidateStructuredBuildOnMainThread(plan);
             case NormalActionKinds.Transfer:
                 return RevalidateStorageTransferOnMainThread(plan);
+            case NormalActionKinds.LogisticsStationFleetTransfer:
+                return RevalidateStationFleetTransferOnMainThread(plan);
             case NormalActionKinds.Refuel:
                 return RevalidateRefuelOnMainThread(plan);
             case NormalActionKinds.Save:
@@ -2065,6 +2077,10 @@ internal sealed partial class NormalGameActionCoordinator
         public int TransferStorageEntityId { get; private set; }
         public int TransferItemId { get; private set; }
         public string TransferStorageStateHash { get; private set; } = string.Empty;
+        public string StationFleetStateHash { get; private set; } = string.Empty;
+        public string FleetTransferDirection { get; private set; } = string.Empty;
+        public int FleetTransferStationEntityId { get; private set; }
+        public int FleetTransferItemId { get; private set; }
         public int Count { get; private set; }
 
         public static NormalActionPlanPayload Move(

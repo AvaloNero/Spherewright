@@ -185,6 +185,7 @@ long energy, energyPerTick, energyMax
 int pcId -> PowerSystem.consumerPool[pcId].workEnergyPerTick/requiredEnergy
 int warperCount, warperMaxCount
 int idleDroneCount, workDroneCount, idleShipCount, workShipCount
+int PrefabDesc.stationMaxDroneCount, stationMaxShipCount
 double tripRangeDrones, tripRangeShips, warpEnableDist
 bool includeOrbitCollector, warperNecessary
 int deliveryDrones, deliveryShips, pilerCount
@@ -220,7 +221,31 @@ The adopted maximum-charge action mirrors the exact `UIStationWindow` scale inst
 
 The other UI transforms remain read-only in this slice: drone range stores `cos(degrees / 180 * pi)`; vessel range stores `2400000 * mappedLightYears`; warp distance stores `40000 * mappedAU`; and minimum drone delivery stores `round(slider * 10)` percent with a minimum of one. The public DTO still labels route values raw/settings because no route-setting action has yet adopted their full bounds and readback matrix.
 
-The observation DTO provides two versioned hashes. The live hash covers energy, inventory, orders, fleet activity and needs. The configuration hash excludes those tick-volatile values while binding station identity/type, capacity settings, storage item/limit/logic, route settings and belt topology. This split lets future prepare logic avoid becoming stale merely because a vessel moved while still rejecting a changed station configuration.
+Current-assembly decompilation also proves the exact ordinary fleet-slot paths:
+
+```text
+private void UIStationWindow.OnDroneIconClick(int obj)
+  accepts only item 5001
+  capacity = station building prefabDesc.stationMaxDroneCount (UI fallback 10)
+  occupied = idleDroneCount + workDroneCount
+  deposit: idleDroneCount += accepted; hand count/inc -= split_inc result
+  withdrawal: only idleDroneCount; shift/control calls Player.TryAddItemToPackage
+
+private void UIStationWindow.OnShipIconClick(int obj)
+  additionally requires station.isStellar
+  accepts only item 5002
+  capacity = station building prefabDesc.stationMaxShipCount (UI fallback 10)
+  occupied = idleShipCount + workShipCount
+  deposit/withdrawal mirrors the drone path
+
+public int StorageComponent.TakeItem(int itemId, int count, out int inc)
+public int StorageComponent.AddItemStacked(int itemId, int count, int inc, out int remainInc)
+public void Player.NotifyPackageAddItem(int itemId, int count, int inc)
+```
+
+The adopted structured action is intentionally narrower than the UI. It requires the player hand to be empty, uses a disposable package copy to prove an exact withdrawal destination before mutation, limits each action to 100 craft, rejects collectors and vein collectors, and rejects player-to-station transfers whenever the package's aggregate proliferator points for that craft are nonzero because the native fleet counter has nowhere to retain them. Prepare and commit bind entity/station/planet/type/position, both capacities, all four idle/working counters and both auto-replenish flags through a dedicated fleet hash. Immediate execution uses the normal package take/add primitives and the exact UI idle-counter field, then verifies player/idle equal-and-opposite deltas and conservation while working craft, the opposite fleet, cargo slots/orders, energy, warpers, station configuration, the player hand and unrelated package grids remain unchanged. Any post-mutation ambiguity enters the existing write quarantine.
+
+The observation DTO therefore provides three versioned hashes. The live hash covers energy, inventory, orders, fleet activity and needs. The configuration hash excludes those tick-volatile values while binding station identity/type, capacity settings, storage item/limit/logic, route settings and belt topology. The fleet hash binds only the exact station fleet identity/capacity/counters and auto-replenish state, avoiding unrelated cargo or energy churn while still invalidating a launch, return, rebuild, or fleet setting change between inspect and commit.
 
 ## Stable research-selection state
 

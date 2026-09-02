@@ -150,6 +150,16 @@ public interface IBridgeClient
         CommitNormalActionRequest request,
         CancellationToken cancellationToken);
 
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareLogisticsStationFleetTransferAsync(
+        string sessionId,
+        PrepareLogisticsStationFleetTransferRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitLogisticsStationFleetTransferAsync(
+        string sessionId,
+        CommitNormalActionRequest request,
+        CancellationToken cancellationToken);
+
     Task<BridgeCallResult<PreparedNormalAction>> PrepareRefuelAsync(
         string sessionId,
         PrepareRefuelRequest request,

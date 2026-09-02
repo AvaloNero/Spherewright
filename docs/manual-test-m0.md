@@ -25,7 +25,7 @@ Sections whose tools are not implemented remain blocked; do not substitute the l
 
 ## 3. Verify each normal-play primitive
 
-For move, harvest, handcraft, build, transfer, configure, research, refuel, and explicit save:
+For move, harvest, handcraft, build, storage transfer, logistics-station fleet transfer, configure, research, refuel, and explicit save:
 
 1. Inspect the exact target and current player/resource state.
 2. Prepare with writes disabled once, then with writes enabled; verify prepare has no side effects.
@@ -34,9 +34,10 @@ For move, harvest, handcraft, build, transfer, configure, research, refuel, and 
 5. Retry the same commit and prove idempotent replay.
 6. Exercise stale target/resource, insufficient inventory, out-of-range, locked recipe/tech, invalid build, and response-loss paths without contaminating a user save.
 7. For refuel, prove the package decrement, fuel-chamber increment, and total count/proliferator-point conservation; never write mecha energy directly.
-8. For save, prove `lastOwnedSaveGameTick` is recorded for the exact current owned save name; never enumerate or open another save.
-9. Complete at least one technology and prove the result modal is dismissed through the native `FadeOut()` lifecycle without Computer Use or synthesized input.
-10. Build two refinery-output sorters from the same refinery to different destinations. Prove each completed action resolves the newly built entity even though DSP anchors both sorters at the same source pose. Then configure the idle empty sorters with distinct hydrogen/refined-oil filters and prove component filters, entity signs, topology, and carried-cargo state before allowing production.
+8. For fleet transfer, separately prove drone deposit, idle-only withdrawal, vessel rejection on a planetary station, working-craft capacity accounting, full-package rejection, and proliferated-deposit rejection; after each accepted commit re-read both fleet counters, player package/inc, station cargo/orders, energy, warpers, configuration, and the opposite fleet.
+9. For save, prove `lastOwnedSaveGameTick` is recorded for the exact current owned save name; never enumerate or open another save.
+10. Complete at least one technology and prove the result modal is dismissed through the native `FadeOut()` lifecycle without Computer Use or synthesized input.
+11. Build two refinery-output sorters from the same refinery to different destinations. Prove each completed action resolves the newly built entity even though DSP anchors both sorters at the same source pose. Then configure the idle empty sorters with distinct hydrogen/refined-oil filters and prove component filters, entity signs, topology, and carried-cargo state before allowing production.
 
 ## 4. First-red-matrix run
 

@@ -190,11 +190,14 @@ public sealed class ProtocolContractTests
             RequestedChargePowerWatts = 3_000_000,
             MaximumChargeEnergyPerTick = 100_000,
             MaximumChargePowerWatts = 6_000_000,
+            DroneCapacity = 50,
+            VesselCapacity = 10,
             DroneTripRangeRaw = 180d,
             VesselTripRangeRaw = 12d,
             WarpEnableDistanceRaw = 0.5d,
             StateHash = "sha256:live",
             ConfigurationStateHash = "sha256:config",
+            FleetStateHash = "sha256:fleet",
         };
 
         var json = JsonSerializer.Serialize(station, JsonOptions);
@@ -204,8 +207,31 @@ public sealed class ProtocolContractTests
         Assert.Equal(50_000, parsed.RootElement.GetProperty("requestedChargeEnergyPerTick").GetInt64());
         Assert.Equal(6_000_000, parsed.RootElement.GetProperty("maximumChargePowerWatts").GetInt64());
         Assert.Equal("sha256:config", parsed.RootElement.GetProperty("configurationStateHash").GetString());
+        Assert.Equal(50, parsed.RootElement.GetProperty("droneCapacity").GetInt32());
+        Assert.Equal(10, parsed.RootElement.GetProperty("vesselCapacity").GetInt32());
+        Assert.Equal("sha256:fleet", parsed.RootElement.GetProperty("fleetStateHash").GetString());
         Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("filePath", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void LogisticsStationFleetTransfer_BindsDedicatedFleetHash()
+    {
+        var request = new PrepareLogisticsStationFleetTransferRequest
+        {
+            PlanetId = 104,
+            StationEntityId = 920,
+            Direction = LogisticsStationFleetTransferDirections.PlayerToStation,
+            ItemId = LogisticsFleetItemIds.Drone,
+            Count = 10,
+            ExpectedPlayerStateHash = "sha256:player",
+            ExpectedStationFleetStateHash = "sha256:fleet",
+        };
+
+        using var parsed = JsonDocument.Parse(JsonSerializer.Serialize(request, JsonOptions));
+        Assert.Equal("player-to-station", parsed.RootElement.GetProperty("direction").GetString());
+        Assert.Equal(5001, parsed.RootElement.GetProperty("itemId").GetInt32());
+        Assert.Equal("sha256:fleet", parsed.RootElement.GetProperty("expectedStationFleetStateHash").GetString());
     }
 
     [Fact]

@@ -11,4 +11,5 @@
 *.autosave
 bridge-*.json
 BepInEx/
+artifacts/
 

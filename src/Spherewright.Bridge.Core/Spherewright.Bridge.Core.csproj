@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <AssemblyName>Spherewright.Bridge.Core</AssemblyName>
     <RootNamespace>Spherewright.Bridge.Core</RootNamespace>
   </PropertyGroup>

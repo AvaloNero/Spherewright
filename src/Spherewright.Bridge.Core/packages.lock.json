@@ -19,6 +19,7 @@
       "spherewright.contracts": {
         "type": "Project"
       }
-    }
+    },
+    ".NETStandard,Version=v2.0/win-x64": {}
   }
 }

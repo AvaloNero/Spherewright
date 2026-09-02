@@ -59,9 +59,16 @@ See [ROADMAP.md](./ROADMAP.md), [docs/protocol.md](./docs/protocol.md), [docs/m0
 
 ## Requirements
 
+Release package users need:
+
 - Windows
 - Dyson Sphere Program (the currently validated build is `0.10.34.28529`)
 - BepInEx 5 installed in DSP
+
+The versioned Windows release package includes a self-contained MCP server; using it does not require the repository, source code, or a .NET SDK. See [release installation](./docs/release-installation.md).
+
+Source builds additionally need:
+
 - .NET 8 SDK
 - PowerShell 7 recommended for the helper scripts
 
@@ -91,6 +98,20 @@ If DSP is installed somewhere the locator cannot find automatically:
 ```
 
 The Plugin output is `src/Spherewright.Plugin/bin/Debug/net472/Spherewright.Plugin.dll` by default, or the corresponding `Release` directory when built with `--configuration Release`.
+
+To produce the versioned Windows release zip, integrity manifest, and SHA-256 sidecar from a clean worktree:
+
+```powershell
+./scripts/package-release.ps1 -Version 0.3.0
+```
+
+The packager builds the full solution, publishes `Spherewright.Mcp.exe` self-contained for `win-x64`, verifies every staged file after zip extraction, and writes ignored artifacts under `artifacts/`. Creating an artifact does not create a tag or GitHub Release; those remain gated by [ROADMAP.md](./ROADMAP.md).
+
+To repeat the package integrity and self-contained MCP `initialize`/`tools/list` smoke test independently:
+
+```powershell
+./scripts/test-release-package.ps1 -PackagePath ./artifacts/Spherewright-0.3.0-win-x64.zip
+```
 
 ## Local setup
 

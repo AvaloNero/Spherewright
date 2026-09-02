@@ -1,6 +1,6 @@
 # Spherewright 跨电脑 Agent 接手说明
 
-更新时间：2026-09-02 11:12（Asia/Singapore）
+更新时间：2026-09-02 20:10（Asia/Singapore）
 
 交接分支：`main`
 
@@ -8,9 +8,10 @@
 
 ## 2026-09-02 当前运行状态（当前权威）
 
-- DSP 进程 `32744` 已消费上一节记录的受保护续玩票据，恢复动作只接受 minimum tick `8340400`、planet `104` 的 ticket-bound exact primary，并以 `completed/succeeded` 终结；新 session 为 `e888efcf-bbbf-4bbe-b520-abdbe6ae1403`。恢复后实际复读从 tick `8342796` 开始，`confirmed_peaceful`、`confirmed_disabled`、1×、owned、healthy、journal `36/false/null` 全部成立，未枚举或选择其他存档。恢复采用后主档已自动重新保存，revision 从新进程的 `1` 开始计数。
-- tick `8503993` 时粒子磁力阱 `1703` 继续正常研究至 `242820/288000`，没有直接解锁；三台预建制造台 `883/891/898` 均为 recipe `0`、network `1`、consumer ratio `1.0`。既有处理器线自然补产 10 个后，仓 `899` 已有钢/处理器/钛块各 40，只欠 20 粒子容器；普通保存动作 `dd2fc858-6720-46fb-86d9-12a9b11d525e` 持久化到 tick `8474115`、revision `30`。解锁后仍按上一节顺序只启用 `883 recipe 99`，再完成粒子容器、物流运输机和行星物流站里程碑。
-- commit `952df0c` 的物流塔只读切片已随当前游戏进程部署；当前同档尚无完成物流站，因此还没有 live station DTO。后续源码又完成 `logistics-station-storage`、`logistics-station-charge` 安全子集、充电请求/上限语义拆分和研究 selection hash。旧进程中追加 `1604` 的 1+80 次 fresh prepare 均因活跃 `HashUploaded` 竞争而在 commit 前安全 stale，队列未变；新源码只从选科技指纹排除上传量，仍绑定队列/解锁/前置并在 prepare/commit 调用 `CanEnqueueTech`。充电写入只接受 prefab UI 范围内的 3 MW 步进，并保持 requested/库存不变量。完整 Release build 为 0 warning / 0 error，86 tests passed（Contracts 8、Core 62、MCP 16）。这些后续切片尚未部署，必须先普通保存并正常关闭当前游戏，再同批替换 Plugin/Core/Contracts；首座空塔出现前无需为它中断当前科研和产品线。
+- DSP 进程 `25412` 仍在同一受保护 owned world、planet `104` 中健康运行；当前和平、非沙盒、1×、owned 约束未变。最新普通保存动作 `e8d96a21-75d7-4f7c-a60b-598646f7f754` 已把主档持久化到 tick `9369181`、revision `112`，`ownedSaveState=saved`、`writeHealth=healthy`、`restartResumeAvailable=true`；日记 durable through sequence `41`、无 pending/error。继续使用此档，不开新档。
+- 行星物流 `1604` 已在 tick `8836460` 正常完成。动作 `532666d4-de0d-4ea9-abfc-6a44657fe555` 只在解锁后把制造台 `891` 配置为 recipe `94`；`892 -> 895/896/897 -> 891 -> 894 -> 893` 的过滤链消耗真实铁块/处理器/推进器，专用仓最终达到 10 个 item `5001`。日记 sequence `41` 在 tick `9346766`（本局 `001d 19:16:19`）持久化首次自动物流运输机。当前研究为加力推进器 `1114`，tick `9372727` 时 `164777/288000`，其后排队 `1414`。
+- 仓 `899` 已有钢/处理器/钛块各 40；制造台 `898` 和输出 `901 -> 900` 已预建，输入 sorter `902–905` 中粒子容器过滤仍按科技门控方案延后。下一产品线是把自动粒子容器 20 个守恒送入 `899`、配置 sorter `905`、再启用 recipe `93`，产出第一座行星物流运输站并保存。
+- `main` commit `8e9a66b` 已新增专用 fleet hash、容量字段以及物流塔无人机/运输船双阶段守恒转移动作；完整 Release build 0 warning / 0 error，94 tests passed（Contracts 11、Core 66、MCP 17），源码 MCP 面为 46。当前游戏仍加载此前 44-tool DLL，绝不能热覆盖；完成/保存行星物流站产品线后正常关闭，再同批部署 Plugin/Core/Contracts 并从精确主档恢复，首塔上做 live 验证。
 
 ## 2026-09-01 关机交接状态（已由上节恢复状态取代）
 

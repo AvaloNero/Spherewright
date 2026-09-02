@@ -113,6 +113,10 @@ public sealed class FactoryEntitySnapshot
 
     public int StateHashVersion { get; set; } = 1;
 
+    public string ConfigurationStateHash { get; set; } = string.Empty;
+
+    public int ConfigurationStateHashVersion { get; set; } = 1;
+
     public string EndpointStateHash { get; set; } = string.Empty;
 
     public int EndpointStateHashVersion { get; set; } = 1;

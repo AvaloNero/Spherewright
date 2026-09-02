@@ -186,6 +186,95 @@ public sealed class CanonicalStateHashTests
     }
 
     [Fact]
+    public void FactoryConfiguration_IgnoresCargoFreeReturnProgress_ButBindsFilterTopologyAndCargo()
+    {
+        var snapshot = new FactoryEntitySnapshot
+        {
+            SessionId = "session",
+            PlanetId = 103,
+            ObjectId = 12,
+            ObjectKind = FactoryObjectKinds.Entity,
+            ItemId = 2011,
+            ComponentKind = "inserter",
+            PickTargetObjectId = 10,
+            InsertTargetObjectId = 20,
+            InserterStage = "Returning",
+            InserterStackCount = 0,
+            IsWorking = true,
+            Progress = 200_000,
+            ProgressRequired = 600_000,
+        };
+        snapshot.Connections.Add(new FactoryConnectionSnapshot
+        {
+            Slot = 0,
+            IsOutput = true,
+            OtherObjectId = 20,
+            OtherSlot = 1,
+        });
+
+        var returning = CanonicalStateHash.FactoryConfiguration(snapshot);
+        snapshot.InserterStage = "Picking";
+        snapshot.IsWorking = false;
+        snapshot.Progress = 0;
+        Assert.Equal(returning, CanonicalStateHash.FactoryConfiguration(snapshot));
+
+        snapshot.FilterItemId = 6001;
+        var filtered = CanonicalStateHash.FactoryConfiguration(snapshot);
+        Assert.NotEqual(returning, filtered);
+
+        snapshot.Buffers.Add(new FactoryBufferSnapshot
+        {
+            Role = "inserter-held",
+            ItemId = 6001,
+            Count = 1,
+        });
+        snapshot.InserterStackCount = 1;
+        Assert.NotEqual(filtered, CanonicalStateHash.FactoryConfiguration(snapshot));
+
+        snapshot.Buffers.Clear();
+        snapshot.InserterStackCount = 0;
+        snapshot.Connections[0].OtherObjectId = 21;
+        Assert.NotEqual(filtered, CanonicalStateHash.FactoryConfiguration(snapshot));
+    }
+
+    [Fact]
+    public void SorterFilterPolicy_RequiresConnectedCargoFreeSorter_ButNotIdleMotionStage()
+    {
+        Assert.True(SorterFilterPolicy.IsSafeAssignmentWindow(
+            6001,
+            10,
+            20,
+            0,
+            0,
+            0,
+            0));
+        Assert.False(SorterFilterPolicy.IsSafeAssignmentWindow(
+            6001,
+            0,
+            20,
+            0,
+            0,
+            0,
+            0));
+        Assert.False(SorterFilterPolicy.IsSafeAssignmentWindow(
+            6001,
+            10,
+            20,
+            1104,
+            1,
+            1,
+            0));
+        Assert.False(SorterFilterPolicy.IsSafeAssignmentWindow(
+            -1,
+            10,
+            20,
+            0,
+            0,
+            0,
+            0));
+    }
+
+    [Fact]
     public void FactoryEndpoint_IgnoresProductionProgressAndBuffers_ButBindsConnections()
     {
         var snapshot = new FactoryEntitySnapshot

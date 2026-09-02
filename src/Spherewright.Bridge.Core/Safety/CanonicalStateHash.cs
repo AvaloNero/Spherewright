@@ -179,6 +179,31 @@ public static class CanonicalStateHash
         return Hash(value);
     }
 
+    public static string FactoryConfiguration(FactoryEntitySnapshot snapshot)
+    {
+        var value = new StringBuilder();
+        Append(value, "factory-configuration-v1", snapshot.SessionId, snapshot.PlanetId,
+            snapshot.ObjectId, snapshot.ObjectKind, snapshot.ItemId, snapshot.ComponentKind,
+            F(snapshot.Position.X), F(snapshot.Position.Y), F(snapshot.Position.Z),
+            F(snapshot.Rotation.X), F(snapshot.Rotation.Y), F(snapshot.Rotation.Z),
+            F(snapshot.Rotation.W), snapshot.RecipeId, snapshot.PickTargetObjectId,
+            snapshot.InsertTargetObjectId, snapshot.FilterItemId, snapshot.InserterStackCount);
+        foreach (var connection in snapshot.Connections.OrderBy(connection => connection.Slot))
+        {
+            Append(value, "connection", connection.Slot, connection.IsOutput,
+                connection.OtherObjectId, connection.OtherSlot);
+        }
+
+        foreach (var buffer in snapshot.Buffers
+                     .OrderBy(buffer => buffer.Role, StringComparer.Ordinal)
+                     .ThenBy(buffer => buffer.ItemId))
+        {
+            Append(value, "buffer", buffer.Role, buffer.ItemId, buffer.Count, buffer.Inc);
+        }
+
+        return Hash(value);
+    }
+
     public static string ProgressionSelection(ProgressionStateSnapshot snapshot)
     {
         var value = new StringBuilder();

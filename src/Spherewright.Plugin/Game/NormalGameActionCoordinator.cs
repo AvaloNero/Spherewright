@@ -1072,8 +1072,13 @@ internal sealed partial class NormalGameActionCoordinator
                     return configureSnapshot.Error;
                 }
 
-                if (!string.Equals(configureSnapshot.Value.StateHash, plan.FactoryStateHash, StringComparison.Ordinal)
-                    || (plan.ConfigureMode != BuildingConfigurationModes.LogisticsStationStorage
+                var sorterFilterMode = plan.ConfigureMode == BuildingConfigurationModes.SorterFilter;
+                var currentConfigurationHash = sorterFilterMode
+                    ? configureSnapshot.Value.ConfigurationStateHash
+                    : configureSnapshot.Value.StateHash;
+                if (!string.Equals(currentConfigurationHash, plan.FactoryStateHash, StringComparison.Ordinal)
+                    || (!sorterFilterMode
+                        && plan.ConfigureMode != BuildingConfigurationModes.LogisticsStationStorage
                         && plan.ConfigureMode != BuildingConfigurationModes.LogisticsStationCharge
                         && (configureSnapshot.Value.Progress != 0
                             || configureSnapshot.Value.IsWorking

@@ -1093,6 +1093,8 @@ internal sealed class GameStateReader
         CaptureInserter(factory, ref entity, snapshot);
         snapshot.StateHash = CanonicalStateHash.Factory(snapshot);
         snapshot.StateHashVersion = CanonicalStateHash.Version;
+        snapshot.ConfigurationStateHash = CanonicalStateHash.FactoryConfiguration(snapshot);
+        snapshot.ConfigurationStateHashVersion = CanonicalStateHash.Version;
         snapshot.EndpointStateHash = CanonicalStateHash.FactoryEndpoint(snapshot);
         snapshot.EndpointStateHashVersion = CanonicalStateHash.Version;
         return snapshot;
@@ -1132,6 +1134,8 @@ internal sealed class GameStateReader
         CaptureConnections(factory, -prebuildId, snapshot.Connections);
         snapshot.StateHash = CanonicalStateHash.Factory(snapshot);
         snapshot.StateHashVersion = CanonicalStateHash.Version;
+        snapshot.ConfigurationStateHash = CanonicalStateHash.FactoryConfiguration(snapshot);
+        snapshot.ConfigurationStateHashVersion = CanonicalStateHash.Version;
         snapshot.EndpointStateHash = CanonicalStateHash.FactoryEndpoint(snapshot);
         snapshot.EndpointStateHashVersion = CanonicalStateHash.Version;
         return snapshot;

@@ -1722,15 +1722,21 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         var snapshot = snapshotResult.Value;
-        if (!string.Equals(request.ExpectedFactoryStateHash, snapshot.StateHash, StringComparison.Ordinal))
+        var sorterFilterMode = request.Mode == BuildingConfigurationModes.SorterFilter;
+        var configurationStateHash = sorterFilterMode
+            ? snapshot.ConfigurationStateHash
+            : snapshot.StateHash;
+        if (!string.Equals(request.ExpectedFactoryStateHash, configurationStateHash, StringComparison.Ordinal))
         {
-            return StalePlan("Building mode, recipe, progress, buffers, or identity changed after inspection.");
+            return StalePlan(sorterFilterMode
+                ? "Sorter identity, topology, current filter, or carried cargo changed after inspection."
+                : "Building mode, recipe, progress, buffers, or identity changed after inspection.");
         }
 
         var stationMode = request.Mode == BuildingConfigurationModes.LogisticsStationStorage
                           || request.Mode == BuildingConfigurationModes.LogisticsStationCharge;
         if (snapshot.ObjectKind != FactoryObjectKinds.Entity
-            || (!stationMode && (snapshot.Progress != 0
+            || (!stationMode && !sorterFilterMode && (snapshot.Progress != 0
                 || snapshot.IsWorking
                 || snapshot.Buffers.Any(buffer => buffer.Count != 0))))
         {
@@ -1843,7 +1849,7 @@ internal sealed partial class NormalGameActionCoordinator
             NormalActionKinds.ConfigureBuilding,
             _sessions.SessionId,
             request.PlanetId,
-            snapshot.StateHash,
+            configurationStateHash,
             request.EntityId,
             request.Mode,
             request.RecipeId,
@@ -1860,7 +1866,7 @@ internal sealed partial class NormalGameActionCoordinator
             _sessions.SessionId!,
             request.PlanetId,
             expectedHash,
-            snapshot.StateHash,
+            configurationStateHash,
             request.EntityId,
             request.RecipeId,
             request.Mode,
@@ -1880,7 +1886,7 @@ internal sealed partial class NormalGameActionCoordinator
             request.Mode == BuildingConfigurationModes.Research
                 ? "The exact empty matrix lab reports research mode and the active technology after the UI/business setting path is called once."
                 : request.Mode == BuildingConfigurationModes.SorterFilter
-                    ? "The exact idle sorter reports the target item filter and matching entity sign after the current-version UI setting path is applied once."
+                    ? "The exact connected cargo-free sorter reports the target item filter and matching entity sign after the current-version UI setting path is applied once."
                     : request.Mode == BuildingConfigurationModes.LogisticsStationStorage
                         ? "The exact station slot reports the selected unlocked item, 100-step limit, and local/remote logic after PlanetTransport.SetStationStorage is called once; item count and proliferator points remain unchanged by the call."
                     : request.Mode == BuildingConfigurationModes.LogisticsStationCharge
@@ -1911,9 +1917,22 @@ internal sealed partial class NormalGameActionCoordinator
 
         if (plan.ConfigureMode == BuildingConfigurationModes.SorterFilter)
         {
+            var snapshotResult = _reader.InspectFactoryEntityOnMainThread(
+                plan.SessionId,
+                new InspectFactoryEntityRequest { PlanetId = plan.PlanetId, ObjectId = plan.EntityId });
+            if (!snapshotResult.Success
+                || snapshotResult.Value is null
+                || !string.Equals(
+                    snapshotResult.Value.ConfigurationStateHash,
+                    plan.FactoryStateHash,
+                    StringComparison.Ordinal))
+            {
+                return Stale("The exact sorter identity, topology, current filter, or carried cargo changed after preparation.");
+            }
+
             return CanSetSorterFilter(factory, plan.EntityId, plan.ConfigureFilterItemId, out _)
                 ? null
-                : Stale("The exact sorter identity, idle state, cargo state, or filter item changed after preparation.");
+                : Stale("The exact sorter is no longer connected and cargo-free, or the filter item changed after preparation.");
         }
 
         if (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
@@ -2197,7 +2216,7 @@ internal sealed partial class NormalGameActionCoordinator
         int filterItemId,
         out string reason)
     {
-        reason = "The exact entity is not an idle empty sorter, or the requested filter item is unavailable.";
+        reason = "The exact entity is not a connected cargo-free sorter, or the requested filter item is unavailable.";
         if (entityId <= 0 || entityId >= factory.entityCursor || entityId >= factory.entityPool.Length
             || entityId >= factory.entitySignPool.Length
             || filterItemId < 0)
@@ -2215,10 +2234,14 @@ internal sealed partial class NormalGameActionCoordinator
 
         ref var inserter = ref factory.factorySystem.inserterPool[entity.inserterId];
         if (inserter.id != entity.inserterId || inserter.entityId != entityId
-            || inserter.pickTarget == 0 || inserter.insertTarget == 0
-            || inserter.stage != EInserterStage.Picking
-            || inserter.time != 0 || inserter.itemId != 0 || inserter.itemCount != 0
-            || inserter.stackCount != 0 || inserter.itemInc != 0)
+            || !SorterFilterPolicy.IsSafeAssignmentWindow(
+                filterItemId,
+                inserter.pickTarget,
+                inserter.insertTarget,
+                inserter.itemId,
+                inserter.itemCount,
+                inserter.stackCount,
+                inserter.itemInc))
         {
             return false;
         }

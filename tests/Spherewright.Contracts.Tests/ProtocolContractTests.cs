@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Errors;
+using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Journals;
 using Spherewright.Contracts.Logistics;
 using Spherewright.Contracts.Protocol;
@@ -39,6 +40,23 @@ public sealed class ProtocolContractTests
         Assert.Equal("sha256:selection", snapshotJson.RootElement.GetProperty("selectionStateHash").GetString());
         Assert.Equal(1, snapshotJson.RootElement.GetProperty("selectionStateHashVersion").GetInt32());
         Assert.Equal("sha256:selection", requestJson.RootElement.GetProperty("expectedSelectionStateHash").GetString());
+    }
+
+    [Fact]
+    public void FactoryEntity_ExposesDedicatedConfigurationHashContract()
+    {
+        var snapshot = new FactoryEntitySnapshot
+        {
+            StateHash = "sha256:full",
+            ConfigurationStateHash = "sha256:configuration",
+            ConfigurationStateHashVersion = 1,
+            EndpointStateHash = "sha256:endpoint",
+        };
+
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(snapshot, JsonOptions));
+
+        Assert.Equal("sha256:configuration", json.RootElement.GetProperty("configurationStateHash").GetString());
+        Assert.Equal(1, json.RootElement.GetProperty("configurationStateHashVersion").GetInt32());
     }
 
     [Fact]

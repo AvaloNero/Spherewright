@@ -1250,7 +1250,21 @@
 - 关联：EXP-017、EXP-097、EXP-098、`StationComponent.SetPCState`、`UIStationWindow.OnMaxChargePowerSliderValueChange`。
 - 最近复验：2026-09-02（字段写入者、UI 配置源、60 tick/s 显示换算、双哈希语义和自动测试已复核；等待首站 live）。
 
+### EXP-100 — 选科技必须使用不含自然科研上传量的专用状态哈希
+
+- 状态：`observed`
+- 日期：2026-09-02
+- 适用范围：研究站正在持续上传 hash 时，通过 `get_progression_state -> prepare_select_research -> commit_select_research` 向 DSP 原生队列追加后续科技。
+- 当前结论：完整 progression 哈希适合精确观察，但不能直接作为只修改队列的并发指纹，因为其中的 `HashUploaded` 会随正常科研每 tick 增长。专用 `selectionStateHash` 应绑定 session/planet、当前科技、队列顺序、科技解锁/等级/所需 hash、实验室/排队分类和前置科技，排除自然增长的上传量；prepare 与 commit 仍必须分别调用 `GameHistoryData.CanEnqueueTech`。这样只消除与决策无关的活跃科研竞争，不放宽队列、解锁或前置条件的 stale 校验。
+- 直接证据：当前同档在粒子磁力阱 `1703` 持续研究时，先进行 1 次普通 fresh inspect/prepare，再进行有界 80 次 fresh 重试，全部在 commit 前返回 `STALE_STATE`；期间队列始终只有 `[1703]`，没有 action ID、没有 commit、没有写副作用，研究则自然推进。源码定位到旧 `CanonicalStateHash.Progression` 串入 `HashUploaded`，现已新增独立 selection hash 并把 MCP 参数、plan payload、prepare/commit 复验全部迁移；Release solution 0 warning / 0 error，83 tests passed（Contracts 7、Core 61、MCP 15）。测试证明上传量变化只改变完整哈希，而队列或解锁变化必定改变 selection hash。
+- 限制或反例：当前 DSP 进程仍运行上一批已部署 DLL，因此这一修复尚未 live 部署；本次会话继续让 `1703` 自然完成，再在稳定窗口选择 `1604`。下次普通保存并正常关闭后同批部署 Plugin/Core/Contracts，必须在活跃科研期间完成一次“读取 selection hash、prepare、commit、队列复读”的实机复验，届时才能升级为 `validated`。
+- 复验触发：下次安全部署、活跃研究期间追加 `1605` 或其他后续科技、DSP `CanEnqueueTech` 行为变化、科技等级/前置规则变化。
+- 关联：EXP-063、EXP-074、`CanonicalStateHash.ProgressionSelection`、`PrepareSelectResearchRequest.ExpectedSelectionStateHash`。
+- 最近复验：2026-09-02（81 次无副作用 stale 已复现；专用哈希、契约映射和自动测试完成，等待同档下一次安全部署 live）。
+
 ## 修订记录
+
+- 2026-09-02：新增 EXP-100。活跃科研下 81 次选科技 prepare 均被上传量竞争安全拒绝；新增稳定 selection hash，保留队列/解锁/前置校验，完整构建 0 warning / 0 error、83 tests passed，live 部署待当前产线窗口结束。
 
 - 2026-09-02：新增 EXP-099。修正物流塔充电字段语义：station `energyPerTick` 为实时 requested，consumer `workEnergyPerTick` 才是配置 maximum；DTO 与双哈希已拆分，避免正常充电造成配置 stale。
 

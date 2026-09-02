@@ -12,6 +12,10 @@ public sealed class ProgressionStateSnapshot
 
     public int StateHashVersion { get; set; } = 1;
 
+    public string SelectionStateHash { get; set; } = string.Empty;
+
+    public int SelectionStateHashVersion { get; set; } = 1;
+
     public int CurrentTechId { get; set; }
 
     public string? CurrentTechName { get; set; }

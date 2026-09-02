@@ -4,6 +4,7 @@ using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Journals;
 using Spherewright.Contracts.Logistics;
 using Spherewright.Contracts.Protocol;
+using Spherewright.Contracts.Progression;
 using Spherewright.Contracts.Sessions;
 using Xunit;
 
@@ -15,6 +16,30 @@ public sealed class ProtocolContractTests
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
+
+    [Fact]
+    public void ProgressionSelection_UsesDedicatedStableHashContract()
+    {
+        var snapshot = new ProgressionStateSnapshot
+        {
+            StateHash = "sha256:full",
+            SelectionStateHash = "sha256:selection",
+            SelectionStateHashVersion = 1,
+        };
+        var request = new PrepareSelectResearchRequest
+        {
+            PlanetId = 104,
+            TechId = 1604,
+            ExpectedSelectionStateHash = "sha256:selection",
+        };
+
+        using var snapshotJson = JsonDocument.Parse(JsonSerializer.Serialize(snapshot, JsonOptions));
+        using var requestJson = JsonDocument.Parse(JsonSerializer.Serialize(request, JsonOptions));
+
+        Assert.Equal("sha256:selection", snapshotJson.RootElement.GetProperty("selectionStateHash").GetString());
+        Assert.Equal(1, snapshotJson.RootElement.GetProperty("selectionStateHashVersion").GetInt32());
+        Assert.Equal("sha256:selection", requestJson.RootElement.GetProperty("expectedSelectionStateHash").GetString());
+    }
 
     [Fact]
     public void BridgeStatus_UsesStableCamelCaseContract()

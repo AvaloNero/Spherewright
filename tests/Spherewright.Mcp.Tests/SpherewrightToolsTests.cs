@@ -167,6 +167,26 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public async Task PrepareSelectResearch_MapsDedicatedSelectionHash()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.PrepareSelectResearchAsync(
+            bridge,
+            "session-research",
+            104,
+            1604,
+            "sha256:selection",
+            1,
+            CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("session-research", bridge.LastSessionId);
+        Assert.Equal(1604, bridge.LastSelectResearchRequest?.TechId);
+        Assert.Equal("sha256:selection", bridge.LastSelectResearchRequest?.ExpectedSelectionStateHash);
+    }
+
+    [Fact]
     public async Task ConfigureBuildingTool_MapsSorterFilterMode()
     {
         var bridge = new FakeBridgeClient(SuccessResult());
@@ -319,6 +339,8 @@ public sealed class SpherewrightToolsTests
         public PrepareQuarantineReconciliationRequest? LastReconciliationRequest { get; private set; }
 
         public PrepareInterplanetaryFlightRequest? LastFlightRequest { get; private set; }
+
+        public PrepareSelectResearchRequest? LastSelectResearchRequest { get; private set; }
 
         public PrepareFlightCheckpointReloadRequest? LastFlightCheckpointReloadRequest { get; private set; }
 
@@ -531,7 +553,11 @@ public sealed class SpherewrightToolsTests
         public Task<BridgeCallResult<PreparedNormalAction>> PrepareSelectResearchAsync(
             string sessionId,
             PrepareSelectResearchRequest request,
-            CancellationToken cancellationToken) => Prepared(sessionId, NormalActionKinds.SelectResearch);
+            CancellationToken cancellationToken)
+        {
+            LastSelectResearchRequest = request;
+            return Prepared(sessionId, NormalActionKinds.SelectResearch);
+        }
 
         public Task<BridgeCallResult<NormalActionCommitResult>> CommitSelectResearchAsync(
             string sessionId,

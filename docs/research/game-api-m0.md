@@ -200,6 +200,12 @@ The other UI transforms are now documented but remain read-only in this slice: m
 
 The observation DTO provides two versioned hashes. The live hash covers energy, inventory, orders, fleet activity and needs. The configuration hash excludes those tick-volatile values while binding station identity/type, capacity settings, storage item/limit/logic, route settings and belt topology. This split lets future prepare logic avoid becoming stale merely because a vessel moved while still rejecting a changed station configuration.
 
+## Stable research-selection state
+
+`GameHistoryData.CanEnqueueTech(int techId)` decides whether a technology can enter the native queue. The earlier research action bound `CanonicalStateHash.Progression`, which also contains every technology's `hashUploaded`. A powered research lab can advance that value between the read and the next main-thread prepare, so a valid queue request was rejected as stale even though the queue, prerequisites and unlock state were unchanged.
+
+The progression DTO now exposes a second `selectionStateHash`. Its canonical domain binds session/planet, current technology, ordered queue, and each technology's unlock, level, required-hash, lab/queue and prerequisite state. It deliberately omits `hashUploaded`, while the original complete hash remains available for progress observation. Research prepare binds the selection hash, calls `CanEnqueueTech`, and commit re-reads both before invoking the existing native enqueue path. Tests prove that increasing uploaded research changes the complete hash but not the selection hash, while a queue or unlock change invalidates the selection hash.
+
 ## Research-result acknowledgement UI
 
 The current assembly exposes the same path used by the visible confirm button and Escape handling:

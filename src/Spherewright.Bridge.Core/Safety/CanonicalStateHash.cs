@@ -179,6 +179,28 @@ public static class CanonicalStateHash
         return Hash(value);
     }
 
+    public static string ProgressionSelection(ProgressionStateSnapshot snapshot)
+    {
+        var value = new StringBuilder();
+        Append(value, "progression-selection-v1", snapshot.SessionId, snapshot.PlanetId, snapshot.CurrentTechId);
+        foreach (var queued in snapshot.TechQueue)
+        {
+            Append(value, "queue", queued);
+        }
+
+        foreach (var tech in snapshot.Technologies.OrderBy(tech => tech.TechId))
+        {
+            Append(value, "tech", tech.TechId, tech.Unlocked, tech.CurrentLevel, tech.MaximumLevel,
+                tech.HashRequired, tech.IsLabTech, tech.IsQueued);
+            foreach (var prerequisiteTechId in tech.PrerequisiteTechIds.OrderBy(id => id))
+            {
+                Append(value, "prerequisite", tech.TechId, prerequisiteTechId);
+            }
+        }
+
+        return Hash(value);
+    }
+
     public static string LogisticsStation(LogisticsStationSnapshot snapshot)
     {
         var value = new StringBuilder();

@@ -108,7 +108,7 @@ public sealed class PrepareSelectResearchRequest
 
     public int TechId { get; set; }
 
-    public string ExpectedProgressionStateHash { get; set; } = string.Empty;
+    public string ExpectedSelectionStateHash { get; set; } = string.Empty;
 
     public int StateHashVersion { get; set; } = 1;
 }

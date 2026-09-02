@@ -314,7 +314,7 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         var progression = progressionResult.Value;
-        if (!string.Equals(request.ExpectedProgressionStateHash, progression.StateHash, StringComparison.Ordinal))
+        if (!string.Equals(request.ExpectedSelectionStateHash, progression.SelectionStateHash, StringComparison.Ordinal))
         {
             return StalePlan("Technology queue or state changed after inspection; inspect progression and prepare again.");
         }
@@ -345,13 +345,13 @@ internal sealed partial class NormalGameActionCoordinator
             NormalActionKinds.SelectResearch,
             _sessions.SessionId,
             request.PlanetId,
-            progression.StateHash,
+            progression.SelectionStateHash,
             request.TechId);
         var payload = NormalActionPlanPayload.Research(
             _sessions.SessionId!,
             request.PlanetId,
             expectedHash,
-            progression.StateHash,
+            progression.SelectionStateHash,
             request.TechId);
         var prepared = AddPreparedPlan(
             payload,
@@ -1043,7 +1043,7 @@ internal sealed partial class NormalGameActionCoordinator
                     return progression.Error;
                 }
 
-                return string.Equals(progression.Value.StateHash, plan.ProgressionStateHash, StringComparison.Ordinal)
+                return string.Equals(progression.Value.SelectionStateHash, plan.ProgressionSelectionStateHash, StringComparison.Ordinal)
                     && GameMain.history.CanEnqueueTech(plan.TechId)
                     ? null
                     : Stale("Technology state, prerequisites, or queue changed after prepare.");
@@ -1963,7 +1963,7 @@ internal sealed partial class NormalGameActionCoordinator
         public string ExpectedStateHash { get; private set; } = string.Empty;
         public string PlayerStateHash { get; private set; } = string.Empty;
         public string ResourceStateHash { get; private set; } = string.Empty;
-        public string ProgressionStateHash { get; private set; } = string.Empty;
+        public string ProgressionSelectionStateHash { get; private set; } = string.Empty;
         public string StarSystemStateHash { get; private set; } = string.Empty;
         public Vector3 TargetPosition { get; private set; }
         public float ArrivalTolerance { get; private set; }
@@ -2100,14 +2100,14 @@ internal sealed partial class NormalGameActionCoordinator
             string sessionId,
             int planetId,
             string expectedStateHash,
-            string progressionStateHash,
+            string progressionSelectionStateHash,
             int techId) => new NormalActionPlanPayload
             {
                 ActionKind = NormalActionKinds.SelectResearch,
                 SessionId = sessionId,
                 PlanetId = planetId,
                 ExpectedStateHash = expectedStateHash,
-                ProgressionStateHash = progressionStateHash,
+                ProgressionSelectionStateHash = progressionSelectionStateHash,
                 TechId = techId,
             };
 

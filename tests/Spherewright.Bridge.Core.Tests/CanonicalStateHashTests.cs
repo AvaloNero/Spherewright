@@ -2,12 +2,62 @@ using Spherewright.Bridge.Core.Safety;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Logistics;
 using Spherewright.Contracts.Players;
+using Spherewright.Contracts.Progression;
 using Xunit;
 
 namespace Spherewright.Bridge.Core.Tests;
 
 public sealed class CanonicalStateHashTests
 {
+    [Fact]
+    public void ProgressionSelection_IgnoresNaturalUpload_ButBindsQueueAndEligibility()
+    {
+        var snapshot = new ProgressionStateSnapshot
+        {
+            SessionId = "session",
+            PlanetId = 104,
+            CurrentTechId = 1703,
+            TechQueue = new List<int> { 1703 },
+            Technologies = new List<TechStateSnapshot>
+            {
+                new TechStateSnapshot
+                {
+                    TechId = 1604,
+                    CurrentLevel = 0,
+                    MaximumLevel = 1,
+                    HashRequired = 144_000,
+                    PrerequisiteTechIds = new List<int> { 1113, 1603, 3701 },
+                },
+                new TechStateSnapshot
+                {
+                    TechId = 1703,
+                    CurrentLevel = 0,
+                    MaximumLevel = 1,
+                    HashUploaded = 100,
+                    HashRequired = 288_000,
+                    IsLabTech = true,
+                    IsQueued = true,
+                },
+            },
+        };
+
+        var fullBeforeUpload = CanonicalStateHash.Progression(snapshot);
+        var selectionBeforeUpload = CanonicalStateHash.ProgressionSelection(snapshot);
+        snapshot.Technologies[1].HashUploaded = 200;
+        snapshot.Technologies[1].UnlockTick = 8_400_000;
+        Assert.NotEqual(fullBeforeUpload, CanonicalStateHash.Progression(snapshot));
+        Assert.Equal(selectionBeforeUpload, CanonicalStateHash.ProgressionSelection(snapshot));
+
+        snapshot.TechQueue.Add(1604);
+        snapshot.Technologies[0].IsQueued = true;
+        Assert.NotEqual(selectionBeforeUpload, CanonicalStateHash.ProgressionSelection(snapshot));
+        snapshot.TechQueue.Remove(1604);
+        snapshot.Technologies[0].IsQueued = false;
+
+        snapshot.Technologies[0].Unlocked = true;
+        Assert.NotEqual(selectionBeforeUpload, CanonicalStateHash.ProgressionSelection(snapshot));
+    }
+
     [Fact]
     public void PlayerAction_IgnoresContinuousEnergyRecharge_ButBindsInventory()
     {

@@ -899,7 +899,7 @@ public static class SpherewrightTools
         string sessionId,
         int planetId,
         int techId,
-        string expectedProgressionStateHash,
+        string expectedSelectionStateHash,
         int stateHashVersion = 1,
         CancellationToken cancellationToken = default)
     {
@@ -909,7 +909,7 @@ public static class SpherewrightTools
             {
                 PlanetId = planetId,
                 TechId = techId,
-                ExpectedProgressionStateHash = expectedProgressionStateHash,
+                ExpectedSelectionStateHash = expectedSelectionStateHash,
                 StateHashVersion = stateHashVersion,
             },
             cancellationToken).ConfigureAwait(false);

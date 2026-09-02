@@ -289,6 +289,8 @@ internal sealed class GameStateReader
 
         result.StateHash = CanonicalStateHash.Progression(result);
         result.StateHashVersion = CanonicalStateHash.Version;
+        result.SelectionStateHash = CanonicalStateHash.ProgressionSelection(result);
+        result.SelectionStateHashVersion = CanonicalStateHash.Version;
         return GameCallResult<ProgressionStateSnapshot>.Succeeded(result);
     }
 

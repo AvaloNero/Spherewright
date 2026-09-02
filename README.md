@@ -114,7 +114,7 @@ The detailed, evidence-backed status lives in [docs/m0-status.md](./docs/m0-stat
 - secure local Bridge and MCP surface: complete;
 - ordinary peaceful 1× owned-world observation and action primitives: complete for the validated DSP build;
 - first automatic red matrix: complete;
-- automatic power engine, plastic, titanium ingot, diamond, gear, electric motor, water, organic crystal, titanium crystal, structure matrix, electromagnetic turbine, high-purity silicon, microcrystalline component, sulfuric acid, processor, graphene, and thruster production: complete;
+- automatic power engine, plastic, titanium ingot, diamond, gear, electric motor, water, organic crystal, titanium crystal, structure matrix, electromagnetic turbine, high-purity silicon, microcrystalline component, sulfuric acid, processor, graphene, thruster, and particle container production: complete;
 - native same-star checkpointed flight: complete for the validated route;
 - planetary/interstellar logistics and broader compatibility: in progress.
 

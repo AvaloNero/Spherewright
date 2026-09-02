@@ -4,6 +4,7 @@ using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Journals;
 using Spherewright.Contracts.Logistics;
+using Spherewright.Contracts.Players;
 using Spherewright.Contracts.Protocol;
 using Spherewright.Contracts.Progression;
 using Spherewright.Contracts.Sessions;
@@ -57,6 +58,38 @@ public sealed class ProtocolContractTests
 
         Assert.Equal("sha256:configuration", json.RootElement.GetProperty("configurationStateHash").GetString());
         Assert.Equal(1, json.RootElement.GetProperty("configurationStateHashVersion").GetInt32());
+    }
+
+    [Fact]
+    public void PlayerState_ExposesMechaResearchReservationWithoutSaveIdentity()
+    {
+        var snapshot = new PlayerStateSnapshot
+        {
+            AutoManageResearchItems = true,
+            MechaResearchPower = 0d,
+            MechaResearchItemBuffer = new List<MechaResearchItemSnapshot>
+            {
+                new MechaResearchItemSnapshot
+                {
+                    ItemId = 6001,
+                    Name = "Electromagnetic Matrix",
+                    PointCount = 903_600,
+                    WholeItemCount = 251,
+                    RemainderPoints = 0,
+                },
+            },
+        };
+
+        var text = JsonSerializer.Serialize(snapshot, JsonOptions);
+        using var json = JsonDocument.Parse(text);
+        var reserved = json.RootElement.GetProperty("mechaResearchItemBuffer")[0];
+
+        Assert.True(json.RootElement.GetProperty("autoManageResearchItems").GetBoolean());
+        Assert.Equal(0d, json.RootElement.GetProperty("mechaResearchPower").GetDouble());
+        Assert.Equal(903_600, reserved.GetProperty("pointCount").GetInt32());
+        Assert.Equal(251, reserved.GetProperty("wholeItemCount").GetInt32());
+        Assert.Equal(0, reserved.GetProperty("remainderPoints").GetInt32());
+        Assert.DoesNotContain("saveName", text, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

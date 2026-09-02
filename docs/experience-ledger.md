@@ -1282,15 +1282,30 @@
 - 适用范围：DSP `0.10.34.28529`、已连接非空源容器的普通分拣器、`sorter-filter` 的 inspect/prepare/commit 指纹与混料回收；不允许带货修改过滤。
 - 当前结论：`Factory` 完整哈希包含每 tick 变化的 `InserterComponent.time/stage`，并且旧安全检查只接受 `stage=Picking,time=0`；当源容器持续可取料时，分拣器一返回就会立即再取货，客户几乎无法跨请求捕获稳定窗口。当前版本 UI 的 `UIInserterWindow.OnItemPickerReturn` 本身只写 `filter` 和实体 sign，不查 `stage/time`。Spherewright 采用更窄且可证明的子集：连接双端存在，prepare 和 commit 时 `itemId/itemCount/stackCount/itemInc` 全部为 0；配置哈希绑定实体、旋转、双向拓扑、当前 filter 和携货缓冲，但排除无副作用的空载 `Returning` 进度。若 prepare 后又取到任何物品，指纹和独立零携货检查都会使 commit stale，不会改 filter。
 - 直接证据：研究供料仓 `26` 的 244 个自动蓝矩阵在给 `26 -> 860 -> 84` 设为蓝矩阵过滤后从仓内消失，但两座研究站蓝缓冲仍为 0、红缓冲精确不变、科技仍为 `242820/288000`，证明蓝矩阵没有被研究消耗。拓扑逐段复读发现同仓的无过滤出口 `551 -> 542…300`，末端只有通往蓝矩阵生产站的 sorter `312` 和回收仓 sorter `563`；`563` 因回收仓满载而手持 1 铜，`551` 也因环带堵塞手持 1 铜。先后动作 `cd89fa7f-7dad-484f-8b70-367eb414de8b`、`2ba39691-f644-4414-b41a-c50dddb44fcb`、`58187c19-e898-49b5-8419-d3f0226fdff9` 把回收仓原有 293 蓝、两批各 100 铜守恒暂存到玩家；随后回收仓铜 `801 -> 869`、继续增长，证明环带在原生排空。当前 belt DTO 不读 cargo path，因此“244 蓝全部仍在环带”只是拓扑与守恒下的待复读推断，不先写成已回收事实。
-- 直接证据：当前程序集反编译确认 `UIInserterWindow.OnItemPickerReturn(ItemProto)` 只执行 `inserter.filter=item.ID`、`sign.iconId0=item.ID`、`sign.iconType=1`，没有 stage/time/cargo 分支；源码复核确认旧 `CanSetSorterFilter` 额外要求 `Picking/time=0`，而完整工厂指纹又包含 progress/stage。修复源码已新增 `FactoryConfiguration`、`SorterFilterPolicy` 与 prepare/commit 双重复验；离线测试要求空载 Returning/Picking 共用指纹，filter/拓扑/携货任一变化必须改变指纹。完整 Release solution 已为 0 warning / 0 error，89 tests passed（Contracts 9、Core 64、MCP 16）。
+- 直接证据：当前程序集反编译确认 `UIInserterWindow.OnItemPickerReturn(ItemProto)` 只执行 `inserter.filter=item.ID`、`sign.iconId0=item.ID`、`sign.iconType=1`，没有 stage/time/cargo 分支；源码复核确认旧 `CanSetSorterFilter` 额外要求 `Picking/time=0`，而完整工厂指纹又包含 progress/stage。修复源码已新增 `FactoryConfiguration`、`SorterFilterPolicy` 与 prepare/commit 双重复验；离线测试要求空载 Returning/Picking 共用指纹，filter/拓扑/携货任一变化必须改变指纹。完整 Release solution 已为 0 warning / 0 error，90 tests passed（Contracts 10、Core 64、MCP 16）。
 - 限制或反例：当前运行 DSP 仍是旧部署 DLL，新安全窗口尚未 live commit，本条不得升级为 `validated`。如果 sorter 正在 Sending/Inserting 或任一携货字段非零，仍必须等待自然放货或先守恒泄压；绝不因所携物品“恰好匹配”而带货修改。修复也不代替上游混料设计的长期整理。
 - 复验触发：下次普通保存/正常重启部署、首次在空载 Returning 窗口对 `551/563` 成功 prepare+commit、任一带货 stale 反例、蓝矩阵全部回收并研究恢复、DSP/程序集版本变化。
 - 关联：EXP-058、EXP-090、EXP-096、`CanonicalStateHash.FactoryConfiguration`、`SorterFilterPolicy`、`UIInserterWindow.OnItemPickerReturn`。
-- 最近复验：2026-09-02（旧 DLL 的逐帧 stale 再现；结构化追踪收敛到无过滤环带，守恒腾位已开始原生排空；修复完整构建和 89 项测试通过，待 live）。
+- 最近复验：2026-09-02（旧 DLL 的逐帧 stale 再现；结构化追踪收敛到无过滤环带，守恒腾位已开始原生排空；修复完整构建和 90 项测试通过，待 live）。
+
+### EXP-103 — 自动管理研究物品会先把背包矩阵保留到 MechaLab，背包减少不等于消耗或丢失
+
+- 状态：`observed`
+- 日期：2026-09-02
+- 适用范围：DSP `0.10.34.28529`、`GameHistoryData.autoManageLabItems=true`、玩家背包内当前科技所需矩阵、`MechaLab.itemPoints` 隐藏保留容器；不覆盖工厂矩阵研究站的 `matrixServed`。
+- 当前结论：`MechaLab.GameTick` 每 tick 先调 `AutoManage`。自动管理开启且有当前科技时，`ManageSupply` 按“剩余 hash × 该物品 pointsPerHash”计算需求，减去已保留 points，再以 3600 points/个向上取整，从 `player.package` 尾部取出实物进入 `itemPoints`。这一步发生在机甲研究功率/能量检查之前；因此即使 hash 完全不动，背包也可能先减少。当无适用科技或自动管理关闭时，`ManageTakeback` 把整个物品守恒退回背包并清空保留。以后对矩阵做物品守恒时必须把 player package、MechaLab 与 factory lab 三类容器分开复读。
+- 直接证据：动作 `cd89fa7f-7dad-484f-8b70-367eb414de8b` 精确证明仓 `562` 的蓝矩阵 `293 -> 0`、玩家 `0 -> 293`；后续 fresh 复读玩家只剩 42，即少 251。同时科技 `1703` 仍精确为 `242820/288000`，工厂研究站 `84/679` 的蓝缓冲均为 0、红缓冲分别仍为 `37220/36580`。当前程序集 `MechaLab.ManageSupply` 的整数计算给出 `ceil((288000-242820)*20/3600)=251`，与背包差量完全相符；这同时排除工厂研究消耗和传送动作当场不守恒。
+- 直接证据：结构化玩家 DTO 已新增 `autoManageResearchItems`、`mechaResearchPower` 和 `mechaResearchItemBuffer`；每项同时报原生 points、整个物品数与余数，不暴露存档身份，也不提供保留/消耗写入。完整 Release solution 0 warning / 0 error，90 tests passed（Contracts 10、Core 64、MCP 16）。
+- 限制或反例：当前运行 DLL 尚未包含新 DTO，251 个的容器归属是由精确差量+程序集公式唯一收敛，仍要在下次正常部署后直接复读 `pointCount=903600/wholeItemCount=251` 才能升级为 `validated`。若机甲研究功率大于 0 并有足够能量，points 会正常消耗并上传 hash，不能要求其静态不变。
+- 复验触发：下次普通保存/重启部署后首次 player 复读、科技 `1703` 完成后自动退回、机甲研究功率非零、自动管理开关变化、玩家背包容量不足或 DSP/程序集版本变化。
+- 关联：EXP-007、EXP-048、EXP-090、EXP-102、`MechaLab.ManageSupply/ManageTakeback/GameTick`、`PlayerStateSnapshot.MechaResearchItemBuffer`。
+- 最近复验：2026-09-02（背包 293 -> 42、251 精确公式、研究与两座工厂站不变；DTO 实现及 90 项测试通过，待 live）。
 
 ## 修订记录
 
-- 2026-09-02：修订 EXP-058 并新增 EXP-102。蓝矩阵未进研究站而被混料仓的另一无过滤出口送入堵塞环带；守恒腾位后回收恢复。源码引入排除空载返程进度、仍绑定身份/拓扑/filter/携货的专用配置哈希；完整构建 0 warning / 0 error、89 项测试通过，部署前仍按旧 DLL 规则处置。
+- 2026-09-02：新增 EXP-103。仓到玩家的 293 蓝矩阵当场守恒，后续背包减少 251 与当前科技剩余需求的 `MechaLab.ManageSupply` 整数公式完全相符；新 player DTO 把隐藏研究保留容器显式化，完整构建 0 warning / 0 error、90 项测试通过，等待正常部署后 live 复读。
+
+- 2026-09-02：修订 EXP-058 并新增 EXP-102。蓝矩阵未进研究站而被混料仓的另一无过滤出口送入堵塞环带；守恒腾位后回收恢复。源码引入排除空载返程进度、仍绑定身份/拓扑/filter/携货的专用配置哈希；完整构建 0 warning / 0 error、90 项测试通过，部署前仍按旧 DLL 规则处置。
 
 - 2026-09-02：新增 EXP-101。采用物流塔最大充电功率的 3 MW UI 步进安全子集，绑定 prefab/consumer/configuration hash 并保持 station/player 库存不变；完整构建 0 warning / 0 error、86 tests passed，等待首塔 live。
 

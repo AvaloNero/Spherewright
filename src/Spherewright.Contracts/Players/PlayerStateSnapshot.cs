@@ -58,9 +58,28 @@ public sealed class PlayerStateSnapshot
 
     public PlayerInventoryItem? InHandItem { get; set; }
 
+    public bool AutoManageResearchItems { get; set; }
+
+    public double MechaResearchPower { get; set; }
+
+    public List<MechaResearchItemSnapshot> MechaResearchItemBuffer { get; set; } = new List<MechaResearchItemSnapshot>();
+
     public List<HandcraftTaskSnapshot> HandcraftQueue { get; set; } = new List<HandcraftTaskSnapshot>();
 
     public ConstructionDroneSnapshot ConstructionDrones { get; set; } = new ConstructionDroneSnapshot();
+}
+
+public sealed class MechaResearchItemSnapshot
+{
+    public int ItemId { get; set; }
+
+    public string Name { get; set; } = string.Empty;
+
+    public int PointCount { get; set; }
+
+    public int WholeItemCount { get; set; }
+
+    public int RemainderPoints { get; set; }
 }
 
 public sealed class PlayerInventoryItem

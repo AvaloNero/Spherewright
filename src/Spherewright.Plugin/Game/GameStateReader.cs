@@ -76,6 +76,8 @@ internal sealed class GameStateReader
             FuelStorageSlotCount = player.mecha.reactorStorage?.size ?? 0,
             BuildArea = player.mecha.buildArea,
             InventorySlotCount = player.package.size,
+            AutoManageResearchItems = GameMain.history?.autoManageLabItems ?? false,
+            MechaResearchPower = player.mecha.researchPower,
         };
 
         var inventory = new Dictionary<int, PlayerInventoryItem>();
@@ -145,6 +147,27 @@ internal sealed class GameStateReader
                 Inc = player.inhandItemInc,
                 SlotCount = 1,
             };
+        }
+
+        var researchItems = player.mecha.lab?.itemPoints?.items;
+        if (researchItems is not null)
+        {
+            foreach (var item in researchItems.OrderBy(item => item.Key))
+            {
+                if (item.Key <= 0 || item.Value <= 0)
+                {
+                    continue;
+                }
+
+                result.MechaResearchItemBuffer.Add(new MechaResearchItemSnapshot
+                {
+                    ItemId = item.Key,
+                    Name = GetItemName(item.Key),
+                    PointCount = item.Value,
+                    WholeItemCount = item.Value / 3600,
+                    RemainderPoints = item.Value % 3600,
+                });
+            }
         }
 
         var forgeTasks = player.mecha.forge?.tasks;

@@ -119,6 +119,26 @@ Automated factory systems write their current-tick outputs to `FactoryProduction
 
 Journal files live below the current-user-protected Spherewright runtime directory and are named only by a SHA-256 identity derived from the internally retained owned-save name. New Spherewright worlds get complete prospective coverage from their adoption frame. When this feature first attaches to an already progressed owned save, existing manual, production and research IDs are seeded as historical without timestamps, and `historicalCoverageComplete=false`; this prevents fabricated or duplicate "first" records while preserving exact coverage for future unseen events.
 
+## Mecha research auto-management buffer
+
+Targeted inspection of the same current assembly confirms:
+
+```text
+public MechaLab Mecha.lab
+public double Mecha.researchPower
+public ItemBundle MechaLab.itemPoints
+public Dictionary<int, int> ItemBundle.items
+public bool GameHistoryData.autoManageLabItems
+public void MechaLab.AutoManage()
+public void MechaLab.ManageSupply(TechProto techProto)
+public void MechaLab.ManageTakeback()
+public void MechaLab.GameTick(long time, float deltaTime)
+```
+
+With `autoManageLabItems=true`, `ManageSupply` computes each current technology item's remaining point requirement, subtracts points already buffered, rounds the remainder up by 3600, and removes that many real items from the tail of `player.package`; each removed item adds exactly 3600 to `itemPoints`. This reservation occurs before the mecha verifies available research power or produces a hash. `GameTick` consumes buffered points only when `mecha.researchPower`, energy delivery and all required item buffers permit progress. When there is no applicable current technology or automatic management is disabled, `ManageTakeback` returns whole buffered items through the normal player-package path and clears the bundle.
+
+This explains a live package delta that factory-lab observation alone could not: 293 electromagnetic matrices were transferred normally from storage to the player; the package then retained 42 while technology `1703` remained at `242820/288000`. The exact 251-item difference equals `ceil((288000-242820)*20/3600)`, while both factory research labs retained zero blue input and unchanged red input. The matrices were therefore reserved by `MechaLab`, not consumed by a factory lab or lost. `get_player_state` now deep-copies `autoManageResearchItems`, `mechaResearchPower`, and every positive `itemPoints` entry as exact points plus whole-item/remainder views. The live buffer readback itself awaits the next normal Plugin deployment; no API writes or clears this hidden container.
+
 ## Factory and assembler read path
 
 The adopted session's local factory is obtained through `GameMain.data.localLoadedPlanetFactory`. Assembler snapshots use:

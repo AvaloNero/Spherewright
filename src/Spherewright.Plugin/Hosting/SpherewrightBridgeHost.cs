@@ -15,6 +15,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
     private readonly ManualLogSource _logger;
     private readonly GameVersionSnapshotProvider _gameVersionProvider;
     private readonly GameSessionTracker _sessionTracker;
+    private readonly OverseerLogisticsProgressStore _overseerLogisticsProgressStore;
     private readonly GameplayJournalManager _gameplayJournalManager;
     private readonly NormalGameActionCoordinator _normalActionCoordinator;
     private readonly ResearchResultAutoAcknowledger _researchResultAutoAcknowledger;
@@ -32,6 +33,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
         ManualLogSource logger,
         GameVersionSnapshotProvider gameVersionProvider,
         GameSessionTracker sessionTracker,
+        OverseerLogisticsProgressStore overseerLogisticsProgressStore,
         GameplayJournalManager gameplayJournalManager,
         NormalGameActionCoordinator normalActionCoordinator,
         ResearchResultAutoAcknowledger researchResultAutoAcknowledger,
@@ -45,6 +47,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
         _logger = logger;
         _gameVersionProvider = gameVersionProvider;
         _sessionTracker = sessionTracker;
+        _overseerLogisticsProgressStore = overseerLogisticsProgressStore;
         _gameplayJournalManager = gameplayJournalManager;
         _normalActionCoordinator = normalActionCoordinator;
         _researchResultAutoAcknowledger = researchResultAutoAcknowledger;
@@ -81,7 +84,12 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             resumeTickets,
             flightCheckpoints,
             logger);
-        var gameStateReader = new GameStateReader(sessionTracker);
+        var overseerLogisticsProgressStore = new OverseerLogisticsProgressStore(
+            configuration.RuntimeDescriptorDirectory,
+            gameVersion,
+            sessionTracker,
+            logger);
+        var gameStateReader = new GameStateReader(sessionTracker, overseerLogisticsProgressStore);
         var gameplayJournalManager = new GameplayJournalManager(
             configuration.RuntimeDescriptorDirectory,
             gameVersion,
@@ -149,6 +157,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             logger,
             versionProvider,
             sessionTracker,
+            overseerLogisticsProgressStore,
             gameplayJournalManager,
             normalActionCoordinator,
             researchResultAutoAcknowledger,
@@ -219,6 +228,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
         }
 
         _started = false;
+        _overseerLogisticsProgressStore.Dispose();
         _gameplayJournalManager.Dispose();
         _pipeServer.Dispose();
         _descriptorPublisher.Dispose();

@@ -234,3 +234,20 @@
   保存、正常关闭，再以 source-equal 七文件部署并通过 exact-primary 恢复；最终 Plugin hash 为
   `D40D6BEA4E76697EB14C5F1DE3B0CC61532E4BF634125E1A9488D5024FDF59E1`，174 项测试与完整构建通过。
 - 关联：EXP-117、EXP-123、EXP-144、EXP-159、`TryFindDirectDiagnosticDemandBindings`；状态：`fixed`。
+
+## IFX-020 — 物流时间窗按路线同步写盘会放大只读诊断成本
+
+- 首见：2026-09-03，v0.4 物流时间窗提交前最终代码审查。
+- 症状：每个配置过物流输入的生产设备都会调用一次窗口观察；首版观察函数每遇到一条新路线就排序并
+  原子替换整个受保护文档。大型工厂的一次只读生产快照因此可能变成多次主线程同步磁盘写入，且后续
+  路线失败时前半批已持久化，不能形成一次请求的完整 durable 边界。
+- 根因：路线发现、窗口分析和文档提交被合并在单条 `ApplyRouteEvidence` 路径中，没有先完成全部 owned
+  factory 的深复制，也没有把公共 DTO 的 temporal evidence 延迟到整批持久化成功之后。
+- 修复：先捕获所有工厂的直接诊断和去重路线样本，再由 `TryObserveBatchOnMainThread` 对每条路线计算
+  proposed state、统一执行 4096-route 淘汰，并只做一次 secure-new/flush/atomic-replace。只有整批成功后
+  才把 analysis 回填各 material；失败则保留普通瞬时诊断、时间证据为 unknown。同时把 qualifying 条件
+  收紧为消费者真缺一周期输入和需求端正 reservation，供足样本会清除旧停滞基线。
+- 验证：新增消费者供足重置回归后 204 项测试通过、完整 solution 0 warning/0 error。最终四 DLL
+  source/deployed 哈希一致；同档恢复后保护文档仍为 3 条哈希路线、current-user-only DACL、无原始
+  save identity，并同时记录 `consumerInputMissing=false/true`，三厂分页与黄糖四节点根因不回归。
+- 关联：EXP-001、EXP-030、EXP-154、EXP-159、EXP-164、`OverseerLogisticsProgressStore`；状态：`fixed`。

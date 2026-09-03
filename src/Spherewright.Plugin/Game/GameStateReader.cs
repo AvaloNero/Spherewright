@@ -42,6 +42,7 @@ internal sealed partial class GameStateReader
     private const int MaximumOverseerInfrastructureFindingsPerPlanet = 16;
     private const int OverseerSnapshotScopeId = int.MaxValue;
     private readonly GameSessionTracker _sessions;
+    private readonly OverseerLogisticsProgressStore _overseerLogisticsProgressStore;
     private readonly SnapshotPageStore<ResourceNodeSnapshot> _resourceSnapshots =
         new SnapshotPageStore<ResourceNodeSnapshot>(TimeSpan.FromSeconds(60), 16);
     private readonly SnapshotPageStore<FactoryEntitySnapshot> _factorySnapshots =
@@ -53,9 +54,12 @@ internal sealed partial class GameStateReader
     private readonly SnapshotPageStore<OverseerSummaryPageEntry> _overseerSummarySnapshots =
         new SnapshotPageStore<OverseerSummaryPageEntry>(TimeSpan.FromSeconds(60), 8);
 
-    public GameStateReader(GameSessionTracker sessions)
+    public GameStateReader(
+        GameSessionTracker sessions,
+        OverseerLogisticsProgressStore overseerLogisticsProgressStore)
     {
         _sessions = sessions;
+        _overseerLogisticsProgressStore = overseerLogisticsProgressStore;
     }
 
     public GameCallResult<SessionState> GetSessionStateOnMainThread()
@@ -1459,7 +1463,7 @@ internal sealed partial class GameStateReader
         return null;
     }
 
-    private static BridgeError? TryCaptureOverseerProduction(
+    private BridgeError? TryCaptureOverseerProduction(
         GameData gameData,
         IReadOnlyList<int> itemIds,
         out List<OverseerPlanetProductionSnapshot> planets)
@@ -1494,6 +1498,7 @@ internal sealed partial class GameStateReader
         var requestedItemIds = new HashSet<int>(itemIds);
         var logisticsError = TryCaptureOverseerDiagnosticLogisticsRoutes(
             factories,
+            _overseerLogisticsProgressStore,
             ref diagnosticComponentScanCount,
             ref diagnosticSourceReferenceScanCount,
             out var diagnosticLogistics);
@@ -1501,6 +1506,30 @@ internal sealed partial class GameStateReader
         {
             return logisticsError;
         }
+
+        var directDiagnosticsByFactory = new Dictionary<int, OverseerDirectDiagnosticCapture>();
+        foreach (var factory in factories)
+        {
+            var diagnosticError = TryCaptureOverseerDirectDiagnostics(
+                factory,
+                requestedItemIds,
+                diagnosticWindow,
+                diagnosticLogistics!,
+                ref diagnosticComponentScanCount,
+                ref diagnosticSourceReferenceScanCount,
+                out var directDiagnostics);
+            if (diagnosticError is not null)
+            {
+                return diagnosticError;
+            }
+
+            directDiagnosticsByFactory.Add(factory.index, directDiagnostics!);
+        }
+
+        // Route samples are collected for every owned factory first, then
+        // atomically persisted once. Only durable analyses are copied into the
+        // public diagnostic DTOs below.
+        diagnosticLogistics!.FinalizeProgressEvidence();
 
         foreach (var factory in factories)
         {
@@ -1528,19 +1557,7 @@ internal sealed partial class GameStateReader
                 return theoreticalError;
             }
 
-            var diagnosticError = TryCaptureOverseerDirectDiagnostics(
-                factory,
-                requestedItemIds,
-                diagnosticWindow,
-                diagnosticLogistics!,
-                ref diagnosticComponentScanCount,
-                ref diagnosticSourceReferenceScanCount,
-                out var directDiagnostics);
-            if (diagnosticError is not null)
-            {
-                planets.Clear();
-                return diagnosticError;
-            }
+            var directDiagnostics = directDiagnosticsByFactory[factoryIndex];
 
             var snapshot = new OverseerPlanetProductionSnapshot
             {
@@ -1550,8 +1567,8 @@ internal sealed partial class GameStateReader
                 IsLocalPlanet = factory.planetId == localPlanetId,
                 FactoryDisplayLoaded = planet.factoryLoaded,
                 CapturedAtGameTick = capturedAtGameTick,
-                InfrastructureFindingCount = directDiagnostics!.InfrastructureFindings.Count,
-                InfrastructureFindingsTruncated = directDiagnostics!.InfrastructureFindings.Count
+                InfrastructureFindingCount = directDiagnostics.InfrastructureFindings.Count,
+                InfrastructureFindingsTruncated = directDiagnostics.InfrastructureFindings.Count
                     > MaximumOverseerInfrastructureFindingsPerPlanet,
                 InfrastructureFindings = directDiagnostics.InfrastructureFindings
                     .OrderBy(finding => finding.ObjectId)

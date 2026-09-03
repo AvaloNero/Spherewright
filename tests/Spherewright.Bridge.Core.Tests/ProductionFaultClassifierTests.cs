@@ -95,6 +95,10 @@ public sealed class ProductionFaultClassifierTests
         material.LogisticsConfigured = true;
         material.LogisticsOrderOutstanding = true;
         material.LogisticsProgressStateKnown = true;
+        material.LogisticsCarrierStateKnown = true;
+        material.LogisticsCarrierCount = 4;
+        material.LogisticsActiveRouteCarrierCount = 1;
+        material.LogisticsProgressWindowElapsedGameTicks = 600;
         material.SourceInventoryKnown = true;
         material.SourceInventoryCount = 100;
         input.Inputs = new[] { material };
@@ -106,20 +110,61 @@ public sealed class ProductionFaultClassifierTests
     }
 
     [Fact]
-    public void ClassifyPrimary_DoesNotInventStalledProgressFromSingleLogisticsSnapshot()
+    public void ClassifyPrimary_DoesNotInventShortageWhileLogisticsWindowWarmsUp()
     {
         var input = BaseInput();
         var material = MissingMaterial();
         material.LogisticsExpected = true;
         material.LogisticsConfigured = true;
         material.LogisticsOrderOutstanding = true;
+        material.LogisticsCarrierStateKnown = true;
+        material.LogisticsCarrierCount = 4;
         material.SourceInventoryKnown = true;
         material.SourceInventoryCount = 100;
         input.Inputs = new[] { material };
 
         var finding = ProductionFaultClassifier.ClassifyPrimary(input);
 
-        Assert.Equal(OverseerFindingKinds.MaterialShortage, finding?.Kind);
+        Assert.Null(finding);
+    }
+
+    [Fact]
+    public void ClassifyPrimary_DoesNotReportAFaultWhileLogisticsProgresses()
+    {
+        var input = BaseInput();
+        var material = MissingMaterial();
+        material.LogisticsExpected = true;
+        material.LogisticsConfigured = true;
+        material.LogisticsOrderOutstanding = true;
+        material.LogisticsCarrierStateKnown = true;
+        material.LogisticsCarrierCount = 4;
+        material.LogisticsActiveRouteCarrierCount = 1;
+        material.LogisticsProgressStateKnown = true;
+        material.LogisticsProgressObserved = true;
+        material.SourceInventoryKnown = true;
+        material.SourceInventoryCount = 100;
+        input.Inputs = new[] { material };
+
+        Assert.Null(ProductionFaultClassifier.ClassifyPrimary(input));
+    }
+
+    [Fact]
+    public void ClassifyPrimary_DoesNotTrustAKnownNoProgressFlagBeforeTheMinimumWindow()
+    {
+        var input = BaseInput();
+        var material = MissingMaterial();
+        material.LogisticsExpected = true;
+        material.LogisticsConfigured = true;
+        material.LogisticsOrderOutstanding = true;
+        material.LogisticsCarrierStateKnown = true;
+        material.LogisticsCarrierCount = 4;
+        material.LogisticsProgressStateKnown = true;
+        material.LogisticsProgressWindowElapsedGameTicks = 599;
+        material.SourceInventoryKnown = true;
+        material.SourceInventoryCount = 100;
+        input.Inputs = new[] { material };
+
+        Assert.Null(ProductionFaultClassifier.ClassifyPrimary(input));
     }
 
     [Fact]

@@ -19,6 +19,11 @@ public static class OverseerWindowResetReasons
     public const string CounterAdvancedWithoutGameTime = "counter_advanced_without_game_time";
     public const string SampleGapExceeded = "sample_gap_exceeded";
     public const string NativeWindowNotFull = "native_window_not_full";
+    public const string LogisticsRouteChanged = "logistics_route_changed";
+    public const string LogisticsStateAdvancedWithoutGameTime = "logistics_state_advanced_without_game_time";
+    public const string LogisticsSampleGapExceeded = "logistics_sample_gap_exceeded";
+    public const string LogisticsObservationNotQualifying = "logistics_observation_not_qualifying";
+    public const string LogisticsWindowNotFull = "logistics_window_not_full";
 }
 
 public static class OverseerRateSources

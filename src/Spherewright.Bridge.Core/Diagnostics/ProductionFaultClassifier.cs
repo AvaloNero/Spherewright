@@ -69,6 +69,12 @@ public sealed class ProductionMaterialInput
 
     public bool LogisticsProgressStateKnown { get; set; }
 
+    public long LogisticsProgressWindowElapsedGameTicks { get; set; }
+
+    public bool LogisticsProgressCrossedSessionBoundary { get; set; }
+
+    public int LogisticsActiveRouteCarrierCount { get; set; }
+
     public bool LogisticsCarrierStateKnown { get; set; }
 
     public int LogisticsCarrierCount { get; set; }
@@ -241,9 +247,14 @@ public static class ProductionFaultClassifier
         }
 
         if (missingInput.LogisticsExpected
+            && missingInput.LogisticsConfigured
             && missingInput.LogisticsOrderOutstanding
+            && missingInput.LogisticsCarrierStateKnown
+            && missingInput.LogisticsCarrierCount > 0
             && missingInput.LogisticsProgressStateKnown
             && !missingInput.LogisticsProgressObserved
+            && missingInput.LogisticsProgressWindowElapsedGameTicks
+                >= LogisticsProgressWindowAnalyzer.DefaultMinimumObservationTicks
             && missingInput.SourceInventoryKnown
             && missingInput.SourceInventoryCount > 0)
         {
@@ -255,8 +266,27 @@ public static class ProductionFaultClassifier
                 $"A logistics order for {DisplayName(missingInput.ItemName, missingInput.ItemId)} made no progress while source inventory was available.",
                 Evidence("input_item_id", missingInput.ItemId, null),
                 Evidence("source_inventory", missingInput.SourceInventoryCount, "items"),
+                Evidence("logistics_progress_window", missingInput.LogisticsProgressWindowElapsedGameTicks, "game_ticks"),
+                Evidence("logistics_active_route_carriers", missingInput.LogisticsActiveRouteCarrierCount, "carriers"),
                 TextEvidence("logistics_order_outstanding", "true"),
-                TextEvidence("logistics_progress_observed", "false"));
+                TextEvidence("logistics_progress_observed", "false"),
+                TextEvidence(
+                    "logistics_progress_crossed_session_boundary",
+                    missingInput.LogisticsProgressCrossedSessionBoundary ? "true" : "false"));
+        }
+
+        if (missingInput.LogisticsExpected
+            && missingInput.LogisticsConfigured
+            && missingInput.LogisticsOrderOutstanding
+            && missingInput.LogisticsCarrierStateKnown
+            && missingInput.LogisticsCarrierCount > 0
+            && missingInput.SourceInventoryKnown
+            && missingInput.SourceInventoryCount > 0)
+        {
+            // A qualifying route is either still warming its bounded temporal
+            // window or has observed real carrier/order/inventory progress.
+            // Neither state is evidence of material shortage or blockage.
+            return null;
         }
 
         return MaterialFinding(
@@ -300,6 +330,9 @@ public static class ProductionFaultClassifier
                 || material.SourceResourceRemaining < 0
                 || material.SourceInventoryCount < 0
                 || material.LogisticsCarrierCount < 0
+                || material.LogisticsActiveRouteCarrierCount < 0
+                || material.LogisticsActiveRouteCarrierCount > material.LogisticsCarrierCount
+                || material.LogisticsProgressWindowElapsedGameTicks < 0
                 || (material.LogisticsDemandPlanetId.HasValue && material.LogisticsDemandPlanetId.Value <= 0)
                 || (material.LogisticsDemandObjectId.HasValue && material.LogisticsDemandObjectId.Value <= 0)
                 || (material.LogisticsSupplyPlanetId.HasValue && material.LogisticsSupplyPlanetId.Value <= 0)

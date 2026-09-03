@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Spherewright.Bridge.Core.Diagnostics;
 using Spherewright.Bridge.Core.Logistics;
 using Spherewright.Contracts.Diagnostics;
@@ -9,11 +11,15 @@ internal sealed partial class GameStateReader
 {
     private static BridgeError? TryCaptureOverseerDiagnosticLogisticsRoutes(
         IReadOnlyList<PlanetFactory> factories,
+        OverseerLogisticsProgressStore progressStore,
         ref long componentScanCount,
         ref long sourceReferenceScanCount,
         out OverseerDiagnosticLogisticsIndex? index)
     {
-        index = new OverseerDiagnosticLogisticsIndex();
+        index = new OverseerDiagnosticLogisticsIndex(
+            progressStore,
+            GameMain.gameTick,
+            DateTimeOffset.UtcNow);
         foreach (var factory in factories)
         {
             var transport = factory.transport;
@@ -62,7 +68,15 @@ internal sealed partial class GameStateReader
                     || station.idleDroneCount < 0
                     || station.workDroneCount < 0
                     || station.idleShipCount < 0
-                    || station.workShipCount < 0)
+                    || station.workShipCount < 0
+                    || station.workDroneDatas is null
+                    || station.workDroneOrders is null
+                    || station.workShipDatas is null
+                    || station.workShipOrders is null
+                    || station.workDroneCount > station.workDroneDatas.Length
+                    || station.workDroneCount > station.workDroneOrders.Length
+                    || station.workShipCount > station.workShipDatas.Length
+                    || station.workShipCount > station.workShipOrders.Length)
                 {
                     index = null;
                     return NotReady("An active logistics station has inconsistent identity or fleet counters.");
@@ -79,11 +93,24 @@ internal sealed partial class GameStateReader
                 if (stores.Length > MaximumOverseerStationStorageSlots
                     || !TryConsumeBudget(
                         ref sourceReferenceScanCount,
-                        stores.Length + (long)slots.Length,
+                        stores.Length
+                        + (long)slots.Length
+                        + station.workDroneCount
+                        + station.workShipCount,
                         MaximumOverseerDirectDiagnosticSourceReferenceScanCount))
                 {
                     index = null;
                     return OverseerScopeExceeded();
+                }
+
+                var stationTransportError = TryCaptureOverseerDiagnosticStationTransport(
+                    factory.planetId,
+                    station,
+                    out var stationTransport);
+                if (stationTransportError is not null)
+                {
+                    index = null;
+                    return stationTransportError;
                 }
 
                 var endpoints = new OverseerDiagnosticLogisticsEndpoint[stores.Length];
@@ -117,6 +144,8 @@ internal sealed partial class GameStateReader
                         RemoteLogic = store.remoteLogic,
                         LocalCarrierCount = checked(station.idleDroneCount + station.workDroneCount),
                         RemoteCarrierCount = checked(station.idleShipCount + station.workShipCount),
+                        StorageIndex = storageIndex,
+                        Station = stationTransport!,
                     };
                     if (store.itemId > 0)
                     {
@@ -168,6 +197,159 @@ internal sealed partial class GameStateReader
 
         return null;
     }
+
+    private static BridgeError? TryCaptureOverseerDiagnosticStationTransport(
+        int planetId,
+        StationComponent station,
+        out OverseerDiagnosticStationTransportSnapshot? snapshot)
+    {
+        snapshot = new OverseerDiagnosticStationTransportSnapshot
+        {
+            PlanetId = planetId,
+            StationId = station.id,
+            GlobalStationId = station.gid,
+        };
+
+        for (var index = 0; index < station.workDroneCount; index++)
+        {
+            var carrier = station.workDroneDatas[index];
+            var order = station.workDroneOrders[index];
+            if (carrier.itemId < 0
+                || carrier.itemCount < 0
+                || carrier.inc < 0
+                || float.IsNaN(carrier.direction)
+                || float.IsInfinity(carrier.direction)
+                || float.IsNaN(carrier.maxt)
+                || float.IsInfinity(carrier.maxt)
+                || float.IsNaN(carrier.t)
+                || float.IsInfinity(carrier.t)
+                || order.itemId < 0)
+            {
+                snapshot = null;
+                return NotReady("An active logistics drone has invalid item, order, or progress state.");
+            }
+
+            if (carrier.itemId == 0 || carrier.endId <= 0)
+            {
+                continue;
+            }
+
+            if ((carrier.direction != -1f && carrier.direction != 1f)
+                || carrier.maxt <= 0f
+                || (order.itemId > 0
+                    && (order.itemId != carrier.itemId
+                        || (order.otherStationId > 0 && order.otherStationId != carrier.endId))))
+            {
+                snapshot = null;
+                return NotReady("An active logistics drone does not match its route or native movement state.");
+            }
+
+            snapshot.LocalCarriers.Add(new OverseerDiagnosticLocalCarrierSnapshot
+            {
+                TargetStationId = carrier.endId,
+                ItemId = carrier.itemId,
+                StateToken = string.Join(
+                    ":",
+                    planetId,
+                    station.id,
+                    index,
+                    carrier.endId,
+                    carrier.gene,
+                    FloatBits(carrier.direction),
+                    FloatBits(carrier.maxt),
+                    FloatBits(carrier.t),
+                    carrier.itemId,
+                    carrier.itemCount,
+                    carrier.inc,
+                    order.itemId,
+                    order.thisIndex,
+                    order.otherIndex,
+                    order.thisOrdered,
+                    order.otherOrdered),
+            });
+        }
+
+        for (var index = 0; index < station.workShipCount; index++)
+        {
+            var carrier = station.workShipDatas[index];
+            var order = station.workShipOrders[index];
+            if (carrier.itemId < 0
+                || carrier.itemCount < 0
+                || carrier.inc < 0
+                || carrier.stage < -2
+                || carrier.stage > 2
+                || carrier.shipIndex < 0
+                || carrier.shipIndex >= station.workShipDatas.Length
+                || float.IsNaN(carrier.t)
+                || float.IsInfinity(carrier.t)
+                || float.IsNaN(carrier.uSpeed)
+                || float.IsInfinity(carrier.uSpeed)
+                || float.IsNaN(carrier.warpState)
+                || float.IsInfinity(carrier.warpState)
+                || double.IsNaN(carrier.uPos.x)
+                || double.IsInfinity(carrier.uPos.x)
+                || double.IsNaN(carrier.uPos.y)
+                || double.IsInfinity(carrier.uPos.y)
+                || double.IsNaN(carrier.uPos.z)
+                || double.IsInfinity(carrier.uPos.z)
+                || order.itemId < 0)
+            {
+                snapshot = null;
+                return NotReady("An active logistics vessel has invalid item, order, or progress state.");
+            }
+
+            if (carrier.itemId == 0 || carrier.otherGId <= 0)
+            {
+                continue;
+            }
+
+            if ((carrier.direction != -1 && carrier.direction != 1)
+                || (order.itemId > 0
+                    && (order.itemId != carrier.itemId
+                        || (order.otherStationGId > 0 && order.otherStationGId != carrier.otherGId))))
+            {
+                snapshot = null;
+                return NotReady("An active logistics vessel does not match its route or native movement state.");
+            }
+
+            snapshot.RemoteCarriers.Add(new OverseerDiagnosticRemoteCarrierSnapshot
+            {
+                TargetGlobalStationId = carrier.otherGId,
+                ItemId = carrier.itemId,
+                StateToken = string.Join(
+                    ":",
+                    planetId,
+                    station.gid,
+                    carrier.shipIndex,
+                    carrier.otherGId,
+                    carrier.gene,
+                    carrier.stage,
+                    carrier.direction,
+                    FloatBits(carrier.t),
+                    FloatBits(carrier.uSpeed),
+                    FloatBits(carrier.warpState),
+                    DoubleBits(carrier.uPos.x),
+                    DoubleBits(carrier.uPos.y),
+                    DoubleBits(carrier.uPos.z),
+                    carrier.itemId,
+                    carrier.itemCount,
+                    carrier.inc,
+                    carrier.warperCnt,
+                    order.itemId,
+                    order.thisIndex,
+                    order.otherIndex,
+                    order.thisOrdered,
+                    order.otherOrdered),
+            });
+        }
+
+        return null;
+    }
+
+    private static int FloatBits(float value) =>
+        BitConverter.ToInt32(BitConverter.GetBytes(value), 0);
+
+    private static long DoubleBits(double value) => BitConverter.DoubleToInt64Bits(value);
 
     private static BridgeError? TryCaptureOverseerDirectDiagnostics(
         PlanetFactory factory,
@@ -1258,8 +1440,23 @@ internal sealed partial class GameStateReader
 
     private sealed class OverseerDiagnosticLogisticsIndex
     {
+        private readonly OverseerLogisticsProgressStore _progressStore;
+        private readonly long _capturedAtGameTick;
+        private readonly DateTimeOffset _capturedAtUtc;
         private readonly Dictionary<string, OverseerDiagnosticLogisticsEndpoint> _outputBelts =
             new Dictionary<string, OverseerDiagnosticLogisticsEndpoint>(StringComparer.Ordinal);
+        private readonly Dictionary<string, OverseerDiagnosticLogisticsObservation> _progressObservations =
+            new Dictionary<string, OverseerDiagnosticLogisticsObservation>(StringComparer.Ordinal);
+
+        public OverseerDiagnosticLogisticsIndex(
+            OverseerLogisticsProgressStore progressStore,
+            long capturedAtGameTick,
+            DateTimeOffset capturedAtUtc)
+        {
+            _progressStore = progressStore;
+            _capturedAtGameTick = capturedAtGameTick;
+            _capturedAtUtc = capturedAtUtc;
+        }
 
         public List<OverseerDiagnosticLogisticsEndpoint> Endpoints { get; } =
             new List<OverseerDiagnosticLogisticsEndpoint>();
@@ -1324,9 +1521,8 @@ internal sealed partial class GameStateReader
             material.LogisticsConfigured = route.Supply.Count > 0;
             material.LogisticsDemandPlanetId = demand.PlanetId;
             material.LogisticsDemandObjectId = demand.ObjectId;
-            material.LogisticsOrderOutstanding = route.Remote
-                ? demand.RemoteOrder != 0 || route.Supply.Any(endpoint => endpoint.RemoteOrder != 0)
-                : demand.LocalOrder != 0 || route.Supply.Any(endpoint => endpoint.LocalOrder != 0);
+            var demandOrder = route.Remote ? demand.RemoteOrder : demand.LocalOrder;
+            material.LogisticsOrderOutstanding = demandOrder > 0;
             if (route.Supply.Count == 0) return;
 
             var primarySupply = route.Supply[0];
@@ -1340,7 +1536,157 @@ internal sealed partial class GameStateReader
                 .GroupBy(endpoint => $"{endpoint.PlanetId}:{endpoint.ObjectId}", StringComparer.Ordinal)
                 .Select(group => group.First())
                 .Sum(endpoint => route.Remote ? endpoint.RemoteCarrierCount : endpoint.LocalCarrierCount);
-            material.LogisticsProgressStateKnown = false;
+            var carrierStates = CaptureRouteCarrierStates(route.Remote, demand, route.Supply);
+            material.LogisticsActiveRouteCarrierCount = carrierStates.Count;
+            var routeKey = CreateRouteKey(route.Remote, demand, route.Supply);
+            if (!_progressObservations.TryGetValue(routeKey, out var observation))
+            {
+                var sample = new LogisticsProgressSample
+                {
+                    RouteKey = routeKey,
+                    GameTick = _capturedAtGameTick,
+                    CapturedAtUtc = _capturedAtUtc,
+                    OrderOutstanding = demandOrder > 0,
+                    OutstandingOrderMagnitude = Math.Max(0L, (long)demandOrder),
+                    ConsumerInputMissing = material.AvailableCount < material.RequiredPerCycle,
+                    DemandInventoryCount = demand.Count,
+                    SourceInventoryCount = material.SourceInventoryCount,
+                    CarrierFleetCount = material.LogisticsCarrierCount,
+                    ActiveRouteCarrierCount = carrierStates.Count,
+                    CarrierProgressFingerprint = HashDiagnosticValue(
+                        "spherewright-logistics-carriers-v1\n"
+                        + string.Join("\n", carrierStates.OrderBy(value => value, StringComparer.Ordinal))),
+                };
+                observation = new OverseerDiagnosticLogisticsObservation
+                {
+                    Sample = sample,
+                };
+                _progressObservations.Add(routeKey, observation);
+            }
+            else if (material.AvailableCount < material.RequiredPerCycle)
+            {
+                observation.Sample.ConsumerInputMissing = true;
+            }
+
+            observation.Materials.Add(material);
+        }
+
+        public void FinalizeProgressEvidence()
+        {
+            if (_progressObservations.Count == 0)
+            {
+                return;
+            }
+
+            var samples = _progressObservations.Values
+                .Select(observation => observation.Sample)
+                .OrderBy(sample => sample.RouteKey, StringComparer.Ordinal)
+                .ToList();
+            if (!_progressStore.TryObserveBatchOnMainThread(samples, out var analyses)
+                || analyses is null)
+            {
+                return;
+            }
+
+            foreach (var pair in _progressObservations)
+            {
+                if (!analyses.TryGetValue(pair.Key, out var progress))
+                {
+                    continue;
+                }
+
+                foreach (var material in pair.Value.Materials)
+                {
+                    material.LogisticsProgressObserved = progress.ProgressObserved;
+                    material.LogisticsProgressStateKnown = progress.ProgressStateKnown;
+                    material.LogisticsProgressWindowElapsedGameTicks = progress.Window.ElapsedGameTicks;
+                    material.LogisticsProgressCrossedSessionBoundary = progress.Window.CrossedSessionBoundary;
+                }
+            }
+        }
+
+        private static List<string> CaptureRouteCarrierStates(
+            bool remote,
+            OverseerDiagnosticLogisticsEndpoint demand,
+            IReadOnlyList<OverseerDiagnosticLogisticsEndpoint> supplies)
+        {
+            var stations = supplies
+                .Append(demand)
+                .Select(endpoint => endpoint.Station)
+                .GroupBy(
+                    station => $"{station.PlanetId}:{station.StationId}",
+                    StringComparer.Ordinal)
+                .Select(group => group.First())
+                .ToList();
+            if (remote)
+            {
+                var supplyGlobalIds = new HashSet<int>(supplies.Select(endpoint => endpoint.Station.GlobalStationId));
+                var result = new List<string>();
+                foreach (var station in stations)
+                {
+                    var ownerIsDemand = station.GlobalStationId == demand.Station.GlobalStationId;
+                    var ownerIsSupply = supplyGlobalIds.Contains(station.GlobalStationId);
+                    foreach (var carrier in station.RemoteCarriers)
+                    {
+                        if (carrier.ItemId != demand.ItemId) continue;
+                        if ((ownerIsDemand && supplyGlobalIds.Contains(carrier.TargetGlobalStationId))
+                            || (ownerIsSupply
+                                && carrier.TargetGlobalStationId == demand.Station.GlobalStationId))
+                        {
+                            result.Add(carrier.StateToken);
+                        }
+                    }
+                }
+
+                return result;
+            }
+
+            var supplyStationIds = new HashSet<int>(supplies.Select(endpoint => endpoint.Station.StationId));
+            var local = new List<string>();
+            foreach (var station in stations)
+            {
+                var ownerIsDemand = station.StationId == demand.Station.StationId;
+                var ownerIsSupply = supplyStationIds.Contains(station.StationId);
+                foreach (var carrier in station.LocalCarriers)
+                {
+                    if (carrier.ItemId != demand.ItemId) continue;
+                    if ((ownerIsDemand && supplyStationIds.Contains(carrier.TargetStationId))
+                        || (ownerIsSupply && carrier.TargetStationId == demand.Station.StationId))
+                    {
+                        local.Add(carrier.StateToken);
+                    }
+                }
+            }
+
+            return local;
+        }
+
+        private static string CreateRouteKey(
+            bool remote,
+            OverseerDiagnosticLogisticsEndpoint demand,
+            IEnumerable<OverseerDiagnosticLogisticsEndpoint> supplies)
+        {
+            var supplyIdentity = supplies
+                .Select(endpoint => $"{endpoint.PlanetId}:{endpoint.ObjectId}:{endpoint.StorageIndex}")
+                .OrderBy(value => value, StringComparer.Ordinal);
+            var canonical = string.Join(
+                "|",
+                remote ? "remote" : "local",
+                demand.ItemId,
+                demand.PlanetId,
+                demand.ObjectId,
+                demand.StorageIndex,
+                string.Join(",", supplyIdentity));
+            return HashDiagnosticValue("spherewright-logistics-route-v1\n" + canonical);
+        }
+
+        private static string HashDiagnosticValue(string value)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(value));
+                return "sha256:" + BitConverter.ToString(bytes).Replace("-", string.Empty).ToLowerInvariant();
+            }
         }
 
         private static string OutputBeltKey(int planetId, int beltEntityId) =>
@@ -1375,6 +1721,11 @@ internal sealed partial class GameStateReader
         public int LocalCarrierCount { get; set; }
 
         public int RemoteCarrierCount { get; set; }
+
+        public int StorageIndex { get; set; }
+
+        public OverseerDiagnosticStationTransportSnapshot Station { get; set; } =
+            new OverseerDiagnosticStationTransportSnapshot();
     }
 
     private sealed class OverseerDiagnosticRouteCandidate
@@ -1383,5 +1734,46 @@ internal sealed partial class GameStateReader
 
         public List<OverseerDiagnosticLogisticsEndpoint> Supply { get; set; } =
             new List<OverseerDiagnosticLogisticsEndpoint>();
+    }
+
+    private sealed class OverseerDiagnosticLogisticsObservation
+    {
+        public LogisticsProgressSample Sample { get; set; } = new LogisticsProgressSample();
+
+        public List<ProductionMaterialInput> Materials { get; } =
+            new List<ProductionMaterialInput>();
+    }
+
+    private sealed class OverseerDiagnosticStationTransportSnapshot
+    {
+        public int PlanetId { get; set; }
+
+        public int StationId { get; set; }
+
+        public int GlobalStationId { get; set; }
+
+        public List<OverseerDiagnosticLocalCarrierSnapshot> LocalCarriers { get; } =
+            new List<OverseerDiagnosticLocalCarrierSnapshot>();
+
+        public List<OverseerDiagnosticRemoteCarrierSnapshot> RemoteCarriers { get; } =
+            new List<OverseerDiagnosticRemoteCarrierSnapshot>();
+    }
+
+    private sealed class OverseerDiagnosticLocalCarrierSnapshot
+    {
+        public int TargetStationId { get; set; }
+
+        public int ItemId { get; set; }
+
+        public string StateToken { get; set; } = string.Empty;
+    }
+
+    private sealed class OverseerDiagnosticRemoteCarrierSnapshot
+    {
+        public int TargetGlobalStationId { get; set; }
+
+        public int ItemId { get; set; }
+
+        public string StateToken { get; set; } = string.Empty;
     }
 }

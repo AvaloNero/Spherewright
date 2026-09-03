@@ -178,6 +178,13 @@ StationComponent.storage[]
 StationStore.itemId / count / localLogic / remoteLogic / localOrder / remoteOrder
 StationComponent.idleDroneCount / workDroneCount
 StationComponent.idleShipCount / workShipCount / warperCount
+StationComponent.workDroneDatas[] / workDroneOrders[]
+DroneData.endId / direction / maxt / t / itemId / itemCount / gene
+LocalLogisticOrder.itemId / thisIndex / otherStationId / otherIndex / thisOrdered / otherOrdered
+StationComponent.gid / workShipDatas[] / workShipOrders[]
+ShipData.stage / planetA / planetB / uPos / uSpeed / warpState
+ShipData.otherGId / direction / t / itemId / itemCount / shipIndex / gene
+RemoteLogisticOrder.itemId / thisIndex / otherStationGId / otherIndex / thisOrdered / otherOrdered
 ```
 
 普通行星塔、星际塔、轨道采集器和大型采矿机的 vein collector 是四个互斥类别，不能把 `isVeinCollector=true` 的采矿机重复算进行星物流塔。空槽必须同时保持 item/count/order/logic 为空；供需槽、库存和订单幅度只从身份自洽的槽聚合。非轨道采集器的受电状态通过 `station.pcId -> EntityData.powerConId -> PowerConsumerComponent.networkId -> PowerSystem.networkServes` 重新绑定；轨道采集器没有普通地面 consumer，故不进入 powered/underpowered 分母。该摘要只观察真实库存、订单、机队与能量，不派单、不补货，也不创建远端 factory。
@@ -219,7 +226,13 @@ MinerComponent:
 
 同档正例从黄糖 `6003` 的 matrix lab `774` 起步，缺金刚石 `1112` 后沿真实入料仓/分拣器链命中唯一熔炉 `715`，再由该炉当前输入读到缺高能石墨 `1109`。最终 path 为 `matrix_lab 774 / 6003 -> material 1112 -> assembler 715 / 1112 -> material 1109`；finding 的 object/item 指向当前最深的已诊断设备和产物，而 path 首节点仍保留调用方请求目标。该样本没有触发停止原因，说明是在自然叶节点结束，而不是预算截断。
 
-运输进展需要跨 tick 比较。单个快照只公开当前配置、订单、源库存和载具数；它不会把“此刻有订单但没观察到位移”写成 stalled。当前可以确认的物流故障仅包括：物理需求路径存在但没有匹配 supply 配置，或匹配 source inventory 为正而供需两端可用/工作载具总数为零。具备载具的订单停滞仍需后续持久化时间窗证明。fractionator、gamma receiver 和 orbital collector 已计入理论产能，但尚未接入同等级直接缓冲诊断；请求物品若由这些设备直接生产，`directDiagnosticCoverage=partial`。
+运输进展需要跨 tick 比较。当前程序集在派出供给端无人机时，把货物和目标站写入 `DroneData`，令 `direction=1`、`t=-1.5`；飞行段按每 tick 增加 `t`，到站后交货并改为 `direction=-1` 返回。需求端派出的无人机以空载去取货，仍由同一 `endId/itemId/t/direction` 描述。`LocalLogisticOrder` 同时绑定本端/对端 storage index 和两个 signed reservation，交货或取消时由原生路径扣回 `StationStore.localOrder`。星际船对应使用全局 `otherGId` 和 `RemoteLogisticOrder`；`stage=-2,-1,0,1,2` 覆盖起降/航行阶段，主航行阶段即使 `t` 不变也持续更新 universal `uPos`，所以只观察 `t` 会漏掉真实进展。供给端船在 dispatch 时立即扣源库存并带货出发，需求端船则空载出发后在远端装货；两种路径都会在需求槽保留正 `remoteOrder`，送达后撤销。
+
+第六个切片因此只为已经由物理 output belt 证明的精确 demand route 建窗口，并要求消费者输入确实不足、需求端 order 为正、匹配 supply 总库存为正、供需站去重后的 idle+work fleet 大于零。需求槽是订单正 reservation 的权威端；不能把供给端的负 reservation 或任意非零值冒充仍待满足的需求。消费者缓冲恢复到至少一周期用量时，该样本明确使旧停滞基线失效，避免短暂供足后再次缺料复活旧窗口。每个活动 carrier 还必须通过工作数组边界、item、目标站、direction、阶段/进度的非有限值检查；route fingerprint 只纳入该 demand 与候选 supply 之间、同 item 的 carrier。无人机用 `direction/maxt/t/itemCount/order`，星际船还用 `stage/uPos/uSpeed/warpState/shipIndex/order`，任一变化、需求库存增长、需求订单幅度缩减或 active route-carrier 数变化都算进展并重置停滞起点。没有 active carrier 但存在 fleet/order/source 也可进入计时，因为这正是“有可用机队却未派单”的潜在故障；单次快照和不足 600 游戏 tick 的静止窗口都不下结论。连续 600 tick 无进展才返回 suspected `logistics_blocked`，而非 confirmed；正处于活动或 warm-up 的路线不会回退成 generic `material_shortage`。
+
+窗口文档位于既有 current-user-protected runtime 根下，文件名和文档身份只含专域 SHA-256 save key，route key 同样是模式、item、精确 demand/supply station slot 拓扑的 SHA-256；公共 DTO、finding 和日志均不返回这些 key、真实 save 名或路径。一次 Overseer 读取先深复制所有 owned factory 的路线样本，再用一次 secure-new-file、flush、同卷原子 replace 提交整个批次；只有成功落盘的 analysis 才写入公共 DTO，避免按设备/路线反复同步写盘，也避免把未持久化状态当作 durable 证据。文档最多保留 4096 条 route、16 MiB。正常重启后相同 owned save 可跨新 session 继续；`crossedSessionBoundary` 明示这一点，速率仍只按 game tick，墙钟离线时间单列排除。save identity 变化、tick 回退、route topology 变化、同 tick 状态突变或相邻观察超过 3600 tick 均将窗口标为 discontinuous 并从当前点重建，不能把缺采样时间冒充停滞。
+
+当前同档部署已经创建 3 条实际物理塔路由的受保护基线；文档为 2942 bytes、version 1、DSP `0.10.34.28529`，route key 全部哈希，未包含原始高熵 save identity，DACL 禁止其他 SID。样本已同时覆盖消费者输入充足/不足两种布尔状态，但三条当时均无 outstanding order/active carrier，因此只验证了真实拓扑捕获、批量持久化和普通生产诊断不回归，尚未提供活动 carrier 与故意停滞的正反例。fractionator、gamma receiver 和 orbital collector 已计入理论产能，但尚未接入同等级直接缓冲诊断；请求物品若由这些设备直接生产，`directDiagnosticCoverage=partial`。
 
 所有 finding 都包含同 tick 的设备、物料和可证明物流节点；它们是瞬时诊断，不是跨 tick 不变事实。实机中同一制造台 `715` 曾在网络服务率约 `0.94038` 时返回 `insufficient_power`，供电恢复后又自然变为缺 item `1109` 的 `material_shortage`，证明调用方必须按 `capturedAtGameTick` 使用证据，不能缓存旧根因继续写入。
 
@@ -230,7 +243,7 @@ MinerComponent:
 - 跨域摘要最多扫描 4096 个 power-network pool 槽、65536 个发电组件引用和 4096 个 station pool 槽；每站最多 64 个 storage slot，科研队列最多扫描 4096 项、返回 64 项，runtime tech catalog 最多扫描 12000 项。理论产能另限制最多扫描 131072 个 assembler/lab/miner/fractionator/generator/station pool 槽和 262144 个 recipe input/output、矿点及采集物引用。超过预算返回明确的非重试 `SERVER_BUSY`，不静默截断聚合总量。
 - 直接诊断另受 131072 个组件/拓扑节点和 262144 个配方、来源及站槽引用的总预算；每个 item 最多返回 16 条 finding，每个 planet 最多返回 16 条无已知 item 身份的基础设施 finding，同时保留未截断总数和 `truncated` 标志。预算溢出会让整份首屏 fail closed，不能返回不完整总量。
 - 当前立即生产者诊断和递归生产者都只覆盖 assembler、matrix lab 和三类 miner；fractionator、gamma receiver 与 orbital collector 作为请求物品的直接生产者时会显式令 `directDiagnosticCoverage=partial`。递归只沿同星球、物料兼容且物理可达的受支持生产者，最多 8 层/64 个 producer；跨星球生产者和未支持设备不会被猜测补全，路径预算/环路停止会进入 evidence。
-- 单次快照不能确认“有载具的物流订单没有进展”；该分支继续 fail closed，等待跨 tick 的 per-save 时间窗。受控缺料、断电、物流阻塞三类故障制造/修复和保存恢复验收仍未完成。
+- 具备载具的物流订单已经接入跨 tick、按存档保护的窗口，但当前 live 只有三条无订单基线；在真实活动 shipment 与故意停滞 shipment 完成正反例前，不能把实现/单元测试冒充该故障分支实机验收。受控缺料、断电、物流阻塞三类故障制造/修复和保存恢复验收仍未完成。
 - 原始 owned save 名、由它派生的持久化 key、auth token、plan token、绝对路径和运行时描述文件不得进入公共 DTO 或诊断包。
 
 ## 已完成的运行时切片
@@ -244,3 +257,5 @@ MinerComponent:
 第四条纵向切片把纯 Core 首因分类器接到真实 assembler/lab/miner 缓冲、power consumer/network、recipe、vein 和 station/belt 拓扑。最终同档 tick `13945617` 的自然现场同时返回：铁矿机 `1213/1496` 与冶炼炉 `10` 的 `output_blocked`，制造台 `530` 缺 item `1004` 的 `material_shortage` 并附带 `104:1657 -> 102:44` 物流供需路径，matrix lab `774` 缺 item `1112`，以及三台已丢失产品身份的耗尽矿机基础设施 finding。较早一次同版本读取还在制造台 `715` 上捕获约 `0.94038` 供电比的 `insufficient_power`；供电恢复后标签随同 tick 状态改为缺 item `1109`。item `6002` 的实际产量为 `12 min⁻¹` 时没有因瞬时设备输入状态产生误报。完整 solution 0 warning/0 error，174 项测试通过；最终部署 Plugin SHA-256 为 `D40D6BEA4E76697EB14C5F1DE3B0CC61532E4BF634125E1A9488D5024FDF59E1`，normal save `13943810`、exact-primary resume/auto-save `13943842` 均保持同一 owned world。最终 `limit=1` 三页在 tick `13986388` 共享快照并以 `STALE_CURSOR` 拒绝错绑 filter；源码 MCP `0.4.0.0` 通过协议 `2025-06-18` initialize、50-tool list 和 live call。只读审计 tick `13990990+` 仍为 healthy、Journal durable、无 blocker/checkpoint/prebuild。该切片完成直接设备层，不等于递归上游、时间型物流停滞和受控故障门已经完成。
 
 第五条纵向切片把缺料 finding 递归到同 tick、同星球、物料过滤允许且物理可达的上游生产者。首个候选已在 tick `14028962` 从 lab `774` 追到 diamond assembler `715` 的高能石墨短缺；复核后先把每种输入拆成独立遍历并要求路径上每个 sorter filter 相容，最终又按本机程序集核对 `SplitterComponent.SetPriority` 与 `CargoTraffic.UpdateSplitter`，把 exact output slot/belt 身份和“优先口只收过滤物、其他口排除过滤物”的双向规则纳入遍历。Core 为根因图与 splitter policy 提供 14 项回归，完整 suite 为 188 项（Contracts 17、Core 150、MCP 21），solution 0 warning/0 error。最终源码相等部署为 Plugin `46E62CC930CAD0756BBFB06625C9585F04A074B25FEDC15C4D7DCE2A322F4B70`、Contracts `507C57A10C49435C8D0AEF71F49DA5C6255711C9093D651CBD1A57F91088055F`、Core `CA8B33DD66330211ECD78E535CBD05932933278AF6E640BE67AF7AFD6301E7C5`；普通保存 tick `14109460` 后正常关窗，exact-primary 只恢复 planet `104` 并自动重存 tick `14109491`。最终 Bridge live tick `14111293` 与最终构建后的源码 MCP tick `14138110` 都返回 `lab 774 / 6003 -> material 1112 -> assembler 715 / 1112 -> material 1109`，无 trace-stop evidence；MCP `0.4.0.0` 完成协议 `2025-06-18`、50-tool list、明确 sorter/splitter filter 的工具描述和同一路径调用。最终三页生产/摘要分别共享 tick `14119083/14119093`，错绑 filter cursor 以 `STALE_CURSOR` 拒绝；审计 tick `14118310+` 为和平、非沙盒、1×、healthy、Journal `49/49` durable、Walk/0、满核心、3/3 施工机 idle、0 prebuild、无 blocker/checkpoint。跨星生产者、时间型物流停滞和三类受控故障门仍未完成，本切片没有 tag 或 Release。
+
+第六条纵向切片实现物流时间窗的 Core 状态机、Plugin 原生 carrier 深复制和按档受保护持久化。Core 覆盖 600-tick mature、移动/送达/订单缩减、消费者供足重置、跨 session 离线排除、无订单/无源/无 fleet、save/route/tick/gap discontinuity、same-tick 突变和重复成熟读取；完整 suite 提升为 204 项（Contracts 17、Core 166、MCP 21），solution 仍为 0 warning/0 error。最终审查把逐 route 同步写盘改为一次读取一次原子批量替换，并把需求判定收紧为 demand endpoint 的正 reservation；只有成功持久化的 analysis 才进入公共 DTO。部署前同一 owned world 正常保存 tick `14290235`，旧进程接受 `CloseMainWindow` 正常退出；四个运行 DLL source/deployed SHA-256 全部一致，Plugin/Core 为 `A66033BFC60DBCAC8B2E798F815E7A22E635AAFCBFDD7F604E5256F191E3CDC5` / `EE9F5519C23A1EC9BC21987D78D29D90A79E561EBEE80F72702A74678B8E492E`。新进程只消费 minimum tick `14290235` 的 exact-primary ticket 并自动重存 tick `14290266`。live `get_overseer_production(6003)` 在 tick `14293735+` 仍返回三座 factory 与原有黄糖递归根因；保护文档含 3 条哈希 route、2942 bytes、current-user-only DACL、无原始 save identity，样本 session 已切到恢复后的新 session，并同时出现 `consumerInputMissing=false/true`。生产/摘要三页共享 tick `14304692/14304700`，错 filter cursor 继续 `STALE_CURSOR`；源码 MCP `0.4.0.0` 用协议 `2025-06-18` 列出 50 tools 并在 tick `14302792` live 返回三厂。因为现场三条 route 均没有订单和 active carrier，本切片状态仍是“实现与持久化已验证，活动/停滞 shipment 待受控实机”，不提前关闭物流故障验收，也没有 tag 或 Release。

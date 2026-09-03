@@ -7,7 +7,7 @@
 - 游戏版本：`0.10.34.28529`
 - `Assembly-CSharp.dll` SHA-256：`AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`
 - 反编译工具：ILSpyCmd `9.1.0.7988` 与 Mono.Cecil
-- 最近复验：2026-09-03
+- 最近复验：2026-09-04
 
 以下访问只能在 Unity 主线程、当前进程精确 owned `GameData` 实例仍成立且调用方 session 匹配时执行。DTO 必须在返回后台线程前完成深复制。
 
@@ -199,6 +199,12 @@ itemCount = hashCount * pointsPerHash / 3600
 
 摘要返回一份当前科技、上传/所需/剩余 hash、有序队列、运行时 tech-state 总数、已解锁数及逐物品预算；队列中的每个非零 ID 必须同时存在于当前 `LDB.techs` 和 `techStates`，负数或残留身份会 fail closed，矩阵身份只按当前 `TechProto.matrixIds` 判断。所有星球页都引用首屏捕获的同一份深复制科研状态和同一 `capturedAtGameTick`，不会把后续 tick 的科研进度拼进旧游标快照。独立调用本地电力、物流或科研工具可能在相邻 tick 执行；除非 `capturedAtGameTick` 相同，否则逐字段差异是正常的动态状态，不能拿来否定或拼接当前 Overseer 快照。最终实机对照仅相隔 2 tick，母星需求/实际发电就从 `90688` 变为 `79388`，而各自快照内部仍满足 generated/served 和 exported 语义。
 
+## 同 tick 诊断包与脱敏边界
+
+独立调用生产和跨域摘要会在相邻主线程任务执行，不能保证 `capturedAtGameTick` 相同，因此调用方不应自行拼接为一份原子观察。`get_overseer_diagnostic_bundle` 在同一个 Unity 主线程委托内先完成全部生产/根因深复制与受保护物流窗口提交，再完成供电/物流/科研深复制；调用链没有 `await`、游戏对象或后台延迟。组合器仍逐 planet 强制校验 factory index、planet ID/name、local/display flags 与双方 `capturedAtGameTick`。任何字段不一致都让整份请求 `NOT_READY`，不会把相邻帧或不同 factory 拼起来。
+
+包的公开契约是 `schemaVersion=1`、`privacyProfile=public_allowlist_v1`。它只从现有公开 `OverseerPlanetProductionSnapshot`、`OverseerPlanetSummarySnapshot` 和全局 research DTO 复制白名单字段，不接受或输出真实 save name、save-derived protected key、runtime descriptor/path、auth token 或写动作 plan token。`sessionId`、短时 `snapshotId` 和 continuation cursor 仍是现有读协议的会话/分页身份，不授予游戏写入能力。独立 snapshot store 只有在结果实际需要 continuation 时才保留最多 8 份、60 秒；cursor 绑定 session、排序后的精确 item 集合和 page size。这个聚合端点不会调用新的 DSP API、创建/载入 factory 或改变现有诊断覆盖率。
+
 ## 直接设备故障与物流路径证据
 
 当前程序集的装配、矩阵制造和采集组件在完成周期前先检查自己的输出缓冲；这些门决定“满输出”何时真正阻止下一次产出：
@@ -245,6 +251,7 @@ MinerComponent:
 - 生产行必须由调用方提供去重后的有效物品 ID，首个切片最多 64 个；不接受“返回所有物品”的无界请求。
 - snapshot 容量只保留能够由 continuation cursor 再次引用的多页记录。`items.Count <= pageSize` 的完整首屏直接返回且 `nextCursor=null`，不进入 60 秒 store；真正分页仍绑定 session/scope/filter/page-size/expiry 并受硬容量限制。live 压力矩阵已证明 16 次完整三星球首屏不占槽，8 个真实分页快照占满后第 9 个返回 `SERVER_BUSY`，同时完整首屏和已签发 continuation 仍可用。
 - 工厂遍历同时受 `factoryCount`、数组长度和 512 个已创建 factory 的显式上限约束；每页最多 16 个 planet，快照保持 60 秒且绑定 session、请求类型与页大小。
+- 同 tick 诊断包完整继承生产与跨域摘要各自的扫描、finding 和 item 上限，不把两套预算合并成一个更大的隐式额度；任一底层域失败就不返回部分包。它有独立的 8-slot continuation store，完整首屏不占槽。
 - 跨域摘要最多扫描 4096 个 power-network pool 槽、65536 个发电组件引用和 4096 个 station pool 槽；每站最多 64 个 storage slot，科研队列最多扫描 4096 项、返回 64 项，runtime tech catalog 最多扫描 12000 项。理论产能另限制最多扫描 131072 个 assembler/lab/miner/fractionator/generator/station pool 槽和 262144 个 recipe input/output、矿点及采集物引用。超过预算返回明确的非重试 `SERVER_BUSY`，不静默截断聚合总量。
 - 直接诊断另受 131072 个组件/拓扑节点和 262144 个配方、来源及站槽引用的总预算；每个 item 最多返回 16 条 finding，每个 planet 最多返回 16 条无已知 item 身份的基础设施 finding，同时保留未截断总数和 `truncated` 标志。预算溢出会让整份首屏 fail closed，不能返回不完整总量。
 - 当前立即生产者诊断和递归生产者都只覆盖 assembler、matrix lab 和三类 miner；fractionator、gamma receiver 与 orbital collector 作为请求物品的直接生产者时会显式令 `directDiagnosticCoverage=partial`。递归只沿物料兼容且物理可达的受支持生产者，或沿一个精确 demand/supply station route 进入同一 supply endpoint 的真实 Input belt；最多 8 层/64 个 producer。人工填塔、无输入带、未证明的多段塔中继和未支持设备不会被猜测补全，路径预算/环路停止会进入 evidence。
@@ -268,3 +275,5 @@ MinerComponent:
 第七条纵向切片把递归生产者图跨过精确物流 endpoint。当前程序集证明 Input port 按整站 `needs[]` 动态取货、`storageIdx` 只是上次成功取货结果；Plugin 因此从每个 supply endpoint 的真实 Input belt 按 item 反向复用 sorter/splitter 过滤图，等所有 owned factory 深复制完毕后再用 planet/object/item 全局解析。最终审查还修正 IFX-021：聚合库存/机队可来自多座 supply，但公开 path 与递归候选只能使用同一座精确 supply；有 demand route 时也不再跳入同一消费带上的另一条本地直连候选。完整 suite 为 205 项（Contracts 17、Core 167、MCP 21），solution 0 warning/0 error。最终同档普通保存 tick `14413801`、正常关窗、四 DLL source/deployed 零差异后，exact-primary 只恢复 minimum tick `14413801` 的 planet `104` 并自动重存 `14413832`；Plugin/Contracts/Core SHA-256 分别为 `344614FE3B827BE8397D5D6DC77C3CCB90C8991C01D088E3108B6F473AB11869`、`8E2FB3205B54972180540D6A6C9B08F62B028453DA5E44BBC36CA96E04F56991`、`9507C3AAEE729ACF13693573C2AB53466B8043F53B762B054F2DEEBD59AAF412`。live tick `14414535` 将母星钛块熔炉 `530` 经 `104:1657 -> 102:44` 追到未显示远端工厂的钛矿机 `102:1`，最终报告其 50/50 `output_blocked`；同一响应中的黄糖四节点路径保持。独立 item `1004` 于 tick `14417684` 再次闭合该矿机理论 `60 min⁻¹`、实际 `0`；三页共享 tick `14415270` 并拒绝错 filter cursor。源码 MCP SHA-256 `E86BE095EA8FDF10D7487C65876EEFD534CE3E4684F9EC31C378F3A737A4E70E` 以协议 `2025-06-18`、版本 `0.4.0.0` 列出 50 tools，描述明确 supply Input-belt 语义，并在 tick `14416829` 返回同一路径。最终审计 tick `14418919+` 为 peaceful/non-sandbox/1×、healthy、0 blocker/checkpoint/prebuild、Walk/0、满核心、3/3 drone idle、Journal `49/49` durable；日志无 error。活动/停滞 shipment 与三类受控故障门仍开放，本切片没有 tag 或 Release。
 
 第八条实机切片先闭合物流窗口的活动分支，再修复高频观察暴露的分页容量漏洞。远端站 `102:44` 的钛/硅供应上限从 `100/100` 调整为 `200/300` 后，真实钛订单经历源/需 `-200/+200`、运输船持续移动、源库存 `200 -> 79`、送达归队和母星钛块 `12 min⁻¹` 恢复；超过 2100 个移动 tick 内 item `1106` 的 finding 始终为 0。远端 save `14535735` 后，原生返航动作 `3515d9f4-8a65-404b-b7bd-79f75ed7a7bc` 稳定落到 planet `104`，checkpoint 已撤销，主档 save `14575384` 覆盖结果。监控期间发现 `SnapshotPageStore` 会保留没有 continuation 的完整首屏；最终实现只保存 `items.Count > pageSize` 的记录。Core 新回归和完整 suite 共 206 项（Contracts 17、Core 168、MCP 21），Release solution 0 warning/0 error。普通关窗后四 DLL source/deployed 一致，Plugin/Contracts/Core SHA-256 为 `66D6E4631D0AF8DD3B6C7D6AE11DFF02AE37B13EE8A7A8D77DD2BDCF598B38C9`、`D0F580634540C486BFE865A8C6E50402647AD6A435F7D66205D6DDCAB9C2353E`、`DE36BF4028D3C3FED0A5E7CA871F7CA040E66EF0682521A2BF5A25E6BE62AA32`；exact-primary 自动重存 `14575416`，Steam 启动链继续同一世界。live tick `14577940–14577989` 连续 16 个完整三星球页均无 cursor，8 个真实分页快照占满后第 9 个正确 `SERVER_BUSY`，满载时完整页和已有 continuation 仍成功。最终审计 tick `14585723+` 保持 healthy、Journal `49/49` durable、2254 built/0 prebuild、Walk/0、3/3 drone idle、无 blocker/checkpoint/BepInEx error。活动 shipment 已完成；受控 stall/recovery 和三类故障门仍开放，本切片没有 tag 或 Release。
+
+第九条离线切片把此前两个独立 Overseer 读取合成为单个同 tick、白名单诊断包。新 Bridge/MCP 方法要求 1–64 个当前物品 ID 和 1–16 个 planet page limit；首次调用在一个主线程任务中捕获两域，只有 factory/planet/name/local/display/tick 全部一致且公共域集合完整时才创建不可变分页快照，continuation 继续绑定 session/filter/page size。Contracts 序列化回归证明 schema/profile 以及 save/auth/plan/path 字段缺失，Core 组合器覆盖正常合并及 factory/planet/tick/name/runtime flag 错配和缺失集合拒绝，MCP 覆盖注册和参数映射。Release 完整 solution 0 warning/0 error，Contracts/Core/MCP `19 + 181 + 23 = 223` 项通过，公共工具面为 53。该批没有启动或部署 DSP、没有游戏/存档写入，也没有把离线测试冒充 live 证据；三厂同 tick 分页、错 cursor、公共 JSON 脱敏和最终安装版 MCP 仍待下一次安全部署复验，受控 stall/recovery 与三类故障门不变。

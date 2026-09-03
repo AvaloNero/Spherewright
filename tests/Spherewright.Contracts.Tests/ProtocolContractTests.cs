@@ -445,6 +445,91 @@ public sealed class ProtocolContractTests
     }
 
     [Fact]
+    public void OverseerDiagnosticBundle_JoinsOnlyAllowlistedSameTickDomains()
+    {
+        var snapshot = new OverseerDiagnosticBundleSnapshot
+        {
+            SessionId = "session",
+            CapturedAtGameTick = 42,
+            SnapshotId = "opaque-snapshot",
+            TotalFactoryCount = 1,
+            ReturnedFactoryCount = 1,
+            RequestedItemIds = new List<int> { 6003 },
+            Window = new OverseerWindowSnapshot
+            {
+                State = OverseerWindowStates.Ready,
+                EndGameTick = 42,
+            },
+            Research = new OverseerResearchSummarySnapshot
+            {
+                CurrentTechId = 1704,
+            },
+            Planets = new List<OverseerDiagnosticBundlePlanetSnapshot>
+            {
+                new OverseerDiagnosticBundlePlanetSnapshot
+                {
+                    FactoryIndex = 0,
+                    PlanetId = 104,
+                    CapturedAtGameTick = 42,
+                    Power = new OverseerPowerSummarySnapshot
+                    {
+                        MinimumConsumerRatio = 0.75,
+                    },
+                    Logistics = new OverseerLogisticsSummarySnapshot
+                    {
+                        InterstellarStationCount = 1,
+                    },
+                    Production = new List<ProductionRateSnapshot>
+                    {
+                        new ProductionRateSnapshot
+                        {
+                            PlanetId = 104,
+                            ItemId = 6003,
+                            FindingCount = 1,
+                            Findings = new List<OverseerFindingSnapshot>
+                            {
+                                new OverseerFindingSnapshot
+                                {
+                                    Kind = OverseerFindingKinds.MaterialShortage,
+                                    PlanetId = 104,
+                                    ObjectId = 774,
+                                    ItemId = 6003,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        };
+
+        var json = JsonSerializer.Serialize(snapshot, JsonOptions);
+        using var parsed = JsonDocument.Parse(json);
+
+        Assert.Equal(
+            OverseerDiagnosticBundleProfiles.CurrentSchemaVersion,
+            parsed.RootElement.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(
+            OverseerDiagnosticBundleProfiles.PublicAllowlistV1,
+            parsed.RootElement.GetProperty("privacyProfile").GetString());
+        Assert.Equal(
+            parsed.RootElement.GetProperty("capturedAtGameTick").GetInt64(),
+            parsed.RootElement.GetProperty("planets")[0].GetProperty("capturedAtGameTick").GetInt64());
+        Assert.Equal(
+            OverseerFindingKinds.MaterialShortage,
+            parsed.RootElement.GetProperty("planets")[0]
+                .GetProperty("production")[0]
+                .GetProperty("findings")[0]
+                .GetProperty("kind")
+                .GetString());
+        Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("saveIdentity", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("protectedSaveKey", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("authToken", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("planToken", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("filePath", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void LogisticsStation_UsesExplicitRawSettingsAndStableHashes()
     {
         var station = new LogisticsStationSnapshot

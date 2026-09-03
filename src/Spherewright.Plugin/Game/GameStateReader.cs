@@ -53,6 +53,8 @@ internal sealed partial class GameStateReader
         new SnapshotPageStore<OverseerPlanetProductionSnapshot>(TimeSpan.FromSeconds(60), 8);
     private readonly SnapshotPageStore<OverseerSummaryPageEntry> _overseerSummarySnapshots =
         new SnapshotPageStore<OverseerSummaryPageEntry>(TimeSpan.FromSeconds(60), 8);
+    private readonly SnapshotPageStore<OverseerDiagnosticBundlePageEntry> _overseerDiagnosticBundleSnapshots =
+        new SnapshotPageStore<OverseerDiagnosticBundlePageEntry>(TimeSpan.FromSeconds(60), 8);
 
     public GameStateReader(
         GameSessionTracker sessions,
@@ -877,6 +879,159 @@ internal sealed partial class GameStateReader
             Planets = page.Items.Select(entry => entry.Planet).ToList(),
             NextCursor = page.NextCursor,
         });
+    }
+
+    public GameCallResult<OverseerDiagnosticBundleSnapshot> GetOverseerDiagnosticBundleOnMainThread(
+        string? requestedSessionId,
+        GetOverseerDiagnosticBundleRequest request)
+    {
+        var accessError = ValidateOwnedGameDataOnMainThread(requestedSessionId, out var gameData);
+        if (accessError is not null)
+        {
+            return GameCallResult<OverseerDiagnosticBundleSnapshot>.Failed(accessError);
+        }
+
+        var limit = request.Limit == 0 ? DefaultOverseerPlanetLimit : request.Limit;
+        if (limit < 1 || limit > MaximumOverseerPlanetLimit)
+        {
+            return GameCallResult<OverseerDiagnosticBundleSnapshot>.Failed(InvalidRequest(
+                $"Overseer diagnostic-bundle planet page limit must be between 1 and {MaximumOverseerPlanetLimit}.",
+                "Use a bounded planet page limit and retry."));
+        }
+
+        var suppliedItemIds = request.ItemIds ?? new List<int>();
+        if (suppliedItemIds.Count < 1 || suppliedItemIds.Count > MaximumOverseerItemCount)
+        {
+            return GameCallResult<OverseerDiagnosticBundleSnapshot>.Failed(InvalidRequest(
+                $"Overseer diagnostic bundle requires between 1 and {MaximumOverseerItemCount} item IDs.",
+                "Provide a bounded set of exact item IDs from the recipe catalog."));
+        }
+
+        var itemIds = suppliedItemIds.OrderBy(itemId => itemId).ToArray();
+        if (itemIds.Distinct().Count() != itemIds.Length
+            || itemIds.Any(itemId => itemId <= 0 || LDB.items.Select(itemId) is null))
+        {
+            return GameCallResult<OverseerDiagnosticBundleSnapshot>.Failed(InvalidRequest(
+                "Overseer diagnostic-bundle item IDs must be unique positive IDs present in the current runtime catalog.",
+                "Refresh the recipe catalog and retry with unique current item IDs."));
+        }
+
+        var filterHash = ComputeFilterHash(
+            $"overseer-diagnostic-bundle|items={string.Join(",", itemIds)}|limit={limit}");
+        SnapshotPage<OverseerDiagnosticBundlePageEntry>? page;
+        if (!string.IsNullOrWhiteSpace(request.Cursor))
+        {
+            var status = _overseerDiagnosticBundleSnapshots.TryGetPage(
+                request.Cursor,
+                _sessions.SessionId!,
+                OverseerSnapshotScopeId,
+                filterHash,
+                limit,
+                out page);
+            if (status != SnapshotCursorStatus.Success || page is null)
+            {
+                return GameCallResult<OverseerDiagnosticBundleSnapshot>.Failed(StaleCursor(
+                    "The Overseer diagnostic-bundle cursor is unknown, expired, or bound to a different session, item filter, or page size."));
+            }
+        }
+        else
+        {
+            var captureError = TryCaptureOverseerDiagnosticBundle(gameData!, itemIds, out var entries);
+            if (captureError is not null)
+            {
+                return GameCallResult<OverseerDiagnosticBundleSnapshot>.Failed(captureError);
+            }
+
+            if (!_overseerDiagnosticBundleSnapshots.TryCreate(
+                    _sessions.SessionId!,
+                    OverseerSnapshotScopeId,
+                    filterHash,
+                    entries,
+                    limit,
+                    out page)
+                || page is null)
+            {
+                return GameCallResult<OverseerDiagnosticBundleSnapshot>.Failed(
+                    SnapshotCapacityExceeded("Overseer diagnostic bundle"));
+            }
+        }
+
+        if (page.Items.Count == 0)
+        {
+            return GameCallResult<OverseerDiagnosticBundleSnapshot>.Failed(NotReady(
+                "The owned world did not yield an Overseer diagnostic-bundle page."));
+        }
+
+        var capturedAtGameTick = page.Items[0].CapturedAtGameTick;
+        return GameCallResult<OverseerDiagnosticBundleSnapshot>.Succeeded(new OverseerDiagnosticBundleSnapshot
+        {
+            SchemaVersion = OverseerDiagnosticBundleProfiles.CurrentSchemaVersion,
+            PrivacyProfile = OverseerDiagnosticBundleProfiles.PublicAllowlistV1,
+            SessionId = _sessions.SessionId!,
+            CapturedAtGameTick = capturedAtGameTick,
+            SnapshotId = page.SnapshotId,
+            SnapshotExpiresAtUtc = page.ExpiresAtUtc,
+            TotalFactoryCount = page.TotalItemCount,
+            ReturnedFactoryCount = page.Items.Count,
+            RequestedItemIds = itemIds.ToList(),
+            RateSource = OverseerRateSources.NativeFactoryStatisticsLevel0,
+            Window = NativeProductionRateCalculator.Calculate(capturedAtGameTick, 0, 0).Window,
+            Research = page.Items[0].Research,
+            Planets = page.Items.Select(entry => entry.Planet).ToList(),
+            NextCursor = page.NextCursor,
+        });
+    }
+
+    private BridgeError? TryCaptureOverseerDiagnosticBundle(
+        GameData gameData,
+        IReadOnlyList<int> itemIds,
+        out List<OverseerDiagnosticBundlePageEntry> entries)
+    {
+        entries = new List<OverseerDiagnosticBundlePageEntry>();
+        var productionError = TryCaptureOverseerProduction(gameData, itemIds, out var productionPlanets);
+        if (productionError is not null)
+        {
+            return productionError;
+        }
+
+        var summaryError = TryCaptureOverseerSummary(gameData, out var summaryEntries);
+        if (summaryError is not null)
+        {
+            return summaryError;
+        }
+
+        if (productionPlanets.Count != summaryEntries.Count)
+        {
+            return NotReady("The same-tick Overseer domains returned different owned-factory counts.");
+        }
+
+        for (var index = 0; index < productionPlanets.Count; index++)
+        {
+            var production = productionPlanets[index];
+            var summary = summaryEntries[index];
+            if (production.CapturedAtGameTick != summary.CapturedAtGameTick)
+            {
+                entries.Clear();
+                return NotReady("The same-tick Overseer domains do not share one exact owned-factory identity and capture tick.");
+            }
+
+            try
+            {
+                entries.Add(new OverseerDiagnosticBundlePageEntry
+                {
+                    CapturedAtGameTick = production.CapturedAtGameTick,
+                    Research = summary.Research,
+                    Planet = OverseerDiagnosticBundleComposer.ComposePlanet(production, summary.Planet),
+                });
+            }
+            catch (ArgumentException)
+            {
+                entries.Clear();
+                return NotReady("The same-tick Overseer domains do not share one exact owned-factory identity and capture tick.");
+            }
+        }
+
+        return null;
     }
 
     private static BridgeError? TryCaptureOverseerSummary(
@@ -3971,6 +4126,16 @@ internal sealed partial class GameStateReader
         public OverseerResearchSummarySnapshot Research { get; set; } = new OverseerResearchSummarySnapshot();
 
         public OverseerPlanetSummarySnapshot Planet { get; set; } = new OverseerPlanetSummarySnapshot();
+    }
+
+    private sealed class OverseerDiagnosticBundlePageEntry
+    {
+        public long CapturedAtGameTick { get; set; }
+
+        public OverseerResearchSummarySnapshot Research { get; set; } = new OverseerResearchSummarySnapshot();
+
+        public OverseerDiagnosticBundlePlanetSnapshot Planet { get; set; } =
+            new OverseerDiagnosticBundlePlanetSnapshot();
     }
 
     private sealed class OverseerTheoreticalSettings

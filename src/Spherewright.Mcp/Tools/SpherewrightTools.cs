@@ -362,6 +362,34 @@ public static class SpherewrightTools
     }
 
     [McpServerTool(
+        Name = "spherewright_get_overseer_diagnostic_bundle",
+        Title = "Get a same-tick Overseer diagnostic bundle",
+        ReadOnly = true,
+        Destructive = false,
+        Idempotent = true,
+        OpenWorld = false)]
+    [Description("Returns one cursor-bound, same-game-tick diagnostic bundle that joins bounded production rates and root-cause findings with per-planet power and logistics summaries plus global research. The public allowlist schema excludes save identity, filesystem paths, auth credentials, and action plan credentials. It does not create or load remote factories.")]
+    public static async Task<CallToolResult> GetOverseerDiagnosticBundleAsync(
+        [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
+        [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,
+        [Description("One to 64 unique positive runtime item IDs. Resend the identical IDs with a cursor.")] int[] itemIds,
+        [Description("Number of planets per page, from 1 to 16; zero uses the default of 8.")] int limit = 0,
+        [Description("Opaque nextCursor from the preceding page, or empty for a fresh snapshot.")] string cursor = "",
+        [Description("Cancellation token supplied by the MCP host.")] CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.GetOverseerDiagnosticBundleAsync(
+            sessionId,
+            new GetOverseerDiagnosticBundleRequest
+            {
+                ItemIds = (itemIds ?? Array.Empty<int>()).ToList(),
+                Limit = limit,
+                Cursor = string.IsNullOrWhiteSpace(cursor) ? null : cursor,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Same-tick multi-planet Overseer diagnostic bundle captured from the owned ordinary world.");
+    }
+
+    [McpServerTool(
         Name = "spherewright_prepare_configure_building",
         Title = "Prepare an idle device configuration",
         ReadOnly = false,

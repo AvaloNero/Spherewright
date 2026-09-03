@@ -2122,13 +2122,29 @@
 - 日期：2026-09-04
 - 适用范围：玩家已在 DSP 中手工载入、但尚未由当前 Spherewright 进程认领的和平/非沙盒/1×世界；当前 `prepare_import_current_game` / `commit_import_current_game` 与对应 MCP 工具。
 - 当前结论：人工读档后不能直接把最初的“继续/接手”当成导入授权。Agent 先读取只含 opaque session/revision 的受限状态，prepare 只在内存绑定当前进程/session/revision/精确 `GameData` 并返回“原档不变、新建 owned 副本、Journal 从导入点开始”的确认问题；收到用户在下一条消息中的明确同意后，commit 才声明对话确认与两个边界确认。commit 再复核对象身份、和平、非沙盒、1×和本地工厂 ready，生成内部高熵名称，通过 DSP 正常保存与精确 header tick 复读后才认领。无需快捷键或验证码；若 save 已返回 true 但 header 证明失败，同一未认领 session 进入隔离，只保留结果查询，必须由玩家主动重载原档形成新 session 后再开始。
-- 直接证据：当前程序集 SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85` 的 `GameMain.gameName` setter、`GameSave.SaveCurrentGame`、`GameData.Export` 与 `GameSave.ReadHeader` 调用链已复核；Contracts DTO 不含原档名/路径/验证码，Core 策略覆盖三项声明缺一即拒绝，MCP 注册与参数映射覆盖 prepare/commit。完整 solution 0 warning / 0 error，`18 + 174 + 22 = 214` 项 Contracts/Core/MCP 测试通过。
-- 限制或反例：Plugin 无法读取聊天历史，`userConfirmedInConversation` 是 MCP 调用方对当前对话证据的声明，真正的“先问再确认”由工具规范与 Agent 行为保证，不应描述为密码学证明。保存失败或在新文件创建后中断可能留下不可达的内部 orphan 副本；此时保持 unowned、不得猜测认领或删除文件。当前只完成程序集/代码/自动测试证据，仍需当前 DSP 实机证明原档 header 不变、新副本可保存恢复、重新进入原档仍受限，才能升级为 `validated` 或进入 `v0.3.1`/`v0.4.0` Release。
+- 直接证据：当前程序集 SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85` 的 `GameMain.gameName` setter、`GameSave.SaveCurrentGame`、`GameData.Export` 与 `GameSave.ReadHeader` 调用链已复核；Contracts DTO 不含原档名/路径/验证码，Core 策略覆盖三项声明缺一即拒绝，MCP 注册与参数映射覆盖 prepare/commit。main 完整 solution 0 warning / 0 error、`18 + 174 + 22 = 214` 项测试通过；经项目所有者明确批准的最小回移 tag `v0.3.1` 位于 commit `33a733f`（直接父为 v0.3.0 `a52ff44`），prerelease 自包含包 `sourceDirty=false`、232 manifest entries、MCP `0.3.1.0` / 50 tools、127 项回移测试通过，ZIP SHA-256 `b05eabb20928e98850f6792ea001149fd2e30c92082994e6d9c43254e611cdcf`。
+- 限制或反例：Plugin 无法读取聊天历史，`userConfirmedInConversation` 是 MCP 调用方对当前对话证据的声明，真正的“先问再确认”由工具规范与 Agent 行为保证，不应描述为密码学证明。保存失败或在新文件创建后中断可能留下不可达的内部 orphan 副本；此时保持 unowned、不得猜测认领或删除文件。当前 main 与 v0.3.1 只有程序集/代码/自动测试证据，仍需另一台电脑上的当前 DSP 实机证明原档 header 不变、新副本可保存恢复、重新进入原档仍受限，才能升级为 `validated` 或把 prerelease 视为实机验收通过。
 - 复验触发：MCP 工具说明或确认字段、plan/session/revision 绑定、GameData 身份、保存/header API、Journal attached-save 初始化、DSP 版本或 v0.3.1 回移候选变化。
 - 关联：`UserSaveImportCoordinator`、`GameSessionTracker.TryImportCurrentSessionAsOwnedCopyOnMainThread`、`UserSaveImportConfirmationPolicy`、`docs/research/game-api-m0.md`、ROADMAP `0.3.1`。
-- 最近复验：2026-09-04（对话确认设计纠正了未发布的快捷键/验证码方案；完整构建和 214 项离线测试通过，未部署、未改游戏或存档）。
+- 最近复验：2026-09-04（v0.3.1 最小回移已由用户明确批准并发布为 prerelease；工件/manifest/MCP/127 测试通过，跨电脑实机仍待用户验证）。
+
+### EXP-169 — 跨域诊断只能在同一主线程 tick 经身份全匹配后合并
+
+- 状态：`observed`
+- 日期：2026-09-04
+- 适用范围：v0.4 `get_overseer_diagnostic_bundle` 对已有生产/根因与供电/物流/科研 DTO 的聚合；不改变底层设备或物流诊断覆盖率。
+- 当前结论：外部调用方分别读取 production 和 summary 后自行拼接，可能把相邻 tick 的电力、库存、订单和 finding 当成同一现场。可信诊断包必须在一个无异步让出的 Unity 主线程任务内捕获两域，并逐 factory 要求 index、planet ID/name、local/display flags 与 `capturedAtGameTick` 全相等；任一不符都整包 fail closed。对外只复制版本化白名单 DTO，不能为了“便于调试”附带内部 save key、真实 save identity、runtime path、auth 或 plan credential。
+- 直接证据：`OverseerDiagnosticBundleComposerTests` 覆盖正常同 tick 合并，以及 factory、planet、tick、name、display flag 错配和公共域集合缺失时的拒绝；Contracts JSON 回归固定 `schemaVersion=1` / `privacyProfile=public_allowlist_v1` 并检查敏感字段缺失；MCP 注册/映射覆盖新工具。Release 完整 solution 为 0 warning / 0 error，Contracts/Core/MCP `19 + 181 + 23 = 223` 项通过，公共工具面为 53。
+- 限制或反例：当前只完成代码、程序集构建和自动测试，尚未部署到 DSP；还需在同一 owned 三工厂世界验证首屏/continuation 同 tick、错 filter cursor 拒绝、公开 JSON 无敏感字段和安装版 MCP 调用。bundle 继承现有 fractionator/gamma/orbital direct coverage partial、单段物流边和每域扫描上限，不因聚合而变完整。
+- 复验触发：任一 Overseer DTO/捕获顺序、Unity 主线程 dispatcher、snapshot store、cursor binding、隐私字段、生产/摘要预算、DSP 版本或最终 v0.4 clean 工件变化。
+- 关联：EXP-125、EXP-154–166、`OverseerDiagnosticBundleComposer`、`GameStateReader.GetOverseerDiagnosticBundleOnMainThread`、`docs/research/game-api-overseer.md`。
+- 最近复验：2026-09-04（离线实现批次；223 项自动测试和完整 Release 构建通过，未启动/部署游戏）。
 
 ## 修订记录
+
+- 2026-09-04：复验 EXP-168。用户已明确批准 v0.3.1 先发包到另一台电脑实测；annotated tag `v0.3.1` 指向最小回移 commit `33a733f`，直接父是 v0.3.0 `a52ff44`，没有混入 v0.4。GitHub prerelease ZIP 为 `sourceDirty=false`、232 manifest entries、MCP `0.3.1.0` / 50 tools、127 tests、SHA-256 `b05eabb20928e98850f6792ea001149fd2e30c92082994e6d9c43254e611cdcf`。仍明确保留跨电脑 DSP 实机门，不把发布动作冒充原档/副本/恢复验证。
+
+- 2026-09-04：新增 EXP-169，并复验 EXP-001/125/154–166。第九个 v0.4 离线切片新增独立第 53 个 MCP 只读工具，把生产/根因与供电/物流/科研在同一主线程任务、同一 tick、同一 factory/planet 身份下合并为 `public_allowlist_v1` 诊断包；独立 cursor 保持 session/item-filter/page-size/expiry/容量约束。Contracts/Core/MCP `19/181/23` 共 223 项、完整 Release solution 0 warning/0 error。未启动或部署 DSP、未执行游戏/存档写，live 三厂分页/脱敏复读和受控故障门保持开放。
 
 - 2026-09-04：新增 EXP-168。用户明确将人工存档交接定义为“prepare 预检后在对话中询问，下一条明确确认后 commit”，因此删除未发布的快捷键/验证码设计，改为三项显式提交声明、短时单次 plan、受限 session/revision/对象绑定、正常另存/header 复读和 attached-existing-save Journal。完整 solution 0 warning/0 error，Contracts/Core/MCP `18/174/22` 共 214 项通过；本批未部署 Plugin、未触发游戏写、未修改任何存档，也未创建 tag 或 Release。
 

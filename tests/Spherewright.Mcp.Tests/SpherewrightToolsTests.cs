@@ -55,6 +55,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_get_build_catalog",
                 "spherewright_get_gameplay_journal",
                 "spherewright_get_local_star_system",
+                "spherewright_get_overseer_diagnostic_bundle",
                 "spherewright_get_overseer_production",
                 "spherewright_get_overseer_summary",
                 "spherewright_get_player_state",
@@ -211,6 +212,26 @@ public sealed class SpherewrightToolsTests
         Assert.Equal("session-overseer-summary", bridge.LastSessionId);
         Assert.Equal(3, bridge.LastOverseerSummaryRequest?.Limit);
         Assert.Equal("cursor-summary", bridge.LastOverseerSummaryRequest?.Cursor);
+    }
+
+    [Fact]
+    public async Task OverseerDiagnosticBundleTool_MapsBoundedItemsPageAndCursor()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.GetOverseerDiagnosticBundleAsync(
+            bridge,
+            "session-overseer-bundle",
+            new[] { 6003, 1106 },
+            2,
+            "cursor-bundle",
+            CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("session-overseer-bundle", bridge.LastSessionId);
+        Assert.Equal(new[] { 6003, 1106 }, bridge.LastOverseerDiagnosticBundleRequest?.ItemIds);
+        Assert.Equal(2, bridge.LastOverseerDiagnosticBundleRequest?.Limit);
+        Assert.Equal("cursor-bundle", bridge.LastOverseerDiagnosticBundleRequest?.Cursor);
     }
 
     [Fact]
@@ -537,6 +558,8 @@ public sealed class SpherewrightToolsTests
         public GetOverseerProductionRequest? LastOverseerProductionRequest { get; private set; }
 
         public GetOverseerSummaryRequest? LastOverseerSummaryRequest { get; private set; }
+
+        public GetOverseerDiagnosticBundleRequest? LastOverseerDiagnosticBundleRequest { get; private set; }
 
         public Task<BridgeCallResult<BridgeStatus>> GetBridgeStatusAsync(CancellationToken cancellationToken)
         {
@@ -1000,6 +1023,21 @@ public sealed class SpherewrightToolsTests
                 new OverseerSummarySnapshot
                 {
                     SessionId = sessionId,
+                }));
+        }
+
+        public Task<BridgeCallResult<OverseerDiagnosticBundleSnapshot>> GetOverseerDiagnosticBundleAsync(
+            string sessionId,
+            GetOverseerDiagnosticBundleRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastSessionId = sessionId;
+            LastOverseerDiagnosticBundleRequest = request;
+            return Task.FromResult(BridgeCallResult<OverseerDiagnosticBundleSnapshot>.Succeeded(
+                new OverseerDiagnosticBundleSnapshot
+                {
+                    SessionId = sessionId,
+                    RequestedItemIds = request.ItemIds.ToList(),
                 }));
         }
 

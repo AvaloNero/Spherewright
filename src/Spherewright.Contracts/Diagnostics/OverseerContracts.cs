@@ -49,6 +49,12 @@ public static class OverseerDirectDiagnosticCoverageStates
     public const string Partial = "partial";
 }
 
+public static class OverseerDiagnosticBundleProfiles
+{
+    public const int CurrentSchemaVersion = 1;
+    public const string PublicAllowlistV1 = "public_allowlist_v1";
+}
+
 public static class OverseerFindingKinds
 {
     public const string MaterialShortage = "material_shortage";
@@ -214,6 +220,75 @@ public sealed class OverseerSummarySnapshot
     public List<OverseerPlanetSummarySnapshot> Planets { get; set; } = new List<OverseerPlanetSummarySnapshot>();
 
     public string? NextCursor { get; set; }
+}
+
+public sealed class GetOverseerDiagnosticBundleRequest
+{
+    public List<int> ItemIds { get; set; } = new List<int>();
+
+    public int Limit { get; set; }
+
+    public string? Cursor { get; set; }
+}
+
+public sealed class OverseerDiagnosticBundleSnapshot
+{
+    public int SchemaVersion { get; set; } = OverseerDiagnosticBundleProfiles.CurrentSchemaVersion;
+
+    public string PrivacyProfile { get; set; } = OverseerDiagnosticBundleProfiles.PublicAllowlistV1;
+
+    public string SessionId { get; set; } = string.Empty;
+
+    public long CapturedAtGameTick { get; set; }
+
+    public string SnapshotId { get; set; } = string.Empty;
+
+    public DateTimeOffset SnapshotExpiresAtUtc { get; set; }
+
+    public int TotalFactoryCount { get; set; }
+
+    public int ReturnedFactoryCount { get; set; }
+
+    public List<int> RequestedItemIds { get; set; } = new List<int>();
+
+    public string RateSource { get; set; } = OverseerRateSources.NativeFactoryStatisticsLevel0;
+
+    public OverseerWindowSnapshot Window { get; set; } = new OverseerWindowSnapshot();
+
+    public OverseerResearchSummarySnapshot Research { get; set; } = new OverseerResearchSummarySnapshot();
+
+    public List<OverseerDiagnosticBundlePlanetSnapshot> Planets { get; set; } =
+        new List<OverseerDiagnosticBundlePlanetSnapshot>();
+
+    public string? NextCursor { get; set; }
+}
+
+public sealed class OverseerDiagnosticBundlePlanetSnapshot
+{
+    public int FactoryIndex { get; set; }
+
+    public int PlanetId { get; set; }
+
+    public string PlanetName { get; set; } = string.Empty;
+
+    public bool IsLocalPlanet { get; set; }
+
+    public bool FactoryDisplayLoaded { get; set; }
+
+    public long CapturedAtGameTick { get; set; }
+
+    public OverseerPowerSummarySnapshot Power { get; set; } = new OverseerPowerSummarySnapshot();
+
+    public OverseerLogisticsSummarySnapshot Logistics { get; set; } = new OverseerLogisticsSummarySnapshot();
+
+    public List<ProductionRateSnapshot> Production { get; set; } = new List<ProductionRateSnapshot>();
+
+    public bool InfrastructureFindingsTruncated { get; set; }
+
+    public int InfrastructureFindingCount { get; set; }
+
+    public List<OverseerFindingSnapshot> InfrastructureFindings { get; set; } =
+        new List<OverseerFindingSnapshot>();
 }
 
 public sealed class OverseerPlanetSummarySnapshot

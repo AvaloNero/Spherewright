@@ -442,6 +442,18 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
             cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<BridgeCallResult<OverseerDiagnosticBundleSnapshot>> GetOverseerDiagnosticBundleAsync(
+        string sessionId,
+        GetOverseerDiagnosticBundleRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<GetOverseerDiagnosticBundleRequest, OverseerDiagnosticBundleSnapshot>(
+            BridgeMethods.GetOverseerDiagnosticBundle,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<BridgeCallResult<GameplayJournalSnapshot>> GetGameplayJournalAsync(
         string sessionId,
         CancellationToken cancellationToken)

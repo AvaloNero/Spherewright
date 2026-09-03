@@ -1,6 +1,6 @@
 # Installing a Spherewright release
 
-The `v0.3.0` release package targets Windows x64, Dyson Sphere Program `0.10.34.28529`, and BepInEx `5.4.17.0`. It includes the Plugin and a self-contained MCP executable; end users do not need the repository, source code, or a .NET SDK.
+The `v0.3.1` prerelease package targets Windows x64, Dyson Sphere Program `0.10.34.28529`, and BepInEx `5.4.17.0`. It includes the Plugin and a self-contained MCP executable; end users do not need the repository, source code, or a .NET SDK. This patch is awaiting cross-computer live validation of the new explicitly confirmed save-import flow; keep an untouched backup of any save used for testing.
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ For a nonstandard DSP location:
 
 The command returns JSON containing the exact installed Plugin directory and MCP executable. Register that `Spherewright.Mcp.exe` path as a stdio MCP server in the external Agent host; do not pass runtime descriptors, authentication tokens, or save identities as arguments.
 
-Reinstalling the same MCP version requires `-Force`. The installer never starts DSP, changes a save, enables writes, or installs BepInEx. Spherewright's generated BepInEx configuration remains observation-only by default; enable structured commits only when you intend to authorize them.
+Reinstalling the same MCP version requires `-Force`. The installer never starts DSP, changes a save, enables writes, or installs BepInEx. Spherewright's generated BepInEx configuration remains observation-only by default; enable `Safety.AllowWrites` only when you intend to authorize structured commits. Importing a world that you loaded manually also requires the separate `Safety.AllowUserSaveImport=true` opt-in, followed at runtime by a fresh no-side-effect prepare and your subsequent explicit confirmation in the Agent conversation.
 
 ## Verify or troubleshoot
 

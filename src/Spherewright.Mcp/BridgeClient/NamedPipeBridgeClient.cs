@@ -393,6 +393,30 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
             cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<BridgeCallResult<PreparedUserSaveImportPlan>> PrepareUserSaveImportAsync(
+        string sessionId,
+        PrepareUserSaveImportRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<PrepareUserSaveImportRequest, PreparedUserSaveImportPlan>(
+            BridgeMethods.PrepareImportCurrentGame,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<UserSaveImportResult>> CommitUserSaveImportAsync(
+        string sessionId,
+        CommitUserSaveImportRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<CommitUserSaveImportRequest, UserSaveImportResult>(
+            BridgeMethods.CommitImportCurrentGame,
+            sessionId,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<BridgeCallResult<GameplayJournalSnapshot>> GetGameplayJournalAsync(
         string sessionId,
         CancellationToken cancellationToken)

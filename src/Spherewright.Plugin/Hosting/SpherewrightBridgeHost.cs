@@ -77,10 +77,18 @@ internal sealed class SpherewrightBridgeHost : IDisposable
         var flightCheckpoints = new FlightCheckpointStore(identity.BridgeInstanceId, gameVersion, logger);
         var sessionTracker = new GameSessionTracker(
             configuration.AllowWrites,
+            configuration.AllowUserSaveImport,
             gameVersion,
             resumeTickets,
             flightCheckpoints,
             logger);
+        var userSaveImportCoordinator = new UserSaveImportCoordinator(
+            configuration.AllowUserSaveImport,
+            configuration.AllowWrites,
+            configuration.PlanTokenLifetimeSeconds,
+            configuration.IdempotencyRetentionMinutes,
+            configuration.MaxIdempotencyEntriesPerSession,
+            sessionTracker);
         var gameStateReader = new GameStateReader(sessionTracker);
         var gameplayJournalManager = new GameplayJournalManager(
             configuration.RuntimeDescriptorDirectory,
@@ -129,6 +137,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             gameStateReader,
             gameplayJournalManager,
             testWorldCoordinator,
+            userSaveImportCoordinator,
             ownedWorldResumeCoordinator,
             flightCheckpointReloadCoordinator,
             normalActionCoordinator,

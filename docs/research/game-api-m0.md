@@ -312,6 +312,21 @@ public static bool GameSave.SaveCurrentGame(string saveName)
 
 The explicit save action binds the active owned session, local planet, current revision, and the high-entropy save name retained internally when Spherewright created that world. Commit calls `GameSave.SaveCurrentGame` only with that exact identity and records `lastOwnedSaveGameTick` after a true return. The path does not enumerate a save directory, discover save names, open a save, or accept a client-provided save name. It is compile/Core/MCP covered and runtime-validated repeatedly in the current owned world, including the M0 acceptance save at tick `2499658` and the later continuation save at tick `2710106`.
 
+## Explicitly confirmed current-world import
+
+Targeted decompilation of DSP `0.10.34.28529` `Assembly-CSharp.dll` (SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`) confirmed the additional clone path:
+
+```text
+public static string GameMain.gameName { get; set; }
+public static bool GameSave.SaveCurrentGame(string saveName)
+public void GameData.Export(BinaryWriter w)
+public static void GameSave.ReadHeader(string saveName, bool readImage, out GameSaveHeader header)
+```
+
+The `GameMain.gameName` setter writes the active `GameData.gameName`. `SaveCurrentGame` sanitizes the supplied name, creates that target under DSP's normal save directory, writes the current `GameMain.gameTick`, and calls `GameData.Export`; `GameData.Export` serializes `gameName` near the start of the payload. The import commit can therefore set a server-generated `Spherewright_Imported_*` identity immediately before calling the normal save method so both the target slot and embedded identity are the new owned name. `ReadHeader` then proves the new target's exact tick before ownership is adopted. On a false return or failed proof the adapter restores the prior in-memory `gameName` and leaves the session unowned. Because the original name is never accepted by a request, passed to `SaveCurrentGame`, or used as a read/load/delete target, this path does not overwrite, rename, delete, enumerate, or actively load the original file.
+
+The public prepare step deliberately does less: it captures only the restricted session ID, revision, and exact `GameData` reference in a bounded short-lived in-memory plan and returns a generic disclosure. It does not read or expose the original identity, planet, tick, descriptor, player, or factory. After the Agent asks the returned question and receives a subsequent explicit user confirmation, commit requires a declaration of that conversation evidence plus both original-save and journal-boundary acknowledgements. The Plugin cannot independently inspect chat history and does not claim that it can; it enforces the declaration fields, exact plan/session/revision/object identity, peaceful/non-sandbox/1× state, ready local factory, unused generated target, normal-save result, and header readback. A failed or interrupted save can leave an unreachable generated orphan copy, so failure is fail-closed and never deletes a candidate file. Current-DSP cross-computer live validation remains required before the `v0.3.1` prerelease can be promoted to a stable patch.
+
 ## Native same-star flight and reusable pre-flight checkpoint
 
 Targeted current-assembly decompilation additionally confirmed:

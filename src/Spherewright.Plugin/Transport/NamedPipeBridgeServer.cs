@@ -33,6 +33,7 @@ internal sealed class NamedPipeBridgeServer : IDisposable
     private readonly GameStateReader _gameStateReader;
     private readonly GameplayJournalManager _gameplayJournalManager;
     private readonly TestWorldCoordinator _testWorldCoordinator;
+    private readonly UserSaveImportCoordinator _userSaveImportCoordinator;
     private readonly OwnedWorldResumeCoordinator _ownedWorldResumeCoordinator;
     private readonly FlightCheckpointReloadCoordinator _flightCheckpointReloadCoordinator;
     private readonly NormalGameActionCoordinator _normalActionCoordinator;
@@ -52,6 +53,7 @@ internal sealed class NamedPipeBridgeServer : IDisposable
         GameStateReader gameStateReader,
         GameplayJournalManager gameplayJournalManager,
         TestWorldCoordinator testWorldCoordinator,
+        UserSaveImportCoordinator userSaveImportCoordinator,
         OwnedWorldResumeCoordinator ownedWorldResumeCoordinator,
         FlightCheckpointReloadCoordinator flightCheckpointReloadCoordinator,
         NormalGameActionCoordinator normalActionCoordinator,
@@ -68,6 +70,7 @@ internal sealed class NamedPipeBridgeServer : IDisposable
         _gameStateReader = gameStateReader;
         _gameplayJournalManager = gameplayJournalManager;
         _testWorldCoordinator = testWorldCoordinator;
+        _userSaveImportCoordinator = userSaveImportCoordinator;
         _ownedWorldResumeCoordinator = ownedWorldResumeCoordinator;
         _flightCheckpointReloadCoordinator = flightCheckpointReloadCoordinator;
         _normalActionCoordinator = normalActionCoordinator;
@@ -771,6 +774,40 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             cancellationToken).ConfigureAwait(false);
                         break;
                     }
+                case BridgeMethods.PrepareImportCurrentGame:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<PrepareUserSaveImportRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            header.SessionId,
+                            () => _userSaveImportCoordinator.PrepareOnMainThread(header.SessionId, request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                case BridgeMethods.CommitImportCurrentGame:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<CommitUserSaveImportRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            header.SessionId,
+                            () => _userSaveImportCoordinator.CommitOnMainThread(header.SessionId, request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
                 case BridgeMethods.PrepareResumeOwnedGame:
                     {
                         var request = PluginJson.Deserialize<BridgeRequestEnvelope<PrepareOwnedWorldResumeRequest>>(requestJson);
@@ -856,6 +893,12 @@ internal sealed class NamedPipeBridgeServer : IDisposable
 
     private GameCallResult<ActionResultSnapshot> GetActionResultOnMainThread(GetActionResultRequest request)
     {
+        if (_userSaveImportCoordinator.TryGetActionResultOnMainThread(request.ActionId, out var importResult)
+            && importResult is not null)
+        {
+            return GameCallResult<ActionResultSnapshot>.Succeeded(importResult);
+        }
+
         if (_normalActionCoordinator.TryGetActionResultOnMainThread(request.ActionId, out var normalResult)
             && normalResult is not null)
         {

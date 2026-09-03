@@ -20,6 +20,8 @@ public static class BridgeMethods
     public const string GetBuildCatalog = "get_build_catalog";
     public const string PrepareNewGame = "prepare_new_game";
     public const string CommitNewGame = "commit_new_game";
+    public const string PrepareImportCurrentGame = "prepare_import_current_game";
+    public const string CommitImportCurrentGame = "commit_import_current_game";
     public const string PrepareMove = "prepare_move";
     public const string CommitMove = "commit_move";
     public const string PrepareInterplanetaryFlight = "prepare_interplanetary_flight";

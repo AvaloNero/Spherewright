@@ -47,6 +47,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_commit_reload_flight_checkpoint",
                 "spherewright_commit_resume_owned_game",
                 "spherewright_commit_save",
+                "spherewright_commit_save_import",
                 "spherewright_commit_select_research",
                 "spherewright_commit_transfer",
                 "spherewright_get_action_result",
@@ -79,6 +80,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_prepare_reload_flight_checkpoint",
                 "spherewright_prepare_resume_owned_game",
                 "spherewright_prepare_save",
+                "spherewright_prepare_save_import",
                 "spherewright_prepare_select_research",
                 "spherewright_prepare_transfer",
             },
@@ -407,6 +409,40 @@ public sealed class SpherewrightToolsTests
         Assert.Equal("checkpoint-token", bridge.LastFlightCheckpointReloadRequest?.ReloadToken);
     }
 
+    [Fact]
+    public async Task SaveImportTools_MapExplicitConversationConfirmation()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var prepared = await SpherewrightTools.PrepareUserSaveImportAsync(
+            bridge,
+            "session-import",
+            7,
+            CancellationToken.None);
+        var committed = await SpherewrightTools.CommitUserSaveImportAsync(
+            bridge,
+            "session-import",
+            "import-plan",
+            "f1078b10-c48b-430f-b0e0-4de18438762c",
+            true,
+            true,
+            true,
+            CancellationToken.None);
+
+        Assert.False(prepared.IsError);
+        Assert.True(prepared.StructuredContent!.Value
+            .GetProperty("result")
+            .GetProperty("userConfirmationRequired")
+            .GetBoolean());
+        Assert.False(committed.IsError);
+        Assert.Equal("session-import", bridge.LastSessionId);
+        Assert.Equal(7, bridge.LastImportPrepareRequest?.ExpectedRevision);
+        Assert.Equal("import-plan", bridge.LastImportCommitRequest?.PlanToken);
+        Assert.True(bridge.LastImportCommitRequest?.UserConfirmedInConversation);
+        Assert.True(bridge.LastImportCommitRequest?.AcknowledgeOriginalSaveRemainsUnchanged);
+        Assert.True(bridge.LastImportCommitRequest?.AcknowledgeJournalStartsAtImport);
+    }
+
     private static BridgeCallResult<BridgeStatus> SuccessResult()
     {
         return BridgeCallResult<BridgeStatus>.Succeeded(new BridgeStatus
@@ -453,6 +489,9 @@ public sealed class SpherewrightToolsTests
 
         public PrepareFlightCheckpointReloadRequest? LastFlightCheckpointReloadRequest { get; private set; }
 
+        public PrepareUserSaveImportRequest? LastImportPrepareRequest { get; private set; }
+
+        public CommitUserSaveImportRequest? LastImportCommitRequest { get; private set; }
         public Task<BridgeCallResult<BridgeStatus>> GetBridgeStatusAsync(CancellationToken cancellationToken)
         {
             return Task.FromResult(_result);
@@ -852,6 +891,42 @@ public sealed class SpherewrightToolsTests
             }));
         }
 
+        public Task<BridgeCallResult<PreparedUserSaveImportPlan>> PrepareUserSaveImportAsync(
+            string sessionId,
+            PrepareUserSaveImportRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastSessionId = sessionId;
+            LastImportPrepareRequest = request;
+            return Task.FromResult(BridgeCallResult<PreparedUserSaveImportPlan>.Succeeded(
+                new PreparedUserSaveImportPlan
+                {
+                    Prepared = true,
+                    PlanToken = "import-plan",
+                    OriginalSavePreserved = true,
+                    HistoricalCoverageComplete = false,
+                    UserConfirmationRequired = true,
+                    ConfirmationPrompt = "Confirm this import in the conversation.",
+                }));
+        }
+
+        public Task<BridgeCallResult<UserSaveImportResult>> CommitUserSaveImportAsync(
+            string sessionId,
+            CommitUserSaveImportRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastSessionId = sessionId;
+            LastImportCommitRequest = request;
+            return Task.FromResult(BridgeCallResult<UserSaveImportResult>.Succeeded(
+                new UserSaveImportResult
+                {
+                    ActionId = "import-action",
+                    Accepted = true,
+                    State = NormalActionStates.Completed,
+                    SessionId = sessionId,
+                    OriginalSavePreserved = true,
+                }));
+        }
         public Task<BridgeCallResult<PreparedOwnedWorldResumePlan>> PrepareOwnedWorldResumeAsync(
             PrepareOwnedWorldResumeRequest request,
             CancellationToken cancellationToken)

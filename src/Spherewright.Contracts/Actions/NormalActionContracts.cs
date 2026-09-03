@@ -18,6 +18,7 @@ public static class NormalActionKinds
     public const string Refuel = "refuel";
     public const string Save = "save";
     public const string ReconcileQuarantine = "reconcile-quarantine";
+    public const string UserSaveImport = "user-save-import";
 }
 
 public static class NormalBuildKinds

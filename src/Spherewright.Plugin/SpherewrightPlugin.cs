@@ -27,6 +27,7 @@ public sealed class SpherewrightPlugin : BaseUnityPlugin
             var configuration = SpherewrightConfiguration.Load(Config);
             _host = SpherewrightBridgeHost.Create(configuration, Logger, PluginVersion);
             Logger.LogInfo($"Spherewright writes configured: {(configuration.AllowWrites ? "enabled" : "disabled")}");
+            Logger.LogInfo($"Spherewright user-save import configured: {(configuration.AllowUserSaveImport ? "enabled" : "disabled")}");
 
             if (!configuration.Enabled)
             {

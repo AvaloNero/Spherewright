@@ -1178,6 +1178,62 @@ public static class SpherewrightTools
     }
 
     [McpServerTool(
+        Name = "spherewright_prepare_save_import",
+        Title = "Prepare confirmation-gated import of the loaded save",
+        ReadOnly = false,
+        Destructive = false,
+        Idempotent = false,
+        OpenWorld = false)]
+    [Description("Creates a no-game-side-effect plan bound to the exact currently loaded unowned session and revision. After this tool succeeds, stop and explicitly ask the user the returned confirmationPrompt—even if import was requested earlier. Do not call spherewright_commit_save_import until a subsequent user message clearly confirms. The original save remains unchanged; journal history starts at import.")]
+    public static async Task<CallToolResult> PrepareUserSaveImportAsync(
+        IBridgeClient bridgeClient,
+        string sessionId,
+        long expectedRevision,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.PrepareUserSaveImportAsync(
+            sessionId,
+            new PrepareUserSaveImportRequest
+            {
+                ExpectedRevision = expectedRevision,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "A single-use owned-copy import plan was prepared with no game or save side effect. Ask the user the returned confirmationPrompt now; do not commit before their subsequent explicit confirmation.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_commit_save_import",
+        Title = "Clone and adopt the user-confirmed loaded save",
+        ReadOnly = false,
+        Destructive = true,
+        Idempotent = true,
+        OpenWorld = false)]
+    [Description("Consumes one prepared import plan only after a subsequent explicit user confirmation in the current conversation. Set all three confirmation fields true only when that later user message clearly authorizes this exact prepared import. Uses DSP's normal save API to create and verify a new internally named owned copy; it never names, enumerates, loads, overwrites, renames, or deletes the original save.")]
+    public static async Task<CallToolResult> CommitUserSaveImportAsync(
+        IBridgeClient bridgeClient,
+        string sessionId,
+        string planToken,
+        string idempotencyKey,
+        [Description("True only after a subsequent user message explicitly confirms this exact prepared import in the current conversation.")] bool userConfirmedInConversation,
+        [Description("Acknowledge that the original save will not be overwritten, renamed, or deleted.")] bool acknowledgeOriginalSaveRemainsUnchanged,
+        [Description("Acknowledge that the journal starts at import and does not reconstruct earlier first-time events.")] bool acknowledgeJournalStartsAtImport,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.CommitUserSaveImportAsync(
+            sessionId,
+            new CommitUserSaveImportRequest
+            {
+                PlanToken = planToken,
+                IdempotencyKey = idempotencyKey,
+                UserConfirmedInConversation = userConfirmedInConversation,
+                AcknowledgeOriginalSaveRemainsUnchanged = acknowledgeOriginalSaveRemainsUnchanged,
+                AcknowledgeJournalStartsAtImport = acknowledgeJournalStartsAtImport,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "The explicitly confirmed current-world import reached a terminal result; the original save was not addressed or modified.");
+    }
+
+    [McpServerTool(
         Name = "spherewright_prepare_resume_owned_game",
         Title = "Prepare one-time resume of the exact owned world",
         ReadOnly = false,

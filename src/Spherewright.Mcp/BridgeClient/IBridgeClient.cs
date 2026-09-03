@@ -222,6 +222,16 @@ public interface IBridgeClient
         CommitTestWorldRequest request,
         CancellationToken cancellationToken);
 
+    Task<BridgeCallResult<PreparedUserSaveImportPlan>> PrepareUserSaveImportAsync(
+        string sessionId,
+        PrepareUserSaveImportRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<UserSaveImportResult>> CommitUserSaveImportAsync(
+        string sessionId,
+        CommitUserSaveImportRequest request,
+        CancellationToken cancellationToken);
+
     Task<BridgeCallResult<PreparedOwnedWorldResumePlan>> PrepareOwnedWorldResumeAsync(
         PrepareOwnedWorldResumeRequest request,
         CancellationToken cancellationToken);

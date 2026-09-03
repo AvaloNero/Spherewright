@@ -6,7 +6,7 @@
 
 Spherewright is a structured, safety-first control bridge for **Dyson Sphere Program**. It lets an external MCP-capable Agent observe the live game and perform bounded actions through normal DSP systems—without embedding an LLM, editing saves, injecting items, or driving the UI with screenshots and keyboard/mouse macros.
 
-The project is experimental and under active development. The original **M0 — First Red Matrix** milestone is complete; the current development save has also validated automatic power-engine, plastic, titanium-ingot, titanium-alloy, diamond, gear, electric-motor, water, organic-crystal, titanium-crystal, structure-matrix, particle-container, logistics-drone, and planetary-logistics-station production plus same-star interplanetary flight. Two normally built, powered, and complementary planetary logistics stations completed a real 100-titanium local drone shipment, and two normally built interstellar stations have now completed real vessel delivery of both titanium ore and silicon ore from planet `102` to the home planet. The home station's titanium and silicon outputs are physically connected to the existing production area; the silicon route has carried remote ore through two powered sorter bridges into the high-purity-silicon smelter, and the temporary stone-to-silicon input is safely disabled. A fresh sustained structure-matrix run now consumes locally automated plastic, refined oil, and water without Icarus cargo and is covered by a normal primary save. The `0.3.0` clean-install, protected-resume, wrong-token, live-Bridge, and installed-MCP regression has passed; only regeneration from the final clean commit plus tag/Release publication remains.
+The project is experimental and under active development. **v0.3.0 — Logistics Towers** is the first stable capability release and its normal-game logistics evidence remains unchanged. **v0.3.1 — Authorized Save Import** is a narrow prerelease backport for cross-computer testing: after a player manually loads a peaceful, non-sandbox, 1× world, the Agent can prepare a no-side-effect handoff, ask for explicit confirmation in the conversation, and only then create a separately named Spherewright-owned copy. The original save remains untouched and pre-import history is intentionally not reconstructed in the new journal.
 
 Runtime evidence currently targets DSP `0.10.34.28529`, single-player peaceful mode, sandbox disabled, and 1× resources.
 
@@ -17,6 +17,7 @@ Runtime evidence currently targets DSP `0.10.34.28529`, single-player peaceful m
 - Two-phase `prepare → commit` actions for movement, harvesting, handcrafting, research, construction, building configuration—including no-inventory-mutation logistics-station storage and output-belt selection—player/storage and conservation-checked station-fleet transfers, refuelling, saving, and recovery.
 - Native-tick same-star flight with a separately saved, expiring pre-flight checkpoint that remains reusable only while that exact flight needs recovery, then loses its capability on success and retires after the covering primary save.
 - Exact owned-world restart handoff: healthy planned restarts load only the ticket-bound primary save, while quarantine recovery alone may use a fresh fixed LastExit whose header already proves the minimum tick. Spherewright never exposes a save picker or enumerates unrelated saves.
+- Explicit handoff for a player-loaded save: Spherewright first prepares an exact-session, no-game-side-effect plan and the Agent then asks for confirmation in the conversation. Only a subsequent clear approval may create a separately named owned copy; the original is never overwritten, renamed, deleted, or exposed, and journaling starts at the import boundary.
 - Per-save first-event journaling for manual output, production-line output, technology selection, and upgrade selection, including wall-clock/in-save time plus the durable-through sequence, pending-write flag, and persistence error.
 - Readback, state hashes, short-lived plans, idempotency, single-flight execution, and write quarantine when a result cannot be proved.
 
@@ -102,7 +103,7 @@ The Plugin output is `src/Spherewright.Plugin/bin/Debug/net472/Spherewright.Plug
 To produce the versioned Windows release zip, integrity manifest, and SHA-256 sidecar from a clean worktree:
 
 ```powershell
-./scripts/package-release.ps1 -Version 0.3.0
+./scripts/package-release.ps1 -Version 0.3.1
 ```
 
 The packager builds the full solution, publishes `Spherewright.Mcp.exe` self-contained for `win-x64`, verifies every staged file after zip extraction, and writes ignored artifacts under `artifacts/`. Creating an artifact does not create a tag or GitHub Release; those remain gated by [ROADMAP.md](./ROADMAP.md).
@@ -110,14 +111,14 @@ The packager builds the full solution, publishes `Spherewright.Mcp.exe` self-con
 To repeat the package integrity and self-contained MCP `initialize`/`tools/list` smoke test independently:
 
 ```powershell
-./scripts/test-release-package.ps1 -PackagePath ./artifacts/Spherewright-0.3.0-win-x64.zip
+./scripts/test-release-package.ps1 -PackagePath ./artifacts/Spherewright-0.3.1-win-x64.zip
 ```
 
 ## Local setup
 
 1. Copy `Spherewright.Plugin.dll` into a dedicated folder under DSP's `BepInEx/plugins` directory.
 2. Launch DSP once so BepInEx creates `BepInEx/config/dev.spherewright.bridge.cfg`.
-3. Keep `Safety.AllowWrites=false` for observation-only use. Set it to `true` only when you intend to authorize structured gameplay commits.
+3. Keep `Safety.AllowWrites=false` for observation-only use. Set it to `true` only when you intend to authorize structured gameplay commits. To hand a manually loaded save to the Agent, also set `Safety.AllowUserSaveImport=true`; the default is `false`, and import still requires a fresh prepare followed by your explicit confirmation in the conversation.
 4. Start the MCP server from the repository:
 
    ```powershell
@@ -137,7 +138,8 @@ The release gates live in [ROADMAP.md](./ROADMAP.md). The current save's complet
 - first automatic red matrix: complete;
 - automatic power engine, plastic, titanium ingot, diamond, gear, electric motor, water, organic crystal, titanium crystal, structure matrix, electromagnetic turbine, high-purity silicon, microcrystalline component, sulfuric acid, processor, graphene, thruster, particle container, logistics drone, and planetary logistics station production: complete;
 - native same-star checkpointed flight: complete for the validated route;
-- planetary/interstellar logistics: live-validated in the current owned world; v0.3 release regression and broader compatibility remain in progress.
+- planetary/interstellar logistics: live-validated in the original v0.3 development world and released in v0.3.0;
+- conversation-confirmed player-save import: implemented and offline/package-tested in v0.3.1; cross-computer DSP validation remains pending, so this patch is published as a prerelease.
 
 There are no stability or compatibility guarantees yet. Before reporting a bug, include the DSP version, BepInEx version, Spherewright commit, the structured error code, and sanitized action/state evidence—never auth tokens, plan tokens, raw save identities, or save files.
 

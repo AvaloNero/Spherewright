@@ -15,6 +15,7 @@ public static class BridgeErrorCodes
     public const string SandboxModeUnknown = "SANDBOX_MODE_UNKNOWN";
     public const string NormalResourceMultiplierRequired = "NORMAL_RESOURCE_MULTIPLIER_REQUIRED";
     public const string WritesDisabled = "WRITES_DISABLED";
+    public const string UserConfirmationRequired = "USER_CONFIRMATION_REQUIRED";
     public const string WriteSubsystemQuarantined = "WRITE_SUBSYSTEM_QUARANTINED";
     public const string InvalidRequest = "INVALID_REQUEST";
     public const string InvalidEntity = "INVALID_ENTITY";

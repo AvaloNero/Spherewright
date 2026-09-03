@@ -1,6 +1,6 @@
 # Spherewright experience ledger
 
-更新时间：2026-09-03（Asia/Singapore）
+更新时间：2026-09-04（Asia/Singapore）
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
@@ -1934,6 +1934,18 @@
 - 关联：EXP-001、EXP-030、IFX-016、`scripts/package-release.ps1`、`scripts/test-release-package.ps1`、`scripts/smoke-test.ps1`。
 - 最近复验：2026-09-03（修复候选包完成干净安装、实时 Plugin/MCP 双版本握手与同档 protected resume；最终 Release 仍须由 clean Git commit 重新生成，不能复用 dirty preview ZIP）。
 
+### EXP-153 — 补丁回移必须从已发布标签隔离，并按实际验证等级发布
+
+- 状态：`validated`
+- 日期：2026-09-04
+- 适用范围：从 `v0.3.0` 制作 `v0.3.1` 兼容性补丁的源码、测试和发行流程。
+- 当前结论：当 `main` 已进入下一主要版本时，补丁不能直接标记当前 `main`。应从不可变旧标签建立独立维护工作区，只回移获批能力、必要测试和文档；完整构建、测试、版本身份和自包含包都必须在该隔离提交上重新证明。缺少当前 DSP 实机证据时只能作为 prerelease，并把待验证边界写进安装与发布说明。
+- 直接证据：`v0.3.1` 回移仅包含对话确认存档认领及必要契约/测试/文档，不包含 Overseer 类型或工具；该候选在 `v0.3.0` 基线上完成 Release 全 solution 构建，0 warning / 0 error，127 tests passed（Contracts 15、Bridge.Core 92、MCP 20）。
+- 限制或反例：自包含 zip、MCP `initialize/tools/list` 和另一台电脑的 DSP 原档/副本验证仍属于后续发行与实机证据，不能由源码测试代替。
+- 复验触发：回移范围变化、产品版本变化、发行包重建、GitHub Release 状态变化或跨电脑实机结果返回。
+- 关联：`ROADMAP.md`、`scripts/package-release.ps1`、`docs/release-installation.md`、`src/Spherewright.Plugin/Game/UserSaveImportCoordinator.cs`。
+- 最近复验：2026-09-04（隔离分支 Release 构建与 127 项自动测试通过；未部署、未启动 DSP、未改任何存档）。
+
 ## 修订记录
 
 - 2026-09-03：新增 EXP-152 并记录 IFX-016。首次 clean `0.3.0` 工件的 233 文件哈希、MCP initialize 和 48 工具均通过，但实机 Bridge 揭示 Plugin 仍报告 `0.1.0`，主动阻止 tag。版本来源统一后新增第 119 项测试，Core/Contracts/MCP 为 `86 + 14 + 19` 全通过，完整 solution 0 warning / 0 error，Mono.Cecil 证明 BepInEx metadata 为 `0.3.0`。主档先普通保存到 tick `13494061`，游戏正常关闭；修复候选包将旧 Plugin 和 MCP 目录分别整体移入可恢复备份后做第二次干净安装。新进程 live Bridge 在主菜单即报告 `0.3.0`；prototype preload 完成前的 resume prepare 以 `BRIDGE_NOT_READY` 无副作用拒绝，等待 ready 后只消费同一 protected ticket，恢复 planet `104`、和平/非沙盒/1×并自动重存到 tick `13494092`。随后 wrong-token 拒绝、正确 Bridge 握手、安装版 MCP `0.3.0.0 -> spherewright_get_status -> Plugin 0.3.0` 全部通过。fresh 审计 tick `13504262` 为 Walk/0、核心 `400/400 MJ`、3/3 drone idle、0 prebuild、Journal `49/49` durable、玩家不持有水/油/有机晶体/钛晶石/结构矩阵；有机晶体和钛晶石设备仍满电运行，sorter `2254` 携精炼油、`977` 携结构矩阵。黄糖 lab 此刻因本批金刚石正常耗尽而停机，不把最后在途矩阵冒充无限供料；此前跨窗持续生产证据仍成立。最终 tag 前必须从 clean Git commit 重打非 dirty 工件。
@@ -2208,6 +2220,7 @@
 
 - 2026-09-01：修订 EXP-061 并新增 EXP-080/081。活跃仓 `26` 的并发电路板补货证明 transfer 源端聚合净差量可能被抵消，客户端展示断言失败后没有重放；仓 `286` 多基座夹缝的四向探测全部明确失败，正常保存到 tick `7027343` 后经 Steam 正式启动和 protected ticket 恢复，同档 tick/模式/日记/钢材实体全部越过门槛，但玩家坐标被原样保留，撤销“重启本身会几何脱困”的隐含假设。
 
+- 2026-09-04：新增 EXP-153。`v0.3.1` 从不可变 `v0.3.0` 单独回移对话确认存档认领；Release 构建和 127 项测试通过，缺少跨电脑实机证据，因此发行等级限定为 prerelease。
 - 2026-08-31：创建账本；录入并复核本轮已知的构建、启动、恢复、动作协调、状态稳定、电力、分拣器和执行优先级经验。尚未把 EXP-006、EXP-011、EXP-012 的待实机范围误标为完全验证。
 - 2026-08-31：EXP-011 加入储仓 `136` 到热电站 `134` 实测约 8.90 m 仍为 `TooFar` 的反证，撤销任何“约 9 m 可能足够”的隐含假设。
 - 2026-08-31：新增 EXP-016；实机复读确认孤立热电站与其燃料分拣器形成冷启动供电死锁。

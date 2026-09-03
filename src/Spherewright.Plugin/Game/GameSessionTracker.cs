@@ -8,6 +8,7 @@ namespace Spherewright.Plugin.Game;
 internal sealed class GameSessionTracker
 {
     private readonly bool _writesConfigured;
+    private readonly bool _userSaveImportConfigured;
     private readonly string _gameVersion;
     private readonly ManualLogSource _logger;
     private readonly OwnedWorldResumeTicketStore _resumeTickets;
@@ -35,12 +36,14 @@ internal sealed class GameSessionTracker
 
     public GameSessionTracker(
         bool writesConfigured,
+        bool userSaveImportConfigured,
         string gameVersion,
         OwnedWorldResumeTicketStore resumeTickets,
         FlightCheckpointStore flightCheckpoints,
         ManualLogSource logger)
     {
         _writesConfigured = writesConfigured;
+        _userSaveImportConfigured = userSaveImportConfigured;
         _gameVersion = gameVersion;
         _resumeTickets = resumeTickets;
         _flightCheckpoints = flightCheckpoints;
@@ -283,6 +286,7 @@ internal sealed class GameSessionTracker
                 OwnedSaveError = _ownedSaveError,
                 RestartResumeAvailable = _resumeTickets.HasCurrentTicket,
                 RestartResumeToken = _resumeTickets.CurrentResumeToken,
+                UserSaveImportConfigured = _userSaveImportConfigured,
                 Capabilities = CreateIdleCapabilities(),
             };
             ApplyFlightCheckpointState(idle);
@@ -304,8 +308,10 @@ internal sealed class GameSessionTracker
                 SandboxMode = SandboxModeStates.Unknown,
                 WritesAllowed = false,
                 WriteHealth = _writeHealth,
+                WriteQuarantineActionId = _writeQuarantineActionId,
                 OwnedSaveState = OwnedSaveStates.None,
-                Capabilities = new List<string> { "bridge.status", "session.safe-status" },
+                UserSaveImportConfigured = _userSaveImportConfigured,
+                Capabilities = CreateUnownedCapabilities(),
             };
         }
 
@@ -350,6 +356,7 @@ internal sealed class GameSessionTracker
             RestartResumeAvailable = _resumeTickets.HasCurrentTicket,
             RestartResumeToken = _resumeTickets.CurrentResumeToken,
             CurrentSessionLoadedFromFlightCheckpoint = _currentSessionLoadedFromFlightCheckpoint,
+            UserSaveImportConfigured = _userSaveImportConfigured,
             Capabilities = CreateOwnedCapabilities(writesAllowed, _writeHealth),
         };
         ApplyFlightCheckpointState(owned);
@@ -365,6 +372,63 @@ internal sealed class GameSessionTracker
         }
 
         return capabilities;
+    }
+
+    private List<string> CreateUnownedCapabilities()
+    {
+        var capabilities = new List<string> { "bridge.status", "session.safe-status" };
+        if (_userSaveImportConfigured
+            && string.Equals(_writeHealth, WriteHealthStates.Healthy, StringComparison.Ordinal))
+        {
+            capabilities.Add("user-save.import.prepare");
+        }
+
+        return capabilities;
+    }
+
+    public bool TryGetCurrentUnownedImportCandidateOnMainThread(
+        string? requestedSessionId,
+        out GameData? data,
+        out string rejection)
+    {
+        UpdateOnMainThread();
+        data = null;
+        rejection = string.Empty;
+        if (!GameLoaded || _observedData is null || GameMain.data is null)
+        {
+            rejection = "No ordinary game is loaded.";
+            return false;
+        }
+
+        if (IsCurrentSessionOwned)
+        {
+            rejection = "The current world is already Spherewright-owned.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(requestedSessionId)
+            || !string.Equals(requestedSessionId, _sessionId, StringComparison.Ordinal))
+        {
+            rejection = "The requested unowned session is stale.";
+            return false;
+        }
+
+        if (_expectedOwnedSaveName is not null
+            || _expectedResumeTicket is not null
+            || _expectedFlightCheckpoint is not null)
+        {
+            rejection = "Another protected world-adoption flow is active.";
+            return false;
+        }
+
+        if (!ReferenceEquals(_observedData, GameMain.data))
+        {
+            rejection = "The current world identity changed.";
+            return false;
+        }
+
+        data = _observedData;
+        return true;
     }
 
     private void ApplyFlightCheckpointState(SessionState state)
@@ -395,6 +459,172 @@ internal sealed class GameSessionTracker
         {
             _revision++;
         }
+    }
+
+    public bool TryImportCurrentSessionAsOwnedCopyOnMainThread(
+        string expectedSessionId,
+        long expectedRevision,
+        GameData expectedData,
+        string newOwnedSaveName,
+        string actionId,
+        out long? savedGameTick,
+        out bool outcomeUnknown,
+        out string? rejection)
+    {
+        savedGameTick = null;
+        outcomeUnknown = false;
+        rejection = null;
+        if (!_writesConfigured
+            || !_userSaveImportConfigured
+            || !string.Equals(_writeHealth, WriteHealthStates.Healthy, StringComparison.Ordinal)
+            || string.IsNullOrWhiteSpace(newOwnedSaveName)
+            || !newOwnedSaveName.StartsWith("Spherewright_Imported_", StringComparison.Ordinal)
+            || newOwnedSaveName.Length > 96
+            || !Guid.TryParse(actionId, out _))
+        {
+            rejection = "The generated owned-copy identity is invalid or import is disabled.";
+            return false;
+        }
+
+        if (!TryGetCurrentUnownedImportCandidateOnMainThread(expectedSessionId, out var currentData, out var candidateRejection)
+            || currentData is null
+            || !ReferenceEquals(currentData, expectedData)
+            || _revision != expectedRevision)
+        {
+            rejection = string.IsNullOrWhiteSpace(candidateRejection)
+                ? "The exact confirmed world or revision changed before save."
+                : candidateRejection;
+            return false;
+        }
+
+        var localPlanet = currentData.localPlanet;
+        if (localPlanet is null
+            || currentData.localLoadedPlanetFactory is null
+            || UnityEngine.Object.FindObjectOfType<GameLoader>() is not null)
+        {
+            rejection = "The exact confirmed world is no longer ready for a normal save.";
+            return false;
+        }
+
+        var descriptor = currentData.gameDesc;
+        if (descriptor is null
+            || !descriptor.isPeaceMode
+            || descriptor.isSandboxMode
+            || GameMain.sandboxToolsEnabled
+            || Math.Abs(descriptor.resourceMultiplier - 1f) > 0.0001f)
+        {
+            rejection = "The exact confirmed world no longer satisfies peaceful, non-sandbox, 1x import policy.";
+            return false;
+        }
+
+        try
+        {
+            var candidatePath = GameSave.SavePath(newOwnedSaveName);
+            if (string.IsNullOrWhiteSpace(candidatePath) || File.Exists(candidatePath))
+            {
+                rejection = "The generated owned-copy identity is not unused.";
+                return false;
+            }
+        }
+        catch (Exception exception) when (
+            exception is IOException
+            || exception is UnauthorizedAccessException
+            || exception is ArgumentException
+            || exception is NotSupportedException)
+        {
+            rejection = $"The generated owned-copy target could not be checked ({exception.GetType().Name}).";
+            return false;
+        }
+
+        var originalGameName = currentData.gameName;
+        if (string.IsNullOrWhiteSpace(originalGameName))
+        {
+            rejection = "The loaded world's internal original identity is unavailable; no save was attempted.";
+            return false;
+        }
+
+        var expectedSavedTick = GameMain.gameTick;
+        var saveReturnedTrue = false;
+        try
+        {
+            GameMain.gameName = newOwnedSaveName;
+            if (!GameSave.SaveCurrentGame(newOwnedSaveName))
+            {
+                GameMain.gameName = originalGameName;
+                rejection = "DSP's normal save API returned false; the current world remains unowned.";
+                return false;
+            }
+
+            saveReturnedTrue = true;
+            GameSave.ReadHeader(newOwnedSaveName, false, out var header);
+            if (header is null || header.gameTick != expectedSavedTick)
+            {
+                GameMain.gameName = originalGameName;
+                outcomeUnknown = true;
+                rejection = "The newly saved copy could not prove its exact game tick; no ownership was adopted.";
+                QuarantineUnownedImport(actionId, rejection);
+                return false;
+            }
+
+            _ownedData = currentData;
+            _ownedSaveName = newOwnedSaveName;
+            _ownedSaveState = OwnedSaveStates.Saved;
+            _ownedSaveError = null;
+            _ownedSessionStartTick = expectedSavedTick;
+            _lastOwnedSaveGameTick = expectedSavedTick;
+            _lastPlanetId = localPlanet.id;
+            _writeHealth = WriteHealthStates.Healthy;
+            _writeQuarantineActionId = null;
+            _writeQuarantineReason = null;
+            _currentFlightCheckpointId = null;
+            _currentSessionLoadedFromFlightCheckpoint = false;
+            CurrentOwnedSessionStartedAsNewGame = false;
+            _revision++;
+            savedGameTick = expectedSavedTick;
+
+            try
+            {
+                _resumeTickets.ArmFromHealthySavedOwnedSession(
+                    newOwnedSaveName,
+                    expectedSessionId,
+                    localPlanet.id,
+                    expectedSavedTick);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning($"Spherewright imported the owned copy but could not arm restart-resume ({exception.GetType().Name})");
+            }
+
+            _logger.LogInfo("Spherewright adopted an explicitly confirmed normal-save copy; the original save identity was not logged or modified");
+            return true;
+        }
+        catch (Exception exception)
+        {
+            if (!IsCurrentSessionOwned && ReferenceEquals(GameMain.data, expectedData))
+            {
+                GameMain.gameName = originalGameName;
+            }
+
+            outcomeUnknown = saveReturnedTrue;
+            rejection = saveReturnedTrue
+                ? $"The owned-copy save completed but verification failed ({exception.GetType().Name}); no ownership was adopted."
+                : $"DSP rejected the normal owned-copy save ({exception.GetType().Name}); the current world remains unowned.";
+            if (outcomeUnknown)
+            {
+                QuarantineUnownedImport(actionId, rejection);
+            }
+
+            _logger.LogError($"Spherewright user-save import failed without exposing either save identity ({exception.GetType().Name})");
+            return false;
+        }
+    }
+
+    private void QuarantineUnownedImport(string actionId, string reason)
+    {
+        _writeHealth = WriteHealthStates.Quarantined;
+        _writeQuarantineActionId = actionId;
+        _writeQuarantineReason = reason;
+        _logger.LogError("Spherewright quarantined current-session save import after an unproved owned-copy outcome");
     }
 
     private static List<string> CreateOwnedCapabilities(bool writesAllowed, string writeHealth)

@@ -1,17 +1,19 @@
-# 本局从落地到当前：决策、科技与首次产出总时间线
+# 存档日记 001：从落地到当前的决策、科技与首次产出
 
 更新时间：2026-09-03（Asia/Singapore）
+公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界位于 planet `104`。双星 ILS 已真实运输钛、硅，母星钛口持续补充钛晶石上游；新硅路现从 ILS `1657` port `1` 经长带和两座受电 sorter bridge 接入高纯硅熔炉 `842`。ILS 硅槽 `100 -> 0`，末端 sorter `2030` 实际携带硅石，熔炉连续工作，成品仓 `2806 -> 2820`；旧石转硅入口已零携货停用。普通保存已固化 tick `12841158`、revision `205`，healthy、journal `48/48` durable、无 checkpoint。v0.3 尚差一次正常关闭/精确恢复、恢复后的黄糖持续运行窗口及发行包回归。
 
 ## 结论与证据边界
 
-- 记录仍在。本局受保护日记共有 `48` 条，已经持久化到 sequence `48`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `145` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
+- 记录仍在。本局受保护 Journal 共有 `48` 条，已经持久化到 sequence `48`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `145` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
   - 更早的科技完成时间可以由游戏运行态的 `unlockTick` 精确重建，但更早的“点击时间”和实际时钟时间已经无法诚实恢复；
   - 更早的首次产出只能给出结构化读回、保存 tick 或 Git 里程碑形成的可靠上界，不能伪造为精确首次事件。
-- 本文使用四种证据：`J` = 持久化游戏日记；`R` = 当前存档运行态；`M` = 产线读回、普通保存与 Git 里程碑；`D` = 经验账本。完整证据正文分别保存在 [experience-ledger.md](./experience-ledger.md)、[m0-status.md](./m0-status.md) 和 [handoff-next-computer-agent.md](./handoff-next-computer-agent.md)。
+- 本文使用四种证据：`J` = 持久化运行时 Journal；`R` = 当前存档运行态；`M` = 产线读回、普通保存与 Git 里程碑；`D` = 经验账本。首次问题及代码修复另见 [incident-fix-log.md](./incident-fix-log.md)，现行规则与复验证据见 [experience-ledger.md](./experience-ledger.md)，版本门见 [ROADMAP.md](../ROADMAP.md)。
 
 ## 从落地到当前的主时间线
 

@@ -55,7 +55,7 @@ Spherewright deliberately does not use:
 
 All DSP and Unity access runs on Unity's main thread. Only deep-copied DTOs leave that thread. Ambiguous write outcomes quarantine further commits until the exact retained action can be proved or the same owned world is safely restarted from protected evidence.
 
-See [ROADMAP.md](./ROADMAP.md), [docs/protocol.md](./docs/protocol.md), [docs/m0-status.md](./docs/m0-status.md), and [docs/experience-ledger.md](./docs/experience-ledger.md) for the approved 0.3–0.9 plan, protocol, live validation status, and accumulated operational evidence.
+See [ROADMAP.md](./ROADMAP.md), [docs/protocol.md](./docs/protocol.md), the [save diary index](./docs/save-diaries/README.md), the [incident/fix log](./docs/incident-fix-log.md), and the [experience ledger](./docs/experience-ledger.md) for the approved 0.3–0.9 plan, protocol, per-save history, engineering fixes, and accumulated operational evidence.
 
 ## Requirements
 
@@ -130,7 +130,7 @@ Runtime descriptors and credentials are protected for the current Windows user a
 
 ## Development status
 
-The detailed, evidence-backed status lives in [docs/m0-status.md](./docs/m0-status.md). The current save's complete decision, research, upgrade, and first-output chronology lives in [docs/gameplay-timeline.md](./docs/gameplay-timeline.md). The short version:
+The release gates live in [ROADMAP.md](./ROADMAP.md). The current save's complete decision, research, upgrade, and first-output chronology lives in its [save diary](./docs/gameplay-timeline.md), indexed with every owned save in [docs/save-diaries/](./docs/save-diaries/README.md). The short version:
 
 - secure local Bridge and MCP surface: complete;
 - ordinary peaceful 1× owned-world observation and action primitives: complete for the validated DSP build;
@@ -143,7 +143,7 @@ There are no stability or compatibility guarantees yet. Before reporting a bug, 
 
 ## Contributing
 
-Issues and focused pull requests are welcome. Read [AGENTS.md](./AGENTS.md) before changing gameplay behavior: it documents the main-thread boundary, ordinary-game constraints, proof requirements, and repository workflow. New DSP calls should be grounded in the exact current game assembly and recorded under `docs/research/`.
+Spherewright is currently a personal project and does not accept pull requests before `1.0.0`. Hands-on testers are welcome to open Issues for reproducible problems. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the evidence and privacy guidelines.
 
 ## License
 

@@ -1,8 +1,8 @@
 # Deferred architecture — LAN game validation host
 
-Status: **deferred until local M0 is complete and repeatable**.
+Status: **deferred until the local release workflow is complete and repeatable**.
 
-Spherewright currently uses the same Windows computer for development, build, DSP runtime, and in-game validation. This keeps the earliest incomplete M0 work focused on ordinary-game observation and action correctness.
+Spherewright currently uses the same Windows computer for development, build, DSP runtime, and in-game validation. This keeps current release work focused on ordinary-game observation and action correctness.
 
 ## Future topology
 
@@ -32,7 +32,7 @@ The Named Pipe remains local to the game computer. It must not be exposed over T
 3. Refuse deployment while DSP is running; never kill the game or overwrite a loaded Plugin.
 4. Copy only Spherewright Plugin/MCP artifacts to a versioned staging location, then install the intended files.
 5. Start DSP in an already logged-in interactive Windows session and wait at the main menu.
-6. Run the same structured M0 validation suite used locally; do not use Computer Use, visual recognition, or keyboard/mouse macros.
+6. Run the same structured release validation suite used locally; do not use Computer Use, visual recognition, or keyboard/mouse macros.
 7. Retrieve only structured results and sanitized Spherewright/BepInEx logs. Do not enumerate, copy, or read save files.
 8. Restore `Safety.AllowWrites=false` after the run.
 
@@ -62,7 +62,7 @@ Before implementation, choose the exact remote transport and interactive-session
 
 Do not begin this deferred architecture until all of the following are true:
 
-- Local Gate B and Gate C are complete.
-- The complete local first-red-matrix run is repeatable from a fresh ordinary world.
+- The local structured observation and ordinary-action baseline is complete.
+- The complete local release acceptance run is repeatable from a fresh ordinary world.
 - Local evidence collection contains no save reads, secrets, Computer Use, sandbox actions, or unexplained item deltas.
 - The user explicitly asks to resume LAN validation-host work.

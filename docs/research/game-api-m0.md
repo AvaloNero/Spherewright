@@ -1,4 +1,4 @@
-# DSP game API research — M0
+# DSP game API research — current validated build
 
 Assembly evidence:
 
@@ -6,9 +6,9 @@ Assembly evidence:
 - `Assembly-CSharp.dll` SHA-256: `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`.
 - Inspection tool: ILSpy command line 9.1.0.7988, used only for targeted type/signature inspection. Decompiled game source is not stored in this repository.
 
-## 2026-08-30 M0 scope revision — ordinary new game
+## 2026-08-30 ordinary-new-world scope revision
 
-M0 now targets the first red matrix under ordinary gameplay and excludes all sandbox/item-injection/instant-build evidence from completion. Targeted inspection of the same assembly confirmed:
+The initial milestone targeted the first red matrix under ordinary gameplay and excluded all sandbox/item-injection/instant-build evidence from completion. Targeted inspection of the same assembly confirmed:
 
 ```text
 public void GameDesc.SetForNewGame(int galaxyAlgo, int galaxySeed,
@@ -35,7 +35,7 @@ An initial live attempt reached `GameMain.Awake` too early and failed in `GPUIns
 ModelProto[] modelArray = LDB.models.modelArray;
 ```
 
-The prior gate checked only main-menu visibility and absence of `GameLoader`; those conditions can become true before DSP finishes prototype and model preloading. Current-version `VFPreload` exposes:
+The prior readiness check used only main-menu visibility and absence of `GameLoader`; those conditions can become true before DSP finishes prototype and model preloading. Current-version `VFPreload` exposes:
 
 ```text
 public static bool VFPreload.done
@@ -48,7 +48,7 @@ A separate startup retry exposed a stale-descriptor race where `Process.ProcessN
 
 After both fixes, action `4cc929fb-c5c0-4e59-96e6-e9cb3c5940a8` completed in a fresh process-owned world. Session `3d84bb3d-1e15-497f-901a-3bf8375490f1` on planet `103` reread peaceful mode, sandbox disabled, resource multiplier `1.0`, player state, 314 technology states, 161 recipes, 174 items, resource nodes, empty factory/power state, and runtime red-matrix dependency data. Same-key new-game replay and cross-filter cursor rejection also passed. No pre-existing save was enumerated, loaded, or read.
 
-## Gate A verified symbols
+## Bridge bootstrap verified symbols
 
 Targeted inspection of `GameConfig` found:
 
@@ -65,9 +65,9 @@ public int Version.Build
 public string Version.ToFullString()
 ```
 
-Gate A uses these values only from the Unity main thread to produce an immutable game-version string for bridge status. It does not access `GameMain`, `GameData`, save metadata, factories, or Unity objects from the Pipe worker.
+The bootstrap path uses these values only from the Unity main thread to produce an immutable game-version string for bridge status. It does not access `GameMain`, `GameData`, save metadata, factories, or Unity objects from the Pipe worker.
 
-## Gate A runtime evidence
+## Bridge bootstrap runtime evidence
 
 - The Unity Mono runtime does not implement `WindowsIdentity.User`; the Plugin therefore gets the current SID from the Windows process token and creates the directory, descriptor, and Named Pipe with native protected DACLs.
 - Live descriptor ACL: owner `<CURRENT_WINDOWS_USER>`, inheritance disabled, one current-user `FullControl` rule.

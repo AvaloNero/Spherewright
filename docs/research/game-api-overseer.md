@@ -192,13 +192,41 @@ itemCount = hashCount * pointsPerHash / 3600
 
 摘要返回一份当前科技、上传/所需/剩余 hash、有序队列、运行时 tech-state 总数、已解锁数及逐物品预算；队列中的每个非零 ID 必须同时存在于当前 `LDB.techs` 和 `techStates`，负数或残留身份会 fail closed，矩阵身份只按当前 `TechProto.matrixIds` 判断。所有星球页都引用首屏捕获的同一份深复制科研状态和同一 `capturedAtGameTick`，不会把后续 tick 的科研进度拼进旧游标快照。独立调用本地电力、物流或科研工具可能在相邻 tick 执行；除非 `capturedAtGameTick` 相同，否则逐字段差异是正常的动态状态，不能拿来否定或拼接当前 Overseer 快照。最终实机对照仅相隔 2 tick，母星需求/实际发电就从 `90688` 变为 `79388`，而各自快照内部仍满足 generated/served 和 exported 语义。
 
+## 直接设备故障与物流路径证据
+
+当前程序集的装配、矩阵制造和采集组件在完成周期前先检查自己的输出缓冲；这些门决定“满输出”何时真正阻止下一次产出：
+
+```text
+AssemblerComponent:
+  Smelt                 produced + productCount <= 100
+  Assemble              produced <= productCount * 9
+  Refine/Chemical/other produced <= productCount * 19
+
+LabComponent matrix mode:
+  produced + productCount <= 10 * ceil(speedOverride / 10000)
+
+MinerComponent:
+  productCount < 50
+```
+
+因此公开容量分别规范化为冶炼 `100`、制造 `productCount * 10`、其他装配配方 `productCount * 20`、矩阵站 `10 * ceil(speedOverride / 10000)`、采集器 `50`。这不是猜测仓格上限，而是与当前 `InternalUpdate` 是否允许下一批产出的比较边界一致。配方完整周期以 `ceil(timeSpend / speed)` 个游戏 tick 计算；采集器使用当前 `period / (speed × miningSpeedScale × sourceMultiplier)` 的向上取整。诊断只有在原生窗口 ready 且覆盖至少一个完整周期后运行。
+
+装配机和矩阵站的 `served[]` 会在原生周期开始时先扣除一批输入。故 `replicating=true` 且 `served` 小于下一批需求并不证明当前周期缺料；诊断必须等设备停止后再判断。类似地，物品级 600-tick 窗口已经有正产量时，不能因为同类设备中的某一台恰好空闲就把整个物品标为停产。当前实现按同一物品的聚合实际产率做保护，只有实际值为零才逐个检查其直接生产设备。
+
+物流证据不能用“同星球上有同物品塔”代替物理连接。当前实现从每个消费者的输入 sorter `pickTarget` 反向遍历 `PlanetFactory.ReadObjectConn` 的入边，只穿过 belt、splitter、piler、spraycoater、inserter、storage 和 tank；只有最终命中 `StationComponent.slots` 中精确 `Output`、非零 `storageIdx` 所绑定的 belt/entity，才把对应站槽视为该输入的 demand 端。随后才按该槽的 local/remote demand 模式，在全部已创建 owned factory 中寻找同 item 的 local/remote supply 端，并汇总库存、订单和去重后的 idle+work drone/ship 数量。首轮实机追踪曾在中转仓停止，遗漏真实路径；加入 storage/tank/inserter 后，实际链 `assembler 530 <- sorter 532 <- storage 259 <- sorter 1784 <- ... <- station 1657 output belt 1783` 才得到母星 demand `1657` 和远端 planet `102` supply `44` 的证据。
+
+运输进展需要跨 tick 比较。单个快照只公开当前配置、订单、源库存和载具数；它不会把“此刻有订单但没观察到位移”写成 stalled。当前可以确认的物流故障仅包括：物理需求路径存在但没有匹配 supply 配置，或匹配 source inventory 为正而供需两端可用/工作载具总数为零。具备载具的订单停滞仍需后续持久化时间窗证明。fractionator、gamma receiver 和 orbital collector 已计入理论产能，但尚未接入同等级直接缓冲诊断；请求物品若由这些设备直接生产，`directDiagnosticCoverage=partial`。
+
+所有 finding 都包含同 tick 的设备、物料和可证明物流节点；它们是瞬时诊断，不是跨 tick 不变事实。实机中同一制造台 `715` 曾在网络服务率约 `0.94038` 时返回 `insufficient_power`，供电恢复后又自然变为缺 item `1109` 的 `material_shortage`，证明调用方必须按 `capturedAtGameTick` 使用证据，不能缓存旧根因继续写入。
+
 ## 有界输出与诊断限制
 
 - 生产行必须由调用方提供去重后的有效物品 ID，首个切片最多 64 个；不接受“返回所有物品”的无界请求。
 - 工厂遍历同时受 `factoryCount`、数组长度和 512 个已创建 factory 的显式上限约束；每页最多 16 个 planet，快照保持 60 秒且绑定 session、请求类型与页大小。
 - 跨域摘要最多扫描 4096 个 power-network pool 槽、65536 个发电组件引用和 4096 个 station pool 槽；每站最多 64 个 storage slot，科研队列最多扫描 4096 项、返回 64 项，runtime tech catalog 最多扫描 12000 项。理论产能另限制最多扫描 131072 个 assembler/lab/miner/fractionator/generator/station pool 槽和 262144 个 recipe input/output、矿点及采集物引用。超过预算返回明确的非重试 `SERVER_BUSY`，不静默截断聚合总量。
-- 当前原生 600-tick 窗口可以稳定给出实际产量，但不能单独解释停产原因。供电不足、缺料、输出堵塞、物流阻塞和矿脉耗尽只有在设备身份、完整周期、缓冲容量、物流订单/源库存和矿脉余量证据齐全时才能标为 confirmed。
-- 现有通用 `ProductionFaultClassifier` 已 fail closed 等待 ready window 和完整周期。设备输出缓冲的真实容量尚未完成当前程序集逐类型复核，所以第一条多星球速率切片不输出“confirmed output_blocked”。
+- 直接诊断另受 131072 个组件/拓扑节点和 262144 个配方、来源及站槽引用的总预算；每个 item 最多返回 16 条 finding，每个 planet 最多返回 16 条无已知 item 身份的基础设施 finding，同时保留未截断总数和 `truncated` 标志。预算溢出会让整份首屏 fail closed，不能返回不完整总量。
+- 当前直接诊断只覆盖 assembler、matrix lab 和三类 miner；fractionator、gamma receiver 与 orbital collector 会显式令覆盖为 `partial`。它只追到当前直接设备、缺失物料和物理相关的物流供需端，尚未递归进入缺失物料自己的生产设备。
+- 单次快照不能确认“有载具的物流订单没有进展”；该分支继续 fail closed，等待跨 tick 的 per-save 时间窗。受控缺料、断电、物流阻塞三类故障制造/修复和保存恢复验收仍未完成。
 - 原始 owned save 名、由它派生的持久化 key、auth token、plan token、绝对路径和运行时描述文件不得进入公共 DTO 或诊断包。
 
 ## 已完成的运行时切片
@@ -208,3 +236,5 @@ itemCount = hashCount * pointsPerHash / 3600
 第二条纵向切片用独立的 session/页大小绑定快照返回每星球电网与物流聚合，以及一份全局当前科研摘要。前两条切片都不创建 factory、不加载远端显示、不写共享统计缓存。它们已经提供故障诊断的输入，但尚未把设备缓冲、物流路径和矿源余量组合成最终根因，因此不提前声称完整 v0.4 验收完成。
 
 第三条纵向切片把当前程序集的理论产出公式作为纯 Core 计算器接回第一条生产快照；Plugin 只负责有界、身份绑定的运行时输入扫描。实机先暴露并修正“耗尽矿机 `veinCount=0` 时数组可为空”的合法边界，随后同一三工厂存档完整返回 `complete`：母星蓝/红/黄矩阵分别为 `20/10/7.5 min⁻¹`，铁/铜/石/煤矿由实际覆盖 `14/2/3/7` 个矿点闭合为 `420/60/90/210 min⁻¹`，水泵为 `50 min⁻¹`，油井按当前矿量为 `133.15919494628906 min⁻¹`；远端未显示工厂仍给出硅/钛 `120/60 min⁻¹`。冶炼、化工和制造配方也与实体数量闭合。理论/利用率现已完成，仍待把设备缓冲、物流边和矿源状态接入运行时故障分类与上游根因图，因此不提前声称完整 v0.4 验收完成。
+
+第四条纵向切片把纯 Core 首因分类器接到真实 assembler/lab/miner 缓冲、power consumer/network、recipe、vein 和 station/belt 拓扑。最终同档 tick `13945617` 的自然现场同时返回：铁矿机 `1213/1496` 与冶炼炉 `10` 的 `output_blocked`，制造台 `530` 缺 item `1004` 的 `material_shortage` 并附带 `104:1657 -> 102:44` 物流供需路径，matrix lab `774` 缺 item `1112`，以及三台已丢失产品身份的耗尽矿机基础设施 finding。较早一次同版本读取还在制造台 `715` 上捕获约 `0.94038` 供电比的 `insufficient_power`；供电恢复后标签随同 tick 状态改为缺 item `1109`。item `6002` 的实际产量为 `12 min⁻¹` 时没有因瞬时设备输入状态产生误报。完整 solution 0 warning/0 error，174 项测试通过；最终部署 Plugin SHA-256 为 `D40D6BEA4E76697EB14C5F1DE3B0CC61532E4BF634125E1A9488D5024FDF59E1`，normal save `13943810`、exact-primary resume/auto-save `13943842` 均保持同一 owned world。最终 `limit=1` 三页在 tick `13986388` 共享快照并以 `STALE_CURSOR` 拒绝错绑 filter；源码 MCP `0.4.0.0` 通过协议 `2025-06-18` initialize、50-tool list 和 live call。只读审计 tick `13990990+` 仍为 healthy、Journal durable、无 blocker/checkpoint/prebuild。该切片完成直接设备层，不等于递归上游、时间型物流停滞和受控故障门已经完成。

@@ -38,6 +38,12 @@ public static class OverseerTheoreticalRateSources
     public const string CurrentRuntimeComponentFormulaV1 = "current_runtime_component_formula_v1";
 }
 
+public static class OverseerDirectDiagnosticCoverageStates
+{
+    public const string Complete = "complete";
+    public const string Partial = "partial";
+}
+
 public static class OverseerFindingKinds
 {
     public const string MaterialShortage = "material_shortage";
@@ -105,6 +111,18 @@ public sealed class ProductionRateSnapshot
     public string RateSource { get; set; } = string.Empty;
 
     public string TheoreticalCoverage { get; set; } = OverseerTheoreticalCoverageStates.Unavailable;
+
+    public string DirectDiagnosticCoverage { get; set; } = OverseerDirectDiagnosticCoverageStates.Complete;
+
+    public int DirectProducerCount { get; set; }
+
+    public int DirectDiagnosedProducerCount { get; set; }
+
+    public int FindingCount { get; set; }
+
+    public bool FindingsTruncated { get; set; }
+
+    public List<OverseerFindingSnapshot> Findings { get; set; } = new List<OverseerFindingSnapshot>();
 }
 
 public sealed class GetOverseerProductionRequest
@@ -156,6 +174,13 @@ public sealed class OverseerPlanetProductionSnapshot
     public long CapturedAtGameTick { get; set; }
 
     public List<ProductionRateSnapshot> Production { get; set; } = new List<ProductionRateSnapshot>();
+
+    public bool InfrastructureFindingsTruncated { get; set; }
+
+    public int InfrastructureFindingCount { get; set; }
+
+    public List<OverseerFindingSnapshot> InfrastructureFindings { get; set; } =
+        new List<OverseerFindingSnapshot>();
 }
 
 public sealed class GetOverseerSummaryRequest

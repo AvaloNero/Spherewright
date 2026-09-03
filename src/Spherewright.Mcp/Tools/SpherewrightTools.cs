@@ -314,7 +314,7 @@ public static class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns a cursor-bound page of all already-created owned factories for up to 64 exact item IDs. Actual rates come from DSP's save-persisted 600-game-tick automatic production and consumption window; theoretical output capacity is independently recomputed from identity-bound current runtime components without mutating DSP's UI cache.")]
+    [Description("Returns a cursor-bound page of all already-created owned factories for up to 64 exact item IDs. Actual rates come from DSP's save-persisted 600-game-tick automatic production and consumption window; theoretical output capacity is independently recomputed from identity-bound current runtime components. Supported direct assemblers, matrix labs, and resource extractors also report bounded same-snapshot findings for material shortage, full output buffers, insufficient power, and exhausted veins, with physically proven logistics demand/supply evidence when present. This direct view is not yet recursive or a temporal transport-stall detector.")]
     public static async Task<CallToolResult> GetOverseerProductionAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,

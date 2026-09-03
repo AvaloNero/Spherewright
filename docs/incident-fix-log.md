@@ -216,3 +216,21 @@
   同一存档完整返回三厂 `theoreticalCoverage=complete`；有矿机的覆盖点数精确闭合理论速率，
   三台耗尽矿机贡献 0。完整 solution 0 warning/0 error，160 项测试通过。
 - 关联：EXP-085、EXP-112、EXP-157、`GameStateReader.TryCaptureMinerTheoreticalRates`；状态：`fixed`。
+
+## IFX-019 — 物流诊断在中转仓处提前停止，漏掉真实塔路径
+
+- 首见：2026-09-03，v0.4 直接设备诊断首次追踪钛晶石制造台 `530` 的缺硅输入。
+- 症状：制造台正确返回 item `1004` 缺料，但 finding 只有设备与物料节点，没有已知的母星需求塔
+  `1657` 和远端供应塔 `44`；同一现场明明已经由 ILS 把硅送入生产区。
+- 根因：首版反向拓扑搜索只把 belt/splitter/piler/spraycoater 当作货运通道。实际链先由 sorter
+  `532` 从 storage `259` 取料，而该仓又由 sorter `1784` 从 ILS 长带入库；搜索到仓即停止，
+  因而永远碰不到 station output belt `1783`。
+- 修复：仍从精确 consumer input sorter 的 `pickTarget` 出发、仍只沿 `ReadObjectConn` 入边反向遍历，
+  但把 inserter、storage 和 tank 纳入允许的有向货运中继。只有命中 station slot 精确绑定的 output
+  belt/entity 才附加 demand；随后才按 item 和 local/remote 模式寻找 supply，未放宽为同星球或同物品猜测。
+- 验证：修复版 live finding 的路径为 `assembler 530 -> material 1004 -> logistics demand 104:1657
+  -> logistics supply 102:44`，同时返回 source inventory `28` 和去重 carrier count `2`。由于只有单次
+  快照且没有 outstanding order，它保持 `material_shortage`，没有误报 `logistics_blocked`。修复版先普通
+  保存、正常关闭，再以 source-equal 七文件部署并通过 exact-primary 恢复；最终 Plugin hash 为
+  `D40D6BEA4E76697EB14C5F1DE3B0CC61532E4BF634125E1A9488D5024FDF59E1`，174 项测试与完整构建通过。
+- 关联：EXP-117、EXP-123、EXP-144、EXP-159、`TryFindDirectDiagnosticDemandBindings`；状态：`fixed`。

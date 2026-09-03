@@ -94,6 +94,7 @@ public sealed class ProductionFaultClassifierTests
         material.LogisticsExpected = true;
         material.LogisticsConfigured = true;
         material.LogisticsOrderOutstanding = true;
+        material.LogisticsProgressStateKnown = true;
         material.SourceInventoryKnown = true;
         material.SourceInventoryCount = 100;
         input.Inputs = new[] { material };
@@ -102,6 +103,95 @@ public sealed class ProductionFaultClassifierTests
 
         Assert.Equal(OverseerFindingKinds.LogisticsBlocked, finding?.Kind);
         Assert.Equal(OverseerFindingConfidences.Suspected, finding?.Confidence);
+    }
+
+    [Fact]
+    public void ClassifyPrimary_DoesNotInventStalledProgressFromSingleLogisticsSnapshot()
+    {
+        var input = BaseInput();
+        var material = MissingMaterial();
+        material.LogisticsExpected = true;
+        material.LogisticsConfigured = true;
+        material.LogisticsOrderOutstanding = true;
+        material.SourceInventoryKnown = true;
+        material.SourceInventoryCount = 100;
+        input.Inputs = new[] { material };
+
+        var finding = ProductionFaultClassifier.ClassifyPrimary(input);
+
+        Assert.Equal(OverseerFindingKinds.MaterialShortage, finding?.Kind);
+    }
+
+    [Fact]
+    public void ClassifyPrimary_ConfirmsConfiguredRouteWithoutCarriers()
+    {
+        var input = BaseInput();
+        var material = MissingMaterial();
+        material.LogisticsExpected = true;
+        material.LogisticsConfigured = true;
+        material.LogisticsCarrierStateKnown = true;
+        material.LogisticsCarrierCount = 0;
+        material.SourceInventoryKnown = true;
+        material.SourceInventoryCount = 100;
+        material.LogisticsDemandPlanetId = 104;
+        material.LogisticsDemandObjectId = 1657;
+        material.LogisticsSupplyPlanetId = 102;
+        material.LogisticsSupplyObjectId = 42;
+        input.Inputs = new[] { material };
+
+        var finding = ProductionFaultClassifier.ClassifyPrimary(input);
+
+        Assert.Equal(OverseerFindingKinds.LogisticsBlocked, finding?.Kind);
+        Assert.Contains(finding!.UpstreamPath, node => node.Kind == "logistics_demand" && node.ObjectId == 1657);
+        Assert.Contains(finding.UpstreamPath, node => node.Kind == "logistics_supply" && node.PlanetId == 102);
+        Assert.Contains(
+            finding.Evidence,
+            item => item.Metric == "source_inventory" && item.NumericValue == 100);
+    }
+
+    [Fact]
+    public void ClassifyPrimary_DoesNotCallConsumedInputsAShortageDuringActiveCycle()
+    {
+        var input = BaseInput();
+        input.IsWorking = true;
+        input.Inputs = new[] { MissingMaterial() };
+
+        Assert.Null(ProductionFaultClassifier.ClassifyPrimary(input));
+    }
+
+    [Fact]
+    public void ClassifyPrimary_ReportsDepletedExtractorWhenProductIdentityWasLost()
+    {
+        var input = BaseInput();
+        input.TargetItemId = 0;
+        input.TargetItemName = string.Empty;
+        input.IsResourceExtractor = true;
+        input.ResourceStateKnown = true;
+        input.RemainingResourceAmount = 0;
+
+        var finding = ProductionFaultClassifier.ClassifyPrimary(input);
+
+        Assert.Equal(OverseerFindingKinds.VeinExhausted, finding?.Kind);
+        Assert.Null(finding?.ItemId);
+        Assert.Null(finding?.UpstreamPath.Single().ItemId);
+    }
+
+    [Fact]
+    public void ClassifyPrimary_DoesNotBlameCarrierFleetWhenSourceIsEmpty()
+    {
+        var input = BaseInput();
+        var material = MissingMaterial();
+        material.LogisticsExpected = true;
+        material.LogisticsConfigured = true;
+        material.LogisticsCarrierStateKnown = true;
+        material.LogisticsCarrierCount = 0;
+        material.SourceInventoryKnown = true;
+        material.SourceInventoryCount = 0;
+        input.Inputs = new[] { material };
+
+        var finding = ProductionFaultClassifier.ClassifyPrimary(input);
+
+        Assert.Equal(OverseerFindingKinds.MaterialShortage, finding?.Kind);
     }
 
     [Fact]
@@ -134,6 +224,8 @@ public sealed class ProductionFaultClassifierTests
             ObjectId = 774,
             TargetItemId = 6003,
             TargetItemName = "Structure matrix",
+            ProductionUnitKind = "matrix_lab",
+            ProductionUnitName = "Matrix lab 774",
             WindowState = OverseerWindowStates.Ready,
             WindowElapsedGameTicks = 600,
             ExpectedCycleGameTicks = 60,

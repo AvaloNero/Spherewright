@@ -18,7 +18,7 @@ using Spherewright.Contracts.Sessions;
 
 namespace Spherewright.Plugin.Game;
 
-internal sealed class GameStateReader
+internal sealed partial class GameStateReader
 {
     private const int DefaultLimit = 50;
     private const int MaximumLimit = 100;
@@ -36,6 +36,10 @@ internal sealed class GameStateReader
     private const int MaximumOverseerTechnologyScanCount = 12000;
     private const int MaximumOverseerTheoreticalComponentScanCount = 131072;
     private const int MaximumOverseerTheoreticalSourceReferenceScanCount = 262144;
+    private const int MaximumOverseerDirectDiagnosticComponentScanCount = 131072;
+    private const int MaximumOverseerDirectDiagnosticSourceReferenceScanCount = 262144;
+    private const int MaximumOverseerDirectFindingsPerItem = 16;
+    private const int MaximumOverseerInfrastructureFindingsPerPlanet = 16;
     private const int OverseerSnapshotScopeId = int.MaxValue;
     private readonly GameSessionTracker _sessions;
     private readonly SnapshotPageStore<ResourceNodeSnapshot> _resourceSnapshots =
@@ -1484,6 +1488,20 @@ internal sealed class GameStateReader
 
         long theoreticalComponentScanCount = 0;
         long theoreticalSourceReferenceScanCount = 0;
+        long diagnosticComponentScanCount = 0;
+        long diagnosticSourceReferenceScanCount = 0;
+        var diagnosticWindow = NativeProductionRateCalculator.Calculate(capturedAtGameTick, 0, 0).Window;
+        var requestedItemIds = new HashSet<int>(itemIds);
+        var logisticsError = TryCaptureOverseerDiagnosticLogisticsRoutes(
+            factories,
+            ref diagnosticComponentScanCount,
+            ref diagnosticSourceReferenceScanCount,
+            out var diagnosticLogistics);
+        if (logisticsError is not null)
+        {
+            return logisticsError;
+        }
+
         foreach (var factory in factories)
         {
             var factoryIndex = factory.index;
@@ -1510,6 +1528,20 @@ internal sealed class GameStateReader
                 return theoreticalError;
             }
 
+            var diagnosticError = TryCaptureOverseerDirectDiagnostics(
+                factory,
+                requestedItemIds,
+                diagnosticWindow,
+                diagnosticLogistics!,
+                ref diagnosticComponentScanCount,
+                ref diagnosticSourceReferenceScanCount,
+                out var directDiagnostics);
+            if (diagnosticError is not null)
+            {
+                planets.Clear();
+                return diagnosticError;
+            }
+
             var snapshot = new OverseerPlanetProductionSnapshot
             {
                 FactoryIndex = factoryIndex,
@@ -1518,6 +1550,13 @@ internal sealed class GameStateReader
                 IsLocalPlanet = factory.planetId == localPlanetId,
                 FactoryDisplayLoaded = planet.factoryLoaded,
                 CapturedAtGameTick = capturedAtGameTick,
+                InfrastructureFindingCount = directDiagnostics!.InfrastructureFindings.Count,
+                InfrastructureFindingsTruncated = directDiagnostics!.InfrastructureFindings.Count
+                    > MaximumOverseerInfrastructureFindingsPerPlanet,
+                InfrastructureFindings = directDiagnostics.InfrastructureFindings
+                    .OrderBy(finding => finding.ObjectId)
+                    .Take(MaximumOverseerInfrastructureFindingsPerPlanet)
+                    .ToList(),
             };
             foreach (var itemId in itemIds)
             {
@@ -1560,7 +1599,7 @@ internal sealed class GameStateReader
                     producedCount,
                     consumedCount);
                 var theoreticalProductionPerMinute = theoreticalRates![itemId];
-                snapshot.Production.Add(new ProductionRateSnapshot
+                var productionRate = new ProductionRateSnapshot
                 {
                     PlanetId = factory.planetId,
                     ItemId = itemId,
@@ -1577,7 +1616,12 @@ internal sealed class GameStateReader
                     TheoreticalRateSource = OverseerTheoreticalRateSources.CurrentRuntimeComponentFormulaV1,
                     RateSource = OverseerRateSources.NativeFactoryStatisticsLevel0,
                     TheoreticalCoverage = OverseerTheoreticalCoverageStates.Complete,
-                });
+                };
+                ApplyOverseerDirectDiagnostics(
+                    directDiagnostics,
+                    rate.Window,
+                    productionRate);
+                snapshot.Production.Add(productionRate);
             }
 
             planets.Add(snapshot);

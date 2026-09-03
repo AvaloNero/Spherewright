@@ -12,6 +12,10 @@ public sealed class ProductionFaultInput
 
     public string TargetItemName { get; set; } = string.Empty;
 
+    public string ProductionUnitKind { get; set; } = "production_unit";
+
+    public string ProductionUnitName { get; set; } = string.Empty;
+
     public string WindowState { get; set; } = OverseerWindowStates.WarmingUp;
 
     public long WindowElapsedGameTicks { get; set; }
@@ -60,6 +64,20 @@ public sealed class ProductionMaterialInput
     public bool LogisticsOrderOutstanding { get; set; }
 
     public bool LogisticsProgressObserved { get; set; }
+
+    public bool LogisticsProgressStateKnown { get; set; }
+
+    public bool LogisticsCarrierStateKnown { get; set; }
+
+    public int LogisticsCarrierCount { get; set; }
+
+    public int? LogisticsDemandPlanetId { get; set; }
+
+    public int? LogisticsDemandObjectId { get; set; }
+
+    public int? LogisticsSupplyPlanetId { get; set; }
+
+    public int? LogisticsSupplyObjectId { get; set; }
 
     public bool SourceInventoryKnown { get; set; }
 
@@ -148,6 +166,14 @@ public static class ProductionFaultClassifier
                 Evidence("output_buffer_capacity", blockedOutput.BufferCapacity, "items"));
         }
 
+        // Inputs are consumed when a native cycle starts. An actively replicating
+        // unit can therefore have less than one future cycle buffered without
+        // being starved yet; wait for the unit to stop before diagnosing shortage.
+        if (input.IsWorking)
+        {
+            return null;
+        }
+
         var missingInput = input.Inputs.FirstOrDefault(material =>
             material.RequiredPerCycle > 0 && material.AvailableCount < material.RequiredPerCycle);
         if (missingInput is null)
@@ -157,47 +183,74 @@ public static class ProductionFaultClassifier
 
         if (missingInput.SourceResourceStateKnown && missingInput.SourceResourceRemaining == 0)
         {
-            return Finding(
+            return MaterialFinding(
                 input,
+                missingInput,
                 OverseerFindingKinds.VeinExhausted,
                 OverseerFindingConfidences.Confirmed,
                 $"The upstream resource for {DisplayName(missingInput.ItemName, missingInput.ItemId)} is exhausted.",
+                Evidence("input_item_id", missingInput.ItemId, null),
                 Evidence("input_available", missingInput.AvailableCount, "items"),
                 Evidence("upstream_resource_remaining", missingInput.SourceResourceRemaining, "items"));
         }
 
         if (missingInput.LogisticsExpected && !missingInput.LogisticsConfigured)
         {
-            return Finding(
+            return MaterialFinding(
                 input,
+                missingInput,
                 OverseerFindingKinds.LogisticsBlocked,
                 OverseerFindingConfidences.Confirmed,
                 $"The expected logistics route for {DisplayName(missingInput.ItemName, missingInput.ItemId)} is not configured.",
+                Evidence("input_item_id", missingInput.ItemId, null),
                 Evidence("input_available", missingInput.AvailableCount, "items"),
                 TextEvidence("logistics_configured", "false"));
         }
 
         if (missingInput.LogisticsExpected
+            && missingInput.LogisticsConfigured
+            && missingInput.LogisticsCarrierStateKnown
+            && missingInput.LogisticsCarrierCount == 0
+            && missingInput.SourceInventoryKnown
+            && missingInput.SourceInventoryCount > 0)
+        {
+            return MaterialFinding(
+                input,
+                missingInput,
+                OverseerFindingKinds.LogisticsBlocked,
+                OverseerFindingConfidences.Confirmed,
+                $"The configured logistics route for {DisplayName(missingInput.ItemName, missingInput.ItemId)} has no available carrier fleet.",
+                Evidence("input_item_id", missingInput.ItemId, null),
+                Evidence("logistics_carrier_count", missingInput.LogisticsCarrierCount, "carriers"),
+                TextEvidence("logistics_configured", "true"));
+        }
+
+        if (missingInput.LogisticsExpected
             && missingInput.LogisticsOrderOutstanding
+            && missingInput.LogisticsProgressStateKnown
             && !missingInput.LogisticsProgressObserved
             && missingInput.SourceInventoryKnown
             && missingInput.SourceInventoryCount > 0)
         {
-            return Finding(
+            return MaterialFinding(
                 input,
+                missingInput,
                 OverseerFindingKinds.LogisticsBlocked,
                 OverseerFindingConfidences.Suspected,
                 $"A logistics order for {DisplayName(missingInput.ItemName, missingInput.ItemId)} made no progress while source inventory was available.",
+                Evidence("input_item_id", missingInput.ItemId, null),
                 Evidence("source_inventory", missingInput.SourceInventoryCount, "items"),
                 TextEvidence("logistics_order_outstanding", "true"),
                 TextEvidence("logistics_progress_observed", "false"));
         }
 
-        return Finding(
+        return MaterialFinding(
             input,
+            missingInput,
             OverseerFindingKinds.MaterialShortage,
             OverseerFindingConfidences.Confirmed,
             $"The production unit lacks one full cycle of {DisplayName(missingInput.ItemName, missingInput.ItemId)}.",
+            Evidence("input_item_id", missingInput.ItemId, null),
             Evidence("input_available", missingInput.AvailableCount, "items"),
             Evidence("input_required_per_cycle", missingInput.RequiredPerCycle, "items"));
     }
@@ -206,7 +259,8 @@ public static class ProductionFaultClassifier
     {
         if (input.PlanetId <= 0
             || input.ObjectId <= 0
-            || input.TargetItemId <= 0
+            || input.TargetItemId < 0
+            || (input.TargetItemId == 0 && !input.IsResourceExtractor)
             || input.WindowElapsedGameTicks < 0
             || input.ExpectedCycleGameTicks <= 0
             || double.IsNaN(input.ActualProductionPerMinute)
@@ -229,7 +283,12 @@ public static class ProductionFaultClassifier
                 || material.AvailableCount < 0
                 || material.RequiredPerCycle < 0
                 || material.SourceResourceRemaining < 0
-                || material.SourceInventoryCount < 0)
+                || material.SourceInventoryCount < 0
+                || material.LogisticsCarrierCount < 0
+                || (material.LogisticsDemandPlanetId.HasValue && material.LogisticsDemandPlanetId.Value <= 0)
+                || (material.LogisticsDemandObjectId.HasValue && material.LogisticsDemandObjectId.Value <= 0)
+                || (material.LogisticsSupplyPlanetId.HasValue && material.LogisticsSupplyPlanetId.Value <= 0)
+                || (material.LogisticsSupplyObjectId.HasValue && material.LogisticsSupplyObjectId.Value <= 0))
             || input.Outputs.Any(output =>
                 output.ItemId <= 0
                 || output.BufferedCount < 0
@@ -255,7 +314,7 @@ public static class ProductionFaultClassifier
                 : OverseerFindingSeverities.Warning,
             PlanetId = input.PlanetId,
             ObjectId = input.ObjectId,
-            ItemId = input.TargetItemId,
+            ItemId = input.TargetItemId > 0 ? input.TargetItemId : null,
             Summary = summary,
             Evidence = evidence.ToList(),
             UpstreamPath = new List<OverseerPathNodeSnapshot>
@@ -264,12 +323,117 @@ public static class ProductionFaultClassifier
                 {
                     PlanetId = input.PlanetId,
                     ObjectId = input.ObjectId,
-                    ItemId = input.TargetItemId,
-                    Kind = "production_unit",
-                    Name = DisplayName(input.TargetItemName, input.TargetItemId),
+                    ItemId = input.TargetItemId > 0 ? input.TargetItemId : null,
+                    Kind = string.IsNullOrWhiteSpace(input.ProductionUnitKind)
+                        ? "production_unit"
+                        : input.ProductionUnitKind,
+                    Name = string.IsNullOrWhiteSpace(input.ProductionUnitName)
+                        ? $"production unit {input.ObjectId}"
+                        : input.ProductionUnitName,
                 },
             },
         };
+    }
+
+    private static OverseerFindingSnapshot MaterialFinding(
+        ProductionFaultInput input,
+        ProductionMaterialInput material,
+        string kind,
+        string confidence,
+        string summary,
+        params OverseerEvidenceSnapshot[] evidence)
+    {
+        var finding = Finding(input, kind, confidence, summary, evidence);
+        if (material.LogisticsExpected)
+        {
+            AddTextEvidenceIfMissing(
+                finding.Evidence,
+                "logistics_configured",
+                material.LogisticsConfigured ? "true" : "false");
+            AddTextEvidenceIfMissing(
+                finding.Evidence,
+                "logistics_order_outstanding",
+                material.LogisticsOrderOutstanding ? "true" : "false");
+        }
+
+        if (material.SourceInventoryKnown)
+        {
+            AddNumericEvidenceIfMissing(
+                finding.Evidence,
+                "source_inventory",
+                material.SourceInventoryCount,
+                "items");
+        }
+
+        if (material.LogisticsCarrierStateKnown)
+        {
+            AddNumericEvidenceIfMissing(
+                finding.Evidence,
+                "logistics_carrier_count",
+                material.LogisticsCarrierCount,
+                "carriers");
+        }
+
+        if (material.LogisticsProgressStateKnown)
+        {
+            AddTextEvidenceIfMissing(
+                finding.Evidence,
+                "logistics_progress_observed",
+                material.LogisticsProgressObserved ? "true" : "false");
+        }
+
+        finding.UpstreamPath.Add(new OverseerPathNodeSnapshot
+        {
+            PlanetId = input.PlanetId,
+            ItemId = material.ItemId,
+            Kind = "material",
+            Name = DisplayName(material.ItemName, material.ItemId),
+        });
+
+        if (material.LogisticsDemandPlanetId.HasValue && material.LogisticsDemandObjectId.HasValue)
+        {
+            finding.UpstreamPath.Add(new OverseerPathNodeSnapshot
+            {
+                PlanetId = material.LogisticsDemandPlanetId.Value,
+                ObjectId = material.LogisticsDemandObjectId.Value,
+                ItemId = material.ItemId,
+                Kind = "logistics_demand",
+                Name = $"logistics demand for {DisplayName(material.ItemName, material.ItemId)}",
+            });
+        }
+
+        if (material.LogisticsSupplyPlanetId.HasValue && material.LogisticsSupplyObjectId.HasValue)
+        {
+            finding.UpstreamPath.Add(new OverseerPathNodeSnapshot
+            {
+                PlanetId = material.LogisticsSupplyPlanetId.Value,
+                ObjectId = material.LogisticsSupplyObjectId.Value,
+                ItemId = material.ItemId,
+                Kind = "logistics_supply",
+                Name = $"logistics supply for {DisplayName(material.ItemName, material.ItemId)}",
+            });
+        }
+
+        return finding;
+    }
+
+    private static void AddNumericEvidenceIfMissing(
+        ICollection<OverseerEvidenceSnapshot> evidence,
+        string metric,
+        double value,
+        string? unit)
+    {
+        if (evidence.Any(item => string.Equals(item.Metric, metric, StringComparison.Ordinal))) return;
+        evidence.Add(Evidence(metric, value, unit));
+    }
+
+    private static void AddTextEvidenceIfMissing(
+        ICollection<OverseerEvidenceSnapshot> evidence,
+        string metric,
+        string value)
+    {
+        if (evidence.Any(item => string.Equals(item.Metric, metric, StringComparison.Ordinal))) return;
+        evidence.Add(TextEvidence(metric, value));
     }
 
     private static OverseerEvidenceSnapshot Evidence(string metric, double value, string? unit)

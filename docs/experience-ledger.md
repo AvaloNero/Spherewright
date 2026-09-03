@@ -34,11 +34,11 @@
 - 日期：2026-08-31
 - 适用范围：当前 Windows Steam 安装的 DSP `0.10.34.28529`。
 - 当前结论：直接启动 `DSPGAME.exe` 会很快退出；本机可靠启动路径是 Steam `-applaunch 1366540`，随后再发现实际游戏进程和 Bridge descriptor。
-- 直接证据：直接启动进程退出；Steam 启动后 DSP、BepInEx 和 Spherewright Plugin 正常加载。
+- 直接证据：直接启动进程退出；Steam 启动后 DSP、BepInEx 和 Spherewright Plugin 正常加载。2026-09-03 的 v0.4 第四批部署再次复现：直接 `DSPGAME.exe` 报 `SteamAPI_Init()` 失败并退出，尚未消费的受保护恢复票据保持有效；改由正在运行的 Steam 客户端 `-applaunch 1366540` 后，Plugin 启动并只恢复同一 exact primary。
 - 限制或反例：非 Steam 发行版或未来启动器未验证。
 - 复验触发：游戏安装来源、Steam app ID、启动脚本或游戏版本变化。
 - 关联：`scripts/locate-dsp.ps1`、`docs/research/environment.md`。
-- 最近复验：2026-08-31。
+- 最近复验：2026-09-03（直接 EXE 失败与 Steam `-applaunch` 成功形成第二组正反样本）。
 
 ### EXP-003 — 运行时描述文件使用 `bridge-*.json`
 
@@ -1950,13 +1950,13 @@
 
 - 状态：`validated`
 - 日期：2026-09-03
-- 适用范围：v0.4 Overseer 的纯 Core 相邻计数采样、实际产消速率/理论利用率计算，以及单生产单元的首要停机原因分类。速率输入后来已由 EXP-155/157 接入 DSP 运行时；本条仍不声称故障分类器或完整上游诊断已经接线。
+- 适用范围：v0.4 Overseer 的纯 Core 相邻计数采样、实际产消速率/理论利用率计算，以及单生产单元的首要停机原因分类。速率、理论容量和直接 assembler/lab/miner 故障输入后来已由 EXP-155/157–161 接入 DSP 运行时；本条仍不声称递归上游或时间型物流诊断已经完成。
 - 当前结论：实际速率的分母只能是连续流逝的游戏 tick（当前固定 60 tick/s），墙钟中多出的离线/暂停时间单独标为 excluded，不能稀释或伪造吞吐。相同受保护存档跨新 session 可保持连续，但 owned identity 改变、tick/累计计数回退、同 tick 计数前进或相邻采样超过明确上限都必须把窗口标成 discontinuous 并归零本段速率。故障分类只有在 ready 窗口至少覆盖一个完整配方周期后才运行；当前首因优先级为本机矿源耗尽、断网/供电比不足、满输出缓冲、上游矿源耗尽、物流未配置/有源库存但订单无进展，最后才是一般缺料。已有非零实际产量时不把瞬时空输入误报为停机。
 - 直接证据：新增的无游戏 DLL 测试证明 600 tick/20 件产出恒为 120/min，即使墙钟跨 1 小时也只把额外时间计入 `excludedNonGameSeconds`；同档跨 session 保持 ready，而换档、tick 回退、计数回退、601 tick 采样断层和同 tick 计数前进全部失效。独立分类测试覆盖未满周期不报、供电不足、输出满、矿源耗尽、物流未配置、订单停滞、一般缺料及已有产量不误报。Core/Contracts/MCP 总计 135 项通过（101 + 15 + 19），完整 solution 0 warning / 0 error；源码产品版本同时切到 `0.4.0`。
-- 限制或反例：原生实际窗口已经由 EXP-155 固定为 600 tick，理论产率也由 EXP-157 按当前程序集接入；本条原先的“尚待运行时输入”限制因此缩小为缓冲容量、物流路径、矿量和故障分类接线。订单无进展目前只给 `suspected`，不能在没有足够运输时间和源库存证据时升级为 confirmed。分类器当前返回单生产单元的首要原因，不等于已经完成跨实体上游图追踪。
+- 限制或反例：原生实际窗口已由 EXP-155 固定为 600 tick，理论产率由 EXP-157 接入；输出缓冲、矿量、电力和物理相关物流端也已由 EXP-158/159 接入。订单无进展仍不能在没有跨 tick 运输时间和源库存证据时升级为 confirmed。分类器当前只返回直接生产单元的首要原因，不等于已经完成跨生产者递归上游图。
 - 复验触发：接入 DSP production statistics、改变采样频率/持久化格式/窗口长度、引入多星球聚合或上游图、DSP tick rate/配方速度语义变化，以及首次受控实机故障注入。
 - 关联：EXP-030、EXP-062、EXP-127、EXP-142、EXP-144、EXP-153、ROADMAP v0.4、`OverseerCounterWindowAnalyzer`、`ProductionFaultClassifier`。
-- 最近复验：2026-09-03（135 项无游戏 DLL 回归与完整 solution 构建通过）。
+- 最近复验：2026-09-03（直接运行时接线后的 174 项回归、完整构建及同档自然故障复读通过）。
 
 ### EXP-155 — 自动产线实际速率优先复用 DSP 随档持久化的 600-tick 原生环
 
@@ -1990,11 +1990,61 @@
 - 当前结论：无时间戳的 `ProductStat.refProductSpeed` 不能作为可靠输入，也不应为只读查询调用会改写共享缓存的 `ProductionExtraInfoCalculator`。应在 Unity 主线程有界扫描全部当前生产组件，交叉验证 component/entity/power/network/recipe/source/station/planet 身份，再用纯 Core 逐 float 运算顺序复现当前程序集所有 `AddRefProductSpeed` 分支。只有整厂六域全部通过才报告 `theoreticalCoverage=complete` 和版本化来源；断网设备计 0，缺料/堵料/欠供电设备仍保留设计容量。普通矿机 `veinCount=0` 是耗尽后的合法零容量，即使 `veins` 已为空也不能让整份快照失败。利用率只在原生窗口 ready 且容量大于 0 时为 `actual/theoretical`，10 秒离散窗口可短暂超过 1，不钳制也不冒充稳定超产。
 - 直接证据：当前程序集反编译确认装配/矩阵配方、三种 miner、分馏塔、gamma receiver 和 orbital collector 公式，以及分馏 stack 分支会再次比较 `inserterStackOutput` 的当前版本行为。首个部署 Plugin `76DAEAA470554EE3A80A36F23E264672A4C19E720F0C09DFC9FBFA439BBBCB82` 在真实存档安全返回 `BRIDGE_NOT_READY: An active vein miner has an invalid source-node index`；fresh miner 快照随后证明实体 `14/263/796` 均为满电、0 source-node 的耗尽矿机。校验顺序改为先接受 `veinCount==0` 后，完整 solution 再次 0 warning/0 error；普通保存 tick `13831872`、正常关窗、7 个文件零哈希差异部署最终 Plugin `5AC257D5AB8013E7D088A8609D08A9FA7FD83A633D4D2DA2F0F549BA53815DC1`，protected exact-primary 恢复并自动重存 tick `13831903`。同档三厂返回 complete：母星蓝/红/黄矩阵 `20/10/7.5 min⁻¹`；铁矿机 6+8 点、铜 2 点、石 3 点、煤 7 点分别闭合 `420/60/90/210 min⁻¹`，三台耗尽矿机为 0，水/油为 `50/133.15919494628906 min⁻¹`；两座铁炉为 `120 min⁻¹`，塑料/有机晶体/钛晶石为 `20/10/11.25 min⁻¹`；远端未显示 factory 的硅/钛为 `120/60 min⁻¹`。三页共享 snapshot tick `13837732`，错 filter cursor 与 limit 17 分别安全返回 `STALE_CURSOR/INVALID_REQUEST`。源码 MCP `0.4.0.0` 完成 initialize、50-tool list 和同一生产工具 live call；Contracts/Core/MCP `17 + 122 + 21 = 160` 项测试通过。最终审计 tick `13861096+` 为 confirmed peaceful/sandbox disabled/1×、healthy、Journal `49/49` durable、Walk/0、满核心、3/3 施工机 idle、无 blocker/checkpoint且 restart 可用。
 - 限制或反例：当前存档为 assembler、lab、普通矿机、油井和水泵提供了正值实机样本，但没有活动分馏塔、gamma receiver 或 orbital collector；后三支只有当前 IL 与纯 Core 自动测试证据，不能写成 live positive-output 验收。理论值是“已连接设备按当前配置的设计容量”，不是供料可持续性、可用功率或实际峰值；单凭低利用率不能区分缺料、堵塞、物流或矿耗尽。当前只绑定一个 DSP 程序集哈希，版本变化必须重查 float 顺序、组件类别和分馏 stack 分支。
-- 复验触发：DSP 版本/程序集哈希变化、增加生产组件类型或增产等级、首次出现分馏塔/gamma/轨道采集器实机样本、改变理论扫描预算、接入缓冲/物流/矿源故障分类或最终 v0.4 clean 工件安装。
+- 复验触发：DSP 版本/程序集哈希变化、增加生产组件类型或增产等级、首次出现分馏塔/gamma/轨道采集器实机样本、改变理论扫描预算、扩展直接诊断覆盖或最终 v0.4 clean 工件安装。
 - 关联：EXP-030、EXP-085、EXP-112、EXP-154、EXP-155、`docs/research/game-api-overseer.md`、`OverseerTheoreticalProductionCalculator`、`GameStateReader.GetOverseerProductionOnMainThread`。
-- 最近复验：2026-09-03（最终同批 Plugin 零差异部署、exact-primary 恢复、三 factory 理论值/游标边界、160 项测试与完整构建通过）。
+- 最近复验：2026-09-03（直接故障接线仍复用同一理论公式；最终同批 Plugin 零差异部署、exact-primary 恢复、174 项测试与完整构建通过）。
+
+### EXP-158 — 输出堵塞必须复现当前组件允许下一周期的原生缓冲门
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：当前 DSP `0.10.34.28529` / `Assembly-CSharp.dll` SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，assembler、matrix lab 和 miner 的直接输出堵塞诊断。
+- 当前结论：`produced[]`/`productCount` 不能只用“非零”或猜测仓格上限判断堵塞；必须复现当前组件在完成周期时是否允许再放入一批的精确门。冶炼容量为 100，制造配方为 `productCountPerCycle × 10`，其他装配配方为 `× 20`，矩阵站为 `10 × ceil(speedOverride/10000)`，采集器阈值为 50。只有原生 600-tick 窗口 ready、覆盖至少一整个当前周期且实际产量为零时，缓冲达到该门才是 confirmed `output_blocked`。
+- 直接证据：当前程序集 `AssemblerComponent`、`LabComponent` 和 `MinerComponent` 反编译分别显示上述比较；纯 Core calculator 测试覆盖冶炼/制造/其他、矩阵速度向上取整、周期向上取整和非法/溢出。live 同档中铁矿机 `1213/1496` 各为 `50/50`，冶炼炉 `10` 为 `100/100`，均在零实际产量窗口返回 `output_blocked`；其余缺料设备没有被该分支抢占。
+- 限制或反例：多产物设备任一输出满都可能阻止整周期，但 finding 当前只给首个满输出；分馏塔、gamma receiver 和 orbital collector 缓冲门尚未接入，覆盖会显式为 `partial`。程序集变化必须重新反编译，不能沿用这些常数。
+- 复验触发：DSP/程序集变化、生产组件缓冲逻辑变化、新增诊断设备类别、首次受控清空/填满输出试验或最终 v0.4 clean 工件安装。
+- 关联：EXP-056、EXP-154、EXP-157、`ProductionOutputBufferCapacityCalculator`、`GameStateReader.OverseerDiagnostics.cs`。
+- 最近复验：2026-09-03（当前 IL、14 个新增 Core 测试、扩展的契约序列化测试及三个自然满缓冲 live 样本一致）。
+
+### EXP-159 — 物流根因只能沿消费者的真实有向货运拓扑绑定到塔
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：v0.4 直接设备输入从 assembler/lab input sorter 反向追到当前 owned factories 的行星/星际物流站 output slot；不等同于任意全厂依赖发现。
+- 当前结论：同星球或跨星球存在同 item 的物流塔不能证明它供应目标设备。必须从消费者 input sorter 的精确 `pickTarget` 出发，只沿 `ReadObjectConn` 的入边穿过 belt、splitter、piler、spraycoater、inserter、storage/tank，最终命中 station slot 精确绑定的 output belt/entity；此后才按 demand 模式寻找同 item 的 supply 端。中转仓是货运图节点，不是追踪终点。
+- 直接证据：首版 live 在 assembler `530` 缺 item `1004` 时只返回一般缺料；逐段读回证明真实链为 `530 <- sorter 532 <- storage 259 <- sorter 1784 <- belts <- station 1657 output belt 1783`。加入 storage/tank/inserter 有向中继后，同一 finding 只在该物理链成立时附加 demand `104:1657`、supply `102:44`、source inventory `28` 和 carrier count `2`。没有绑定到其他仅同 item 的站。
+- 限制或反例：当前只从输入 sorter 起步，不覆盖无 sorter 直连或尚未支持的生产类型；storage/tank 的多入边会保留所有真实上游候选，但只按目标 item 与 sorter filter 绑定塔输出。物流进展仍需跨 tick 证据，单次拓扑命中不能证明运输停滞。
+- 复验触发：DSP 连接槽语义变化、新增 cargo transit 类型、station belt selector 变化、多塔同 item 路由、递归上游图或 temporal logistics 窗口接入。
+- 关联：EXP-117、EXP-123、EXP-144、IFX-019、`TryFindDirectDiagnosticDemandBindings`。
+- 最近复验：2026-09-03（中转仓反例修复后，同一硅物流链完成实体级正向复读和 finding 路径闭合）。
+
+### EXP-160 — 活跃周期和物品级正产量必须阻止瞬时空输入误报
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：v0.4 使用 DSP 原生 600-tick item 产量与 assembler/lab `replicating`、`served[]` 的直接停机诊断。
+- 当前结论：assembler/lab 在启动周期时先消费输入，所以 `replicating=true` 期间 `served < requireCounts` 只表示下一批尚未备齐，不表示当前周期已停产。先让供电/矿耗尽等更窄证据生效，再在 active cycle 时停止缺料判断；此外，只要同一 planet/item 的聚合实际产量为正，就不对同类某个瞬时空闲设备输出停机 finding。
+- 直接证据：纯 Core 回归明确覆盖 active cycle + 空 `served` 不报 shortage；live item `6002` 实际为 `12 min⁻¹`、理论 `10 min⁻¹` 时 finding 为 0，而零产量的 assembler `530` 和 lab `774` 才分别返回缺 item `1004/1112`。这避免把批次边界和并行设备错当成全线停机。
+- 限制或反例：聚合保护会暂时隐藏“部分并行设备停机但其他设备仍产出”，这是当前 direct-stop 视图的保守选择；后续若增加降速/利用率诊断，需要单独定义持续窗口，不能移除本保护后直接复用停机标签。
+- 复验触发：引入部分产能降级诊断、改变 item 聚合范围、DSP 输入消费时点变化、增加 per-device production counter 或最终 v0.4 clean 工件安装。
+- 关联：EXP-154、EXP-155、EXP-157、`ProductionFaultClassifier`、`ApplyOverseerDirectDiagnostics`。
+- 最近复验：2026-09-03（Core 回归与红矩阵正产量/黄矩阵直接缺料 live 对照通过）。
+
+### EXP-161 — 故障 finding 是 captured tick 的快照，不是可跨 tick 固化的根因
+
+- 状态：`observed`
+- 日期：2026-09-03
+- 适用范围：v0.4 当前单次生产诊断中的动态 power serve ratio、设备缓冲和物料状态。
+- 当前结论：finding 必须与响应的 `capturedAtGameTick` 一起消费。设备供电、输入和工作态可能在相邻调用间自然变化；旧 finding 不能脱离 tick 缓存后继续驱动写操作，修复前要 fresh inspect。单次物流快照同理不能声明“有订单但无进展”。
+- 直接证据：同一制造台 `715` 在 network `2` 的 serve ratio 约 `0.94038` 时返回 `insufficient_power`；电网随后自然恢复后，fresh 调用不再保留断电标签，而按当时现场返回缺 item `1109` 的 `material_shortage`。分类器只使用同一主线程捕获中的 component/network/buffer 值，物流 progress 明确保持 unknown。
+- 限制或反例：目前只有一个自然供电波动正反样本，尚未以受控断电和恢复重复多轮；因此保持 `observed`。它不意味着历史 finding 无价值，只意味着写入前必须刷新并重新满足同一证据门。
+- 复验触发：受控断电/复电试验、跨 tick 诊断持久化、temporal logistics 窗口、自动修复客户端或最终 v0.4 clean 工件安装。
+- 关联：EXP-007、EXP-142、EXP-154、ROADMAP v0.4 受控故障门、`ProductionFaultClassifier`。
+- 最近复验：2026-09-03（一个自然 network ratio 波动样本，保持 observed）。
 
 ## 修订记录
+
+- 2026-09-03：新增 EXP-158–161 与 IFX-019，并复验 EXP-002/030/069/072/142/144/154–157。第四个 v0.4 切片把首因分类接入真实 assembler/lab/miner 缓冲、电网、矿源和有向物流拓扑；首轮 live 在中转仓 `259` 停止，补全 storage/tank/inserter 入边后才精确命中母星 demand `1657` 与远端 supply `44`。三轮都先普通保存、正常关闭、七文件零差异部署，再只消费 exact-primary ticket 恢复同一 owned world；最终保存/自动重存为 tick `13943810/13943842`，Plugin hash `D40D6BEA4E76697EB14C5F1DE3B0CC61532E4BF634125E1A9488D5024FDF59E1`，最终构建后仍与部署文件一致。自然现场闭合 `output_blocked`、`material_shortage`、瞬时 `insufficient_power` 和无 item 身份的 `vein_exhausted`，但没有把单快照有载具路线误报为物流停滞。最终三页共享 tick `13986388` 并安全拒绝错绑 cursor，源码 MCP `0.4.0.0` 完成 50-tool initialize/list/live call；审计 tick `13990990+` 为 peaceful/non-sandbox/1×、healthy、Journal `49/49` durable、Walk/0、满核心、3/3 施工机 idle、0 prebuild、无 blocker/checkpoint。完整 solution 0 warning/0 error，174 项测试；递归上游、跨 tick 运输进展和受控故障/修复仍未完成，本批不打 tag 或发布。
 
 - 2026-09-03：新增 EXP-157/IFX-018，并按新证据缩小 EXP-154/155 的过期限制。第三个 v0.4 切片逐 IL 重现理论产出且不触碰 UI `refProductSpeed` 缓存；首轮 live 由三台合法耗尽矿机暴露校验顺序缺陷，修正为 `veinCount=0 -> 0 capacity` 后重新完整构建、正常保存、关窗、零哈希差异部署和 exact-primary 恢复。最终实机闭合母星矩阵、矿点、水/油、冶炼/化工/制造以及远端硅钛理论值，三厂分页和边界拒绝继续成立；共 160 项测试。故障分类、上游图和受控故障仍未完成，本次没有打 tag 或发布。
 

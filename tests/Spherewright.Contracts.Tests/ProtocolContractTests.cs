@@ -253,6 +253,23 @@ public sealed class ProtocolContractTests
                             TheoreticalRateSource = OverseerTheoreticalRateSources.CurrentRuntimeComponentFormulaV1,
                             RateSource = OverseerRateSources.NativeFactoryStatisticsLevel0,
                             TheoreticalCoverage = OverseerTheoreticalCoverageStates.Complete,
+                            DirectDiagnosticCoverage = OverseerDirectDiagnosticCoverageStates.Complete,
+                            DirectProducerCount = 1,
+                            DirectDiagnosedProducerCount = 1,
+                            FindingCount = 1,
+                            Findings = new List<OverseerFindingSnapshot>
+                            {
+                                new OverseerFindingSnapshot
+                                {
+                                    Kind = OverseerFindingKinds.MaterialShortage,
+                                    Confidence = OverseerFindingConfidences.Confirmed,
+                                    Severity = OverseerFindingSeverities.Stopped,
+                                    PlanetId = 104,
+                                    ObjectId = 774,
+                                    ItemId = 6003,
+                                    Summary = "Missing diamond",
+                                },
+                            },
                         },
                     },
                 },
@@ -284,6 +301,19 @@ public sealed class ProtocolContractTests
                 .GetProperty("production")[0]
                 .GetProperty("utilization")
                 .GetDouble());
+        Assert.Equal(
+            OverseerFindingKinds.MaterialShortage,
+            parsed.RootElement.GetProperty("planets")[0]
+                .GetProperty("production")[0]
+                .GetProperty("findings")[0]
+                .GetProperty("kind")
+                .GetString());
+        Assert.Equal(
+            OverseerDirectDiagnosticCoverageStates.Complete,
+            parsed.RootElement.GetProperty("planets")[0]
+                .GetProperty("production")[0]
+                .GetProperty("directDiagnosticCoverage")
+                .GetString());
         Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("protectedSaveKey", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("authToken", json, StringComparison.OrdinalIgnoreCase);

@@ -1,11 +1,11 @@
 # 本局从落地到当前：决策、科技与首次产出总时间线
 
 更新时间：2026-09-03（Asia/Singapore）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界仍在 planet `104` 健康运行。制造台 `898` 已在完全空载后从 PLS 切换为 recipe `95`，2 座 PLS、80 钛合金和 40 粒子容器经独立守恒输入完整转为仓 `900` 的 2 座星际物流运输站；journal sequence `48` durable 记录首座自动 ILS。普通保存到 tick `11926992`，审计 revision `576`；双运输船仍在仓 `893`。write health healthy、三张电网满供电、journal `48/48` durable、无 flight checkpoint。下一步正常施工两座 ILS，完成供电、远程供需槽、装船和真实跨星钛/硅运输。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界仍在 planet `104` 健康运行。首座 ILS `1657` 已由两座新电塔接入 network `1`，充电上限从原生默认 60 MW 降到本机型最低 30 MW；槽 `0/1` 分别配置钛石/硅石、各 `100`、远程需求，并守恒装入 1 艘运输船。严格十写审计后已普通保存到 tick `11974991`，fresh revision `594`、Walk/0、满核心、journal `48/48` durable、无 flight checkpoint；站能量随后约 `1.463 GJ`，另一座 ILS 和另一艘船仍在仓 `900/893`。下一步取出远端站/船，在实际起飞前创建独立飞行检查点并前往 planet `102`。
 
 ## 结论与证据边界
 
-- 记录仍在。本局受保护日记共有 `48` 条，已经持久化到 sequence `48`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `139` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护日记共有 `48` 条，已经持久化到 sequence `48`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `140` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -66,6 +66,7 @@
 | save `11863820` | 2026-09-03 | 从仍自动补货的混合仓 `26` 精确取得 200 电路板并送入仓 `849`；处理器制造台 `853(recipe 51)` 满电消耗 200 电路板和 200 微晶元件，输出仓 `854` 达到精确 100 个处理器，另余 20 微晶元件。40 粒子容器已被 PLS 制造台 `898` 预取；运输船制造台 `891` 启用 recipe `96`，20 钛合金已预取。journal 没有新增，因为处理器首次产线事件早已由 sequence `29` 记录。十写审计 revision `556`、10/10 动作成功、三网满供电、journal `46/46` durable、无 checkpoint。 | R/M/D |
 | save `11896243` | 2026-09-03 | 80 个处理器经玩家守恒进入 PLS 线；制造台 `898(recipe 93)` 在渐进预取完整两批后耗尽 80 钢/80 钛/80 处理器/40 粒子容器，仓 `900` 在保留 80 钛合金外新增 2 座 PLS。余下 20 处理器与 4 加力推进器又经守恒进入已缓存 20 钛合金的制造台 `891(recipe 96)`，仓 `893` 得到 2 艘星际物流运输船；sequence `47` 在 tick `11890591` durable 记录首产。主动七写审计 revision `563`、7/7 动作成功、三网满供电、研究队列空、无 checkpoint。 | J/R/M/D |
 | save `11926992` | 2026-09-03 | 空载制造台 `898` 切为 recipe `95`，sorter `902/903` 改为 PLS/钛合金、粒子容器 sorter 保持；2 座 PLS、80 合金、40 粒子容器经六次守恒 transfer 全部进入并自动耗尽，输出仓 `900` 得到精确 2 座 ILS。sequence `48` 在 tick `11921722` durable 记录首次产线 ILS。第十写保存后的审计 revision `576`、10/10 动作成功且无 reconciliation，玩家满电 Walk/0、三网满供电、研究队列空、无 checkpoint；双船仍在仓 `893`。 | J/R/M/D |
+| save `11974991` | 2026-09-03 | 一座 ILS 从仓 `900` 守恒取出并在高净空站址施工为 `1657`；两座新电塔把它接入 network `1`，60 MW 默认充电降到 ILS 原生最低 30 MW。钛石/硅石两槽各配 `100` 远程需求，仓 `893` 的一艘船经玩家守恒装入 fleet。严格十写审计 revision `593`，10/10 terminal/completed/succeeded；充能期 network `1` 仅约 20.37% 供电。随后正常保存，fresh revision `594`、healthy、journal `48/48` durable、无 checkpoint，站能量继续增至约 `1.463 GJ`。 | R/M/D |
 
 ## 科技树与升级
 
@@ -343,9 +344,10 @@
 | EXP-137 | observed | 按数量取仓库物品不保证立刻释放物品格 |
 | EXP-138 | validated | 空载物流载具单元可在科技解锁后重配为星际运输船线 |
 | EXP-139 | validated | 星际物流站升级线必须把站体、合金和粒子容器作为独立守恒输入 |
+| EXP-140 | observed | ILS 接入既有小电网后应立即降到本机型原生最低充电档 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前正在同一受保护 owned world 的 planet `104` 运行；2 座 ILS 产品边界已普通保存到 tick `11926992`，审计 revision `576`，write health `healthy`、无 flight checkpoint、journal `48/48` durable 且无 pending/error。后续继续使用同一世界，不开新档。
-- 当前主线：两座 ILS 位于仓 `900`、两艘星际物流运输船位于仓 `893`。下一步先把一座 ILS 在母星 planet `104` 正常施工并完成供电/远程需求槽/装船，再在飞行前单独保存 checkpoint，携另一座 ILS 与另一艘船前往 planet `102`，接入已持续生产的钛/硅前哨并配置远程供应；随后以真实 working/order、源减目标增和往返守恒验收跨星运输。任何飞行失败只重载该检查点继续。
+- DSP 当前正在同一受保护 owned world 的 planet `104` 运行；首座 ILS 施工/接电/需求配置/装船已在 tick `11969310+`、revision `593` 通过十写审计，并普通保存到 tick `11974991`。fresh revision `594`、write health `healthy`、无 flight checkpoint、journal `48/48` durable 且无 pending/error。后续继续使用同一世界，不开新档。
+- 当前主线：母星 ILS `1657` 已接入 network `1`、限充 30 MW、远程需求钛/硅各 100、拥有 1 艘 idle 船；另一座 ILS 与另一艘船仍在仓 `900/893`。下一步取出远端站/船，为前往 planet `102` 的航行单独创建 checkpoint，接入已持续生产的钛/硅前哨并配置远程供应；随后以真实 working/order、源减目标增和往返守恒验收跨星运输。任何飞行失败只重载该 checkpoint 继续。
 - 粒子容器、物流运输机、行星物流站、真实行星内物流、远端钛/硅矿以及黄糖本地双原料供料均已越过结构化验收与普通保存门槛；v0.3 仍需双星球 ILS、运输船真实运送钛/硅、黄糖上游持续性、重启恢复和干净安装包握手全部通过，才创建 tag 和 GitHub Release。

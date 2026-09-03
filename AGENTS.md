@@ -186,9 +186,9 @@ dotnet build Spherewright.sln --no-restore
 - 不使用 `git reset --hard`、`git clean -fd`、破坏性 checkout、force push 或覆盖用户改动。
 - 不提交游戏 DLL、存档、BepInEx 日志、runtime descriptor、token、个人路径、构建缓存或可重建 artifact。
 - 发行使用标准 MIT License；README、包元数据和 `LICENSE` 保持一致。
-- 每个 `0.x.0` 全部验收通过、工作区干净且最终提交已推送 `main` 后，创建 annotated tag `v0.x.0`，再从该 tag 创建同版本 GitHub Release。
+- 每个 `0.x.0` 全部验收通过、工作区干净且最终提交已推送 `main` 后，先向用户提交候选 commit、测试/实机证据、工件哈希和 Release notes 审核；只有用户明确通过后才创建 annotated tag `v0.x.0`，再从该 tag 创建同版本 GitHub Release。
 - Release 至少包含 commit、支持版本、工具/协议变化、安装/升级、已知限制、测试结果、脱敏实机证据、zip、manifest 和 SHA-256。
-- 不提前打 tag；Thunderstore 或其他注册表发布需要用户另行明确授权。
+- 不提前打 tag，不把先前版本的发布授权外推到下一版本；Thunderstore 或其他注册表发布需要用户另行明确授权。
 
 ## 12. 最终汇报
 

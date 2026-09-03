@@ -26,7 +26,7 @@
 
 | 公开存档 ID | 创建来源 | 日记 | 状态 |
 |---|---|---|---|
-| `owned-world-001` | Spherewright 在本机从普通和平、1×、非沙盒新世界创建 | [存档日记 001](../gameplay-timeline.md) | active；当前 v0.3 实机验收世界 |
+| `owned-world-001` | Spherewright 在本机从普通和平、1×、非沙盒新世界创建 | [存档日记 001](../gameplay-timeline.md) | active；v0.3 发布验收世界及当前 v0.4 诊断验收世界 |
 
 ## 新档规则
 

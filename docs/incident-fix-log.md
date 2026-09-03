@@ -175,7 +175,8 @@
   校验 manifest/MCP 版本，live smoke 新增 `ExpectedPluginVersion` 严格断言，并自动优先使用
   仓库 portable SDK。
 - 验证：119 项测试通过、完整 solution 0 warning / 0 error；Mono.Cecil 读回 Plugin assembly
-  `0.3.0.0` 与 `BepInPlugin(..., "0.3.0")`。重新干净安装后 live Bridge 报 `0.3.0`，错误
-  token 被拒绝；安装版 MCP `0.3.0.0` 经 stdio 成功调用同一 live Bridge，受保护同档恢复
-  并自动保存到 tick `13494092`。
+  `0.3.0.0` 与 `BepInPlugin(..., "0.3.0")`。最终 clean commit `a52ff44` 生成的 ZIP 本体经
+  重新干净安装后，228 个运行文件与 ZIP payload 零差异；live Bridge 报 `0.3.0`，错误 token
+  被拒绝，安装版 MCP `0.3.0.0` 经 stdio 成功调用同一 Bridge，受保护同档恢复并自动保存到
+  tick `13516415`。线上 `v0.3.0` Release 的 ZIP digest 与本地最终工件一致。
 - 关联：EXP-001、EXP-030、EXP-152；状态：`fixed`。

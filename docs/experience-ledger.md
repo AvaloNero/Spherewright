@@ -1932,9 +1932,23 @@
 - 限制或反例：live 版本一致只证明装载身份，不替代 manifest 文件哈希、自动测试、游戏版本、存档恢复和功能回归；preview 包可用于验证修复，但 `sourceDirty=true` 不能作为最终 Release 工件。未来预发布后缀必须保留 manifest/product exact 比较，同时只用三段 numeric core 与 CLR assembly version 比较。
 - 复验触发：每次版本号变化、package/release 脚本变化、BepInEx metadata 或握手字段变化、安装目录迁移、最终 tag/Release、任何报告版本不一致。
 - 关联：EXP-001、EXP-030、IFX-016、`scripts/package-release.ps1`、`scripts/test-release-package.ps1`、`scripts/smoke-test.ps1`。
-- 最近复验：2026-09-03（修复候选包完成干净安装、实时 Plugin/MCP 双版本握手与同档 protected resume；最终 Release 仍须由 clean Git commit 重新生成，不能复用 dirty preview ZIP）。
+- 最近复验：2026-09-03（最终 clean commit `a52ff44` 工件完成零差异安装、实时 Plugin/MCP 双版本握手、同档 protected resume，并以匹配 SHA-256 发布为 `v0.3.0`）。
+
+### EXP-153 — 候选包实机通过不能替代最终 clean 工件本体复验
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：同一 Spherewright 版本在 preview/dirty 工作区与最终 clean commit 间的重新构建、发行元数据、Windows 安装和 GitHub Release 上传；不假定不同源码身份的构建二进制相同。
+- 当前结论：即使候选包已经通过实机，最终 clean commit 重打的包也必须视为新的待测工件。先比较候选与最终 payload；只要任一运行文件不同，就必须正常保存并关闭游戏、安装最终 ZIP 本体、逐文件核对安装目录，再重跑 protected resume、错误 token、live Plugin 和安装版 MCP。不能把“同版本号”或“源码看起来只改了元数据”当作二进制等价证明。
+- 直接证据：preview 与最终 clean 包比较时，4 个 Plugin 文件中 3 个、224 个 MCP 文件中 4 个不同，因此没有沿用 preview 的实机结论。最终包从 commit `a52ff440b47830f2f3a06a5ae97c7ff11bd15833`、`sourceDirty=false` 生成；重新干净安装后 228 个运行文件与 ZIP payload 的 mismatch 为 0。受保护恢复同一 planet `104` 世界并自动保存到 tick `13516415`；live smoke 通过错误 token 拒绝、119 项测试与 Plugin `0.3.0` 断言，安装版 MCP `0.3.0.0` 成功调用该 Bridge。GitHub Release `v0.3.0` 的 ZIP digest 与本地 SHA-256 `705081710b7061c6a00c4c8836a7d2869b13bd8b8fb6f42bfb24b7f0d62783c1` 一致。
+- 限制或反例：本次差异包含 commit/sourceDirty 等构建身份变化，不证明每次仅改文档都会改变所有二进制；它证明的是不能在比较前假定相同。若未来提供可复现构建证明，仍须验证 Release 下载资产与已测工件哈希一致。
+- 复验触发：每次最终 clean rebuild、源码 commit 或 dirty 状态变化、重新打包、重新上传资产、安装脚本变化或 Release digest 不一致。
+- 关联：EXP-001、EXP-030、EXP-104、EXP-152、IFX-016、`scripts/package-release.ps1`、`scripts/test-release-package.ps1`、`scripts/smoke-test.ps1`。
+- 最近复验：2026-09-03（最终 `v0.3.0` 工件完成 clean install、同档恢复、live Plugin/MCP 调用与线上 digest 核对）。
 
 ## 修订记录
+
+- 2026-09-03：新增 EXP-153，并完成 v0.3 最终发布复核。最终工件从 clean commit `a52ff440b47830f2f3a06a5ae97c7ff11bd15833` 生成，manifest 为 232 个文件、包内含 manifest 共 233 个文件，工具面 48，SHA-256 为 `705081710b7061c6a00c4c8836a7d2869b13bd8b8fb6f42bfb24b7f0d62783c1`。由于 preview 与最终 payload 实际出现 Plugin `3/4`、MCP `4/224` 文件差异，没有复用候选包的实机结论；普通保存到 tick `13516383` 并正常关闭后，安装最终 ZIP 本体，228 个运行文件逐一核对 mismatch `0`。受保护恢复同一 planet `104` 世界并自动重存 tick `13516415`，119 项测试、错误 token 拒绝、live Plugin `0.3.0` 和安装版 MCP `0.3.0.0` 调用均通过。最终审计 tick `13520330` 为 peaceful/non-sandbox/1×、healthy、0 blocker/checkpoint、0 prebuild、Journal `49/49` durable、Walk/0、核心满电、3/3 drone idle。annotated tag `v0.3.0` 精确指向 `a52ff44`，GitHub Release 已发布且线上 ZIP digest 与本地一致。v0.3 至此关闭，当前目标切换为 v0.4 Overseer。
 
 - 2026-09-03：新增 EXP-152 并记录 IFX-016。首次 clean `0.3.0` 工件的 233 文件哈希、MCP initialize 和 48 工具均通过，但实机 Bridge 揭示 Plugin 仍报告 `0.1.0`，主动阻止 tag。版本来源统一后新增第 119 项测试，Core/Contracts/MCP 为 `86 + 14 + 19` 全通过，完整 solution 0 warning / 0 error，Mono.Cecil 证明 BepInEx metadata 为 `0.3.0`。主档先普通保存到 tick `13494061`，游戏正常关闭；修复候选包将旧 Plugin 和 MCP 目录分别整体移入可恢复备份后做第二次干净安装。新进程 live Bridge 在主菜单即报告 `0.3.0`；prototype preload 完成前的 resume prepare 以 `BRIDGE_NOT_READY` 无副作用拒绝，等待 ready 后只消费同一 protected ticket，恢复 planet `104`、和平/非沙盒/1×并自动重存到 tick `13494092`。随后 wrong-token 拒绝、正确 Bridge 握手、安装版 MCP `0.3.0.0 -> spherewright_get_status -> Plugin 0.3.0` 全部通过。fresh 审计 tick `13504262` 为 Walk/0、核心 `400/400 MJ`、3/3 drone idle、0 prebuild、Journal `49/49` durable、玩家不持有水/油/有机晶体/钛晶石/结构矩阵；有机晶体和钛晶石设备仍满电运行，sorter `2254` 携精炼油、`977` 携结构矩阵。黄糖 lab 此刻因本批金刚石正常耗尽而停机，不把最后在途矩阵冒充无限供料；此前跨窗持续生产证据仍成立。最终 tag 前必须从 clean Git commit 重打非 dirty 工件。
 

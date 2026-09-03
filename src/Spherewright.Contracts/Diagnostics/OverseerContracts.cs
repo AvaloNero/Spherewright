@@ -16,6 +16,19 @@ public static class OverseerWindowResetReasons
     public const string CounterRegressed = "counter_regressed";
     public const string CounterAdvancedWithoutGameTime = "counter_advanced_without_game_time";
     public const string SampleGapExceeded = "sample_gap_exceeded";
+    public const string NativeWindowNotFull = "native_window_not_full";
+}
+
+public static class OverseerRateSources
+{
+    public const string NativeFactoryStatisticsLevel0 = "native_factory_statistics_level_0";
+}
+
+public static class OverseerTheoreticalCoverageStates
+{
+    public const string Unavailable = "unavailable";
+    public const string Partial = "partial";
+    public const string Complete = "complete";
 }
 
 public static class OverseerFindingKinds
@@ -79,6 +92,61 @@ public sealed class ProductionRateSnapshot
     public double? TheoreticalProductionPerMinute { get; set; }
 
     public double? Utilization { get; set; }
+
+    public string RateSource { get; set; } = string.Empty;
+
+    public string TheoreticalCoverage { get; set; } = OverseerTheoreticalCoverageStates.Unavailable;
+}
+
+public sealed class GetOverseerProductionRequest
+{
+    public List<int> ItemIds { get; set; } = new List<int>();
+
+    public int Limit { get; set; }
+
+    public string? Cursor { get; set; }
+}
+
+public sealed class OverseerProductionSnapshot
+{
+    public string SessionId { get; set; } = string.Empty;
+
+    public long CapturedAtGameTick { get; set; }
+
+    public string SnapshotId { get; set; } = string.Empty;
+
+    public DateTimeOffset SnapshotExpiresAtUtc { get; set; }
+
+    public int TotalFactoryCount { get; set; }
+
+    public int ReturnedFactoryCount { get; set; }
+
+    public List<int> RequestedItemIds { get; set; } = new List<int>();
+
+    public string RateSource { get; set; } = OverseerRateSources.NativeFactoryStatisticsLevel0;
+
+    public OverseerWindowSnapshot Window { get; set; } = new OverseerWindowSnapshot();
+
+    public List<OverseerPlanetProductionSnapshot> Planets { get; set; } = new List<OverseerPlanetProductionSnapshot>();
+
+    public string? NextCursor { get; set; }
+}
+
+public sealed class OverseerPlanetProductionSnapshot
+{
+    public int FactoryIndex { get; set; }
+
+    public int PlanetId { get; set; }
+
+    public string PlanetName { get; set; } = string.Empty;
+
+    public bool IsLocalPlanet { get; set; }
+
+    public bool FactoryDisplayLoaded { get; set; }
+
+    public long CapturedAtGameTick { get; set; }
+
+    public List<ProductionRateSnapshot> Production { get; set; } = new List<ProductionRateSnapshot>();
 }
 
 public sealed class OverseerFindingSnapshot

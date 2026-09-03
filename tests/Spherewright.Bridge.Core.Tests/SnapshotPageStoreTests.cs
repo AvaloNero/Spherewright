@@ -13,12 +13,14 @@ public sealed class SnapshotPageStoreTests
 
         Assert.True(store.TryCreate("session-a", 1001, "filter-a", new[] { 1, 2, 3 }, 2, out var first));
         Assert.Equal(new[] { 1, 2 }, first!.Items);
+        Assert.Equal(3, first.TotalItemCount);
         Assert.NotNull(first.NextCursor);
 
         Assert.Equal(
             SnapshotCursorStatus.Success,
             store.TryGetPage(first.NextCursor, "session-a", 1001, "filter-a", 2, out var second));
         Assert.Equal(new[] { 3 }, second!.Items);
+        Assert.Equal(3, second.TotalItemCount);
         Assert.Null(second.NextCursor);
 
         Assert.Equal(

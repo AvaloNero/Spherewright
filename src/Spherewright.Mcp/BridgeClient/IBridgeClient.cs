@@ -1,5 +1,6 @@
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Celestial;
+using Spherewright.Contracts.Diagnostics;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Journals;
 using Spherewright.Contracts.Players;
@@ -64,6 +65,11 @@ public interface IBridgeClient
     Task<BridgeCallResult<PowerSummarySnapshot>> GetPowerSummaryAsync(
         string sessionId,
         LocalPlanetRequest request,
+        CancellationToken cancellationToken);
+
+    Task<BridgeCallResult<OverseerProductionSnapshot>> GetOverseerProductionAsync(
+        string sessionId,
+        GetOverseerProductionRequest request,
         CancellationToken cancellationToken);
 
     Task<BridgeCallResult<ActionResultSnapshot>> GetActionResultAsync(

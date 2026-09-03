@@ -1,10 +1,12 @@
 using System.Security.Cryptography;
 using System.Text;
+using Spherewright.Bridge.Core.Diagnostics;
 using Spherewright.Bridge.Core.Logistics;
 using Spherewright.Bridge.Core.Progression;
 using Spherewright.Bridge.Core.Safety;
 using Spherewright.Bridge.Core.Snapshots;
 using Spherewright.Contracts.Celestial;
+using Spherewright.Contracts.Diagnostics;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Logistics;
@@ -20,6 +22,10 @@ internal sealed class GameStateReader
 {
     private const int DefaultLimit = 50;
     private const int MaximumLimit = 100;
+    private const int DefaultOverseerPlanetLimit = 8;
+    private const int MaximumOverseerPlanetLimit = 16;
+    private const int MaximumOverseerItemCount = 64;
+    private const int OverseerSnapshotScopeId = int.MaxValue;
     private readonly GameSessionTracker _sessions;
     private readonly SnapshotPageStore<ResourceNodeSnapshot> _resourceSnapshots =
         new SnapshotPageStore<ResourceNodeSnapshot>(TimeSpan.FromSeconds(60), 16);
@@ -27,6 +33,8 @@ internal sealed class GameStateReader
         new SnapshotPageStore<FactoryEntitySnapshot>(TimeSpan.FromSeconds(60), 16);
     private readonly SnapshotPageStore<AssemblerSnapshot> _assemblerSnapshots =
         new SnapshotPageStore<AssemblerSnapshot>(TimeSpan.FromSeconds(60), 16);
+    private readonly SnapshotPageStore<OverseerPlanetProductionSnapshot> _overseerProductionSnapshots =
+        new SnapshotPageStore<OverseerPlanetProductionSnapshot>(TimeSpan.FromSeconds(60), 8);
 
     public GameStateReader(GameSessionTracker sessions)
     {
@@ -663,6 +671,212 @@ internal sealed class GameStateReader
         }
 
         return GameCallResult<PowerSummarySnapshot>.Succeeded(result);
+    }
+
+    public GameCallResult<OverseerProductionSnapshot> GetOverseerProductionOnMainThread(
+        string? requestedSessionId,
+        GetOverseerProductionRequest request)
+    {
+        var accessError = ValidateOwnedGameDataOnMainThread(requestedSessionId, out var gameData);
+        if (accessError is not null)
+        {
+            return GameCallResult<OverseerProductionSnapshot>.Failed(accessError);
+        }
+
+        var limit = request.Limit == 0 ? DefaultOverseerPlanetLimit : request.Limit;
+        if (limit < 1 || limit > MaximumOverseerPlanetLimit)
+        {
+            return GameCallResult<OverseerProductionSnapshot>.Failed(InvalidRequest(
+                $"Overseer planet page limit must be between 1 and {MaximumOverseerPlanetLimit}.",
+                "Use a bounded planet page limit and retry."));
+        }
+
+        var suppliedItemIds = request.ItemIds ?? new List<int>();
+        if (suppliedItemIds.Count < 1 || suppliedItemIds.Count > MaximumOverseerItemCount)
+        {
+            return GameCallResult<OverseerProductionSnapshot>.Failed(InvalidRequest(
+                $"Overseer production requires between 1 and {MaximumOverseerItemCount} item IDs.",
+                "Provide a bounded set of exact item IDs from the recipe catalog."));
+        }
+
+        var itemIds = suppliedItemIds.OrderBy(itemId => itemId).ToArray();
+        if (itemIds.Distinct().Count() != itemIds.Length
+            || itemIds.Any(itemId => itemId <= 0 || LDB.items.Select(itemId) is null))
+        {
+            return GameCallResult<OverseerProductionSnapshot>.Failed(InvalidRequest(
+                "Overseer production item IDs must be unique positive IDs present in the current runtime catalog.",
+                "Refresh the recipe catalog and retry with unique current item IDs."));
+        }
+
+        var filterHash = ComputeFilterHash(
+            $"overseer-production|items={string.Join(",", itemIds)}|limit={limit}");
+        SnapshotPage<OverseerPlanetProductionSnapshot>? page;
+        if (!string.IsNullOrWhiteSpace(request.Cursor))
+        {
+            var status = _overseerProductionSnapshots.TryGetPage(
+                request.Cursor,
+                _sessions.SessionId!,
+                OverseerSnapshotScopeId,
+                filterHash,
+                limit,
+                out page);
+            if (status != SnapshotCursorStatus.Success || page is null)
+            {
+                return GameCallResult<OverseerProductionSnapshot>.Failed(StaleCursor(
+                    "The Overseer cursor is unknown, expired, or bound to a different session, item filter, or page size."));
+            }
+        }
+        else
+        {
+            var captureError = TryCaptureOverseerProduction(gameData!, itemIds, out var planets);
+            if (captureError is not null)
+            {
+                return GameCallResult<OverseerProductionSnapshot>.Failed(captureError);
+            }
+
+            if (!_overseerProductionSnapshots.TryCreate(
+                    _sessions.SessionId!,
+                    OverseerSnapshotScopeId,
+                    filterHash,
+                    planets,
+                    limit,
+                    out page)
+                || page is null)
+            {
+                return GameCallResult<OverseerProductionSnapshot>.Failed(
+                    SnapshotCapacityExceeded("Overseer production"));
+            }
+        }
+
+        var capturedAtGameTick = page.Items.Count > 0
+            ? page.Items[0].CapturedAtGameTick
+            : GameMain.gameTick;
+        var nativeWindow = NativeProductionRateCalculator.Calculate(capturedAtGameTick, 0, 0).Window;
+        return GameCallResult<OverseerProductionSnapshot>.Succeeded(new OverseerProductionSnapshot
+        {
+            SessionId = _sessions.SessionId!,
+            CapturedAtGameTick = capturedAtGameTick,
+            SnapshotId = page.SnapshotId,
+            SnapshotExpiresAtUtc = page.ExpiresAtUtc,
+            TotalFactoryCount = page.TotalItemCount,
+            ReturnedFactoryCount = page.Items.Count,
+            RequestedItemIds = itemIds.ToList(),
+            RateSource = OverseerRateSources.NativeFactoryStatisticsLevel0,
+            Window = nativeWindow,
+            Planets = page.Items.ToList(),
+            NextCursor = page.NextCursor,
+        });
+    }
+
+    private static BridgeError? TryCaptureOverseerProduction(
+        GameData gameData,
+        IReadOnlyList<int> itemIds,
+        out List<OverseerPlanetProductionSnapshot> planets)
+    {
+        planets = new List<OverseerPlanetProductionSnapshot>();
+        var factories = gameData.factories;
+        var production = gameData.statistics?.production;
+        var factoryStats = production?.factoryStatPool;
+        if (factories is null
+            || factoryStats is null
+            || gameData.factoryCount < 1
+            || gameData.factoryCount > factories.Length
+            || gameData.factoryCount > factoryStats.Length)
+        {
+            return NotReady("The owned world's factory or production-statistics index is not ready.");
+        }
+
+        var capturedAtGameTick = GameMain.gameTick;
+        var localPlanetId = gameData.localPlanet?.id ?? 0;
+        for (var factoryIndex = 0; factoryIndex < gameData.factoryCount; factoryIndex++)
+        {
+            var factory = factories[factoryIndex];
+            var factoryStat = factoryStats[factoryIndex];
+            var planet = factory?.planet;
+            if (factory is null
+                || factoryStat is null
+                || planet is null
+                || factory.index != factoryIndex
+                || planet.factoryIndex != factoryIndex
+                || !ReferenceEquals(planet.factory, factory)
+                || factory.planetId <= 0
+                || factory.planetId != planet.id
+                || factoryStat.productIndices is null
+                || factoryStat.productPool is null)
+            {
+                planets.Clear();
+                return NotReady("An owned factory or its production-statistics identity is inconsistent.");
+            }
+
+            var snapshot = new OverseerPlanetProductionSnapshot
+            {
+                FactoryIndex = factoryIndex,
+                PlanetId = factory.planetId,
+                PlanetName = planet.displayName,
+                IsLocalPlanet = factory.planetId == localPlanetId,
+                FactoryDisplayLoaded = planet.factoryLoaded,
+                CapturedAtGameTick = capturedAtGameTick,
+            };
+            foreach (var itemId in itemIds)
+            {
+                if (itemId >= factoryStat.productIndices.Length)
+                {
+                    planets.Clear();
+                    return NotReady("A requested runtime item is outside the production-statistics index.");
+                }
+
+                long producedCount = 0;
+                long consumedCount = 0;
+                var productIndex = factoryStat.productIndices[itemId];
+                if (productIndex > 0)
+                {
+                    if (productIndex >= factoryStat.productCursor
+                        || productIndex >= factoryStat.productPool.Length)
+                    {
+                        planets.Clear();
+                        return NotReady("A production-statistics product index is outside its active pool.");
+                    }
+
+                    var product = factoryStat.productPool[productIndex];
+                    if (product is null
+                        || product.itemId != itemId
+                        || product.total is null
+                        || product.total.Length <= 7
+                        || product.total[0] < 0
+                        || product.total[7] < 0)
+                    {
+                        planets.Clear();
+                        return NotReady("A production-statistics product record is incomplete or inconsistent.");
+                    }
+
+                    producedCount = product.total[0];
+                    consumedCount = product.total[7];
+                }
+
+                var rate = NativeProductionRateCalculator.Calculate(
+                    capturedAtGameTick,
+                    producedCount,
+                    consumedCount);
+                snapshot.Production.Add(new ProductionRateSnapshot
+                {
+                    PlanetId = factory.planetId,
+                    ItemId = itemId,
+                    ItemName = GetItemName(itemId),
+                    ProducedCount = producedCount,
+                    ConsumedCount = consumedCount,
+                    ActualProductionPerMinute = rate.ActualProductionPerMinute,
+                    ActualConsumptionPerMinute = rate.ActualConsumptionPerMinute,
+                    TheoreticalProductionPerMinute = null,
+                    Utilization = null,
+                    RateSource = OverseerRateSources.NativeFactoryStatisticsLevel0,
+                    TheoreticalCoverage = OverseerTheoreticalCoverageStates.Unavailable,
+                });
+            }
+
+            planets.Add(snapshot);
+        }
+
+        return null;
     }
 
     public GameCallResult<ListAssemblersResult> ListAssemblersOnMainThread(
@@ -1781,6 +1995,28 @@ internal sealed class GameStateReader
     private BridgeError? ValidateOwnedSessionOnMainThread(string? requestedSessionId, out PlanetFactory? factory)
     {
         factory = null;
+        var error = ValidateOwnedGameDataOnMainThread(requestedSessionId, out var gameData);
+        if (error is not null)
+        {
+            return error;
+        }
+
+        factory = gameData!.localLoadedPlanetFactory;
+        if (factory is null)
+        {
+            return BridgeError.Create(
+                BridgeErrorCodes.NoLocalPlanet,
+                "The owned session does not currently have a loaded local factory.",
+                true,
+                "Wait for the local planet factory to load and retry.");
+        }
+
+        return null;
+    }
+
+    private BridgeError? ValidateOwnedGameDataOnMainThread(string? requestedSessionId, out GameData? gameData)
+    {
+        gameData = null;
         var state = _sessions.CaptureOnMainThread();
         if (!state.GameLoaded)
         {
@@ -1810,14 +2046,14 @@ internal sealed class GameStateReader
                 "Call get_session_state and retry with its sessionId.");
         }
 
-        factory = GameMain.data?.localLoadedPlanetFactory;
-        if (factory is null)
+        gameData = GameMain.data;
+        if (gameData is null || !_sessions.IsCurrentSessionOwned)
         {
             return BridgeError.Create(
-                BridgeErrorCodes.NoLocalPlanet,
-                "The owned session does not currently have a loaded local factory.",
+                BridgeErrorCodes.BridgeNotReady,
+                "The exact owned game data is not ready.",
                 true,
-                "Wait for the local planet factory to load and retry.");
+                "Wait for the owned ordinary world to finish loading and retry.");
         }
 
         return null;

@@ -4,6 +4,7 @@ using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Celestial;
+using Spherewright.Contracts.Diagnostics;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Journals;
 using Spherewright.Contracts.Resources;
@@ -304,6 +305,34 @@ public static class SpherewrightTools
             new LocalPlanetRequest { PlanetId = planetId },
             cancellationToken).ConfigureAwait(false);
         return ToToolResult(result, "Power-network summary captured from the owned ordinary world.");
+    }
+
+    [McpServerTool(
+        Name = "spherewright_get_overseer_production",
+        Title = "Get multi-planet production windows",
+        ReadOnly = true,
+        Destructive = false,
+        Idempotent = true,
+        OpenWorld = false)]
+    [Description("Returns a cursor-bound page of all already-created owned factories for up to 64 exact item IDs. Actual rates come from DSP's save-persisted 600-game-tick automatic production and consumption window; this first slice reports theoretical coverage as unavailable rather than using stale UI caches.")]
+    public static async Task<CallToolResult> GetOverseerProductionAsync(
+        [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
+        [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,
+        [Description("One to 64 unique positive runtime item IDs. Resend the identical IDs with a cursor.")] int[] itemIds,
+        [Description("Number of planets per page, from 1 to 16; zero uses the default of 8.")] int limit = 0,
+        [Description("Opaque nextCursor from the preceding page, or empty for a fresh snapshot.")] string cursor = "",
+        [Description("Cancellation token supplied by the MCP host.")] CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.GetOverseerProductionAsync(
+            sessionId,
+            new GetOverseerProductionRequest
+            {
+                ItemIds = (itemIds ?? Array.Empty<int>()).ToList(),
+                Limit = limit,
+                Cursor = string.IsNullOrWhiteSpace(cursor) ? null : cursor,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Save-persisted multi-planet production window captured from the owned ordinary world.");
     }
 
     [McpServerTool(

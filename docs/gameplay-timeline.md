@@ -2,12 +2,12 @@
 
 更新时间：2026-09-03（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界位于 planet `104`。双星 ILS 已真实运输钛、硅，母星两种原矿都已通过正常物流接入生产；旧石转硅入口停用。塑料、精炼油、水已通过永久三料共享路自动进入有机晶体仓 `761`，有机晶体经 sorter `2032` 继续进入钛晶石和结构矩阵链；玩家不再搬运这条链上的任一中间料。共享路扩容后完成持续黄糖窗口并保存。最终 `v0.3.0` clean ZIP 已精确安装，受保护恢复同档并自动重存到 tick `13516415`；228 个运行文件与 ZIP payload 零差异，live Plugin/Bridge 报 `0.3.0`，安装版 MCP `0.3.0.0` 已实际调用该 Bridge，错误 token 被拒绝。fresh 审计 tick `13520330` 为 healthy、Journal `49/49` durable、0 prebuild、无 blocker/checkpoint，玩家 Walk/0、满核心、3/3 drone idle。tag/Release `v0.3.0` 已从 commit `a52ff44` 正式发布，当前转入 v0.4 Overseer 只读诊断开发。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界位于 planet `104`。双星 ILS 已真实运输钛、硅，母星两种原矿都已通过正常物流接入生产；旧石转硅入口停用。塑料、精炼油、水已通过永久三料共享路自动进入有机晶体仓 `761`，有机晶体经 sorter `2032` 继续进入钛晶石和结构矩阵链；玩家不再搬运这条链上的任一中间料。共享路扩容后完成持续黄糖窗口并保存。`v0.3.0` 已从 commit `a52ff44` 正式发布；当前安装的是尚未发布的 `0.4.0` 开发 Plugin。它通过普通保存、正常关窗和受保护 exact-primary resume 继续同一世界，最近自动保存边界为 tick `13626145`。fresh 审计 tick `13630162+` 为 healthy、Journal `49/49` durable、无 blocker/checkpoint，玩家 Walk/0、满核心。首个 Overseer live 切片读取到三个既有 factory（planet `104/102/103`）；原生 600-tick 生产窗口在保存后仅 16 tick 的恢复读取中仍存在，证明统计随档持久化且离线不计时。v0.4 尚未发布，理论速率、跨域摘要和故障路径仍在开发。
 
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 共有 `49` 条，已经持久化到 sequence `49`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `154` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护 Journal 共有 `49` 条，已经持久化到 sequence `49`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `155` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -87,6 +87,7 @@
 | save `13494061`; protected resume/save `13494092`; audit `13504262` | 2026-09-03 | 首个 `0.3.0` clean 包虽然文件/MCP 校验通过，live Plugin 却暴露仍为 `0.1.0`，因此停止发布而不创建 tag。统一产品版本源后再次普通保存、正常关闭、把旧 Plugin/MCP 整体移到可恢复备份并 clean install；新 Bridge 精确报告 `0.3.0`，错误 token 被拒绝，安装版 MCP `0.3.0.0` 通过 stdio 成功调用 live status。受保护票据只恢复同一 planet `104` 普通世界并自动重存；配置/物流保留，0 prebuild、Journal `49/49` durable。黄糖最后一件仍被 sorter `977` 携带，但 lab 已因本批金刚石耗尽正常停机，未冒充无限原料。 | R/M/D |
 | save `13516383`; protected resume/save `13516415`; audit `13520330` | 2026-09-03 | 从最终 clean commit `a52ff44` 重打工件后，发现其 payload 与已测 preview 并非完全相同，故没有继承候选包结论。正常关闭后重新 clean install 最终 ZIP，228 个运行文件逐一比对 mismatch `0`；受保护票据恢复同一 planet `104` 世界并自动重存，119 项测试、wrong-token 拒绝、live Plugin `0.3.0` 和安装版 MCP `0.3.0.0` 调用全部通过。annotated tag 与 GitHub Release `v0.3.0` 精确指向该 commit，线上 ZIP digest 为 `705081710b7061c6a00c4c8836a7d2869b13bd8b8fb6f42bfb24b7f0d62783c1`。v0.3 正式关闭，后续同档用于 v0.4 Overseer 诊断验收。 | R/M/D |
 | no game write after audit `13520330` | 2026-09-03 | v0.4 首个只读基础切片定义连续游戏 tick 窗口、实际/理论速率和五类首因；跨 session 可按同一受保护存档身份衔接，但回档、计数回退、同 tick 异常增量或采样断层会使窗口失效。故障分类在至少一个完整配方周期前保持沉默。135 项 Core/Contracts/MCP 测试与完整 solution 构建通过；没有部署新 Plugin、重启 DSP 或改变本档。 | D |
+| saves `13617247` / `13621729` / `13626113`; final protected resume/save `13626145`; audit `13630162+` | 2026-09-03 | 三次都先走普通 save、正常关窗，再只消费当次 exact-primary protected ticket 恢复同一 planet `104` 世界；没有开新档或载入其他档。`0.4.0` 开发 Plugin 新增有界多星球原生生产窗口，实机分页完整返回 planet `104/102/103` 三个既有 factory，远端两厂无需加载显示。最后一次保存前红糖窗口计数为 2；恢复后仅 16 tick 首读仍为 2，直接证明 600-tick 环随档恢复且离线不计时。重复 item、17-planet 页大小和错绑 filter 的 cursor 分别以 `INVALID_REQUEST/STALE_CURSOR` 无副作用拒绝。142 项测试、完整 solution、49-tool MCP initialize/list/live call 均通过；最终审计 healthy、Journal `49/49` durable、无 blocker/checkpoint，玩家 Walk/0 且核心满电。 | R/M/D |
 
 ## 科技树与升级
 
@@ -222,7 +223,7 @@
 
 ## 完整决策/经验索引
 
-当前共 `154` 条：`validated=102`、`observed=49`、`invalidated=2`、`superseded=1`。`observed` 表示已有样本但仍需复验；`invalidated` 和 `superseded` 不能继续作为现行规则。每条的适用范围、当前结论、直接证据与复验触发在 [experience-ledger.md](./experience-ledger.md) 中完整保存。
+当前共 `155` 条：`validated=103`、`observed=49`、`invalidated=2`、`superseded=1`。`observed` 表示已有样本但仍需复验；`invalidated` 和 `superseded` 不能继续作为现行规则。每条的适用范围、当前结论、直接证据与复验触发在 [experience-ledger.md](./experience-ledger.md) 中完整保存。
 
 | ID | 状态 | 决策/经验 |
 |---|---|---|
@@ -380,9 +381,10 @@
 | EXP-152 | validated | 正式包必须统一产品版本源并经实时 Plugin/MCP 握手校验 |
 | EXP-153 | validated | 候选包实机通过不能替代最终 clean 工件本体复验 |
 | EXP-154 | validated | 诊断速率只按连续游戏 tick 计算且根因分类须等待完整周期 |
+| EXP-155 | validated | 自动产线实际速率优先复用 DSP 随档持久化的 600-tick 原生环 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前在同一受保护 `owned-world-001` 的 planet `104` 运行；最终 v0.3 工件恢复后自动保存到 tick `13516415`，审计为 Walk/0、核心满电、写入健康、无 blocker/checkpoint、planned restart 可用。继续使用同一世界，不开新档。
+- DSP 当前在同一受保护 `owned-world-001` 的 planet `104` 运行；`0.4.0` 开发 Plugin 最近恢复后自动保存到 tick `13626145`，审计为 Walk/0、核心满电、写入健康、无 blocker/checkpoint、planned restart 可用。继续使用同一世界，不开新档。
 - `v0.3.0` 已由 clean commit `a52ff44` 创建 annotated tag 和 GitHub Release，最终 ZIP 的线上 digest 与本地已测工件一致；该版本不再有开放发行项。
-- 当前主线：v0.4 Overseer。连续采样窗口、速率和首因分类的无游戏 DLL 基础已经通过；下一步以当前程序集证明 production statistics、远端 factory、电力/物流和配方理论速率字段，再接入 Plugin 主线程深复制读取、per-save 保护持久化与 MCP。完成这些只读层后，才在同档受控制造缺料、断电和物流阻塞，依据诊断逐一正常修复并保存。
+- 当前主线：v0.4 Overseer。production statistics/远端 factory 证据、三厂分页、随档 600-tick 实际速率与 MCP 纵向链路已经通过；下一步按当前程序集重现理论速率并汇总多星球供电、物流和科研，再把首因分类接到真实设备与上游路径。完成这些只读层后，才在同档受控制造缺料、断电和物流阻塞，依据诊断逐一正常修复并保存。

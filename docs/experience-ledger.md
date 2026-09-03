@@ -1958,7 +1958,21 @@
 - 关联：EXP-030、EXP-062、EXP-127、EXP-142、EXP-144、EXP-153、ROADMAP v0.4、`OverseerCounterWindowAnalyzer`、`ProductionFaultClassifier`。
 - 最近复验：2026-09-03（135 项无游戏 DLL 回归与完整 solution 构建通过）。
 
+### EXP-155 — 自动产线实际速率优先复用 DSP 随档持久化的 600-tick 原生环
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：当前 DSP `0.10.34.28529` / `Assembly-CSharp.dll` SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，v0.4 对精确 active owned `GameData` 中已创建工厂的自动物品生产/消耗实际速率；不涵盖理论容量或故障根因。
+- 当前结论：`FactoryProductionStat` 与 `GameData.factories` 使用相同 factory index；每 tick 的自动 `productRegister/consumeRegister` 被滚入 `ProductStat.total[0]/total[7]` 的 600 槽 level-0 环，当前 60 tick/s 下正好是 10 游戏秒，实际每分钟为计数乘 6。环的 `count/cursor/total/itemId` 随正常存档导出/导入，暂停和离线没有游戏 tick，玩家手搓/机甲活动只增加独立 lifetime `total[6]/total[13]`。因此自动产线速率直接读原生环比另建 Plugin 累计旁路更强；读取必须交叉验证 factory/planet/stat/product 身份，不自建或加载未访问星球。
+- 直接证据：当前程序集反编译确认 `GameData.GetOrCreateFactory`、`ProductionStatistics.CreateFactoryStat/PrepareTick/GameTick`、`FactoryProductionStat.GameTick/AddProductionToTotalArray/AddConsumptionToTotalArray` 和 `ProductStat.Export/Import` 的上述精确语义。新增接口以最多 64 个 item、每页最多 16 个 planet 和 60 秒 session/filter/page-size 绑定游标返回数据；Contracts/Core/MCP `16 + 106 + 20 = 142` 全通过，完整 solution 0 warning / 0 error。开发 Plugin `0.4.0` 经正常保存/关窗和受保护恢复回到同一 planet `104` 世界；planet `104/102/103` 三个 factory 全部通过同一 snapshot 的分页复读，远端两厂在 `factoryDisplayLoaded=false` 时仍可读。更关键的是主档保存 tick `13626113` 前，红糖 level-0 计数为 2；正常关闭并恢复后仅 16 tick 的首次读取仍为 2，远短于重新生产两颗所需周期，直接证明原生窗口随档恢复而非 Plugin 内存重建。源码 MCP `0.4.0.0` 实际完成 initialize、49-tool list 和新工具 live call。
+- 限制或反例：`ProductStat.refProductSpeed/refConsumeSpeed` 是 UI 按需重算且无新鲜度标记的缓存，本切片明确返回 `theoreticalCoverage=unavailable`、理论速率/利用率 null。原生环只能给出物品/星球级实际流量，不能单独确认具体设备的输出堵塞、物流阻塞或上游矿脉耗尽；这些仍需设备容量、订单、源库存和路径证据。当前只在一个三 factory 存档和一个 DSP 版本上实机验证。
+- 复验触发：DSP 版本或程序集哈希变化、统计环长度/tick rate/序列化变化、factory/stat 索引模型变化、扩大 item/page 上限、引入理论速率或设备/物流根因，以及最终 v0.4 clean 工件安装。
+- 关联：EXP-030、EXP-048、EXP-062、EXP-079、EXP-104、EXP-144、EXP-154、`docs/research/game-api-overseer.md`、`NativeProductionRateCalculator`、`GameStateReader.GetOverseerProductionOnMainThread`。
+- 最近复验：2026-09-03（同档保存/16-tick 恢复、三 factory 分页、142 项测试、完整构建及 live MCP 调用通过）。
+
 ## 修订记录
+
+- 2026-09-03：新增 EXP-155，并复验 EXP-001/007/030/069/072/104/152/154。先以旧 Plugin 的普通 save API 保存到 tick `13617247`；一次结果展示因访问不存在的 `savedGameTick` 失败后，只用 fresh revision/tick 核销且未重放。开发 Plugin 两轮均通过正常关窗、同一 protected primary resume 和健康自动重存；最终保存边界 `13626113` 在恢复后 16 tick 即保留原生红糖/有机晶体/钛晶石窗口，证明离线未计入且统计随档恢复。三厂分页、游标错绑/重复 item/越界页大小拒绝、49-tool MCP live call、142 项测试和完整 solution 均通过；本批新增三次普通保存和三次受保护恢复，均为同一 owned world，写健康未隔离。
 
 - 2026-09-03：新增 EXP-154，开始 v0.4 Overseer 首个只读基础切片。新增脱敏窗口/速率/故障证据契约、相邻累计计数连续性分析和五类首因分类；跨 session 仅凭同一受保护存档身份延续，回档、计数回退、同 tick 异常增量和超限采样缺口均 fail-closed。新增 16 项测试后 Contracts/Core/MCP 为 `15 + 101 + 19 = 135` 全通过，完整 solution 0 warning / 0 error；未部署 Plugin、未重启 DSP、未对存档执行写动作。用户新增发行规则已独立提交：今后任何 tag/Release 都必须先提交候选 commit、证据、工件哈希与 Release notes 供用户明确审核。
 

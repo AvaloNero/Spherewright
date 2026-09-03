@@ -140,7 +140,7 @@ public sealed class SnapshotPageStore<T>
             _cursors[nextCursor] = new CursorRecord(snapshot.Id, nextOffset);
         }
 
-        return new SnapshotPage<T>(snapshot.Id, snapshot.ExpiresAtUtc, items, nextCursor);
+        return new SnapshotPage<T>(snapshot.Id, snapshot.ExpiresAtUtc, items, snapshot.Items.Count, nextCursor);
     }
 
     private void RemoveExpiredUnsafe()

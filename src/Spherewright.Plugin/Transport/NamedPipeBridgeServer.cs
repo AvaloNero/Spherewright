@@ -7,6 +7,7 @@ using Spherewright.Bridge.Core.Framing;
 using Spherewright.Bridge.Core.Routing;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Celestial;
+using Spherewright.Contracts.Diagnostics;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Resources;
@@ -374,6 +375,23 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             header.RequestId,
                             header.SessionId,
                             () => _gameStateReader.GetPowerSummaryOnMainThread(header.SessionId, request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                case BridgeMethods.GetOverseerProduction:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<GetOverseerProductionRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            header.SessionId,
+                            () => _gameStateReader.GetOverseerProductionOnMainThread(header.SessionId, request.Payload),
                             cancellationToken).ConfigureAwait(false);
                         break;
                     }

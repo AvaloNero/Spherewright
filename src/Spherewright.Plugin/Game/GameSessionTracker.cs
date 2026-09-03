@@ -412,6 +412,7 @@ internal sealed class GameSessionTracker
             "resource.read",
             "factory.read",
             "power.read",
+            "overseer.read",
             "action.read",
         };
         if (writesAllowed)

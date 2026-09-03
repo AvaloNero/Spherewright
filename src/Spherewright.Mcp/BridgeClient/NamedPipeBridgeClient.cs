@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Spherewright.Bridge.Core.Framing;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Celestial;
+using Spherewright.Contracts.Diagnostics;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Journals;
@@ -389,6 +390,18 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
         return await CallAsync<CommitTestWorldRequest, TestWorldCreationResult>(
             BridgeMethods.CommitNewGame,
             null,
+            request,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<BridgeCallResult<OverseerProductionSnapshot>> GetOverseerProductionAsync(
+        string sessionId,
+        GetOverseerProductionRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await CallAsync<GetOverseerProductionRequest, OverseerProductionSnapshot>(
+            BridgeMethods.GetOverseerProduction,
+            sessionId,
             request,
             cancellationToken).ConfigureAwait(false);
     }

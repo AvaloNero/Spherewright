@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol.Server;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Celestial;
+using Spherewright.Contracts.Diagnostics;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Journals;
@@ -53,6 +54,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_get_build_catalog",
                 "spherewright_get_gameplay_journal",
                 "spherewright_get_local_star_system",
+                "spherewright_get_overseer_production",
                 "spherewright_get_player_state",
                 "spherewright_get_power_summary",
                 "spherewright_get_progression_state",
@@ -168,6 +170,26 @@ public sealed class SpherewrightToolsTests
         Assert.Equal(
             "journal",
             result.StructuredContent!.Value.GetProperty("result").GetProperty("journalId").GetString());
+    }
+
+    [Fact]
+    public async Task OverseerProductionTool_MapsBoundedItemsPageAndCursor()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.GetOverseerProductionAsync(
+            bridge,
+            "session-overseer",
+            new[] { 6003, 6001 },
+            4,
+            "cursor-overseer",
+            CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("session-overseer", bridge.LastSessionId);
+        Assert.Equal(new[] { 6003, 6001 }, bridge.LastOverseerProductionRequest?.ItemIds);
+        Assert.Equal(4, bridge.LastOverseerProductionRequest?.Limit);
+        Assert.Equal("cursor-overseer", bridge.LastOverseerProductionRequest?.Cursor);
     }
 
     [Fact]
@@ -452,6 +474,8 @@ public sealed class SpherewrightToolsTests
         public PrepareSelectResearchRequest? LastSelectResearchRequest { get; private set; }
 
         public PrepareFlightCheckpointReloadRequest? LastFlightCheckpointReloadRequest { get; private set; }
+
+        public GetOverseerProductionRequest? LastOverseerProductionRequest { get; private set; }
 
         public Task<BridgeCallResult<BridgeStatus>> GetBridgeStatusAsync(CancellationToken cancellationToken)
         {
@@ -850,6 +874,21 @@ public sealed class SpherewrightToolsTests
                 ActionId = "action",
                 Accepted = true,
             }));
+        }
+
+        public Task<BridgeCallResult<OverseerProductionSnapshot>> GetOverseerProductionAsync(
+            string sessionId,
+            GetOverseerProductionRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastSessionId = sessionId;
+            LastOverseerProductionRequest = request;
+            return Task.FromResult(BridgeCallResult<OverseerProductionSnapshot>.Succeeded(
+                new OverseerProductionSnapshot
+                {
+                    SessionId = sessionId,
+                    RequestedItemIds = request.ItemIds.ToList(),
+                }));
         }
 
         public Task<BridgeCallResult<PreparedOwnedWorldResumePlan>> PrepareOwnedWorldResumeAsync(

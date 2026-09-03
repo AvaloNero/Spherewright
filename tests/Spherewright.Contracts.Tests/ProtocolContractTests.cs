@@ -214,6 +214,69 @@ public sealed class ProtocolContractTests
     }
 
     [Fact]
+    public void OverseerProduction_DeclaresNativeWindowAndOmitsPrivateIdentity()
+    {
+        var snapshot = new OverseerProductionSnapshot
+        {
+            SessionId = "session",
+            CapturedAtGameTick = 12_000,
+            SnapshotId = "opaque-snapshot",
+            TotalFactoryCount = 2,
+            ReturnedFactoryCount = 1,
+            RequestedItemIds = new List<int> { 6001, 6003 },
+            RateSource = OverseerRateSources.NativeFactoryStatisticsLevel0,
+            Window = new OverseerWindowSnapshot
+            {
+                State = OverseerWindowStates.Ready,
+                StartGameTick = 11_401,
+                EndGameTick = 12_000,
+                ElapsedGameTicks = 600,
+                ElapsedGameSeconds = 10,
+            },
+            Planets = new List<OverseerPlanetProductionSnapshot>
+            {
+                new OverseerPlanetProductionSnapshot
+                {
+                    FactoryIndex = 0,
+                    PlanetId = 104,
+                    PlanetName = "Owned planet",
+                    Production = new List<ProductionRateSnapshot>
+                    {
+                        new ProductionRateSnapshot
+                        {
+                            PlanetId = 104,
+                            ItemId = 6003,
+                            ProducedCount = 1,
+                            ActualProductionPerMinute = 6,
+                            RateSource = OverseerRateSources.NativeFactoryStatisticsLevel0,
+                            TheoreticalCoverage = OverseerTheoreticalCoverageStates.Unavailable,
+                        },
+                    },
+                },
+            },
+        };
+
+        var json = JsonSerializer.Serialize(snapshot, JsonOptions);
+        using var parsed = JsonDocument.Parse(json);
+
+        Assert.Equal(
+            OverseerRateSources.NativeFactoryStatisticsLevel0,
+            parsed.RootElement.GetProperty("rateSource").GetString());
+        Assert.Equal(600, parsed.RootElement.GetProperty("window").GetProperty("elapsedGameTicks").GetInt64());
+        Assert.Equal(
+            OverseerTheoreticalCoverageStates.Unavailable,
+            parsed.RootElement.GetProperty("planets")[0]
+                .GetProperty("production")[0]
+                .GetProperty("theoreticalCoverage")
+                .GetString());
+        Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("protectedSaveKey", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("authToken", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("planToken", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("filePath", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void LogisticsStation_UsesExplicitRawSettingsAndStableHashes()
     {
         var station = new LogisticsStationSnapshot

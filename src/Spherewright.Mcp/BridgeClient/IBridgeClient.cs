@@ -72,6 +72,11 @@ public interface IBridgeClient
         GetOverseerProductionRequest request,
         CancellationToken cancellationToken);
 
+    Task<BridgeCallResult<OverseerSummarySnapshot>> GetOverseerSummaryAsync(
+        string sessionId,
+        GetOverseerSummaryRequest request,
+        CancellationToken cancellationToken);
+
     Task<BridgeCallResult<ActionResultSnapshot>> GetActionResultAsync(
         GetActionResultRequest request,
         CancellationToken cancellationToken);

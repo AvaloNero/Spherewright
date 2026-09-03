@@ -277,6 +277,77 @@ public sealed class ProtocolContractTests
     }
 
     [Fact]
+    public void OverseerSummary_SeparatesPlanetDomainsFromGlobalResearchWithoutPrivateIdentity()
+    {
+        var snapshot = new OverseerSummarySnapshot
+        {
+            SessionId = "session",
+            CapturedAtGameTick = 42,
+            SnapshotId = "opaque-snapshot",
+            TotalFactoryCount = 3,
+            ReturnedFactoryCount = 1,
+            Research = new OverseerResearchSummarySnapshot
+            {
+                CurrentTechId = 1704,
+                CurrentHashUploaded = 100,
+                CurrentHashRequired = 1_000,
+                CurrentHashRemaining = 900,
+                QueuedTechCount = 1,
+                TechQueue = new List<int> { 1704 },
+            },
+            Planets = new List<OverseerPlanetSummarySnapshot>
+            {
+                new OverseerPlanetSummarySnapshot
+                {
+                    FactoryIndex = 0,
+                    PlanetId = 104,
+                    Power = new OverseerPowerSummarySnapshot
+                    {
+                        ActiveNetworkCount = 2,
+                        TotalEnergyGenerated = 750,
+                        TotalEnergyExported = 25,
+                        MinimumConsumerRatio = 0.75,
+                    },
+                    Logistics = new OverseerLogisticsSummarySnapshot
+                    {
+                        StationCount = 1,
+                        InterstellarStationCount = 1,
+                        OutstandingRemoteOrderMagnitude = 100,
+                    },
+                },
+            },
+        };
+
+        var json = JsonSerializer.Serialize(snapshot, JsonOptions);
+        using var parsed = JsonDocument.Parse(json);
+
+        Assert.Equal(1704, parsed.RootElement.GetProperty("research").GetProperty("currentTechId").GetInt32());
+        Assert.Equal(
+            0.75,
+            parsed.RootElement.GetProperty("planets")[0]
+                .GetProperty("power")
+                .GetProperty("minimumConsumerRatio")
+                .GetDouble());
+        Assert.Equal(
+            25,
+            parsed.RootElement.GetProperty("planets")[0]
+                .GetProperty("power")
+                .GetProperty("totalEnergyExported")
+                .GetInt64());
+        Assert.Equal(
+            100,
+            parsed.RootElement.GetProperty("planets")[0]
+                .GetProperty("logistics")
+                .GetProperty("outstandingRemoteOrderMagnitude")
+                .GetInt64());
+        Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("protectedSaveKey", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("authToken", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("planToken", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("filePath", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void LogisticsStation_UsesExplicitRawSettingsAndStableHashes()
     {
         var station = new LogisticsStationSnapshot

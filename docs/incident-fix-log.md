@@ -180,3 +180,22 @@
   被拒绝，安装版 MCP `0.3.0.0` 经 stdio 成功调用同一 Bridge，受保护同档恢复并自动保存到
   tick `13516415`。线上 `v0.3.0` Release 的 ZIP digest 与本地最终工件一致。
 - 关联：EXP-001、EXP-030、EXP-152；状态：`fixed`。
+
+## IFX-017 — 防御场余电导出被误标为发电量
+
+- 首见：2026-09-03，v0.4 多星球供电摘要首次实机读取。
+- 症状：planet `104` 的网络明明有 33 个发电组件、消费者供电比为 1，旧 DTO 却报告
+  `energyGenerated=0`；planet `102` 的 10 个发电组件也出现相同矛盾。
+- 根因：早期本地电力读取把 `PowerNetwork.energyExport` 映射为 `EnergyGenerated`。当前程序集的
+  `PowerSystem.GameTick` 证明该字段只是在有余量且存在防御场需求时送入 `PlanetATField` 的能量，
+  实际单机发电写在 `PowerGeneratorComponent.generateCurrentTick`。
+- 修复：逐网络验证 `generators` 中每个组件的 ID、network ID、数组边界和非负计数，再以 checked
+  sum 形成 `EnergyGenerated`；原生 `energyExport` 单列为 `EnergyExported`。本地电力工具与新的
+  Overseer 聚合共用同一捕获路径，重复/失配组件 fail closed。
+- 验证：最终修复版的同一 Overseer 快照在 planet `104` 读到 required/served/generated
+  `90688/90688/90688`、capacity `191000`、exported `0`；planet `102` 的多次读取均为
+  `4050/4050/4050/55000/0`。相邻的本地工具调用在 2 tick 后读到母星
+  `79388/79388/79388/191000/0`，既证明新映射不再恒为 0，也证明跨 tick 动态需求不能要求数值相等。
+  最终源码二进制重新部署并受保护恢复后，同快照 tick `13773036` 再次返回母星 generated/exported
+  `94688/0` 和远端 planet `102` 的 `4050/0`。150 项测试和完整构建通过。
+- 关联：EXP-021、EXP-142、EXP-156、`docs/research/game-api-overseer.md`；状态：`fixed`。

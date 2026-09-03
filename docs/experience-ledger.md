@@ -1970,7 +1970,21 @@
 - 关联：EXP-030、EXP-048、EXP-062、EXP-079、EXP-104、EXP-144、EXP-154、`docs/research/game-api-overseer.md`、`NativeProductionRateCalculator`、`GameStateReader.GetOverseerProductionOnMainThread`。
 - 最近复验：2026-09-03（同档保存/16-tick 恢复、三 factory 分页、142 项测试、完整构建及 live MCP 调用通过）。
 
+### EXP-156 — 跨星球摘要必须共享一个有界快照并区分真实发电与防御场导出
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：当前 DSP `0.10.34.28529` / `Assembly-CSharp.dll` SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，v0.4 对 active owned `GameData` 中已创建工厂的电网、物流和全局科研摘要；不涵盖未访问星球或最终故障根因。
+- 当前结论：跨星球供电与物流必须在 Unity 主线程一次深复制，后续分页只能读取同一 session/页大小绑定快照；全局科研只捕获一份并随每页保持相同 tick。电力的实际发电量应逐个验证网络 generator identity 后汇总 `generateCurrentTick`，而 `PowerNetwork.energyExport` 是送往 `PlanetATField` 的防御场余电，必须单列。物流站要交叉绑定 station/entity/planet/consumer，并把 PLS、ILS、轨道采集器和 vein collector 互斥分类；总量扫描必须有明确预算，不能以静默截断换取成功响应。
+- 直接证据：当前程序集反编译确认 `PowerSystem.GameTick` 的容量、供电、导出和组件实际发电赋值顺序，以及 `StationComponent`、`StationStore`、`GameHistoryData/TechState/TechProto` 的字段和 `hash × pointsPerHash / 3600` 整数公式。实机以 `limit=1` 分三页完整返回 planet `104/102/103`，三页 `snapshotId/capturedAtGameTick` 一致，末页无 cursor；远端 `102/103` 均为 `factoryDisplayLoaded=false` 但无需创建/加载即可读。planet `104` 有 3 网络、33 generator、3 站（2 PLS/1 ILS），planet `102` 有 1 网络、10 generator、1 ILS，planet `103` 为零网络/零站；修复后两颗有电星的 generated 与各自快照实际 served 对齐且 exported 均为 0。母星 Overseer tick `13730405` 为 `90688/90688/191000/90688/0`，相邻本地电力 tick `13730407` 为 `79388/79388/191000/79388/0`，证明字段语义正确，也证明独立调用跨 tick 时不能要求动态需求数值相等。全局科研唯一返回升级 `3401`、同一队列及蓝/红/黄矩阵预算。最终源码又增加队列 ID 对 runtime catalog/tech-state 的双重身份检查；普通保存 tick `13767062` 后正常关窗，7 个 Debug 部署文件与构建输出 mismatch `0`，其中最终 Plugin SHA-256 为 `3766E3A770FFB7BAA24FA870CA569BD90F5BE776802A04F213EB2634B79E9C6E`。受保护恢复只采用该 exact primary 并自动重存 tick `13767093`；最终三页共享 tick `13773036`，队列 `[3401]` 正常通过新门，母星 generated/exported 为 `94688/0`，生产窗口仍为 ready。错绑页大小 cursor 与 17-planet 请求分别以 `STALE_CURSOR/INVALID_REQUEST` 无副作用拒绝；源码 MCP `0.4.0.0` 完成 initialize、50-tool list 和 live call，Contracts/Core/MCP `17 + 112 + 21 = 150` 全通过，完整 solution 0 warning / 0 error。
+- 限制或反例：这是聚合快照，不返回完整 station/设备图，也不会仅凭低产量确认缺料、堵塞、断电、订单停滞或矿脉耗尽。网络详情最多返回 64 个但聚合全部预算内网络；超过 factory/network/generator/station/storage/tech 预算会明确失败。独立本地工具与 Overseer 是不同捕获，只有 `capturedAtGameTick` 相同才可逐字段比较。当前只在一个三 factory 存档和一个 DSP 版本上验证，未来防御系统或电网算法变化必须重查字段语义。
+- 复验触发：DSP 版本/程序集哈希变化、电网 tick 算法或 station/tech 序列化变化、调整分页/扫描预算、增加故障分类或上游图、最终 v0.4 clean 工件安装。
+- 关联：EXP-021、EXP-030、EXP-104、EXP-142、EXP-154、EXP-155、IFX-017、`docs/research/game-api-overseer.md`、`OverseerPowerSummaryCalculator`、`GameStateReader.GetOverseerSummaryOnMainThread`。
+- 最近复验：2026-09-03（最终源码二进制 mismatch 0 部署、exact-primary 恢复、三 factory 同快照分页、科研队列身份正例、生产窗回归、150 项测试、完整构建及 50-tool MCP 调用通过）。
+
 ## 修订记录
+
+- 2026-09-03：新增 EXP-156、记录 IFX-017，并复验 EXP-001/021/030/069/072/104/142/152/154/155。第二个 v0.4 只读切片在同一 owned world 的三座已创建工厂上完成电网/物流/全局科研分页；首次 live 读数以“33 个 generator 且满供电、旧 generated 却为 0”证伪早期 `energyExport` 映射，改为逐组件 `generateCurrentTick` checked sum 并单列防御场导出。修正字段后先保存/恢复到 tick `13696182+` 做正例，再补互斥 collector 分类、空槽一致性和全域扫描预算；普通保存 tick `13725278`、正常关窗、7 个文件同批安装零哈希差异，并只消费 exact-primary ticket 恢复 planet `104`、自动重存 tick `13725324`。最终审阅再补科技队列 runtime 双身份检查，重新构建后普通保存 tick `13767062`、正常关闭并以零哈希差异部署最终 Plugin `3766E3A770FFB7BAA24FA870CA569BD90F5BE776802A04F213EB2634B79E9C6E`，受保护恢复自动重存 tick `13767093`。最终三页快照 tick `13773036`、生产窗口回归、队列 `[3401]`、边界拒绝、150 项测试、完整构建和 50-tool MCP live call 均通过；审计 tick `13775095+` 为 healthy、Journal `49/49` durable、Walk/0、满核心且无 blocker/checkpoint。全程未开新档或隔离。后续 tag/Release 仍须按用户新增门禁先提交候选证据审核，本次不发布。
 
 - 2026-09-03：新增 EXP-155，并复验 EXP-001/007/030/069/072/104/152/154。先以旧 Plugin 的普通 save API 保存到 tick `13617247`；一次结果展示因访问不存在的 `savedGameTick` 失败后，只用 fresh revision/tick 核销且未重放。开发 Plugin 两轮均通过正常关窗、同一 protected primary resume 和健康自动重存；最终保存边界 `13626113` 在恢复后 16 tick 即保留原生红糖/有机晶体/钛晶石窗口，证明离线未计入且统计随档恢复。三厂分页、游标错绑/重复 item/越界页大小拒绝、49-tool MCP live call、142 项测试和完整 solution 均通过；本批新增三次普通保存和三次受保护恢复，均为同一 owned world，写健康未隔离。
 

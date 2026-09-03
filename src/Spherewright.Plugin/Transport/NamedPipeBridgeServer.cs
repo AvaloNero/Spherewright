@@ -395,6 +395,23 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             cancellationToken).ConfigureAwait(false);
                         break;
                     }
+                case BridgeMethods.GetOverseerSummary:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<GetOverseerSummaryRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(
+                            pipe,
+                            header.RequestId,
+                            header.SessionId,
+                            () => _gameStateReader.GetOverseerSummaryOnMainThread(header.SessionId, request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
                 case BridgeMethods.GetActionResult:
                     {
                         var request = PluginJson.Deserialize<BridgeRequestEnvelope<GetActionResultRequest>>(requestJson);

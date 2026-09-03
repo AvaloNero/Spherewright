@@ -13,7 +13,7 @@ Runtime evidence currently targets DSP `0.10.34.28529`, single-player peaceful m
 ## What it provides
 
 - An authenticated, current-user-only Named Pipe between the game Plugin and the local MCP server.
-- Structured reads for the player, progression, recipes, build catalog, resources, factory entities—including detailed logistics-station state—power, the local star system, actions, the per-save gameplay journal, and a bounded v0.4 multi-planet native production window.
+- Structured reads for the player, progression, recipes, build catalog, resources, factory entities—including detailed logistics-station state—power, the local star system, actions, the per-save gameplay journal, a bounded v0.4 multi-planet native production window, and cursor-stable per-planet power/logistics plus global-research summaries.
 - Two-phase `prepare → commit` actions for movement, harvesting, handcrafting, research, construction, building configuration—including no-inventory-mutation logistics-station storage and output-belt selection—player/storage and conservation-checked station-fleet transfers, refuelling, saving, and recovery.
 - Native-tick same-star flight with a separately saved, expiring pre-flight checkpoint that remains reusable only while that exact flight needs recovery, then loses its capability on success and retires after the covering primary save.
 - Exact owned-world restart handoff: healthy planned restarts load only the ticket-bound primary save, while quarantine recovery alone may use a fresh fixed LastExit whose header already proves the minimum tick. Spherewright never exposes a save picker or enumerates unrelated saves.
@@ -138,7 +138,7 @@ The release gates live in [ROADMAP.md](./ROADMAP.md). The current save's complet
 - automatic power engine, plastic, titanium ingot, diamond, gear, electric motor, water, organic crystal, titanium crystal, structure matrix, electromagnetic turbine, high-purity silicon, microcrystalline component, sulfuric acid, processor, graphene, thruster, particle container, logistics drone, and planetary logistics station production: complete;
 - native same-star checkpointed flight: complete for the validated route;
 - planetary/interstellar logistics: released in v0.3.0 after clean-install, protected-resume, live-Bridge, installed-MCP, and same-save regression;
-- Overseer multi-planet diagnostics: v0.4.0 work in progress; the first live slice pages all already-created owned factories and reports save-persisted 600-game-tick automatic production/consumption rates for a bounded item set. Theoretical rates, utilization, cross-domain summaries, and fault paths remain open.
+- Overseer multi-planet diagnostics: v0.4.0 work in progress; two live slices page all already-created owned factories, reporting save-persisted 600-game-tick automatic production/consumption rates plus per-planet power/logistics and one global current-research summary. Theoretical rates, utilization, runtime fault classification, and upstream root-cause paths remain open.
 
 There are no stability or compatibility guarantees yet. Before reporting a bug, include the DSP version, BepInEx version, Spherewright commit, the structured error code, and sanitized action/state evidence—never auth tokens, plan tokens, raw save identities, or save files.
 

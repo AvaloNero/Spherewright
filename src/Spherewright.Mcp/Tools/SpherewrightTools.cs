@@ -336,6 +336,32 @@ public static class SpherewrightTools
     }
 
     [McpServerTool(
+        Name = "spherewright_get_overseer_summary",
+        Title = "Get multi-planet operations summary",
+        ReadOnly = true,
+        Destructive = false,
+        Idempotent = true,
+        OpenWorld = false)]
+    [Description("Returns one cursor-bound snapshot page containing per-planet power networks and logistics aggregates for every already-created owned factory, plus one global current-research summary. It does not create or load remote factories.")]
+    public static async Task<CallToolResult> GetOverseerSummaryAsync(
+        [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
+        [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,
+        [Description("Number of planets per page, from 1 to 16; zero uses the default of 8.")] int limit = 0,
+        [Description("Opaque nextCursor from the preceding page, or empty for a fresh snapshot.")] string cursor = "",
+        [Description("Cancellation token supplied by the MCP host.")] CancellationToken cancellationToken = default)
+    {
+        var result = await bridgeClient.GetOverseerSummaryAsync(
+            sessionId,
+            new GetOverseerSummaryRequest
+            {
+                Limit = limit,
+                Cursor = string.IsNullOrWhiteSpace(cursor) ? null : cursor,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return ToToolResult(result, "Multi-planet power, logistics, and research summary captured from the owned ordinary world.");
+    }
+
+    [McpServerTool(
         Name = "spherewright_prepare_configure_building",
         Title = "Prepare an idle device configuration",
         ReadOnly = false,

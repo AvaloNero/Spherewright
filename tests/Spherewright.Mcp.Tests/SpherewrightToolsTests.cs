@@ -55,6 +55,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_get_gameplay_journal",
                 "spherewright_get_local_star_system",
                 "spherewright_get_overseer_production",
+                "spherewright_get_overseer_summary",
                 "spherewright_get_player_state",
                 "spherewright_get_power_summary",
                 "spherewright_get_progression_state",
@@ -190,6 +191,24 @@ public sealed class SpherewrightToolsTests
         Assert.Equal(new[] { 6003, 6001 }, bridge.LastOverseerProductionRequest?.ItemIds);
         Assert.Equal(4, bridge.LastOverseerProductionRequest?.Limit);
         Assert.Equal("cursor-overseer", bridge.LastOverseerProductionRequest?.Cursor);
+    }
+
+    [Fact]
+    public async Task OverseerSummaryTool_MapsPlanetPageAndCursor()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.GetOverseerSummaryAsync(
+            bridge,
+            "session-overseer-summary",
+            3,
+            "cursor-summary",
+            CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("session-overseer-summary", bridge.LastSessionId);
+        Assert.Equal(3, bridge.LastOverseerSummaryRequest?.Limit);
+        Assert.Equal("cursor-summary", bridge.LastOverseerSummaryRequest?.Cursor);
     }
 
     [Fact]
@@ -476,6 +495,8 @@ public sealed class SpherewrightToolsTests
         public PrepareFlightCheckpointReloadRequest? LastFlightCheckpointReloadRequest { get; private set; }
 
         public GetOverseerProductionRequest? LastOverseerProductionRequest { get; private set; }
+
+        public GetOverseerSummaryRequest? LastOverseerSummaryRequest { get; private set; }
 
         public Task<BridgeCallResult<BridgeStatus>> GetBridgeStatusAsync(CancellationToken cancellationToken)
         {
@@ -888,6 +909,20 @@ public sealed class SpherewrightToolsTests
                 {
                     SessionId = sessionId,
                     RequestedItemIds = request.ItemIds.ToList(),
+                }));
+        }
+
+        public Task<BridgeCallResult<OverseerSummarySnapshot>> GetOverseerSummaryAsync(
+            string sessionId,
+            GetOverseerSummaryRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastSessionId = sessionId;
+            LastOverseerSummaryRequest = request;
+            return Task.FromResult(BridgeCallResult<OverseerSummarySnapshot>.Succeeded(
+                new OverseerSummarySnapshot
+                {
+                    SessionId = sessionId,
                 }));
         }
 

@@ -16,6 +16,8 @@ public sealed class PowerSummarySnapshot
 
     public long TotalEnergyGenerated { get; set; }
 
+    public long TotalEnergyExported { get; set; }
+
     public List<PowerNetworkSnapshot> Networks { get; set; } = new List<PowerNetworkSnapshot>();
 }
 
@@ -40,6 +42,8 @@ public sealed class PowerNetworkSnapshot
     public long EnergyCapacity { get; set; }
 
     public long EnergyGenerated { get; set; }
+
+    public long EnergyExported { get; set; }
 
     public long EnergyStored { get; set; }
 

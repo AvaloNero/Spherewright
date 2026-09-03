@@ -15,6 +15,7 @@ public static class BridgeMethods
     public const string InspectFactoryEntity = "inspect_factory_entity";
     public const string GetPowerSummary = "get_power_summary";
     public const string GetOverseerProduction = "get_overseer_production";
+    public const string GetOverseerSummary = "get_overseer_summary";
     public const string GetActionResult = "get_action_result";
     public const string ListAssemblers = "list_assemblers";
     public const string InspectAssembler = "inspect_assembler";

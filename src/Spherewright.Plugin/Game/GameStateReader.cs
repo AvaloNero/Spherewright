@@ -25,6 +25,15 @@ internal sealed class GameStateReader
     private const int DefaultOverseerPlanetLimit = 8;
     private const int MaximumOverseerPlanetLimit = 16;
     private const int MaximumOverseerItemCount = 64;
+    private const int MaximumOverseerFactoryCount = 512;
+    private const int MaximumOverseerPowerNetworkScanCount = 4096;
+    private const int MaximumOverseerPowerGeneratorScanCount = 65536;
+    private const int MaximumOverseerStationScanCount = 4096;
+    private const int MaximumOverseerNetworkDetailsPerPlanet = 64;
+    private const int MaximumOverseerStationStorageSlots = 64;
+    private const int MaximumOverseerTechQueueCount = 64;
+    private const int MaximumOverseerTechQueueScanCount = 4096;
+    private const int MaximumOverseerTechnologyScanCount = 12000;
     private const int OverseerSnapshotScopeId = int.MaxValue;
     private readonly GameSessionTracker _sessions;
     private readonly SnapshotPageStore<ResourceNodeSnapshot> _resourceSnapshots =
@@ -35,6 +44,8 @@ internal sealed class GameStateReader
         new SnapshotPageStore<AssemblerSnapshot>(TimeSpan.FromSeconds(60), 16);
     private readonly SnapshotPageStore<OverseerPlanetProductionSnapshot> _overseerProductionSnapshots =
         new SnapshotPageStore<OverseerPlanetProductionSnapshot>(TimeSpan.FromSeconds(60), 8);
+    private readonly SnapshotPageStore<OverseerSummaryPageEntry> _overseerSummarySnapshots =
+        new SnapshotPageStore<OverseerSummaryPageEntry>(TimeSpan.FromSeconds(60), 8);
 
     public GameStateReader(GameSessionTracker sessions)
     {
@@ -638,36 +649,49 @@ internal sealed class GameStateReader
             PlanetId = factory.planetId,
             CapturedAtGameTick = GameMain.gameTick,
         };
-        var networkLimit = Math.Min(powerSystem.netCursor, powerSystem.netPool.Length);
-        for (var networkId = 1; networkId < networkLimit; networkId++)
+        if (powerSystem.netCursor < 1 || powerSystem.netCursor > powerSystem.netPool.Length)
+        {
+            return GameCallResult<PowerSummarySnapshot>.Failed(NotReady(
+                "The local planet power-network pool is not ready."));
+        }
+
+        for (var networkId = 1; networkId < powerSystem.netCursor; networkId++)
         {
             var network = powerSystem.netPool[networkId];
-            if (network is null || network.id != networkId)
+            if (network is null || network.id == 0)
             {
                 continue;
             }
 
-            var snapshot = new PowerNetworkSnapshot
+            if (network.id != networkId)
             {
-                NetworkId = networkId,
-                NodeCount = network.nodes?.Count ?? 0,
-                ConsumerCount = network.consumers?.Count ?? 0,
-                GeneratorCount = network.generators?.Count ?? 0,
-                AccumulatorCount = network.accumulators?.Count ?? 0,
-                ExchangerCount = network.exchangers?.Count ?? 0,
-                EnergyRequired = network.energyRequired,
-                EnergyServed = network.energyServed,
-                EnergyCapacity = network.energyCapacity,
-                EnergyGenerated = network.energyExport,
-                EnergyStored = network.energyStored,
-                ConsumerRatio = network.consumerRatio,
-                GeneratorRatio = network.generaterRatio,
-            };
-            result.Networks.Add(snapshot);
-            result.TotalEnergyRequired += snapshot.EnergyRequired;
-            result.TotalEnergyServed += snapshot.EnergyServed;
-            result.TotalEnergyCapacity += snapshot.EnergyCapacity;
-            result.TotalEnergyGenerated += snapshot.EnergyGenerated;
+                return GameCallResult<PowerSummarySnapshot>.Failed(NotReady(
+                    "An active local power network does not match its pool identity."));
+            }
+
+            var captureError = TryCapturePowerNetwork(powerSystem, networkId, network, out var snapshot);
+            if (captureError is not null)
+            {
+                return GameCallResult<PowerSummarySnapshot>.Failed(captureError);
+            }
+
+            try
+            {
+                result.Networks.Add(snapshot!);
+                checked
+                {
+                    result.TotalEnergyRequired += snapshot!.EnergyRequired;
+                    result.TotalEnergyServed += snapshot.EnergyServed;
+                    result.TotalEnergyCapacity += snapshot.EnergyCapacity;
+                    result.TotalEnergyGenerated += snapshot.EnergyGenerated;
+                    result.TotalEnergyExported += snapshot.EnergyExported;
+                }
+            }
+            catch (OverflowException)
+            {
+                return GameCallResult<PowerSummarySnapshot>.Failed(NotReady(
+                    "The local planet power summary exceeds safe numeric bounds."));
+            }
         }
 
         return GameCallResult<PowerSummarySnapshot>.Succeeded(result);
@@ -768,39 +792,694 @@ internal sealed class GameStateReader
         });
     }
 
+    public GameCallResult<OverseerSummarySnapshot> GetOverseerSummaryOnMainThread(
+        string? requestedSessionId,
+        GetOverseerSummaryRequest request)
+    {
+        var accessError = ValidateOwnedGameDataOnMainThread(requestedSessionId, out var gameData);
+        if (accessError is not null)
+        {
+            return GameCallResult<OverseerSummarySnapshot>.Failed(accessError);
+        }
+
+        var limit = request.Limit == 0 ? DefaultOverseerPlanetLimit : request.Limit;
+        if (limit < 1 || limit > MaximumOverseerPlanetLimit)
+        {
+            return GameCallResult<OverseerSummarySnapshot>.Failed(InvalidRequest(
+                $"Overseer planet page limit must be between 1 and {MaximumOverseerPlanetLimit}.",
+                "Use a bounded planet page limit and retry."));
+        }
+
+        var filterHash = ComputeFilterHash($"overseer-summary|limit={limit}");
+        SnapshotPage<OverseerSummaryPageEntry>? page;
+        if (!string.IsNullOrWhiteSpace(request.Cursor))
+        {
+            var status = _overseerSummarySnapshots.TryGetPage(
+                request.Cursor,
+                _sessions.SessionId!,
+                OverseerSnapshotScopeId,
+                filterHash,
+                limit,
+                out page);
+            if (status != SnapshotCursorStatus.Success || page is null)
+            {
+                return GameCallResult<OverseerSummarySnapshot>.Failed(StaleCursor(
+                    "The Overseer summary cursor is unknown, expired, or bound to a different session or page size."));
+            }
+        }
+        else
+        {
+            var captureError = TryCaptureOverseerSummary(gameData!, out var entries);
+            if (captureError is not null)
+            {
+                return GameCallResult<OverseerSummarySnapshot>.Failed(captureError);
+            }
+
+            if (!_overseerSummarySnapshots.TryCreate(
+                    _sessions.SessionId!,
+                    OverseerSnapshotScopeId,
+                    filterHash,
+                    entries,
+                    limit,
+                    out page)
+                || page is null)
+            {
+                return GameCallResult<OverseerSummarySnapshot>.Failed(
+                    SnapshotCapacityExceeded("Overseer cross-domain"));
+            }
+        }
+
+        if (page.Items.Count == 0)
+        {
+            return GameCallResult<OverseerSummarySnapshot>.Failed(NotReady(
+                "The owned world did not yield an Overseer factory summary page."));
+        }
+
+        return GameCallResult<OverseerSummarySnapshot>.Succeeded(new OverseerSummarySnapshot
+        {
+            SessionId = _sessions.SessionId!,
+            CapturedAtGameTick = page.Items[0].CapturedAtGameTick,
+            SnapshotId = page.SnapshotId,
+            SnapshotExpiresAtUtc = page.ExpiresAtUtc,
+            TotalFactoryCount = page.TotalItemCount,
+            ReturnedFactoryCount = page.Items.Count,
+            Research = page.Items[0].Research,
+            Planets = page.Items.Select(entry => entry.Planet).ToList(),
+            NextCursor = page.NextCursor,
+        });
+    }
+
+    private static BridgeError? TryCaptureOverseerSummary(
+        GameData gameData,
+        out List<OverseerSummaryPageEntry> entries)
+    {
+        entries = new List<OverseerSummaryPageEntry>();
+        var factoryError = TryGetOwnedFactories(gameData, out var factories);
+        if (factoryError is not null)
+        {
+            return factoryError;
+        }
+
+        long powerNetworkScanCount = 0;
+        long powerGeneratorScanCount = 0;
+        long stationScanCount = 0;
+        foreach (var factory in factories)
+        {
+            var powerSystem = factory.powerSystem;
+            var transport = factory.transport;
+            if (powerSystem?.netPool is null
+                || powerSystem.netCursor < 1
+                || powerSystem.netCursor > powerSystem.netPool.Length
+                || transport?.stationPool is null
+                || transport.stationCursor < 1
+                || transport.stationCursor > transport.stationPool.Length)
+            {
+                return NotReady("An owned factory's power or logistics index is not ready.");
+            }
+
+            powerNetworkScanCount += powerSystem.netCursor - 1L;
+            stationScanCount += transport.stationCursor - 1L;
+            if (powerNetworkScanCount > MaximumOverseerPowerNetworkScanCount
+                || stationScanCount > MaximumOverseerStationScanCount)
+            {
+                return OverseerScopeExceeded();
+            }
+
+            for (var networkId = 1; networkId < powerSystem.netCursor; networkId++)
+            {
+                var network = powerSystem.netPool[networkId];
+                if (network is not null && network.id != 0)
+                {
+                    powerGeneratorScanCount += network.generators?.Count ?? 0;
+                }
+            }
+
+            if (powerGeneratorScanCount > MaximumOverseerPowerGeneratorScanCount)
+            {
+                return OverseerScopeExceeded();
+            }
+        }
+
+        var capturedAtGameTick = GameMain.gameTick;
+        var researchError = TryCaptureOverseerResearch(out var research);
+        if (researchError is not null)
+        {
+            return researchError;
+        }
+
+        var localPlanetId = gameData.localPlanet?.id ?? 0;
+        foreach (var factory in factories)
+        {
+            var powerError = TryCaptureOverseerPower(factory, out var power);
+            if (powerError is not null)
+            {
+                entries.Clear();
+                return powerError;
+            }
+
+            var logisticsError = TryCaptureOverseerLogistics(factory, out var logistics);
+            if (logisticsError is not null)
+            {
+                entries.Clear();
+                return logisticsError;
+            }
+
+            entries.Add(new OverseerSummaryPageEntry
+            {
+                CapturedAtGameTick = capturedAtGameTick,
+                Research = research!,
+                Planet = new OverseerPlanetSummarySnapshot
+                {
+                    FactoryIndex = factory.index,
+                    PlanetId = factory.planetId,
+                    PlanetName = factory.planet.displayName,
+                    IsLocalPlanet = factory.planetId == localPlanetId,
+                    FactoryDisplayLoaded = factory.planet.factoryLoaded,
+                    CapturedAtGameTick = capturedAtGameTick,
+                    Power = power!,
+                    Logistics = logistics!,
+                },
+            });
+        }
+
+        return null;
+    }
+
+    private static BridgeError? TryCaptureOverseerPower(
+        PlanetFactory factory,
+        out OverseerPowerSummarySnapshot? summary)
+    {
+        summary = null;
+        var powerSystem = factory.powerSystem;
+        if (powerSystem?.netPool is null
+            || powerSystem.netCursor < 1
+            || powerSystem.netCursor > powerSystem.netPool.Length)
+        {
+            return NotReady("An owned factory's power-network pool is not ready.");
+        }
+
+        var networks = new List<PowerNetworkSnapshot>();
+        for (var networkId = 1; networkId < powerSystem.netCursor; networkId++)
+        {
+            var network = powerSystem.netPool[networkId];
+            if (network is null || network.id == 0)
+            {
+                continue;
+            }
+
+            if (network.id != networkId)
+            {
+                return NotReady("An active power network does not match its pool identity.");
+            }
+
+            var captureError = TryCapturePowerNetwork(powerSystem, networkId, network, out var snapshot);
+            if (captureError is not null)
+            {
+                return captureError;
+            }
+
+            networks.Add(snapshot!);
+        }
+
+        try
+        {
+            summary = OverseerPowerSummaryCalculator.Calculate(
+                networks,
+                MaximumOverseerNetworkDetailsPerPlanet);
+            return null;
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException
+            || exception is OverflowException)
+        {
+            return NotReady("An owned factory's power counters are incomplete, invalid, or exceed safe numeric bounds.");
+        }
+    }
+
+    private static BridgeError? TryCapturePowerNetwork(
+        PowerSystem powerSystem,
+        int networkId,
+        PowerNetwork network,
+        out PowerNetworkSnapshot? snapshot)
+    {
+        snapshot = null;
+        if (network.nodes is null
+            || network.consumers is null
+            || network.generators is null
+            || network.accumulators is null
+            || network.exchangers is null
+            || network.energyRequired < 0
+            || network.energyServed < 0
+            || network.energyCapacity < 0
+            || network.energyExport < 0
+            || network.energyStored < 0
+            || double.IsNaN(network.consumerRatio)
+            || double.IsInfinity(network.consumerRatio)
+            || network.consumerRatio < 0d
+            || double.IsNaN(network.generaterRatio)
+            || double.IsInfinity(network.generaterRatio)
+            || network.generaterRatio < 0d
+            || powerSystem.genPool is null
+            || powerSystem.genCursor < 1
+            || powerSystem.genCursor > powerSystem.genPool.Length)
+        {
+            return NotReady("An active power network has incomplete or invalid native counters.");
+        }
+
+        long generated = 0;
+        var generatorIds = new HashSet<int>();
+        try
+        {
+            foreach (var generatorId in network.generators)
+            {
+                if (generatorId <= 0
+                    || !generatorIds.Add(generatorId)
+                    || generatorId >= powerSystem.genCursor
+                    || generatorId >= powerSystem.genPool.Length)
+                {
+                    return NotReady("An active power network references an invalid generator component.");
+                }
+
+                ref var generator = ref powerSystem.genPool[generatorId];
+                if (generator.id != generatorId
+                    || generator.networkId != networkId
+                    || generator.generateCurrentTick < 0)
+                {
+                    return NotReady("An active power network does not match its generator component identity or counters.");
+                }
+
+                checked
+                {
+                    generated += generator.generateCurrentTick;
+                }
+            }
+        }
+        catch (OverflowException)
+        {
+            return NotReady("An active power network's generated energy exceeds safe numeric bounds.");
+        }
+
+        snapshot = new PowerNetworkSnapshot
+        {
+            NetworkId = networkId,
+            NodeCount = network.nodes.Count,
+            ConsumerCount = network.consumers.Count,
+            GeneratorCount = network.generators.Count,
+            AccumulatorCount = network.accumulators.Count,
+            ExchangerCount = network.exchangers.Count,
+            EnergyRequired = network.energyRequired,
+            EnergyServed = network.energyServed,
+            EnergyCapacity = network.energyCapacity,
+            EnergyGenerated = generated,
+            EnergyExported = network.energyExport,
+            EnergyStored = network.energyStored,
+            ConsumerRatio = network.consumerRatio,
+            GeneratorRatio = network.generaterRatio,
+        };
+        return null;
+    }
+
+    private static BridgeError? TryCaptureOverseerLogistics(
+        PlanetFactory factory,
+        out OverseerLogisticsSummarySnapshot? summary)
+    {
+        summary = new OverseerLogisticsSummarySnapshot();
+        var transport = factory.transport;
+        if (transport?.stationPool is null
+            || transport.stationCursor < 1
+            || transport.stationCursor > transport.stationPool.Length
+            || factory.entityPool is null)
+        {
+            summary = null;
+            return NotReady("An owned factory's logistics-station pool is not ready.");
+        }
+
+        try
+        {
+            for (var stationId = 1; stationId < transport.stationCursor; stationId++)
+            {
+                var station = transport.stationPool[stationId];
+                if (station is null || station.id == 0)
+                {
+                    continue;
+                }
+
+                if (station.id != stationId
+                    || station.entityId <= 0
+                    || station.entityId >= factory.entityCursor
+                    || station.entityId >= factory.entityPool.Length)
+                {
+                    summary = null;
+                    return NotReady("An active logistics station does not match its station or entity pool identity.");
+                }
+
+                ref var entity = ref factory.entityPool[station.entityId];
+                if (entity.id != station.entityId
+                    || entity.stationId != stationId
+                    || !LogisticsStationIdentityPolicy.MatchesLocalPlanet(
+                        station.isStellar,
+                        station.planetId,
+                        factory.planetId)
+                    || station.energy < 0
+                    || station.energyMax < 0
+                    || station.warperCount < 0
+                    || station.idleDroneCount < 0
+                    || station.workDroneCount < 0
+                    || station.idleShipCount < 0
+                    || station.workShipCount < 0)
+                {
+                    summary = null;
+                    return NotReady("An active logistics station has inconsistent identity or counters.");
+                }
+
+                checked
+                {
+                    summary.StationCount++;
+                    summary.StoredEnergy += station.energy;
+                    summary.EnergyCapacity += station.energyMax;
+                    summary.WarperCount += station.warperCount;
+                    summary.IdleDroneCount += station.idleDroneCount;
+                    summary.WorkingDroneCount += station.workDroneCount;
+                    summary.IdleVesselCount += station.idleShipCount;
+                    summary.WorkingVesselCount += station.workShipCount;
+                    if (station.isCollector)
+                    {
+                        summary.CollectorCount++;
+                    }
+                    else if (station.isVeinCollector)
+                    {
+                        summary.VeinCollectorCount++;
+                    }
+                    else if (station.isStellar)
+                    {
+                        summary.InterstellarStationCount++;
+                    }
+                    else
+                    {
+                        summary.PlanetaryStationCount++;
+                    }
+                }
+
+                if (!station.isCollector)
+                {
+                    if (TryGetStationPowerRatio(factory, ref entity, station, out var powerRatio)
+                        && powerRatio >= ProductionFaultClassifier.DefaultMinimumPowerServeRatio)
+                    {
+                        checked
+                        {
+                            summary.PoweredStationCount++;
+                        }
+                    }
+                    else
+                    {
+                        checked
+                        {
+                            summary.UnderpoweredStationCount++;
+                        }
+                    }
+                }
+
+                var stores = station.storage;
+                if (stores is null)
+                {
+                    summary = null;
+                    return NotReady("An active logistics station has no storage-slot array.");
+                }
+
+                if (stores.Length > MaximumOverseerStationStorageSlots)
+                {
+                    summary = null;
+                    return OverseerScopeExceeded();
+                }
+
+                foreach (var store in stores)
+                {
+                    if (store.itemId < 0
+                        || store.count < 0
+                        || !IsKnownLogisticsMode(store.localLogic)
+                        || !IsKnownLogisticsMode(store.remoteLogic)
+                        || (store.itemId == 0
+                            && (store.count != 0
+                                || store.localOrder != 0
+                                || store.remoteOrder != 0
+                                || store.localLogic != ELogisticStorage.None
+                                || store.remoteLogic != ELogisticStorage.None)))
+                    {
+                        summary = null;
+                        return NotReady("A logistics station storage slot has inconsistent identity, inventory, order, or mode state.");
+                    }
+
+                    checked
+                    {
+                        if (store.itemId > 0)
+                        {
+                            summary.ConfiguredStorageSlotCount++;
+                            summary.StoredItemCount += store.count;
+                        }
+
+                        if (store.localLogic == ELogisticStorage.Supply) summary.LocalSupplySlotCount++;
+                        if (store.localLogic == ELogisticStorage.Demand) summary.LocalDemandSlotCount++;
+                        if (store.remoteLogic == ELogisticStorage.Supply) summary.RemoteSupplySlotCount++;
+                        if (store.remoteLogic == ELogisticStorage.Demand) summary.RemoteDemandSlotCount++;
+                        if (store.localOrder != 0)
+                        {
+                            summary.OutstandingLocalOrderSlotCount++;
+                            summary.OutstandingLocalOrderMagnitude += Math.Abs((long)store.localOrder);
+                        }
+
+                        if (store.remoteOrder != 0)
+                        {
+                            summary.OutstandingRemoteOrderSlotCount++;
+                            summary.OutstandingRemoteOrderMagnitude += Math.Abs((long)store.remoteOrder);
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+        catch (OverflowException)
+        {
+            summary = null;
+            return NotReady("The logistics summary exceeds safe numeric bounds.");
+        }
+    }
+
+    private static bool IsKnownLogisticsMode(ELogisticStorage mode) =>
+        mode == ELogisticStorage.None
+        || mode == ELogisticStorage.Supply
+        || mode == ELogisticStorage.Demand;
+
+    private static bool TryGetStationPowerRatio(
+        PlanetFactory factory,
+        ref EntityData entity,
+        StationComponent station,
+        out double ratio)
+    {
+        ratio = 0d;
+        var consumerId = station.pcId;
+        var powerSystem = factory.powerSystem;
+        if (consumerId <= 0
+            || consumerId != entity.powerConId
+            || powerSystem?.consumerPool is null
+            || consumerId >= powerSystem.consumerCursor
+            || consumerId >= powerSystem.consumerPool.Length)
+        {
+            return false;
+        }
+
+        ref var consumer = ref powerSystem.consumerPool[consumerId];
+        if (consumer.id != consumerId || consumer.entityId != entity.id)
+        {
+            return false;
+        }
+
+        var value = GetPowerServeRatio(powerSystem, consumer.networkId);
+        if (!value.HasValue || double.IsNaN(value.Value) || double.IsInfinity(value.Value) || value.Value < 0d)
+        {
+            return false;
+        }
+
+        ratio = value.Value;
+        return true;
+    }
+
+    private static BridgeError? TryCaptureOverseerResearch(
+        out OverseerResearchSummarySnapshot? summary)
+    {
+        summary = null;
+        var history = GameMain.history;
+        if (history?.techStates is null || history.techQueue is null || LDB.techs?.dataArray is null)
+        {
+            return NotReady("The owned world's technology state is not ready.");
+        }
+
+        if (history.techQueue.Length > MaximumOverseerTechQueueScanCount
+            || LDB.techs.dataArray.Length > MaximumOverseerTechnologyScanCount)
+        {
+            return OverseerScopeExceeded();
+        }
+
+        foreach (var techId in history.techQueue)
+        {
+            if (techId < 0
+                || (techId > 0
+                    && (LDB.techs.Select(techId) is null
+                        || !history.techStates.ContainsKey(techId))))
+            {
+                return NotReady("The technology queue contains an invalid runtime technology identity.");
+            }
+        }
+
+        var queue = history.techQueue.Where(techId => techId > 0).ToArray();
+        var result = new OverseerResearchSummarySnapshot
+        {
+            CurrentTechId = history.currentTech,
+            CurrentTechName = history.currentTech > 0 ? LDB.techs.Select(history.currentTech)?.name : null,
+            QueuedTechCount = queue.Length,
+            TechQueueTruncated = queue.Length > MaximumOverseerTechQueueCount,
+            TechQueue = queue.Take(MaximumOverseerTechQueueCount).ToList(),
+        };
+
+        foreach (var tech in LDB.techs.dataArray)
+        {
+            if (tech is null || !history.techStates.TryGetValue(tech.ID, out var state))
+            {
+                continue;
+            }
+
+            result.RuntimeTechStateCount++;
+            if (state.unlocked)
+            {
+                result.UnlockedTechCount++;
+            }
+        }
+
+        if (history.currentTech <= 0)
+        {
+            summary = result;
+            return null;
+        }
+
+        var currentTech = LDB.techs.Select(history.currentTech);
+        if (currentTech is null
+            || !history.techStates.TryGetValue(history.currentTech, out var currentState)
+            || currentState.hashUploaded < 0
+            || currentState.hashNeeded < 0)
+        {
+            return NotReady("The current technology identity or hash counters are inconsistent.");
+        }
+
+        result.CurrentHashUploaded = currentState.hashUploaded;
+        result.CurrentHashRequired = currentState.hashNeeded;
+        result.CurrentHashRemaining = Math.Max(0, currentState.hashNeeded - currentState.hashUploaded);
+        var items = currentTech.Items ?? Array.Empty<int>();
+        var itemPoints = currentTech.ItemPoints ?? Array.Empty<int>();
+        if (items.Length != itemPoints.Length || items.Length > 16)
+        {
+            return NotReady("The current technology item requirements are inconsistent or exceed safe bounds.");
+        }
+
+        try
+        {
+            for (var index = 0; index < items.Length; index++)
+            {
+                if (items[index] <= 0 || itemPoints[index] < 0 || LDB.items.Select(items[index]) is null)
+                {
+                    return NotReady("The current technology contains an invalid runtime item requirement.");
+                }
+
+                result.CurrentRequirements.Add(new OverseerResearchItemSnapshot
+                {
+                    ItemId = items[index],
+                    ItemName = GetItemName(items[index]),
+                    PointsPerHash = itemPoints[index],
+                    RequiredItemCount = OverseerResearchMath.CalculateItemCount(
+                        currentState.hashNeeded,
+                        itemPoints[index]),
+                    RemainingItemCount = OverseerResearchMath.CalculateItemCount(
+                        result.CurrentHashRemaining,
+                        itemPoints[index]),
+                    IsMatrix = TechProto.matrixIds.Contains(items[index]),
+                });
+            }
+        }
+        catch (OverflowException)
+        {
+            return NotReady("The current technology item requirement exceeds safe numeric bounds.");
+        }
+
+        summary = result;
+        return null;
+    }
+
+    private static BridgeError? TryGetOwnedFactories(
+        GameData gameData,
+        out List<PlanetFactory> factories)
+    {
+        factories = new List<PlanetFactory>();
+        var factoryPool = gameData.factories;
+        if (gameData.factoryCount > MaximumOverseerFactoryCount)
+        {
+            return OverseerScopeExceeded();
+        }
+
+        if (factoryPool is null
+            || gameData.factoryCount < 1
+            || gameData.factoryCount > factoryPool.Length)
+        {
+            return NotReady("The owned world's factory index is not ready.");
+        }
+
+        for (var factoryIndex = 0; factoryIndex < gameData.factoryCount; factoryIndex++)
+        {
+            var factory = factoryPool[factoryIndex];
+            var planet = factory?.planet;
+            if (factory is null
+                || planet is null
+                || factory.index != factoryIndex
+                || planet.factoryIndex != factoryIndex
+                || !ReferenceEquals(planet.factory, factory)
+                || factory.planetId <= 0
+                || factory.planetId != planet.id)
+            {
+                factories.Clear();
+                return NotReady("An owned factory does not match its factory and planet pool identity.");
+            }
+
+            factories.Add(factory);
+        }
+
+        return null;
+    }
+
     private static BridgeError? TryCaptureOverseerProduction(
         GameData gameData,
         IReadOnlyList<int> itemIds,
         out List<OverseerPlanetProductionSnapshot> planets)
     {
         planets = new List<OverseerPlanetProductionSnapshot>();
-        var factories = gameData.factories;
+        var factoryError = TryGetOwnedFactories(gameData, out var factories);
+        if (factoryError is not null)
+        {
+            return factoryError;
+        }
+
         var production = gameData.statistics?.production;
         var factoryStats = production?.factoryStatPool;
-        if (factories is null
-            || factoryStats is null
-            || gameData.factoryCount < 1
-            || gameData.factoryCount > factories.Length
-            || gameData.factoryCount > factoryStats.Length)
+        if (factoryStats is null || gameData.factoryCount > factoryStats.Length)
         {
-            return NotReady("The owned world's factory or production-statistics index is not ready.");
+            return NotReady("The owned world's production-statistics index is not ready.");
         }
 
         var capturedAtGameTick = GameMain.gameTick;
         var localPlanetId = gameData.localPlanet?.id ?? 0;
-        for (var factoryIndex = 0; factoryIndex < gameData.factoryCount; factoryIndex++)
+        foreach (var factory in factories)
         {
-            var factory = factories[factoryIndex];
+            var factoryIndex = factory.index;
             var factoryStat = factoryStats[factoryIndex];
-            var planet = factory?.planet;
-            if (factory is null
-                || factoryStat is null
-                || planet is null
-                || factory.index != factoryIndex
-                || planet.factoryIndex != factoryIndex
-                || !ReferenceEquals(planet.factory, factory)
-                || factory.planetId <= 0
-                || factory.planetId != planet.id
+            var planet = factory.planet;
+            if (factoryStat is null
                 || factoryStat.productIndices is null
                 || factoryStat.productPool is null)
             {
@@ -2274,6 +2953,15 @@ internal sealed class GameStateReader
             "Wait for an existing snapshot to expire, then start a new listing.");
     }
 
+    private static BridgeError OverseerScopeExceeded()
+    {
+        return BridgeError.Create(
+            BridgeErrorCodes.ServerBusy,
+            "The owned world's current factory, power, logistics, or technology scope exceeds the bounded Overseer snapshot budget.",
+            false,
+            "Use the existing narrower observation tools while a future incremental Overseer snapshot implementation handles this scale.");
+    }
+
     private static GameCallResult<ResourceNodeSnapshot> InvalidResource(string message)
     {
         return GameCallResult<ResourceNodeSnapshot>.Failed(BridgeError.Create(
@@ -2411,5 +3099,14 @@ internal sealed class GameStateReader
             message,
             false,
             "Refresh the assembler list and use a current assembler entity ID."));
+    }
+
+    private sealed class OverseerSummaryPageEntry
+    {
+        public long CapturedAtGameTick { get; set; }
+
+        public OverseerResearchSummarySnapshot Research { get; set; } = new OverseerResearchSummarySnapshot();
+
+        public OverseerPlanetSummarySnapshot Planet { get; set; } = new OverseerPlanetSummarySnapshot();
     }
 }

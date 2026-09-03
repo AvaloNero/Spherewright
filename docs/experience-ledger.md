@@ -26,7 +26,7 @@
 - 限制或反例：若未来测试项目显式引用 Plugin，该现象可能改变，但完整构建仍是部署前的明确证据。
 - 复验触发：解决方案/测试引用图、构建脚本或 Plugin 输出路径变化。
 - 关联：`scripts/install-dev-plugin.ps1`、`src/Spherewright.Plugin/Spherewright.Plugin.csproj`。
-- 最近复验：2026-08-31。
+- 最近复验：2026-09-03（递归诊断最终批次先完整构建，再离线部署同批零差异程序集；0 warning / 0 error）。
 
 ### EXP-002 — DSP 应通过 Steam 启动链启动
 
@@ -50,7 +50,7 @@
 - 限制或反例：若发布协议显式改名，脚本与文档必须原子更新。
 - 复验触发：RuntimeDescriptorPublisher、协议或发现脚本变化。
 - 关联：`src/Spherewright.Plugin/RuntimeDescriptor/RuntimeDescriptorPublisher.cs`、`src/Spherewright.Mcp/BridgeClient/NamedPipeBridgeClient.cs`。
-- 最近复验：2026-08-31。
+- 最近复验：2026-09-03（源码 MCP `0.4.0.0` 继续从唯一 live `bridge-*.json` 发现当前 Plugin，并完成 initialize/list/live call）。
 
 ### EXP-004 — 跨进程恢复票据需要可见且受保护的固定交接目录
 
@@ -385,7 +385,7 @@
 - 限制或反例：换机或重新安装 SDK 后路径可能变化；静态元数据只能证明签名，行为仍需实机复读。
 - 复验触发：工作区 SDK 布局、构建脚本、BepInEx/Mono.Cecil 或 DSP 程序集变化。
 - 关联：`.local/dotnet/`、`scripts/sync-game-refs.ps1`、`docs/research/environment.md`。
-- 最近复验：2026-08-31。
+- 最近复验：2026-09-03（继续使用本地 SDK `8.0.424` 完成 188 项测试与当前游戏引用的完整构建；DSP 程序集哈希未变，并用本地 IL 工具复核分流器行为）。
 
 ### EXP-031 — 范围内 harvest 会通过正常玩家动作接近资源点
 
@@ -892,7 +892,7 @@
 - 限制或反例：历史首次部署曾需要由已认证健康 session 生成 bootstrap handoff，因为旧 DLL 没有计划内签发能力；当前部署已经自动签发，不能再运行 bootstrap 覆盖它。现行票据固定 24 小时过期，过期后不能在离线状态延长或伪造；若长期关机需求反复出现，应在下一次仍有效的正常恢复后把 planned-restart lifetime 改为受测试的配置，再由新的健康保存签发新票据。任何路径都不授权从存档文件推断身份。planned 与 quarantine 的载入源必须按 EXP-084 分流。
 - 复验触发：ticket ACL/路径变化、LastExit 时间门槛失败、不同宿主/Windows 用户，或日记/最新 tick/实体门槛不匹配。
 - 关联：EXP-004、EXP-005、EXP-006、EXP-038、EXP-047、EXP-064、`src/Spherewright.Plugin/RuntimeDescriptor/OwnedWorldResumeTicketStore.cs`、`src/Spherewright.Plugin/Game/GameSessionTracker.cs`、`scripts/arm-planned-restart-handoff.ps1`。
-- 最近复验：2026-09-01（tick `8340400` 健康保存自动签票并正常退出；票据保留、descriptor 清零，等待下一次消费闭环）。
+- 最近复验：2026-09-03（新增一轮健康保存、正常关窗、exact-primary 一次消费和恢复后自动重存闭环；最终 `14109460 -> 14109491`，下一张票据可用）。
 
 ### EXP-070 — 传送带分拣器附着方位是虚拟 slot，完工反查必须扫描实际连接槽
 
@@ -932,7 +932,7 @@
 - 限制或反例：如果某次改动只涉及 Plugin 内部且公共依赖二进制未变，旧依赖可能碰巧可用，但部署流程仍不应猜测 ABI 兼容；Newtonsoft/BepInEx/游戏程序集有各自来源，不能无条件覆盖。
 - 复验触发：Contracts/Core 公开类型或方法变化、部署脚本实现、Release 打包、任一安装 hash 不一致或再次出现类型/方法加载错误。
 - 关联：EXP-001、EXP-002、EXP-030、EXP-069、EXP-071。
-- 最近复验：2026-09-01（单 DLL TypeLoad 反例与同批三程序集成功恢复的正对照）。
+- 最近复验：2026-09-03（新增 Core tracer 公开类型后，Plugin/Core/Contracts/Newtonsoft 均在 DSP 完全退出时同批替换；四文件与构建输出哈希一致且 live 调用成功）。
 
 ### EXP-073 — 上游修复不能以首个局部流量为终点，必须逐层复读到最终消费者
 
@@ -1950,13 +1950,13 @@
 
 - 状态：`validated`
 - 日期：2026-09-03
-- 适用范围：v0.4 Overseer 的纯 Core 相邻计数采样、实际产消速率/理论利用率计算，以及单生产单元的首要停机原因分类。速率、理论容量和直接 assembler/lab/miner 故障输入后来已由 EXP-155/157–161 接入 DSP 运行时；本条仍不声称递归上游或时间型物流诊断已经完成。
+- 适用范围：v0.4 Overseer 的纯 Core 相邻计数采样、实际产消速率/理论利用率计算，以及单生产单元的首要停机原因分类。速率、理论容量、直接 assembler/lab/miner 故障输入与同星球递归后来已由 EXP-155/157–162 接入 DSP 运行时；本条仍不声称时间型物流诊断已经完成。
 - 当前结论：实际速率的分母只能是连续流逝的游戏 tick（当前固定 60 tick/s），墙钟中多出的离线/暂停时间单独标为 excluded，不能稀释或伪造吞吐。相同受保护存档跨新 session 可保持连续，但 owned identity 改变、tick/累计计数回退、同 tick 计数前进或相邻采样超过明确上限都必须把窗口标成 discontinuous 并归零本段速率。故障分类只有在 ready 窗口至少覆盖一个完整配方周期后才运行；当前首因优先级为本机矿源耗尽、断网/供电比不足、满输出缓冲、上游矿源耗尽、物流未配置/有源库存但订单无进展，最后才是一般缺料。已有非零实际产量时不把瞬时空输入误报为停机。
 - 直接证据：新增的无游戏 DLL 测试证明 600 tick/20 件产出恒为 120/min，即使墙钟跨 1 小时也只把额外时间计入 `excludedNonGameSeconds`；同档跨 session 保持 ready，而换档、tick 回退、计数回退、601 tick 采样断层和同 tick 计数前进全部失效。独立分类测试覆盖未满周期不报、供电不足、输出满、矿源耗尽、物流未配置、订单停滞、一般缺料及已有产量不误报。Core/Contracts/MCP 总计 135 项通过（101 + 15 + 19），完整 solution 0 warning / 0 error；源码产品版本同时切到 `0.4.0`。
-- 限制或反例：原生实际窗口已由 EXP-155 固定为 600 tick，理论产率由 EXP-157 接入；输出缓冲、矿量、电力和物理相关物流端也已由 EXP-158/159 接入。订单无进展仍不能在没有跨 tick 运输时间和源库存证据时升级为 confirmed。分类器当前只返回直接生产单元的首要原因，不等于已经完成跨生产者递归上游图。
+- 限制或反例：原生实际窗口已由 EXP-155 固定为 600 tick，理论产率由 EXP-157 接入；输出缓冲、矿量、电力、物理相关物流端和同星球递归分别由 EXP-158/159/162 接入。订单无进展仍不能在没有跨 tick 运输时间和源库存证据时升级为 confirmed；跨星球生产者和未支持设备仍不在递归范围。
 - 复验触发：接入 DSP production statistics、改变采样频率/持久化格式/窗口长度、引入多星球聚合或上游图、DSP tick rate/配方速度语义变化，以及首次受控实机故障注入。
 - 关联：EXP-030、EXP-062、EXP-127、EXP-142、EXP-144、EXP-153、ROADMAP v0.4、`OverseerCounterWindowAnalyzer`、`ProductionFaultClassifier`。
-- 最近复验：2026-09-03（直接运行时接线后的 174 项回归、完整构建及同档自然故障复读通过）。
+- 最近复验：2026-09-03（加入 splitter 双向过滤门后的 188 项回归、完整构建及同档黄糖上游故障复读通过）。
 
 ### EXP-155 — 自动产线实际速率优先复用 DSP 随档持久化的 600-tick 原生环
 
@@ -1968,7 +1968,7 @@
 - 限制或反例：`ProductStat.refProductSpeed/refConsumeSpeed` 仍是 UI 按需重算且无新鲜度标记的缓存，不能直接读取；本切片最初返回的 `theoreticalCoverage=unavailable` 已由 EXP-157 的独立当前组件公式取代，而不是放宽为信任该缓存。原生环只能给出物品/星球级实际流量，不能单独确认具体设备的输出堵塞、物流阻塞或上游矿脉耗尽；这些仍需设备容量、订单、源库存和路径证据。当前只在一个三 factory 存档和一个 DSP 版本上实机验证。
 - 复验触发：DSP 版本或程序集哈希变化、统计环长度/tick rate/序列化变化、factory/stat 索引模型变化、扩大 item/page 上限、引入理论速率或设备/物流根因，以及最终 v0.4 clean 工件安装。
 - 关联：EXP-030、EXP-048、EXP-062、EXP-079、EXP-104、EXP-144、EXP-154、`docs/research/game-api-overseer.md`、`NativeProductionRateCalculator`、`GameStateReader.GetOverseerProductionOnMainThread`。
-- 最近复验：2026-09-03（同档保存/16-tick 恢复、三 factory 分页、142 项测试、完整构建及 live MCP 调用通过）。
+- 最近复验：2026-09-03（最终 splitter-aware 递归部署后生产窗口仍 ready，三 factory 分页共享 tick `14119083`，188 项测试、完整构建及 live MCP 调用通过）。
 
 ### EXP-156 — 跨星球摘要必须共享一个有界快照并区分真实发电与防御场导出
 
@@ -1980,7 +1980,7 @@
 - 限制或反例：这是聚合快照，不返回完整 station/设备图，也不会仅凭低产量确认缺料、堵塞、断电、订单停滞或矿脉耗尽。网络详情最多返回 64 个但聚合全部预算内网络；超过 factory/network/generator/station/storage/tech 预算会明确失败。独立本地工具与 Overseer 是不同捕获，只有 `capturedAtGameTick` 相同才可逐字段比较。当前只在一个三 factory 存档和一个 DSP 版本上验证，未来防御系统或电网算法变化必须重查字段语义。
 - 复验触发：DSP 版本/程序集哈希变化、电网 tick 算法或 station/tech 序列化变化、调整分页/扫描预算、增加故障分类或上游图、最终 v0.4 clean 工件安装。
 - 关联：EXP-021、EXP-030、EXP-104、EXP-142、EXP-154、EXP-155、IFX-017、`docs/research/game-api-overseer.md`、`OverseerPowerSummaryCalculator`、`GameStateReader.GetOverseerSummaryOnMainThread`。
-- 最近复验：2026-09-03（最终源码二进制 mismatch 0 部署、exact-primary 恢复、三 factory 同快照分页、科研队列身份正例、生产窗回归、150 项测试、完整构建及 50-tool MCP 调用通过）。
+- 最近复验：2026-09-03（最终 splitter-aware 递归部署后 summary 三页仍共享 tick `14119093` 并返回 `104/102/103`；188 项测试、完整构建及 50-tool MCP 调用通过）。
 
 ### EXP-157 — 理论产能必须从当前组件公式重算，耗尽矿机是合法零容量
 
@@ -1992,7 +1992,7 @@
 - 限制或反例：当前存档为 assembler、lab、普通矿机、油井和水泵提供了正值实机样本，但没有活动分馏塔、gamma receiver 或 orbital collector；后三支只有当前 IL 与纯 Core 自动测试证据，不能写成 live positive-output 验收。理论值是“已连接设备按当前配置的设计容量”，不是供料可持续性、可用功率或实际峰值；单凭低利用率不能区分缺料、堵塞、物流或矿耗尽。当前只绑定一个 DSP 程序集哈希，版本变化必须重查 float 顺序、组件类别和分馏 stack 分支。
 - 复验触发：DSP 版本/程序集哈希变化、增加生产组件类型或增产等级、首次出现分馏塔/gamma/轨道采集器实机样本、改变理论扫描预算、扩展直接诊断覆盖或最终 v0.4 clean 工件安装。
 - 关联：EXP-030、EXP-085、EXP-112、EXP-154、EXP-155、`docs/research/game-api-overseer.md`、`OverseerTheoreticalProductionCalculator`、`GameStateReader.GetOverseerProductionOnMainThread`。
-- 最近复验：2026-09-03（直接故障接线仍复用同一理论公式；最终同批 Plugin 零差异部署、exact-primary 恢复、174 项测试与完整构建通过）。
+- 最近复验：2026-09-03（splitter-aware 递归仍复用同一理论公式；最终同批 Plugin 零差异部署、exact-primary 恢复、188 项测试与完整构建通过）。
 
 ### EXP-158 — 输出堵塞必须复现当前组件允许下一周期的原生缓冲门
 
@@ -2004,19 +2004,19 @@
 - 限制或反例：多产物设备任一输出满都可能阻止整周期，但 finding 当前只给首个满输出；分馏塔、gamma receiver 和 orbital collector 缓冲门尚未接入，覆盖会显式为 `partial`。程序集变化必须重新反编译，不能沿用这些常数。
 - 复验触发：DSP/程序集变化、生产组件缓冲逻辑变化、新增诊断设备类别、首次受控清空/填满输出试验或最终 v0.4 clean 工件安装。
 - 关联：EXP-056、EXP-154、EXP-157、`ProductionOutputBufferCapacityCalculator`、`GameStateReader.OverseerDiagnostics.cs`。
-- 最近复验：2026-09-03（当前 IL、14 个新增 Core 测试、扩展的契约序列化测试及三个自然满缓冲 live 样本一致）。
+- 最近复验：2026-09-03（splitter-aware 递归仍保持输出堵塞优先级；188 项回归与最终同档 live 读取通过）。
 
 ### EXP-159 — 物流根因只能沿消费者的真实有向货运拓扑绑定到塔
 
 - 状态：`validated`
 - 日期：2026-09-03
-- 适用范围：v0.4 直接设备输入从 assembler/lab input sorter 反向追到当前 owned factories 的行星/星际物流站 output slot；不等同于任意全厂依赖发现。
-- 当前结论：同星球或跨星球存在同 item 的物流塔不能证明它供应目标设备。必须从消费者 input sorter 的精确 `pickTarget` 出发，只沿 `ReadObjectConn` 的入边穿过 belt、splitter、piler、spraycoater、inserter、storage/tank，最终命中 station slot 精确绑定的 output belt/entity；此后才按 demand 模式寻找同 item 的 supply 端。中转仓是货运图节点，不是追踪终点。
+- 适用范围：v0.4 设备输入从 assembler/lab input sorter 反向追到当前 owned factories 的行星/星际物流站 output slot，以及 EXP-162 的同星球生产者候选绑定；不等同于任意全厂依赖发现。
+- 当前结论：同星球或跨星球存在同 item 的物流塔不能证明它供应目标设备。必须从消费者 input sorter 的精确 `pickTarget` 出发，只沿 `ReadObjectConn` 的入边穿过 belt、splitter、piler、spraycoater、inserter、storage/tank，最终命中 station slot 精确绑定的 output belt/entity；此后才按 demand 模式寻找同 item 的 supply 端。中转仓是货运图节点，不是追踪终点。每种候选 input item 必须独立遍历，路径上的每个 sorter filter 都只能为空或精确等于该 item。
 - 直接证据：首版 live 在 assembler `530` 缺 item `1004` 时只返回一般缺料；逐段读回证明真实链为 `530 <- sorter 532 <- storage 259 <- sorter 1784 <- belts <- station 1657 output belt 1783`。加入 storage/tank/inserter 有向中继后，同一 finding 只在该物理链成立时附加 demand `104:1657`、supply `102:44`、source inventory `28` 和 carrier count `2`。没有绑定到其他仅同 item 的站。
-- 限制或反例：当前只从输入 sorter 起步，不覆盖无 sorter 直连或尚未支持的生产类型；storage/tank 的多入边会保留所有真实上游候选，但只按目标 item 与 sorter filter 绑定塔输出。物流进展仍需跨 tick 证据，单次拓扑命中不能证明运输停滞。
+- 限制或反例：当前只从输入 sorter 起步，不覆盖无 sorter 直连或尚未支持的生产类型；storage/tank 的多入边会保留所有真实上游候选，但只按目标 item 与全路径 sorter filter 绑定塔输出或同星球 producer。物流进展仍需跨 tick 证据，单次拓扑命中不能证明运输停滞。
 - 复验触发：DSP 连接槽语义变化、新增 cargo transit 类型、station belt selector 变化、多塔同 item 路由、递归上游图或 temporal logistics 窗口接入。
 - 关联：EXP-117、EXP-123、EXP-144、IFX-019、`TryFindDirectDiagnosticDemandBindings`。
-- 最近复验：2026-09-03（中转仓反例修复后，同一硅物流链完成实体级正向复读和 finding 路径闭合）。
+- 最近复验：2026-09-03（按 item 独立遍历及中间 sorter filter 门部署后，黄糖仍通过真实金刚石路径命中 assembler `715`；硅塔链既有正例保持）。
 
 ### EXP-160 — 活跃周期和物品级正产量必须阻止瞬时空输入误报
 
@@ -2028,7 +2028,7 @@
 - 限制或反例：聚合保护会暂时隐藏“部分并行设备停机但其他设备仍产出”，这是当前 direct-stop 视图的保守选择；后续若增加降速/利用率诊断，需要单独定义持续窗口，不能移除本保护后直接复用停机标签。
 - 复验触发：引入部分产能降级诊断、改变 item 聚合范围、DSP 输入消费时点变化、增加 per-device production counter 或最终 v0.4 clean 工件安装。
 - 关联：EXP-154、EXP-155、EXP-157、`ProductionFaultClassifier`、`ApplyOverseerDirectDiagnostics`。
-- 最近复验：2026-09-03（Core 回归与红矩阵正产量/黄矩阵直接缺料 live 对照通过）。
+- 最近复验：2026-09-03（上游实际速率显式 unknown 后仍按同 tick 停机状态分类；Core 回归与黄糖递归 live 对照通过）。
 
 ### EXP-161 — 故障 finding 是 captured tick 的快照，不是可跨 tick 固化的根因
 
@@ -2040,9 +2040,37 @@
 - 限制或反例：目前只有一个自然供电波动正反样本，尚未以受控断电和恢复重复多轮；因此保持 `observed`。它不意味着历史 finding 无价值，只意味着写入前必须刷新并重新满足同一证据门。
 - 复验触发：受控断电/复电试验、跨 tick 诊断持久化、temporal logistics 窗口、自动修复客户端或最终 v0.4 clean 工件安装。
 - 关联：EXP-007、EXP-142、EXP-154、ROADMAP v0.4 受控故障门、`ProductionFaultClassifier`。
-- 最近复验：2026-09-03（一个自然 network ratio 波动样本，保持 observed）。
+- 最近复验：2026-09-03（黄糖 finding 在最终部署 fresh tick `14111293` 重新生成；自然供电波动仍只有一个正反样本，保持 observed）。
+
+### EXP-162 — 递归根因只沿物料兼容的物理上游，图边界必须显式可见
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：当前 DSP `0.10.34.28529` / `Assembly-CSharp.dll` SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，v0.4 从 assembler/lab 缺料点递归进入同星球受支持 assembler/lab/miner 生产者的只读根因路径。
+- 当前结论：上游生产者不能仅凭“生产同一种物料”关联。每个缺失 item 必须从消费者精确 input sorter 独立反向遍历有向货运图；起始和中间 sorter 的 filter 均须为空或匹配该 item，splitter 输出还必须按 EXP-163 的精确 slot/belt 与双向过滤语义放行，候选 producer 再按 planet/object/output-item 三重身份绑定。递归最多 8 层、访问 64 个 producer，并用 `(planetId, objectId, itemId)` 防环；达到深度/访问上限、遇环或 resolver 身份不一致时必须写入 `upstream_trace_stop_reason`，不能把截断点冒充完整根因。上游没有与调用方目标 item 对应的 per-device 历史速率，因此把实际速率标成 unknown，继续使用同 tick 缓冲、电力、矿源和工作态分类。
+- 直接证据：7 项纯 Core tracer 回归覆盖四节点缺料链、更深输出堵塞、环路、resolver 身份不符、未知上游速率以及深度/访问上限；EXP-163 另有 7 项 splitter policy 回归，完整 suite 为 Contracts/Core/MCP `17 + 150 + 21 = 188`，solution 0 warning / 0 error。首个 live 候选在 tick `14028962` 从黄糖 lab `774` 进入 diamond assembler `715`；最终源码相等部署 Plugin/Core hash 为 `46E62CC930CAD0756BBFB06625C9585F04A074B25FEDC15C4D7DCE2A322F4B70` / `CA8B33DD66330211ECD78E535CBD05932933278AF6E640BE67AF7AFD6301E7C5`。普通保存 `14109460`、exact-primary 恢复自动重存 `14109491` 后，Bridge tick `14111293` 与最终构建后 MCP tick `14138110` 都返回 `lab 774 / 6003 -> material 1112 -> assembler 715 / 1112 -> material 1109`，无 trace-stop evidence；源码 MCP `0.4.0.0` 的 50-tool surface 返回同一四节点路径。
+- 限制或反例：`directDiagnosticCoverage` 仍只描述请求物品的立即生产者，不声明递归图完整。当前递归不跨物流塔进入其他星球，不支持 fractionator、gamma receiver 或 orbital collector，也不证明有载具订单跨 tick 停滞；没有 producer 候选时保留当前已确认的局部缺料 finding。多个并行生产者按稳定身份顺序返回首个可诊断分支，不等于已做全图关键路径排序。storage/tank 的内容兼容性仍沿当前 native 拓扑而非额外抽象为递归 coverage，相关设备语义变化时需重查。
+- 复验触发：DSP 连接槽/filter 语义变化、新 cargo transit 或生产类型、跨星球生产者边、递归预算/选择策略变化、temporal logistics 接入、受控故障修复或最终 v0.4 clean 工件安装。
+- 关联：EXP-154、EXP-159–161、EXP-163、`ProductionRootCauseTracer`、`TryFindDirectDiagnosticDemandBindings`、`docs/research/game-api-overseer.md`。
+- 最近复验：2026-09-03（splitter-aware 最终同批部署、同档四节点 live 路径、MCP 调用、三厂分页、188 项测试和完整审计通过）。
+
+### EXP-163 — 分流器过滤必须按精确输出口双向约束递归路径
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：当前 DSP `0.10.34.28529` / `Assembly-CSharp.dll` SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，v0.4 反向生产/物流拓扑穿过 `SplitterComponent` 的只读 item reachability 判定。
+- 当前结论：不能把 splitter 当成对所有 item 都透明的四通节点。`outFilter=0` 时全部输出均可承载该 item；`outFilter>0` 时 priority `output0` 只允许等于过滤值的 item，`output1..3` 则只允许不等于过滤值的 item。反向遍历必须保留进入 splitter 的 exact `otherSlot`，用 `GetSlotBelt` 对齐下游 belt，并要求它只匹配一个 `output0..3`；component/entity/belt/slot/filter 任一身份异常都应 fail-closed，而合法但不允许该 item 的分支只停止该分支。
+- 直接证据：当前程序集 `SplitterComponent.SetPriority` 在选择输出优先级时把相应 belt 交换到 `output0` 并写 `outFilter`；`CargoTraffic.UpdateSplitter`/`UpdateSplitterAsync` 先以 `cargo.item == outFilter` 判定，只让匹配物尝试 `output0`，并仅让不匹配物进入 `output1..3`。`ProductionSplitterFilterPolicyTests` 的 6 个真值表样本和 1 个非法身份样本全部通过；完整 suite 为 `17 + 150 + 21 = 188`。最终 Plugin/Core 源码与部署哈希分别为 `46E62CC930CAD0756BBFB06625C9585F04A074B25FEDC15C4D7DCE2A322F4B70` / `CA8B33DD66330211ECD78E535CBD05932933278AF6E640BE67AF7AFD6301E7C5`；同档恢复后完整生产图读取成功，黄糖四节点根因路径保持不变，三厂分页与 MCP 调用通过。
+- 限制或反例：该规则只描述当前程序集 splitter 的物品选择，不证明 storage/tank 当前内容、跨星物流或时间进展；当前自然黄糖四节点结果本身不含可见 splitter 节点，因此行为正反分支主要由当前 IL 与纯 Core 真值表锁定，最终 v0.4 clean 工件仍需回归。
+- 复验触发：DSP/程序集哈希变化、`SplitterComponent` 字段/重排规则、`CargoTraffic.UpdateSplitter*`、连接槽编码、图遍历状态键、增加 splitter 路径公开证据或最终 v0.4 clean 工件安装。
+- 关联：EXP-030、EXP-159、EXP-162、`ProductionSplitterFilterPolicy`、`TryValidateDiagnosticSplitterOutput`、`docs/research/game-api-overseer.md`。
+- 最近复验：2026-09-03（当前程序集双实现路径、7 项 policy 回归、源码相等部署、同档 live/MCP/分页/审计均通过）。
 
 ## 修订记录
+
+- 2026-09-03：新增 EXP-163，并复验 EXP-001/030/069/072/154–162。第五个 v0.4 切片最终复核发现 splitter `outFilter` 不能被“物理相连”概括；按当前程序集把 exact output slot/belt 身份以及 priority-only match / non-priority exclusion 双向规则接入遍历。普通保存 `14109460`、正常关窗、源码相等部署后，只消费 exact-primary ticket 恢复同一 planet `104` 世界并自动重存 `14109491`。Bridge/MCP 四节点黄糖路径保持不变，三厂分页分别共享 tick `14119083/14119093`，错绑 cursor 继续返回 `STALE_CURSOR`；188 项测试、完整构建和最终 healthy/Journal `49/49`/0 prebuild 审计通过。没有生产写、开新档、隔离、tag 或 Release。
+
+- 2026-09-03：新增 EXP-162，并复验 EXP-001/002/030/069/072/154–161。第五个 v0.4 切片把黄糖缺料从 matrix lab `774` 递归到 diamond assembler `715` 的高能石墨短缺；复核时把输入拓扑改为逐 item 独立遍历，并要求所有中间 sorter filter 匹配。Core 明确限制 8 层/64 producer、检测环和 resolver 身份，截断时返回结构化 stop reason，上游实际速率保持 unknown。最终普通保存/恢复为 `14059914/14059946`，Plugin/Core hash `A1D23E1BA3EEE6DB5FB05C3B92F783E5026591734C43FC186D65F350D8790791` / `CA27E4240A89BAD6013A8E71FDFF9D28AAED080673A362B8850D38EB2D8E7B93`，live tick `14061471` 四节点路径无截断。181 项测试、完整构建、50-tool MCP live call、三厂生产/摘要分页和最终 healthy/Journal `49/49`/0 prebuild 审计通过。跨星递归、时间型物流停滞与受控故障门仍开放；没有 tag 或 Release。
 
 - 2026-09-03：新增 EXP-158–161 与 IFX-019，并复验 EXP-002/030/069/072/142/144/154–157。第四个 v0.4 切片把首因分类接入真实 assembler/lab/miner 缓冲、电网、矿源和有向物流拓扑；首轮 live 在中转仓 `259` 停止，补全 storage/tank/inserter 入边后才精确命中母星 demand `1657` 与远端 supply `44`。三轮都先普通保存、正常关闭、七文件零差异部署，再只消费 exact-primary ticket 恢复同一 owned world；最终保存/自动重存为 tick `13943810/13943842`，Plugin hash `D40D6BEA4E76697EB14C5F1DE3B0CC61532E4BF634125E1A9488D5024FDF59E1`，最终构建后仍与部署文件一致。自然现场闭合 `output_blocked`、`material_shortage`、瞬时 `insufficient_power` 和无 item 身份的 `vein_exhausted`，但没有把单快照有载具路线误报为物流停滞。最终三页共享 tick `13986388` 并安全拒绝错绑 cursor，源码 MCP `0.4.0.0` 完成 50-tool initialize/list/live call；审计 tick `13990990+` 为 peaceful/non-sandbox/1×、healthy、Journal `49/49` durable、Walk/0、满核心、3/3 施工机 idle、0 prebuild、无 blocker/checkpoint。完整 solution 0 warning/0 error，174 项测试；递归上游、跨 tick 运输进展和受控故障/修复仍未完成，本批不打 tag 或发布。
 

@@ -24,6 +24,8 @@ public sealed class ProductionFaultInput
 
     public double ActualProductionPerMinute { get; set; }
 
+    public bool ActualProductionStateKnown { get; set; } = true;
+
     public bool IsConfigured { get; set; }
 
     public bool IsWorking { get; set; }
@@ -82,6 +84,18 @@ public sealed class ProductionMaterialInput
     public bool SourceInventoryKnown { get; set; }
 
     public long SourceInventoryCount { get; set; }
+
+    public IReadOnlyList<ProductionUpstreamReference> UpstreamProducers { get; set; } =
+        Array.Empty<ProductionUpstreamReference>();
+}
+
+public sealed class ProductionUpstreamReference
+{
+    public int PlanetId { get; set; }
+
+    public int ObjectId { get; set; }
+
+    public int ItemId { get; set; }
 }
 
 public sealed class ProductionOutputState
@@ -148,7 +162,8 @@ public static class ProductionFaultClassifier
                 evidence.ToArray());
         }
 
-        if (input.ActualProductionPerMinute > NonZeroRateEpsilon)
+        if (input.ActualProductionStateKnown
+            && input.ActualProductionPerMinute > NonZeroRateEpsilon)
         {
             return null;
         }
@@ -288,7 +303,11 @@ public static class ProductionFaultClassifier
                 || (material.LogisticsDemandPlanetId.HasValue && material.LogisticsDemandPlanetId.Value <= 0)
                 || (material.LogisticsDemandObjectId.HasValue && material.LogisticsDemandObjectId.Value <= 0)
                 || (material.LogisticsSupplyPlanetId.HasValue && material.LogisticsSupplyPlanetId.Value <= 0)
-                || (material.LogisticsSupplyObjectId.HasValue && material.LogisticsSupplyObjectId.Value <= 0))
+                || (material.LogisticsSupplyObjectId.HasValue && material.LogisticsSupplyObjectId.Value <= 0)
+                || material.UpstreamProducers.Any(reference =>
+                    reference.PlanetId <= 0
+                    || reference.ObjectId <= 0
+                    || reference.ItemId != material.ItemId))
             || input.Outputs.Any(output =>
                 output.ItemId <= 0
                 || output.BufferedCount < 0
@@ -309,7 +328,8 @@ public static class ProductionFaultClassifier
         {
             Kind = kind,
             Confidence = confidence,
-            Severity = input.ActualProductionPerMinute <= NonZeroRateEpsilon
+            Severity = !input.ActualProductionStateKnown
+                || input.ActualProductionPerMinute <= NonZeroRateEpsilon
                 ? OverseerFindingSeverities.Stopped
                 : OverseerFindingSeverities.Warning,
             PlanetId = input.PlanetId,

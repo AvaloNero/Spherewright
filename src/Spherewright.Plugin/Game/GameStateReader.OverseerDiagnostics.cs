@@ -27,7 +27,7 @@ internal sealed partial class GameStateReader
                 || factory.entityPool is null)
             {
                 index = null;
-                return NotReady("An owned factory's logistics topology is not ready for direct production diagnostics.");
+                return NotReady("An owned factory's logistics topology is not ready for production diagnostics.");
             }
 
             if (!TryConsumeBudget(
@@ -222,7 +222,6 @@ internal sealed partial class GameStateReader
         {
             var error = TryCaptureAssemblerDirectDiagnostics(
                 factory,
-                requestedItemIds,
                 logistics,
                 capture,
                 ref componentScanCount,
@@ -231,7 +230,6 @@ internal sealed partial class GameStateReader
 
             error = TryCaptureLabDirectDiagnostics(
                 factory,
-                requestedItemIds,
                 logistics,
                 capture,
                 ref componentScanCount,
@@ -240,12 +238,12 @@ internal sealed partial class GameStateReader
 
             error = TryCaptureMinerDirectDiagnostics(
                 factory,
-                requestedItemIds,
                 window,
                 capture,
                 ref sourceReferenceScanCount);
             if (error is not null) return error;
 
+            capture.BindUpstreamProducers();
             CaptureUnsupportedDirectDiagnosticProducers(factory, requestedItemIds, capture);
             return null;
         }
@@ -261,7 +259,6 @@ internal sealed partial class GameStateReader
 
     private static BridgeError? TryCaptureAssemblerDirectDiagnostics(
         PlanetFactory factory,
-        ISet<int> requestedItemIds,
         OverseerDiagnosticLogisticsIndex logistics,
         OverseerDirectDiagnosticCapture capture,
         ref long topologyScanCount,
@@ -279,10 +276,6 @@ internal sealed partial class GameStateReader
             {
                 return NotReady("An active configured assembler has invalid direct-diagnostic identity or recipe state.");
             }
-
-
-            if (!assembler.recipeExecuteData.products.Any(requestedItemIds.Contains)) continue;
-
             var powerError = TryCaptureDirectDiagnosticPower(
                 factory,
                 TheoreticalProducerKind.Assembler,
@@ -307,7 +300,8 @@ internal sealed partial class GameStateReader
                 assembler.recipeExecuteData.requires,
                 logistics,
                 ref topologyScanCount,
-                out var demandBindings);
+                out var demandBindings,
+                out var upstreamCandidates);
             if (routeError is not null) return routeError;
 
             var inputs = CreateDirectDiagnosticInputs(
@@ -315,7 +309,9 @@ internal sealed partial class GameStateReader
                 assembler.recipeExecuteData,
                 assembler.served,
                 logistics,
-                demandBindings!);
+                demandBindings!,
+                upstreamCandidates!,
+                capture);
             var outputs = new List<ProductionOutputState>(assembler.recipeExecuteData.products.Length);
             for (var index = 0; index < assembler.recipeExecuteData.products.Length; index++)
             {
@@ -333,7 +329,6 @@ internal sealed partial class GameStateReader
 
             foreach (var productId in assembler.recipeExecuteData.products.Distinct())
             {
-                if (!requestedItemIds.Contains(productId)) continue;
                 capture.AddProducer(productId, new ProductionFaultInput
                 {
                     PlanetId = factory.planetId,
@@ -345,6 +340,7 @@ internal sealed partial class GameStateReader
                     ExpectedCycleGameTicks = ProductionOutputBufferCapacityCalculator.CalculateCycleGameTicks(
                         assembler.recipeExecuteData.timeSpend,
                         assembler.speed),
+                    ActualProductionStateKnown = false,
                     IsConfigured = true,
                     IsWorking = assembler.replicating,
                     PowerNetworkId = networkId,
@@ -360,7 +356,6 @@ internal sealed partial class GameStateReader
 
     private static BridgeError? TryCaptureLabDirectDiagnostics(
         PlanetFactory factory,
-        ISet<int> requestedItemIds,
         OverseerDiagnosticLogisticsIndex logistics,
         OverseerDirectDiagnosticCapture capture,
         ref long topologyScanCount,
@@ -381,10 +376,6 @@ internal sealed partial class GameStateReader
             {
                 return NotReady("An active matrix lab has invalid direct-diagnostic identity or recipe state.");
             }
-
-
-            if (!lab.recipeExecuteData.products.Any(requestedItemIds.Contains)) continue;
-
             var powerError = TryCaptureDirectDiagnosticPower(
                 factory,
                 TheoreticalProducerKind.Lab,
@@ -409,7 +400,8 @@ internal sealed partial class GameStateReader
                 lab.recipeExecuteData.requires,
                 logistics,
                 ref topologyScanCount,
-                out var demandBindings);
+                out var demandBindings,
+                out var upstreamCandidates);
             if (routeError is not null) return routeError;
 
             var inputs = CreateDirectDiagnosticInputs(
@@ -417,7 +409,9 @@ internal sealed partial class GameStateReader
                 lab.recipeExecuteData,
                 lab.served,
                 logistics,
-                demandBindings!);
+                demandBindings!,
+                upstreamCandidates!,
+                capture);
             var outputs = new List<ProductionOutputState>(lab.recipeExecuteData.products.Length);
             for (var index = 0; index < lab.recipeExecuteData.products.Length; index++)
             {
@@ -432,7 +426,6 @@ internal sealed partial class GameStateReader
 
             foreach (var productId in lab.recipeExecuteData.products.Distinct())
             {
-                if (!requestedItemIds.Contains(productId)) continue;
                 capture.AddProducer(productId, new ProductionFaultInput
                 {
                     PlanetId = factory.planetId,
@@ -444,6 +437,7 @@ internal sealed partial class GameStateReader
                     ExpectedCycleGameTicks = ProductionOutputBufferCapacityCalculator.CalculateCycleGameTicks(
                         lab.recipeExecuteData.timeSpend,
                         lab.speed),
+                    ActualProductionStateKnown = false,
                     IsConfigured = true,
                     IsWorking = lab.replicating,
                     PowerNetworkId = networkId,
@@ -459,7 +453,6 @@ internal sealed partial class GameStateReader
 
     private static BridgeError? TryCaptureMinerDirectDiagnostics(
         PlanetFactory factory,
-        ISet<int> requestedItemIds,
         OverseerWindowSnapshot window,
         OverseerDirectDiagnosticCapture capture,
         ref long sourceReferenceScanCount)
@@ -576,6 +569,7 @@ internal sealed partial class GameStateReader
                     miner.speed,
                     GameMain.history?.miningSpeedScale ?? 0f,
                     sourceMultiplier),
+                ActualProductionStateKnown = false,
                 IsConfigured = true,
                 IsWorking = miner.workstate != EWorkState.Idle,
                 PowerNetworkId = networkId,
@@ -597,7 +591,7 @@ internal sealed partial class GameStateReader
                     : Array.Empty<ProductionOutputState>(),
             };
 
-            if (productId > 0 && requestedItemIds.Contains(productId))
+            if (productId > 0)
             {
                 capture.AddProducer(productId, faultInput);
             }
@@ -711,7 +705,9 @@ internal sealed partial class GameStateReader
         RecipeExecuteData recipe,
         IReadOnlyList<int> served,
         OverseerDiagnosticLogisticsIndex logistics,
-        IReadOnlyDictionary<int, OverseerDiagnosticLogisticsEndpoint> demandBindings)
+        IReadOnlyDictionary<int, OverseerDiagnosticLogisticsEndpoint> demandBindings,
+        IReadOnlyDictionary<int, HashSet<int>> upstreamCandidates,
+        OverseerDirectDiagnosticCapture capture)
     {
         var result = new List<ProductionMaterialInput>(recipe.requires.Length);
         for (var index = 0; index < recipe.requires.Length; index++)
@@ -729,6 +725,11 @@ internal sealed partial class GameStateReader
                 logistics.ApplyRouteEvidence(planetId, material, demand);
             }
 
+            if (upstreamCandidates.TryGetValue(itemId, out var candidates))
+            {
+                capture.RegisterUpstreamCandidates(planetId, material, candidates);
+            }
+
             result.Add(material);
         }
 
@@ -741,9 +742,11 @@ internal sealed partial class GameStateReader
         IReadOnlyList<int> inputItemIds,
         OverseerDiagnosticLogisticsIndex logistics,
         ref long topologyScanCount,
-        out Dictionary<int, OverseerDiagnosticLogisticsEndpoint>? bindings)
+        out Dictionary<int, OverseerDiagnosticLogisticsEndpoint>? demandBindings,
+        out Dictionary<int, HashSet<int>>? upstreamCandidates)
     {
-        bindings = new Dictionary<int, OverseerDiagnosticLogisticsEndpoint>();
+        demandBindings = new Dictionary<int, OverseerDiagnosticLogisticsEndpoint>();
+        upstreamCandidates = new Dictionary<int, HashSet<int>>();
         var inputItems = new HashSet<int>(inputItemIds);
         var inserterPool = factory.factorySystem.inserterPool;
         if (!TryConsumeBudget(
@@ -751,7 +754,8 @@ internal sealed partial class GameStateReader
                 factory.factorySystem.inserterCursor - 1L,
                 MaximumOverseerDirectDiagnosticComponentScanCount))
         {
-            bindings = null;
+            demandBindings = null;
+            upstreamCandidates = null;
             return OverseerScopeExceeded();
         }
 
@@ -764,62 +768,255 @@ internal sealed partial class GameStateReader
                 || inserter.entityId >= factory.entityCursor
                 || inserter.entityId >= factory.entityPool.Length)
             {
-                bindings = null;
+                demandBindings = null;
+                upstreamCandidates = null;
                 return NotReady("A production unit's input sorter has inconsistent topology identity.");
             }
 
             ref var inserterEntity = ref factory.entityPool[inserter.entityId];
             if (inserterEntity.id != inserter.entityId || inserterEntity.inserterId != inserterId)
             {
-                bindings = null;
+                demandBindings = null;
+                upstreamCandidates = null;
                 return NotReady("A production unit's input sorter does not match its entity identity.");
             }
 
-            if (inserter.pickTarget <= 0) continue;
-            var queue = new Queue<int>();
-            var visited = new HashSet<int>();
-            queue.Enqueue(inserter.pickTarget);
-            while (queue.Count > 0)
+            var pickTarget = inserter.pickTarget;
+            if (pickTarget <= 0) continue;
+            var inserterFilter = inserter.filter;
+            if (inserterFilter < 0)
             {
-                var objectId = queue.Dequeue();
-                if (!visited.Add(objectId)) continue;
-                if (!TryConsumeBudget(
-                        ref topologyScanCount,
-                        1,
-                        MaximumOverseerDirectDiagnosticComponentScanCount))
-                {
-                    bindings = null;
-                    return OverseerScopeExceeded();
-                }
+                demandBindings = null;
+                upstreamCandidates = null;
+                return NotReady("A production unit's input sorter has an invalid item filter.");
+            }
 
-                if (logistics.TryGetOutputBelt(factory.planetId, objectId, out var endpoint)
-                    && inputItems.Contains(endpoint.ItemId)
-                    && (inserter.filter <= 0 || inserter.filter == endpoint.ItemId))
-                {
-                    bindings[endpoint.ItemId] = endpoint;
-                }
+            factory.ReadObjectConn(
+                inserter.entityId,
+                1,
+                out var pickConnectionIsOutput,
+                out var pickConnectionObjectId,
+                out var pickTargetSlot);
+            if (pickConnectionIsOutput
+                || pickConnectionObjectId != pickTarget
+                || pickTargetSlot < 0
+                || pickTargetSlot >= 16)
+            {
+                demandBindings = null;
+                upstreamCandidates = null;
+                return NotReady("A production unit's input sorter has inconsistent pick-side topology.");
+            }
 
-                if (objectId <= 0
-                    || objectId >= factory.entityCursor
-                    || objectId >= factory.entityPool.Length)
+            var candidateItems = (inserterFilter > 0
+                    ? inputItems.Where(itemId => itemId == inserterFilter)
+                    : inputItems)
+                .ToArray();
+            foreach (var itemId in candidateItems)
+            {
+                var queue = new Queue<OverseerDiagnosticTransitNode>();
+                var visitedStates = new HashSet<long>();
+                var visitedObjects = new HashSet<int>();
+                queue.Enqueue(new OverseerDiagnosticTransitNode(
+                    pickTarget,
+                    inserter.entityId,
+                    pickTargetSlot));
+                while (queue.Count > 0)
                 {
-                    continue;
-                }
-
-                ref var entity = ref factory.entityPool[objectId];
-                if (entity.id != objectId || !IsDiagnosticCargoTransit(ref entity)) continue;
-                for (var slot = 0; slot < 16; slot++)
-                {
-                    factory.ReadObjectConn(objectId, slot, out var isOutput, out var otherObjectId, out _);
-                    if (!isOutput && otherObjectId > 0 && !visited.Contains(otherObjectId))
+                    var node = queue.Dequeue();
+                    var objectId = node.ObjectId;
+                    if (!visitedStates.Add(node.StateKey)) continue;
+                    visitedObjects.Add(objectId);
+                    if (!TryConsumeBudget(
+                            ref topologyScanCount,
+                            1,
+                            MaximumOverseerDirectDiagnosticComponentScanCount))
                     {
-                        queue.Enqueue(otherObjectId);
+                        demandBindings = null;
+                        upstreamCandidates = null;
+                        return OverseerScopeExceeded();
+                    }
+
+                    if (logistics.TryGetOutputBelt(factory.planetId, objectId, out var endpoint)
+                        && endpoint.ItemId == itemId)
+                    {
+                        demandBindings[itemId] = endpoint;
+                    }
+
+                    if (objectId <= 0
+                        || objectId >= factory.entityCursor
+                        || objectId >= factory.entityPool.Length)
+                    {
+                        continue;
+                    }
+
+                    ref var entity = ref factory.entityPool[objectId];
+                    if (entity.id != objectId || !IsDiagnosticCargoTransit(ref entity)) continue;
+                    if (entity.inserterId > 0)
+                    {
+                        if (entity.inserterId >= factory.factorySystem.inserterCursor
+                            || entity.inserterId >= inserterPool.Length)
+                        {
+                            demandBindings = null;
+                            upstreamCandidates = null;
+                            return NotReady("A diagnostic cargo path references an invalid sorter component.");
+                        }
+
+                        ref var transitInserter = ref inserterPool[entity.inserterId];
+                        if (transitInserter.id != entity.inserterId
+                            || transitInserter.entityId != objectId)
+                        {
+                            demandBindings = null;
+                            upstreamCandidates = null;
+                            return NotReady("A diagnostic cargo path sorter does not match its entity identity.");
+                        }
+
+                        if (transitInserter.filter < 0)
+                        {
+                            demandBindings = null;
+                            upstreamCandidates = null;
+                            return NotReady("A diagnostic cargo path sorter has an invalid item filter.");
+                        }
+
+                        if (transitInserter.filter > 0 && transitInserter.filter != itemId)
+                        {
+                            continue;
+                        }
+                    }
+
+                    if (entity.splitterId > 0)
+                    {
+                        var splitterError = TryValidateDiagnosticSplitterOutput(
+                            factory,
+                            ref entity,
+                            node,
+                            itemId,
+                            out var itemCanReachOutput);
+                        if (splitterError is not null)
+                        {
+                            demandBindings = null;
+                            upstreamCandidates = null;
+                            return splitterError;
+                        }
+
+                        if (!itemCanReachOutput) continue;
+                    }
+
+                    for (var slot = 0; slot < 16; slot++)
+                    {
+                        factory.ReadObjectConn(
+                            objectId,
+                            slot,
+                            out var isOutput,
+                            out var otherObjectId,
+                            out var otherSlot);
+                        if (!isOutput && otherObjectId > 0)
+                        {
+                            if (otherSlot < 0 || otherSlot >= 16)
+                            {
+                                demandBindings = null;
+                                upstreamCandidates = null;
+                                return NotReady("A diagnostic cargo path has an invalid upstream connection slot.");
+                            }
+
+                            queue.Enqueue(new OverseerDiagnosticTransitNode(
+                                otherObjectId,
+                                objectId,
+                                otherSlot));
+                        }
                     }
                 }
+
+                if (!upstreamCandidates.TryGetValue(itemId, out var candidates))
+                {
+                    candidates = new HashSet<int>();
+                    upstreamCandidates.Add(itemId, candidates);
+                }
+
+                candidates.UnionWith(visitedObjects);
             }
         }
 
         return null;
+    }
+
+    private static BridgeError? TryValidateDiagnosticSplitterOutput(
+        PlanetFactory factory,
+        ref EntityData entity,
+        OverseerDiagnosticTransitNode node,
+        int itemId,
+        out bool itemCanReachOutput)
+    {
+        itemCanReachOutput = false;
+        var traffic = factory.cargoTraffic;
+        var splitterId = entity.splitterId;
+        if (traffic?.splitterPool is null
+            || splitterId <= 0
+            || splitterId >= traffic.splitterCursor
+            || splitterId >= traffic.splitterPool.Length
+            || node.DownstreamSlot < 0
+            || node.DownstreamSlot > 3
+            || node.DownstreamObjectId <= 0
+            || node.DownstreamObjectId >= factory.entityCursor
+            || node.DownstreamObjectId >= factory.entityPool.Length)
+        {
+            return NotReady("A diagnostic cargo path references an invalid splitter output identity.");
+        }
+
+        ref var splitter = ref traffic.splitterPool[splitterId];
+        ref var downstreamEntity = ref factory.entityPool[node.DownstreamObjectId];
+        var slotBeltId = splitter.GetSlotBelt(node.DownstreamSlot);
+        if (splitter.id != splitterId
+            || splitter.entityId != entity.id
+            || downstreamEntity.id != node.DownstreamObjectId
+            || downstreamEntity.beltId <= 0
+            || slotBeltId != downstreamEntity.beltId
+            || splitter.outFilter < 0)
+        {
+            return NotReady("A diagnostic cargo path splitter does not match its entity, belt, or filter identity.");
+        }
+
+        var outputMatchCount = 0;
+        var isPriorityOutput = false;
+        if (splitter.output0 == slotBeltId)
+        {
+            outputMatchCount++;
+            isPriorityOutput = true;
+        }
+
+        if (splitter.output1 == slotBeltId) outputMatchCount++;
+        if (splitter.output2 == slotBeltId) outputMatchCount++;
+        if (splitter.output3 == slotBeltId) outputMatchCount++;
+        if (outputMatchCount != 1)
+        {
+            return NotReady("A diagnostic cargo path does not enter its splitter through one exact output belt.");
+        }
+
+        itemCanReachOutput = ProductionSplitterFilterPolicy.AllowsItem(
+            splitter.outFilter,
+            isPriorityOutput,
+            itemId);
+        return null;
+    }
+
+    private readonly struct OverseerDiagnosticTransitNode
+    {
+        public OverseerDiagnosticTransitNode(
+            int objectId,
+            int downstreamObjectId,
+            int downstreamSlot)
+        {
+            ObjectId = objectId;
+            DownstreamObjectId = downstreamObjectId;
+            DownstreamSlot = downstreamSlot;
+        }
+
+        public int ObjectId { get; }
+
+        public int DownstreamObjectId { get; }
+
+        public int DownstreamSlot { get; }
+
+        public long StateKey => ((long)(uint)ObjectId << 5) | (uint)(DownstreamSlot + 1);
     }
 
     private static bool IsDiagnosticCargoTransit(ref EntityData entity) =>
@@ -906,10 +1103,14 @@ internal sealed partial class GameStateReader
         {
             foreach (var producer in producers)
             {
-                producer.WindowState = window.State;
-                producer.WindowElapsedGameTicks = window.ElapsedGameTicks;
-                producer.ActualProductionPerMinute = rate.ActualProductionPerMinute;
-                var finding = ProductionFaultClassifier.ClassifyPrimary(producer);
+                var root = CloneDiagnosticInput(
+                    producer,
+                    window,
+                    rate.ActualProductionPerMinute,
+                    actualProductionStateKnown: true);
+                var finding = ProductionRootCauseTracer.TracePrimary(
+                    root,
+                    reference => capture.ResolveProducer(reference, window));
                 if (finding is not null) findings.Add(finding);
             }
         }
@@ -934,6 +1135,8 @@ internal sealed partial class GameStateReader
             new Dictionary<int, List<ProductionFaultInput>>();
         private readonly Dictionary<int, int> _unsupportedProducerCounts =
             new Dictionary<int, int>();
+        private readonly List<OverseerUpstreamCandidateBinding> _upstreamCandidateBindings =
+            new List<OverseerUpstreamCandidateBinding>();
 
         public List<OverseerFindingSnapshot> InfrastructureFindings { get; } =
             new List<OverseerFindingSnapshot>();
@@ -962,6 +1165,95 @@ internal sealed partial class GameStateReader
 
         public int GetUnsupportedProducerCount(int itemId) =>
             _unsupportedProducerCounts.TryGetValue(itemId, out var count) ? count : 0;
+
+        public void RegisterUpstreamCandidates(
+            int planetId,
+            ProductionMaterialInput material,
+            IEnumerable<int> candidateObjectIds)
+        {
+            _upstreamCandidateBindings.Add(new OverseerUpstreamCandidateBinding
+            {
+                PlanetId = planetId,
+                Material = material,
+                CandidateObjectIds = new HashSet<int>(candidateObjectIds),
+            });
+        }
+
+        public void BindUpstreamProducers()
+        {
+            foreach (var binding in _upstreamCandidateBindings)
+            {
+                if (!_producers.TryGetValue(binding.Material.ItemId, out var producers)) continue;
+                binding.Material.UpstreamProducers = producers
+                    .Where(producer => producer.PlanetId == binding.PlanetId
+                        && binding.CandidateObjectIds.Contains(producer.ObjectId))
+                    .OrderBy(producer => producer.ObjectId)
+                    .Select(producer => new ProductionUpstreamReference
+                    {
+                        PlanetId = producer.PlanetId,
+                        ObjectId = producer.ObjectId,
+                        ItemId = producer.TargetItemId,
+                    })
+                    .ToList();
+            }
+        }
+
+        public ProductionFaultInput? ResolveProducer(
+            ProductionUpstreamReference reference,
+            OverseerWindowSnapshot window)
+        {
+            if (!_producers.TryGetValue(reference.ItemId, out var producers)) return null;
+            var producer = producers.FirstOrDefault(candidate =>
+                candidate.PlanetId == reference.PlanetId
+                && candidate.ObjectId == reference.ObjectId);
+            return producer is null
+                ? null
+                : CloneDiagnosticInput(
+                    producer,
+                    window,
+                    actualProductionPerMinute: 0d,
+                    actualProductionStateKnown: false);
+        }
+    }
+
+    private static ProductionFaultInput CloneDiagnosticInput(
+        ProductionFaultInput source,
+        OverseerWindowSnapshot window,
+        double actualProductionPerMinute,
+        bool actualProductionStateKnown)
+    {
+        return new ProductionFaultInput
+        {
+            PlanetId = source.PlanetId,
+            ObjectId = source.ObjectId,
+            TargetItemId = source.TargetItemId,
+            TargetItemName = source.TargetItemName,
+            ProductionUnitKind = source.ProductionUnitKind,
+            ProductionUnitName = source.ProductionUnitName,
+            WindowState = window.State,
+            WindowElapsedGameTicks = window.ElapsedGameTicks,
+            ExpectedCycleGameTicks = source.ExpectedCycleGameTicks,
+            ActualProductionPerMinute = actualProductionPerMinute,
+            ActualProductionStateKnown = actualProductionStateKnown,
+            IsConfigured = source.IsConfigured,
+            IsWorking = source.IsWorking,
+            PowerNetworkId = source.PowerNetworkId,
+            PowerServeRatio = source.PowerServeRatio,
+            IsResourceExtractor = source.IsResourceExtractor,
+            ResourceStateKnown = source.ResourceStateKnown,
+            RemainingResourceAmount = source.RemainingResourceAmount,
+            Inputs = source.Inputs,
+            Outputs = source.Outputs,
+        };
+    }
+
+    private sealed class OverseerUpstreamCandidateBinding
+    {
+        public int PlanetId { get; set; }
+
+        public ProductionMaterialInput Material { get; set; } = new ProductionMaterialInput();
+
+        public HashSet<int> CandidateObjectIds { get; set; } = new HashSet<int>();
     }
 
     private sealed class OverseerDiagnosticLogisticsIndex

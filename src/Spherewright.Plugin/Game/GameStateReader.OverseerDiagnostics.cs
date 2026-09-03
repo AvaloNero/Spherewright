@@ -24,13 +24,19 @@ internal sealed partial class GameStateReader
         {
             var transport = factory.transport;
             var traffic = factory.cargoTraffic;
+            var factorySystem = factory.factorySystem;
             if (transport?.stationPool is null
                 || traffic?.beltPool is null
+                || factorySystem?.inserterPool is null
                 || transport.stationCursor < 1
                 || transport.stationCursor > transport.stationPool.Length
                 || traffic.beltCursor < 1
                 || traffic.beltCursor > traffic.beltPool.Length
-                || factory.entityPool is null)
+                || factorySystem.inserterCursor < 1
+                || factorySystem.inserterCursor > factorySystem.inserterPool.Length
+                || factory.entityPool is null
+                || factory.entityCursor < 1
+                || factory.entityCursor > factory.entityPool.Length)
             {
                 index = null;
                 return NotReady("An owned factory's logistics topology is not ready for production diagnostics.");
@@ -190,6 +196,73 @@ internal sealed partial class GameStateReader
                     {
                         index = null;
                         return NotReady("A logistics output belt is ambiguously bound to multiple station slots.");
+                    }
+                }
+
+                // Native station input ports draw from the station-wide needs[]
+                // array. storageIdx records the last successful pick; it is not
+                // a fixed selector for an input belt.
+                var supplyEndpointGroups = endpoints
+                    .Where(endpoint => endpoint.ItemId > 0
+                        && (endpoint.LocalLogic == ELogisticStorage.Supply
+                            || endpoint.RemoteLogic == ELogisticStorage.Supply))
+                    .GroupBy(endpoint => endpoint.ItemId)
+                    .ToList();
+                if (supplyEndpointGroups.Count == 0) continue;
+
+                var inputBeltEntities = new HashSet<int>();
+                foreach (var slot in slots)
+                {
+                    if (slot.dir != IODir.Input || slot.beltId == 0) continue;
+                    if (slot.beltId < 0
+                        || slot.beltId >= traffic.beltCursor
+                        || slot.beltId >= traffic.beltPool.Length)
+                    {
+                        index = null;
+                        return NotReady("A logistics input slot references an invalid belt identity.");
+                    }
+
+                    ref var belt = ref traffic.beltPool[slot.beltId];
+                    if (belt.id != slot.beltId
+                        || belt.entityId <= 0
+                        || belt.entityId >= factory.entityCursor
+                        || belt.entityId >= factory.entityPool.Length)
+                    {
+                        index = null;
+                        return NotReady("A configured logistics input slot has no valid belt identity.");
+                    }
+
+                    ref var beltEntity = ref factory.entityPool[belt.entityId];
+                    if (beltEntity.id != belt.entityId
+                        || beltEntity.beltId != slot.beltId
+                        || !inputBeltEntities.Add(belt.entityId))
+                    {
+                        index = null;
+                        return NotReady("A logistics input belt does not match one unique entity identity.");
+                    }
+
+                    foreach (var group in supplyEndpointGroups)
+                    {
+                        var traceError = TryTraceDiagnosticCargoUpstream(
+                            factory,
+                            belt.entityId,
+                            station.entityId,
+                            -1,
+                            group.Key,
+                            null,
+                            ref componentScanCount,
+                            out var upstreamObjects,
+                            out _);
+                        if (traceError is not null)
+                        {
+                            index = null;
+                            return traceError;
+                        }
+
+                        foreach (var endpoint in group)
+                        {
+                            endpoint.UpstreamCandidateObjectIds.UnionWith(upstreamObjects!);
+                        }
                     }
                 }
             }
@@ -425,7 +498,6 @@ internal sealed partial class GameStateReader
                 ref sourceReferenceScanCount);
             if (error is not null) return error;
 
-            capture.BindUpstreamProducers();
             CaptureUnsupportedDirectDiagnosticProducers(factory, requestedItemIds, capture);
             return null;
         }
@@ -904,10 +976,17 @@ internal sealed partial class GameStateReader
             };
             if (demandBindings.TryGetValue(itemId, out var demand))
             {
-                logistics.ApplyRouteEvidence(planetId, material, demand);
+                var supply = logistics.ApplyRouteEvidence(planetId, material, demand);
+                if (supply is not null && supply.UpstreamCandidateObjectIds.Count > 0)
+                {
+                    capture.RegisterUpstreamCandidates(
+                        supply.PlanetId,
+                        material,
+                        supply.UpstreamCandidateObjectIds);
+                }
             }
 
-            if (upstreamCandidates.TryGetValue(itemId, out var candidates))
+            else if (upstreamCandidates.TryGetValue(itemId, out var candidates))
             {
                 capture.RegisterUpstreamCandidates(planetId, material, candidates);
             }
@@ -995,117 +1074,26 @@ internal sealed partial class GameStateReader
                 .ToArray();
             foreach (var itemId in candidateItems)
             {
-                var queue = new Queue<OverseerDiagnosticTransitNode>();
-                var visitedStates = new HashSet<long>();
-                var visitedObjects = new HashSet<int>();
-                queue.Enqueue(new OverseerDiagnosticTransitNode(
+                var traceError = TryTraceDiagnosticCargoUpstream(
+                    factory,
                     pickTarget,
                     inserter.entityId,
-                    pickTargetSlot));
-                while (queue.Count > 0)
+                    pickTargetSlot,
+                    itemId,
+                    logistics,
+                    ref topologyScanCount,
+                    out var visitedObjects,
+                    out var demandBinding);
+                if (traceError is not null)
                 {
-                    var node = queue.Dequeue();
-                    var objectId = node.ObjectId;
-                    if (!visitedStates.Add(node.StateKey)) continue;
-                    visitedObjects.Add(objectId);
-                    if (!TryConsumeBudget(
-                            ref topologyScanCount,
-                            1,
-                            MaximumOverseerDirectDiagnosticComponentScanCount))
-                    {
-                        demandBindings = null;
-                        upstreamCandidates = null;
-                        return OverseerScopeExceeded();
-                    }
+                    demandBindings = null;
+                    upstreamCandidates = null;
+                    return traceError;
+                }
 
-                    if (logistics.TryGetOutputBelt(factory.planetId, objectId, out var endpoint)
-                        && endpoint.ItemId == itemId)
-                    {
-                        demandBindings[itemId] = endpoint;
-                    }
-
-                    if (objectId <= 0
-                        || objectId >= factory.entityCursor
-                        || objectId >= factory.entityPool.Length)
-                    {
-                        continue;
-                    }
-
-                    ref var entity = ref factory.entityPool[objectId];
-                    if (entity.id != objectId || !IsDiagnosticCargoTransit(ref entity)) continue;
-                    if (entity.inserterId > 0)
-                    {
-                        if (entity.inserterId >= factory.factorySystem.inserterCursor
-                            || entity.inserterId >= inserterPool.Length)
-                        {
-                            demandBindings = null;
-                            upstreamCandidates = null;
-                            return NotReady("A diagnostic cargo path references an invalid sorter component.");
-                        }
-
-                        ref var transitInserter = ref inserterPool[entity.inserterId];
-                        if (transitInserter.id != entity.inserterId
-                            || transitInserter.entityId != objectId)
-                        {
-                            demandBindings = null;
-                            upstreamCandidates = null;
-                            return NotReady("A diagnostic cargo path sorter does not match its entity identity.");
-                        }
-
-                        if (transitInserter.filter < 0)
-                        {
-                            demandBindings = null;
-                            upstreamCandidates = null;
-                            return NotReady("A diagnostic cargo path sorter has an invalid item filter.");
-                        }
-
-                        if (transitInserter.filter > 0 && transitInserter.filter != itemId)
-                        {
-                            continue;
-                        }
-                    }
-
-                    if (entity.splitterId > 0)
-                    {
-                        var splitterError = TryValidateDiagnosticSplitterOutput(
-                            factory,
-                            ref entity,
-                            node,
-                            itemId,
-                            out var itemCanReachOutput);
-                        if (splitterError is not null)
-                        {
-                            demandBindings = null;
-                            upstreamCandidates = null;
-                            return splitterError;
-                        }
-
-                        if (!itemCanReachOutput) continue;
-                    }
-
-                    for (var slot = 0; slot < 16; slot++)
-                    {
-                        factory.ReadObjectConn(
-                            objectId,
-                            slot,
-                            out var isOutput,
-                            out var otherObjectId,
-                            out var otherSlot);
-                        if (!isOutput && otherObjectId > 0)
-                        {
-                            if (otherSlot < 0 || otherSlot >= 16)
-                            {
-                                demandBindings = null;
-                                upstreamCandidates = null;
-                                return NotReady("A diagnostic cargo path has an invalid upstream connection slot.");
-                            }
-
-                            queue.Enqueue(new OverseerDiagnosticTransitNode(
-                                otherObjectId,
-                                objectId,
-                                otherSlot));
-                        }
-                    }
+                if (demandBinding is not null)
+                {
+                    demandBindings[itemId] = demandBinding;
                 }
 
                 if (!upstreamCandidates.TryGetValue(itemId, out var candidates))
@@ -1114,7 +1102,137 @@ internal sealed partial class GameStateReader
                     upstreamCandidates.Add(itemId, candidates);
                 }
 
-                candidates.UnionWith(visitedObjects);
+                candidates.UnionWith(visitedObjects!);
+            }
+        }
+
+        return null;
+    }
+
+    private static BridgeError? TryTraceDiagnosticCargoUpstream(
+        PlanetFactory factory,
+        int startingObjectId,
+        int downstreamObjectId,
+        int downstreamSlot,
+        int itemId,
+        OverseerDiagnosticLogisticsIndex? logistics,
+        ref long topologyScanCount,
+        out HashSet<int>? visitedObjects,
+        out OverseerDiagnosticLogisticsEndpoint? demandBinding)
+    {
+        visitedObjects = new HashSet<int>();
+        demandBinding = null;
+        var queue = new Queue<OverseerDiagnosticTransitNode>();
+        var visitedStates = new HashSet<long>();
+        queue.Enqueue(new OverseerDiagnosticTransitNode(
+            startingObjectId,
+            downstreamObjectId,
+            downstreamSlot));
+        while (queue.Count > 0)
+        {
+            var node = queue.Dequeue();
+            var objectId = node.ObjectId;
+            if (!visitedStates.Add(node.StateKey)) continue;
+            visitedObjects.Add(objectId);
+            if (!TryConsumeBudget(
+                    ref topologyScanCount,
+                    1,
+                    MaximumOverseerDirectDiagnosticComponentScanCount))
+            {
+                visitedObjects = null;
+                demandBinding = null;
+                return OverseerScopeExceeded();
+            }
+
+            if (logistics is not null
+                && logistics.TryGetOutputBelt(factory.planetId, objectId, out var endpoint)
+                && endpoint.ItemId == itemId)
+            {
+                demandBinding = endpoint;
+            }
+
+            if (objectId <= 0
+                || objectId >= factory.entityCursor
+                || objectId >= factory.entityPool.Length)
+            {
+                continue;
+            }
+
+            ref var entity = ref factory.entityPool[objectId];
+            if (entity.id != objectId || !IsDiagnosticCargoTransit(ref entity)) continue;
+            if (entity.inserterId > 0)
+            {
+                var inserterPool = factory.factorySystem.inserterPool;
+                if (entity.inserterId >= factory.factorySystem.inserterCursor
+                    || entity.inserterId >= inserterPool.Length)
+                {
+                    visitedObjects = null;
+                    demandBinding = null;
+                    return NotReady("A diagnostic cargo path references an invalid sorter component.");
+                }
+
+                ref var transitInserter = ref inserterPool[entity.inserterId];
+                if (transitInserter.id != entity.inserterId
+                    || transitInserter.entityId != objectId)
+                {
+                    visitedObjects = null;
+                    demandBinding = null;
+                    return NotReady("A diagnostic cargo path sorter does not match its entity identity.");
+                }
+
+                if (transitInserter.filter < 0)
+                {
+                    visitedObjects = null;
+                    demandBinding = null;
+                    return NotReady("A diagnostic cargo path sorter has an invalid item filter.");
+                }
+
+                if (transitInserter.filter > 0 && transitInserter.filter != itemId)
+                {
+                    continue;
+                }
+            }
+
+            if (entity.splitterId > 0)
+            {
+                var splitterError = TryValidateDiagnosticSplitterOutput(
+                    factory,
+                    ref entity,
+                    node,
+                    itemId,
+                    out var itemCanReachOutput);
+                if (splitterError is not null)
+                {
+                    visitedObjects = null;
+                    demandBinding = null;
+                    return splitterError;
+                }
+
+                if (!itemCanReachOutput) continue;
+            }
+
+            for (var slot = 0; slot < 16; slot++)
+            {
+                factory.ReadObjectConn(
+                    objectId,
+                    slot,
+                    out var isOutput,
+                    out var otherObjectId,
+                    out var otherSlot);
+                if (!isOutput && otherObjectId > 0)
+                {
+                    if (otherSlot < 0 || otherSlot >= 16)
+                    {
+                        visitedObjects = null;
+                        demandBinding = null;
+                        return NotReady("A diagnostic cargo path has an invalid upstream connection slot.");
+                    }
+
+                    queue.Enqueue(new OverseerDiagnosticTransitNode(
+                        otherObjectId,
+                        objectId,
+                        otherSlot));
+                }
             }
         }
 
@@ -1275,6 +1393,7 @@ internal sealed partial class GameStateReader
 
     private static void ApplyOverseerDirectDiagnostics(
         OverseerDirectDiagnosticCapture capture,
+        IReadOnlyDictionary<int, OverseerDirectDiagnosticCapture> capturesByPlanet,
         OverseerWindowSnapshot window,
         ProductionRateSnapshot rate)
     {
@@ -1292,7 +1411,9 @@ internal sealed partial class GameStateReader
                     actualProductionStateKnown: true);
                 var finding = ProductionRootCauseTracer.TracePrimary(
                     root,
-                    reference => capture.ResolveProducer(reference, window));
+                    reference => capturesByPlanet.TryGetValue(reference.PlanetId, out var producerCapture)
+                        ? producerCapture.ResolveProducer(reference, window)
+                        : null);
                 if (finding is not null) findings.Add(finding);
             }
         }
@@ -1361,15 +1482,20 @@ internal sealed partial class GameStateReader
             });
         }
 
-        public void BindUpstreamProducers()
+        public void BindUpstreamProducers(
+            Func<int, int, IReadOnlyList<ProductionFaultInput>> resolveProducers)
         {
-            foreach (var binding in _upstreamCandidateBindings)
+            foreach (var group in _upstreamCandidateBindings.GroupBy(binding => binding.Material))
             {
-                if (!_producers.TryGetValue(binding.Material.ItemId, out var producers)) continue;
-                binding.Material.UpstreamProducers = producers
-                    .Where(producer => producer.PlanetId == binding.PlanetId
-                        && binding.CandidateObjectIds.Contains(producer.ObjectId))
-                    .OrderBy(producer => producer.ObjectId)
+                var material = group.Key;
+                material.UpstreamProducers = group
+                    .SelectMany(binding => resolveProducers(binding.PlanetId, material.ItemId)
+                        .Where(producer => producer.PlanetId == binding.PlanetId
+                            && binding.CandidateObjectIds.Contains(producer.ObjectId)))
+                    .GroupBy(producer => $"{producer.PlanetId}:{producer.ObjectId}:{producer.TargetItemId}")
+                    .Select(producers => producers.First())
+                    .OrderBy(producer => producer.PlanetId)
+                    .ThenBy(producer => producer.ObjectId)
                     .Select(producer => new ProductionUpstreamReference
                     {
                         PlanetId = producer.PlanetId,
@@ -1473,7 +1599,7 @@ internal sealed partial class GameStateReader
             out OverseerDiagnosticLogisticsEndpoint endpoint) =>
             _outputBelts.TryGetValue(OutputBeltKey(planetId, beltEntityId), out endpoint!);
 
-        public void ApplyRouteEvidence(
+        public OverseerDiagnosticLogisticsEndpoint? ApplyRouteEvidence(
             int consumerPlanetId,
             ProductionMaterialInput material,
             OverseerDiagnosticLogisticsEndpoint demand)
@@ -1515,7 +1641,7 @@ internal sealed partial class GameStateReader
                 .ThenByDescending(candidate => candidate.Supply.Sum(endpoint => (long)endpoint.Count))
                 .ThenBy(candidate => candidate.Remote)
                 .FirstOrDefault();
-            if (route is null) return;
+            if (route is null) return null;
 
             material.LogisticsExpected = true;
             material.LogisticsConfigured = route.Supply.Count > 0;
@@ -1523,9 +1649,17 @@ internal sealed partial class GameStateReader
             material.LogisticsDemandObjectId = demand.ObjectId;
             var demandOrder = route.Remote ? demand.RemoteOrder : demand.LocalOrder;
             material.LogisticsOrderOutstanding = demandOrder > 0;
-            if (route.Supply.Count == 0) return;
+            if (route.Supply.Count == 0) return null;
 
-            var primarySupply = route.Supply[0];
+            // The public path exposes one supply endpoint. Recursive candidates
+            // must come from that same endpoint, never another member of the
+            // aggregate inventory/carrier set.
+            var primarySupply = route.Supply
+                .OrderByDescending(endpoint => endpoint.UpstreamCandidateObjectIds.Count > 0)
+                .ThenByDescending(endpoint => endpoint.Count)
+                .ThenBy(endpoint => endpoint.PlanetId)
+                .ThenBy(endpoint => endpoint.ObjectId)
+                .First();
             material.LogisticsSupplyPlanetId = primarySupply.PlanetId;
             material.LogisticsSupplyObjectId = primarySupply.ObjectId;
             material.SourceInventoryKnown = true;
@@ -1569,6 +1703,7 @@ internal sealed partial class GameStateReader
             }
 
             observation.Materials.Add(material);
+            return primarySupply;
         }
 
         public void FinalizeProgressEvidence()
@@ -1726,6 +1861,8 @@ internal sealed partial class GameStateReader
 
         public OverseerDiagnosticStationTransportSnapshot Station { get; set; } =
             new OverseerDiagnosticStationTransportSnapshot();
+
+        public HashSet<int> UpstreamCandidateObjectIds { get; } = new HashSet<int>();
     }
 
     private sealed class OverseerDiagnosticRouteCandidate

@@ -1526,6 +1526,28 @@ internal sealed partial class GameStateReader
             directDiagnosticsByFactory.Add(factory.index, directDiagnostics!);
         }
 
+        var directDiagnosticsByPlanet = new Dictionary<int, OverseerDirectDiagnosticCapture>();
+        foreach (var factory in factories)
+        {
+            if (directDiagnosticsByPlanet.ContainsKey(factory.planetId))
+            {
+                return NotReady("Owned production diagnostics contain a duplicate planet identity.");
+            }
+
+            directDiagnosticsByPlanet.Add(
+                factory.planetId,
+                directDiagnosticsByFactory[factory.index]);
+        }
+        foreach (var capture in directDiagnosticsByFactory.Values)
+        {
+            // Producers can only be resolved after every owned factory has
+            // been captured, so no live game object crosses this boundary.
+            capture.BindUpstreamProducers((planetId, itemId) =>
+                directDiagnosticsByPlanet.TryGetValue(planetId, out var producerCapture)
+                    ? producerCapture.GetProducers(itemId)
+                    : Array.Empty<ProductionFaultInput>());
+        }
+
         // Route samples are collected for every owned factory first, then
         // atomically persisted once. Only durable analyses are copied into the
         // public diagnostic DTOs below.
@@ -1636,6 +1658,7 @@ internal sealed partial class GameStateReader
                 };
                 ApplyOverseerDirectDiagnostics(
                     directDiagnostics,
+                    directDiagnosticsByPlanet,
                     rate.Window,
                     productionRate);
                 snapshot.Production.Add(productionRate);

@@ -29,6 +29,38 @@ public sealed class ProductionRootCauseTracerTests
     }
 
     [Fact]
+    public void TracePrimary_FollowsAnExactProducerReferenceAcrossPlanets()
+    {
+        var titaniumIngotReference = Reference(102, 301, 1106);
+        var root = Input(104, 530, 1126, "assembler", "Assembler 530", 1106, titaniumIngotReference);
+        var rootMaterial = Assert.Single(root.Inputs);
+        rootMaterial.LogisticsExpected = true;
+        rootMaterial.LogisticsConfigured = true;
+        rootMaterial.LogisticsDemandPlanetId = 104;
+        rootMaterial.LogisticsDemandObjectId = 1657;
+        rootMaterial.LogisticsSupplyPlanetId = 102;
+        rootMaterial.LogisticsSupplyObjectId = 44;
+        var remoteSmelter = Input(102, 301, 1106, "assembler", "Smelter 301", 1006);
+
+        var finding = ProductionRootCauseTracer.TracePrimary(
+            root,
+            reference => Matches(reference, remoteSmelter) ? remoteSmelter : null);
+
+        Assert.Equal(OverseerFindingKinds.MaterialShortage, finding?.Kind);
+        Assert.Equal(102, finding?.PlanetId);
+        Assert.Equal(301, finding?.ObjectId);
+        Assert.Equal(1106, finding?.ItemId);
+        Assert.Collection(
+            finding!.UpstreamPath,
+            node => AssertNode(node, "assembler", 530, 1126, 104),
+            node => AssertNode(node, "material", null, 1106, 104),
+            node => AssertNode(node, "logistics_demand", 1657, 1106, 104),
+            node => AssertNode(node, "logistics_supply", 44, 1106, 102),
+            node => AssertNode(node, "assembler", 301, 1106, 102),
+            node => AssertNode(node, "material", null, 1006, 102));
+    }
+
+    [Fact]
     public void TracePrimary_UsesDeeperOutputBlockAsThePrimaryRootCause()
     {
         var reference = Reference(104, 715, 1112);
@@ -200,8 +232,10 @@ public sealed class ProductionRootCauseTracerTests
         OverseerPathNodeSnapshot node,
         string kind,
         int? objectId,
-        int itemId)
+        int itemId,
+        int? planetId = null)
     {
+        if (planetId.HasValue) Assert.Equal(planetId.Value, node.PlanetId);
         Assert.Equal(kind, node.Kind);
         Assert.Equal(objectId, node.ObjectId);
         Assert.Equal(itemId, node.ItemId);

@@ -251,3 +251,12 @@
   source/deployed 哈希一致；同档恢复后保护文档仍为 3 条哈希路线、current-user-only DACL、无原始
   save identity，并同时记录 `consumerInputMissing=false/true`，三厂分页与黄糖四节点根因不回归。
 - 关联：EXP-001、EXP-030、EXP-154、EXP-159、EXP-164、`OverseerLogisticsProgressStore`；状态：`fixed`。
+
+## IFX-021 — 聚合多个供应塔时可能把公开路径与其他塔的生产者拼接
+
+- 首见：2026-09-03，v0.4 跨星生产者递归首版离线审查；该版未部署。
+- 症状：路线证据会汇总所有匹配 supply endpoint，但公开 `UpstreamPath` 只能显示一座主 supply station。若把所有供应端的上游候选都注册给同一 material，resolver 可能选到塔 B 后的生产者，而 path 仍显示塔 A。
+- 根因：库存/机队是合理的路线集合指标，但生产者递归是必须保留单条物理来源的路径证明；首版把两种语义共用了同一 supply 列表。
+- 修复：路线总库存、carrier 与时间窗仍使用全部匹配 supply；另外选定一个将写入公开 path 的精确 endpoint，且只注册该 endpoint 的 Input-belt 反向候选。优先有物理输入路径的站，再按库存与稳定身份排序。
+- 验证：编译和 205 项测试通过；live 铛块 path 中显示的 supply `102:44` 与其 Input-belt 后绑定的矿机 `102:1` 处于同一条证据链。
+- 关联：EXP-159、EXP-162、EXP-165、`OverseerDiagnosticLogisticsIndex.ApplyRouteEvidence`；状态：`fixed`。

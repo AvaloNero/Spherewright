@@ -1950,13 +1950,13 @@
 
 - 状态：`validated`
 - 日期：2026-09-03
-- 适用范围：v0.4 Overseer 的纯 Core 相邻计数采样、实际产消速率/理论利用率计算，以及单生产单元的首要停机原因分类。速率、理论容量、直接 assembler/lab/miner 故障输入、同星球递归与物流时间窗后来已由 EXP-155/157–164 接入 DSP 运行时；本条不单独声称时间型物流实机验收已经完成。
+- 适用范围：v0.4 Overseer 的纯 Core 相邻计数采样、实际产消速率/理论利用率计算，以及单生产单元的首要停机原因分类。速率、理论容量、直接 assembler/lab/miner 故障输入、同星球与单段精确跨星递归、物流时间窗后来已由 EXP-155/157–165 接入 DSP 运行时；本条不单独声称时间型物流实机验收已经完成。
 - 当前结论：实际速率的分母只能是连续流逝的游戏 tick（当前固定 60 tick/s），墙钟中多出的离线/暂停时间单独标为 excluded，不能稀释或伪造吞吐。相同受保护存档跨新 session 可保持连续，但 owned identity 改变、tick/累计计数回退、同 tick 计数前进或相邻采样超过明确上限都必须把窗口标成 discontinuous 并归零本段速率。故障分类只有在 ready 窗口至少覆盖一个完整配方周期后才运行；当前首因优先级为本机矿源耗尽、断网/供电比不足、满输出缓冲、上游矿源耗尽、物流未配置/有源库存但订单无进展，最后才是一般缺料。已有非零实际产量时不把瞬时空输入误报为停机。
 - 直接证据：新增的无游戏 DLL 测试证明 600 tick/20 件产出恒为 120/min，即使墙钟跨 1 小时也只把额外时间计入 `excludedNonGameSeconds`；同档跨 session 保持 ready，而换档、tick 回退、计数回退、601 tick 采样断层和同 tick 计数前进全部失效。独立分类测试覆盖未满周期不报、供电不足、输出满、矿源耗尽、物流未配置、订单停滞、一般缺料及已有产量不误报。Core/Contracts/MCP 总计 135 项通过（101 + 15 + 19），完整 solution 0 warning / 0 error；源码产品版本同时切到 `0.4.0`。
-- 限制或反例：原生实际窗口已由 EXP-155 固定为 600 tick，理论产率由 EXP-157 接入；输出缓冲、矿量、电力、物理相关物流端和同星球递归分别由 EXP-158/159/162 接入。EXP-164 只在消费者缺料、需求端正 reservation、源库存、机队与连续 600 tick 无进展同时成立时给出 suspected stall；尚无活动/故意停滞物流的实机正反例，不能升级为 confirmed。跨星球生产者和未支持设备仍不在递归范围。
+- 限制或反例：原生实际窗口已由 EXP-155 固定为 600 tick，理论产率由 EXP-157 接入；输出缓冲、矿量、电力、物理相关物流端和递归生产者分别由 EXP-158/159/162/165 接入。EXP-164 只在消费者缺料、需求端正 reservation、源库存、机队与连续 600 tick 无进展同时成立时给出 suspected stall；尚无活动/故意停滞物流的实机正反例，不能升级为 confirmed。跨星只覆盖一段精确 demand/supply route 及供应塔真实 Input belt，人工填塔、多段塔中继和未支持设备仍不在递归范围。
 - 复验触发：接入 DSP production statistics、改变采样频率/持久化格式/窗口长度、引入多星球聚合或上游图、DSP tick rate/配方速度语义变化，以及首次受控实机故障注入。
 - 关联：EXP-030、EXP-062、EXP-127、EXP-142、EXP-144、EXP-153、ROADMAP v0.4、`OverseerCounterWindowAnalyzer`、`ProductionFaultClassifier`。
-- 最近复验：2026-09-03（物流时间窗加入缺料/正 reservation/显式 600-tick 门后，204 项回归、完整构建及同档黄糖上游故障复读通过）。
+- 最近复验：2026-09-03（跨星生产者边最终部署后，205 项回归、完整构建、同档黄糖路径和远端钛矿机输出堵塞 live 复读通过；时间型物流正反例仍待受控实机）。
 
 ### EXP-155 — 自动产线实际速率优先复用 DSP 随档持久化的 600-tick 原生环
 
@@ -2010,10 +2010,10 @@
 
 - 状态：`validated`
 - 日期：2026-09-03
-- 适用范围：v0.4 设备输入从 assembler/lab input sorter 反向追到当前 owned factories 的行星/星际物流站 output slot，以及 EXP-162 的同星球生产者候选绑定；不等同于任意全厂依赖发现。
+- 适用范围：v0.4 设备输入从 assembler/lab input sorter 反向追到当前 owned factories 的行星/星际物流站 output slot，以及 EXP-162/165 的同星球或单段精确跨星生产者候选绑定；不等同于任意全厂依赖发现。
 - 当前结论：同星球或跨星球存在同 item 的物流塔不能证明它供应目标设备。必须从消费者 input sorter 的精确 `pickTarget` 出发，只沿 `ReadObjectConn` 的入边穿过 belt、splitter、piler、spraycoater、inserter、storage/tank，最终命中 station slot 精确绑定的 output belt/entity；此后才按 demand 模式寻找同 item 的 supply 端。中转仓是货运图节点，不是追踪终点。每种候选 input item 必须独立遍历，路径上的每个 sorter filter 都只能为空或精确等于该 item。
 - 直接证据：首版 live 在 assembler `530` 缺 item `1004` 时只返回一般缺料；逐段读回证明真实链为 `530 <- sorter 532 <- storage 259 <- sorter 1784 <- belts <- station 1657 output belt 1783`。加入 storage/tank/inserter 有向中继后，同一 finding 只在该物理链成立时附加 demand `104:1657`、supply `102:44`、source inventory `28` 和 carrier count `2`。没有绑定到其他仅同 item 的站。
-- 限制或反例：当前只从输入 sorter 起步，不覆盖无 sorter 直连或尚未支持的生产类型；storage/tank 的多入边会保留所有真实上游候选，但只按目标 item 与全路径 sorter filter 绑定塔输出或同星球 producer。EXP-164 已为命中的精确供需候选增加跨 tick 窗口，但单次拓扑命中仍不能证明运输停滞，活动/停滞路线尚待实机。
+- 限制或反例：当前只从输入 sorter 起步，不覆盖无 sorter 直连或尚未支持的生产类型；storage/tank 的多入边会保留所有真实上游候选，但只按目标 item 与全路径 sorter filter 绑定塔输出或 producer。跨星递归还要求公开主 supply endpoint 的真实 Input belt，人工填塔和多段塔中继不会被猜测补全。EXP-164 已为命中的精确供需候选增加跨 tick 窗口，但单次拓扑命中仍不能证明运输停滞，活动/停滞路线尚待实机。
 - 复验触发：DSP 连接槽语义变化、新增 cargo transit 类型、station belt selector 变化、多塔同 item 路由、递归上游图、物流时间窗路由键变化或活动/停滞实机试验。
 - 关联：EXP-117、EXP-123、EXP-144、EXP-164、IFX-019、`TryFindDirectDiagnosticDemandBindings`。
 - 最近复验：2026-09-03（物流时间窗最终部署后，黄糖仍通过真实金刚石路径命中 assembler `715`；三条已知物理塔路由均按非活动基线安全采样）。
@@ -2046,13 +2046,13 @@
 
 - 状态：`validated`
 - 日期：2026-09-03
-- 适用范围：当前 DSP `0.10.34.28529` / `Assembly-CSharp.dll` SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，v0.4 从 assembler/lab 缺料点递归进入同星球受支持 assembler/lab/miner 生产者的只读根因路径。
+- 适用范围：当前 DSP `0.10.34.28529` / `Assembly-CSharp.dll` SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，v0.4 从 assembler/lab 缺料点递归进入受支持 assembler/lab/miner 生产者；同星球使用连续 cargo graph，跨星球使用 EXP-165 的精确 demand/supply endpoint 与供应塔 Input-belt 物理边。
 - 当前结论：上游生产者不能仅凭“生产同一种物料”关联。每个缺失 item 必须从消费者精确 input sorter 独立反向遍历有向货运图；起始和中间 sorter 的 filter 均须为空或匹配该 item，splitter 输出还必须按 EXP-163 的精确 slot/belt 与双向过滤语义放行，候选 producer 再按 planet/object/output-item 三重身份绑定。递归最多 8 层、访问 64 个 producer，并用 `(planetId, objectId, itemId)` 防环；达到深度/访问上限、遇环或 resolver 身份不一致时必须写入 `upstream_trace_stop_reason`，不能把截断点冒充完整根因。上游没有与调用方目标 item 对应的 per-device 历史速率，因此把实际速率标成 unknown，继续使用同 tick 缓冲、电力、矿源和工作态分类。
 - 直接证据：7 项纯 Core tracer 回归覆盖四节点缺料链、更深输出堵塞、环路、resolver 身份不符、未知上游速率以及深度/访问上限；EXP-163 另有 7 项 splitter policy 回归，完整 suite 为 Contracts/Core/MCP `17 + 150 + 21 = 188`，solution 0 warning / 0 error。首个 live 候选在 tick `14028962` 从黄糖 lab `774` 进入 diamond assembler `715`；最终源码相等部署 Plugin/Core hash 为 `46E62CC930CAD0756BBFB06625C9585F04A074B25FEDC15C4D7DCE2A322F4B70` / `CA8B33DD66330211ECD78E535CBD05932933278AF6E640BE67AF7AFD6301E7C5`。普通保存 `14109460`、exact-primary 恢复自动重存 `14109491` 后，Bridge tick `14111293` 与最终构建后 MCP tick `14138110` 都返回 `lab 774 / 6003 -> material 1112 -> assembler 715 / 1112 -> material 1109`，无 trace-stop evidence；源码 MCP `0.4.0.0` 的 50-tool surface 返回同一四节点路径。
-- 限制或反例：`directDiagnosticCoverage` 仍只描述请求物品的立即生产者，不声明递归图完整。当前递归不跨物流塔进入其他星球，不支持 fractionator、gamma receiver 或 orbital collector；EXP-164 的时间窗是独立物流证据，不会让本条递归图自动跨星。没有 producer 候选时保留当前已确认的局部缺料 finding。多个并行生产者按稳定身份顺序返回首个可诊断分支，不等于已做全图关键路径排序。storage/tank 的内容兼容性仍沿当前 native 拓扑而非额外抽象为递归 coverage，相关设备语义变化时需重查。
+- 限制或反例：`directDiagnosticCoverage` 仍只描述请求物品的立即生产者，不声明递归图完整。跨星递归当前只沿一个公开且精确的 demand/supply endpoint 进入供应塔真实 Input belt；人工填塔、无输入带、未证明的多段塔中继，以及 fractionator、gamma receiver 或 orbital collector 都不会被猜测补全。没有 producer 候选时保留当前已确认的局部缺料 finding。多个并行生产者按稳定身份顺序返回首个可诊断分支，不等于已做全图关键路径排序。storage/tank 的内容兼容性仍沿当前 native 拓扑而非额外抽象为递归 coverage，相关设备语义变化时需重查。
 - 复验触发：DSP 连接槽/filter 语义变化、新 cargo transit 或生产类型、跨星球生产者边、递归预算/选择策略变化、temporal logistics 接入、受控故障修复或最终 v0.4 clean 工件安装。
 - 关联：EXP-154、EXP-159–161、EXP-163–164、`ProductionRootCauseTracer`、`TryFindDirectDiagnosticDemandBindings`、`docs/research/game-api-overseer.md`。
-- 最近复验：2026-09-03（物流时间窗最终同批部署后，同档四节点 live 路径与三厂读取保持；204 项测试和完整构建通过）。
+- 最近复验：2026-09-03（EXP-165 的跨星路径已从 `104:530` 经 `104:1657 -> 102:44` 到达矿机 `102:1`，黄糖同星四节点路径保持；205 项测试和完整构建通过）。
 
 ### EXP-163 — 分流器过滤必须按精确输出口双向约束递归路径
 
@@ -2078,7 +2078,21 @@
 - 关联：EXP-030、EXP-069、EXP-072、EXP-154、EXP-159、EXP-161–163、IFX-020、`LogisticsProgressWindowAnalyzer`、`OverseerLogisticsProgressStore`、`GameStateReader.OverseerDiagnostics.cs`、`docs/research/game-api-overseer.md`。
 - 最近复验：2026-09-03（204 项测试、单批持久化最终源码相等部署、同档 exact-primary 恢复、三路保护文档与黄糖 live 回归；活动/停滞样本仍待实机）。
 
+### EXP-165 — 跨星生产者只能从精确供应塔的真实输入带继续证明
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：当前 DSP `0.10.34.28529` / `Assembly-CSharp.dll` SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，v0.4 从已物理命中的 demand/supply station route 继续进入另一座 owned factory 中的 assembler/lab/miner。
+- 当前结论：供应塔的 Input port 不是固定仓储选择器。`UpdateNeeds` 按所有未满仓槽构造 `needs[]`，`UpdateInputSlots` 从每条 Input belt 按整站 needs 取物，取成功后才把 `storageIdx` 写成 `needIdx + 1`。因此必须以 supply endpoint 的精确 item 从每条输入带反向追踪，复用 sorter/splitter 物料过滤与 component/entity/belt 身份门；然后等所有 owned factory 捕获完成，再按 planet/object/output-item 全局绑定。公开 supply 节点和后续 producer 必须来自同一 endpoint，不能与其他候选塔拼接。
+- 直接证据：ILSpyCmd 对当前程序集读回 `UpdateNeeds` 的 `storage[i].count < storage[i].max ? itemId : 0` 与 `UpdateInputSlots -> TryPickItemAtRear(needs) -> InputItem -> storageIdx = needIdx + 1`。最终 Plugin 经普通保存 `14413801`、正常关窗和四 DLL 零哈希差部署后，受保护 exact-primary 只恢复 planet `104` 同档并自动重存 `14413832`；Plugin/Contracts/Core SHA-256 为 `344614FE3B827BE8397D5D6DC77C3CCB90C8991C01D088E3108B6F473AB11869` / `8E2FB3205B54972180540D6A6C9B08F62B028453DA5E44BBC36CA96E04F56991` / `9507C3AAEE729ACF13693573C2AB53466B8043F53B762B054F2DEEBD59AAF412`。tick `14414535` 的 item `1106` finding 路径为 `assembler 104:530 -> material 1004 -> demand 104:1657 -> supply 102:44 -> resource_extractor 102:1`，最终定位远端矿机钛石输出 `50/50` 堵塞；tick `14417684` 独立请求 item `1004` 在未显示 planet `102` 工厂上再次返回同一矿机、理论 `60 min⁻¹`、实际 `0`。同一最终部署的黄糖同星路径保持；`limit=1` 三页共享 tick `14415270` 并以 `STALE_CURSOR` 拒绝错 item filter。源码 MCP SHA-256 `E86BE095EA8FDF10D7487C65876EEFD534CE3E4684F9EC31C378F3A737A4E70E` 以协议 `2025-06-18`、版本 `0.4.0.0`、50 tools 在 tick `14416829` 返回同一路径。纯 Core 新增显式跨星路径回归，完整 suite 为 Contracts/Core/MCP `17 + 167 + 21 = 205`，solution 0 warning / 0 error。
+- 限制或反例：当前只继续一个公开精确 supply endpoint 的物理边；手工填充、无 Input belt 和未独立证明的多段塔中继不会猜测生产者。多个并行生产者仍按稳定身份顺序选取首个可诊断分支，不是全局瓶颈排序。fractionator、gamma receiver 与 orbital collector 仍不参与递归。
+- 复验触发：DSP `UpdateNeeds/UpdateInputSlots/InputItem`、站点 port 语义、连接图编码、新生产类型、多段塔中继、多 supply endpoint 路径表达或最终 v0.4 clean 工件安装。
+- 关联：EXP-030、EXP-117、EXP-159、EXP-162–164、IFX-019、IFX-021、`TryTraceDiagnosticCargoUpstream`、`OverseerDiagnosticLogisticsIndex`、`docs/research/game-api-overseer.md`。
+- 最近复验：2026-09-03（当前程序集 IL、205 项测试、最终同档 `14413801 -> 14413832` 受保护部署/恢复、跨星矿机输出堵塞正例、黄糖回归、三页游标、源码 MCP 与 tick `14418919+` healthy/Journal `49/49`/0 prebuild 审计）。
+
 ## 修订记录
+
+- 2026-09-03：新增 EXP-165/IFX-021，并复验 EXP-001/030/069/072/117/154/159/161–164。第七个 v0.4 切片按当前程序集 `UpdateNeeds/UpdateInputSlots` 的动态 needs 语义，从精确 supply endpoint 的 Input belt 反向复用 item/sorter/splitter 图，再在所有 owned factory 捕获后跨 planet 绑定生产者。最终审查把聚合 supply 证据与单条公开路径分开，且有 demand route 时不再跳入另一本地直连候选。普通保存 `14413801`、正常关窗和四 DLL 零哈希差部署后，exact-primary 只恢复同一 planet `104` 世界并自动重存 `14413832`。live 钛块路径从 `104:530` 经 `104:1657 -> 102:44` 到达未显示工厂的矿机 `102:1`，定位其 50/50 输出堵塞；独立 item `1004`、黄糖同星路径、三页游标、源码 MCP 50-tool live call 与最终 healthy/Journal `49/49`/0 prebuild 审计均通过。205 项测试和完整构建通过；活动/停滞 shipment 与受控故障门仍开放，未打 tag、未发布。
 
 - 2026-09-03：新增 EXP-164/IFX-020，并复验 EXP-001/030/069/072/154–163。第六个 v0.4 切片把物流 order/carrier/delivery 进展接入按 owned-save 哈希隔离、current-user ACL 保护且原子替换的 600-tick 状态机；最终审查又收紧为消费者确实缺料、需求端正 reservation，并把同次读取的全部路线合成一次原子持久化，只有 durable analysis 才进入公共 DTO。最终普通保存 `14290235`、正常关窗、四文件零差异部署后，只消费 exact-primary ticket 恢复同一 planet `104` 世界并自动重存 `14290266`。保护文档为 3 条哈希 route/2942 bytes、无外部 SID allow 和原始 save identity，且消费者充足/不足样本都已出现；黄糖三厂读取与四节点递归不回归。204 项测试和完整构建通过。因三路现场均无订单/active carrier，活动与停滞正反例继续开放；没有生产写、开新档、隔离、tag 或 Release。
 

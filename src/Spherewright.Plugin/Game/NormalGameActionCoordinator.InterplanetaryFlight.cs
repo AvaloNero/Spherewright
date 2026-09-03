@@ -22,6 +22,7 @@ internal sealed partial class NormalGameActionCoordinator
     private const float FlightShoreNeighborhoodMinimumClearance = -0.05f;
     private const float FlightShoreNeighborhoodProbeDistance = 2f;
     private const float NativeSailEntryTargetAltitude = 100f;
+    private const double FlightDetourMaximumRelativeSpeed = 200d;
 
     public GameCallResult<PreparedNormalAction> PrepareInterplanetaryFlightOnMainThread(
         string? requestedSessionId,
@@ -458,10 +459,30 @@ internal sealed partial class NormalGameActionCoordinator
                 {
                     ReleaseNativeAscentInput(action);
                     var originPlanet = GameMain.galaxy?.PlanetById(action.PlanetId);
-                    if (originPlanet is not null
-                        && ControlNativeSailDeparture(player, originPlanet, destination, out var initialSurfaceDistance, out var initialRelativeSpeed))
+                    var initialNavigationTarget = destination.uPosition;
+                    var initialDetour = default(FlightPathDetour);
+                    var initialDetourSelected = originPlanet is not null
+                                                && TrySelectNativeSailDetour(
+                                                    player,
+                                                    originPlanet,
+                                                    destination,
+                                                    out initialDetour);
+                    if (initialDetourSelected)
                     {
-                        action.Message = $"DSP's current-version native Fly-to-Sail branch accepted; immediate origin clearance began at {initialSurfaceDistance:F0} m and {initialRelativeSpeed:F1} m/s.";
+                        initialNavigationTarget = ToVectorLf3(initialDetour.AimPoint);
+                    }
+
+                    if (originPlanet is not null
+                        && ControlNativeSailDeparture(
+                            player,
+                            originPlanet,
+                            initialNavigationTarget,
+                            out var initialSurfaceDistance,
+                            out var initialRelativeSpeed))
+                    {
+                        action.Message = initialDetourSelected
+                            ? $"DSP's current-version native Fly-to-Sail branch accepted; immediate origin clearance began at {initialSurfaceDistance:F0} m and {initialRelativeSpeed:F1} m/s toward a verified detour around body {initialDetour.ObstacleBodyId}."
+                            : $"DSP's current-version native Fly-to-Sail branch accepted; immediate origin clearance began at {initialSurfaceDistance:F0} m and {initialRelativeSpeed:F1} m/s.";
                     }
                     else
                     {
@@ -485,14 +506,41 @@ internal sealed partial class NormalGameActionCoordinator
 
         ReleaseNativeAscentInput(action);
         var origin = GameMain.galaxy?.PlanetById(action.PlanetId);
-        if (origin is not null
-            && ControlNativeSailDeparture(player, origin, destination, out var departureSurfaceDistance, out var departureSpeed))
+        var navigationTarget = destination.uPosition;
+        var detour = default(FlightPathDetour);
+        var detourSelected = origin is not null
+                             && TrySelectNativeSailDetour(player, origin, destination, out detour);
+        if (detourSelected)
         {
-            action.Message = $"Native sail is clearing the origin planet at {departureSurfaceDistance:F0} m above its surface and {departureSpeed:F1} m/s relative speed before turning toward planet {destination.id}.";
+            navigationTarget = ToVectorLf3(detour.AimPoint);
+        }
+
+        if (origin is not null
+            && ControlNativeSailDeparture(
+                player,
+                origin,
+                navigationTarget,
+                out var departureSurfaceDistance,
+                out var departureSpeed))
+        {
+            action.Message = detourSelected
+                ? $"Native sail is clearing the origin planet at {departureSurfaceDistance:F0} m above its surface and {departureSpeed:F1} m/s relative speed toward a verified detour around body {detour.ObstacleBodyId}."
+                : $"Native sail is clearing the origin planet at {departureSurfaceDistance:F0} m above its surface and {departureSpeed:F1} m/s relative speed before turning toward planet {destination.id}.";
             return;
         }
 
-        ControlNativeSailTowardPlanet(player, destination, out var surfaceDistance, out var relativeSpeed);
+        var surfaceDistance = Math.Max(0d, (destination.uPosition - player.uPosition).magnitude - destination.realRadius);
+        double relativeSpeed;
+        double waypointDistance = 0d;
+        if (detourSelected)
+        {
+            ControlNativeSailTowardDetour(player, detour, out waypointDistance, out relativeSpeed);
+        }
+        else
+        {
+            ControlNativeSailTowardPlanet(player, destination, out surfaceDistance, out relativeSpeed);
+        }
+
         if (surfaceDistance + 1d < action.FlightBestDistance)
         {
             action.FlightBestDistance = surfaceDistance;
@@ -501,7 +549,9 @@ internal sealed partial class NormalGameActionCoordinator
 
         if (GameMain.gameTick % 300L == 0L)
         {
-            action.Message = $"Native sail is {surfaceDistance:F0} m from planet {destination.id}'s surface at {relativeSpeed:F1} m/s; core energy {player.mecha.coreEnergy:F0}/{player.mecha.coreEnergyCap:F0} J.";
+            action.Message = detourSelected
+                ? $"Native sail is taking a {waypointDistance:F0} m waypoint around body {detour.ObstacleBodyId}; its direct route clearance was {detour.DirectClearance:F0}/{detour.RequiredClearance:F0} m, destination surface distance is {surfaceDistance:F0} m, and relative speed is {relativeSpeed:F1} m/s."
+                : $"Native sail is {surfaceDistance:F0} m from planet {destination.id}'s surface at {relativeSpeed:F1} m/s; core energy {player.mecha.coreEnergy:F0}/{player.mecha.coreEnergyCap:F0} J.";
         }
 
         var timeout = Math.Max(MinimumFlightTimeoutTicks, action.Plan.EstimatedTicks * 6L);
@@ -778,6 +828,120 @@ internal sealed partial class NormalGameActionCoordinator
         return (float)(Math.Acos(dot) * radius);
     }
 
+    private static bool TrySelectNativeSailDetour(
+        Player player,
+        PlanetData origin,
+        PlanetData destination,
+        out FlightPathDetour detour)
+    {
+        detour = default;
+        var planets = origin.star?.planets;
+        if (planets is null)
+        {
+            return false;
+        }
+
+        var currentPoint = new FlightPathPoint(
+            player.uPosition.x,
+            player.uPosition.y,
+            player.uPosition.z);
+        var destinationPoint = new FlightPathPoint(
+            destination.uPosition.x,
+            destination.uPosition.y,
+            destination.uPosition.z);
+        FlightPathDetour? selected = null;
+        foreach (var candidate in planets)
+        {
+            if (candidate is null
+                || candidate.id == origin.id
+                || candidate.id == destination.id)
+            {
+                continue;
+            }
+
+            var candidateCenter = new FlightPathPoint(
+                candidate.uPosition.x,
+                candidate.uPosition.y,
+                candidate.uPosition.z);
+            if (InterplanetaryFlightPathAvoidance.TryCreateDetour(
+                    currentPoint,
+                    destinationPoint,
+                    candidate.id,
+                    candidateCenter,
+                    candidate.realRadius,
+                    out var candidateDetour)
+                && InterplanetaryFlightPathAvoidance.IsPreferred(candidateDetour, selected))
+            {
+                selected = candidateDetour;
+            }
+        }
+
+        if (!selected.HasValue)
+        {
+            return false;
+        }
+
+        detour = selected.Value;
+        return true;
+    }
+
+    private static VectorLF3 ToVectorLf3(FlightPathPoint point) =>
+        new VectorLF3(point.X, point.Y, point.Z);
+
+    private static void ControlNativeSailTowardDetour(
+        Player player,
+        FlightPathDetour detour,
+        out double waypointDistance,
+        out double relativeSpeed)
+    {
+        var sail = player.controller.actionSail;
+        var aimPoint = ToVectorLf3(detour.AimPoint);
+        var toWaypoint = aimPoint - player.uPosition;
+        waypointDistance = toWaypoint.magnitude;
+        var direction = waypointDistance > 1e-6d
+            ? toWaypoint / waypointDistance
+            : player.uVelocity.normalized;
+
+        var astro = GameMain.galaxy.astrosData[detour.ObstacleBodyId];
+        var obstacleVelocity = (astro.uPosNext - astro.uPos) * 60d;
+        var relativeVelocity = player.uVelocity - obstacleVelocity;
+        relativeSpeed = relativeVelocity.magnitude;
+        if (relativeSpeed > 1e-6d)
+        {
+            var angle = VectorLF3.AngleDEG(relativeVelocity, direction);
+            var turn = (float)(1.6d / Math.Max(10d, angle));
+            var desiredRelative = direction * relativeSpeed;
+            var steered = (VectorLF3)Vector3.Slerp((Vector3)relativeVelocity, (Vector3)desiredRelative, turn);
+            var steeringDelta = steered - relativeVelocity;
+            sail.UseSailEnergy(ref steeringDelta, 0.36d);
+            player.uVelocity += steeringDelta;
+            relativeVelocity = player.uVelocity - obstacleVelocity;
+            relativeSpeed = relativeVelocity.magnitude;
+        }
+
+        if (relativeSpeed > FlightDetourMaximumRelativeSpeed * 1.05d)
+        {
+            var brakingDelta = relativeVelocity * 0.008d;
+            sail.UseSailEnergy(ref brakingDelta, 1.5d);
+            player.uVelocity -= brakingDelta;
+            relativeSpeed = (player.uVelocity - obstacleVelocity).magnitude;
+            return;
+        }
+
+        if (relativeSpeed < FlightDetourMaximumRelativeSpeed)
+        {
+            var acceleration = Math.Min(
+                7d,
+                FlightDetourMaximumRelativeSpeed - relativeSpeed);
+            if (acceleration > 0d)
+            {
+                var ratio = sail.UseSailEnergy(acceleration);
+                player.uVelocity += direction * (acceleration * ratio);
+                relativeSpeed = (player.uVelocity - obstacleVelocity).magnitude;
+            }
+        }
+    }
+
     private static void ControlNativeSailTowardPlanet(
         Player player,
         PlanetData destination,
@@ -833,7 +997,7 @@ internal sealed partial class NormalGameActionCoordinator
     private static bool ControlNativeSailDeparture(
         Player player,
         PlanetData origin,
-        PlanetData destination,
+        VectorLF3 navigationTarget,
         out double surfaceDistance,
         out double relativeSpeed)
     {
@@ -847,9 +1011,9 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         var outward = (Vector3)(fromOrigin / centerDistance);
-        var toDestination = destination.uPosition - player.uPosition;
-        var destinationDirection = toDestination.magnitude > 1e-6d
-            ? (Vector3)(toDestination / toDestination.magnitude)
+        var toNavigationTarget = navigationTarget - player.uPosition;
+        var destinationDirection = toNavigationTarget.magnitude > 1e-6d
+            ? (Vector3)(toNavigationTarget / toNavigationTarget.magnitude)
             : outward;
         var inwardProjection = Vector3.Dot(destinationDirection, outward);
         var closestApproach = inwardProjection < 0f

@@ -1,7 +1,7 @@
 # 本局从落地到当前：决策、科技与首次产出总时间线
 
 更新时间：2026-09-03（Asia/Singapore）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界仍在 planet `104` 健康运行。首座 ILS `1657` 已由两座新电塔接入 network `1`，充电上限从原生默认 60 MW 降到本机型最低 30 MW；槽 `0/1` 分别配置钛石/硅石、各 `100`、远程需求，并守恒装入 1 艘运输船。严格十写审计后已普通保存到 tick `11974991`，fresh revision `594`、Walk/0、满核心、journal `48/48` durable、无 flight checkpoint；站能量随后约 `1.463 GJ`，另一座 ILS 和另一艘船仍在仓 `900/893`。下一步取出远端站/船，在实际起飞前创建独立飞行检查点并前往 planet `102`。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界已由修复版从 planet `104` 成功飞抵 planet `102`。新飞前 checkpoint 正常创建，航行期 `localPlanet=null`，最终在 tick `12066184+` 进入目标星并稳定 Walk/0，checkpoint 已撤销；落地状态又通过正常保存固化到 tick `12071759`、revision `5`，planned restart 已重签。施工包完整，目标星已有两台矿机，分别覆盖 2 个钛节点和 4 个硅节点，两张远端电网满供电。下一步取得石料并手搓无线输电塔，靠近前哨接电补能后施工/接电远端 ILS，并把现有钛硅库存接入远程供应。
 
 ## 结论与证据边界
 
@@ -348,6 +348,6 @@
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前正在同一受保护 owned world 的 planet `104` 运行；首座 ILS 施工/接电/需求配置/装船已在 tick `11969310+`、revision `593` 通过十写审计，并普通保存到 tick `11974991`。fresh revision `594`、write health `healthy`、无 flight checkpoint、journal `48/48` durable 且无 pending/error。后续继续使用同一世界，不开新档。
-- 当前主线：母星 ILS `1657` 已接入 network `1`、限充 30 MW、远程需求钛/硅各 100、拥有 1 艘 idle 船；另一座 ILS 与另一艘船仍在仓 `900/893`。下一步取出远端站/船，为前往 planet `102` 的航行单独创建 checkpoint，接入已持续生产的钛/硅前哨并配置远程供应；随后以真实 working/order、源减目标增和往返守恒验收跨星运输。任何飞行失败只重载该 checkpoint 继续。
+- DSP 当前正在同一受保护 owned world 的 planet `102` 运行；修复版飞行已成功抵达并通过正常保存固化到 tick `12071759`、revision `5`。当前仍为 Walk/0、写入健康、无 flight checkpoint、planned restart 可用，后续继续使用同一世界，不开新档。
+- 当前主线：母星 ILS `1657` 已接入 network `1`、限充 30 MW、远程需求钛/硅各 100、拥有 1 艘 idle 船；玩家已把第二座 ILS、第二艘船和完整远端施工包带到 planet `102`。下一步先用本地石料手搓无线输电塔并在已有风电网补能，然后施工远端 ILS、配置钛硅远程供应并装船；随后以真实 working/order、源减目标增和往返守恒验收跨星运输。
 - 粒子容器、物流运输机、行星物流站、真实行星内物流、远端钛/硅矿以及黄糖本地双原料供料均已越过结构化验收与普通保存门槛；v0.3 仍需双星球 ILS、运输船真实运送钛/硅、黄糖上游持续性、重启恢复和干净安装包握手全部通过，才创建 tag 和 GitHub Release。

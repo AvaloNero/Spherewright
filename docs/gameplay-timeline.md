@@ -2,12 +2,12 @@
 
 更新时间：2026-09-03（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界位于 planet `104`。双星 ILS 已真实运输钛、硅，母星两种原矿都已通过正常物流接入生产；旧石转硅入口停用。硅线里程碑保存 tick `12841158` 后已经正常关闭，并只通过受保护票据精确恢复同档；恢复动作自动重存到 tick `12841190`。有机晶体永久桥 `762 -> sorter 2032 ->` 既有钛带已经通过真实携货和下游生产复验，并普通保存到 tick `12996056`。保存后审计 tick `12998411`、revision `38`，healthy、Journal `49/49` durable、无 checkpoint；运输船引擎已开始研究。游戏内容门已闭合，当前进入 v0.3 的自动测试、完整构建、自包含打包与干净安装回归，不并行开始 v0.4。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界位于 planet `104`。双星 ILS 已真实运输钛、硅，母星两种原矿都已通过正常物流接入生产；旧石转硅入口停用。塑料、精炼油、水已通过永久三料共享路自动进入有机晶体仓 `761`，有机晶体经 sorter `2032` 继续进入钛晶石和结构矩阵链；玩家不再搬运这条链上的任一中间料。共享路的三个瓶颈均扩为三只并行 sorter 后，仓 `761` 的塑料/油/水由 `35/0/0` 持续增长到 `304/86/72`，有机晶体、钛晶石与结构矩阵设备连续运行，结构矩阵输出 sorter `779/977` 均有真实携货证据。v0.3 游戏内容门已普通保存到 tick `13444822`；保存后严格审计 tick `13446315`、revision `151`，healthy、Journal `49/49` durable、0 prebuild、无 blocker/checkpoint。当前只做 v0.3 发布回归、打包与干净安装验证，不并行开始 v0.4。
 
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 共有 `49` 条，已经持久化到 sequence `49`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `147` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护 Journal 共有 `49` 条，已经持久化到 sequence `49`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `151` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -76,7 +76,14 @@
 | save `12841190` | 2026-09-03 | 硅线保存后 DSP 正常窗口关闭，进程退出、descriptor 清零且未强杀；重开后只消费 protected planned-restart ticket，exact primary 通过 minimum tick/planet/模式/owned 校验并自动重存。严格审计为 2031 built/0 prebuild、三网满供电、玩家满电 Walk/0、3/3 施工机 idle、Journal `48/48` durable、无 blocker/checkpoint。恢复后 ILS 保留双需求和正确端口选择，唯一运输船继续硅订单，桥接 sorter 携硅且熔炉工作；黄糖站停机收敛为有机晶体上游缺塑料/水。 | R/M/D |
 | tick `12910631` / revision `18` | 2026-09-03 | 恢复后首组十写先从自动水仓守恒取得 50 水并投入有机晶体仓；旧 `141 -> 183` 直线已被新布局占据，只读重算局部侧绕后全程 Walk/0 到达 `183`，再以 `713` 为唯一跨水终点稳定落地。自动塑料仓随后守恒输出 100 塑料到玩家；两个已接受动作仅被本地结果展示错误遮住，均由 fresh 状态唯一核销且未重放。十写审计仍为 2031 built/0 prebuild、三网满供电、Journal `48/48` durable、healthy、无 blocker/checkpoint；有机晶体设备已预取水/油各 2，钛输入仓自然增至 980，下一写只投塑料。 | R/D |
 | tick `12959635` / revision `31` | 2026-09-03 | 100 塑料投入后，化工厂完整产出 50 有机晶体；它们分三批守恒接入钛晶石仓，随后金刚石总量 `150 -> 100`、黄糖持续经旧带补入研究站。新 sorter `2032` 已把有机晶体输出仓 `762` 接上原有钛块输入带 `986 -> … -> 998 -> 1016 -> 768`，双端、供电和零预建筑均通过，尚待下一批做携货复验。第十写正常选择运输船引擎，Journal sequence `49` durable；研究到 `1928/36000`，站 `84` 的黄矩阵点在消费中仍由 `36000 -> 38080`。审计为 2032 built、三网满供电、healthy、无 blocker/checkpoint。 | J/R/D |
-| save `12996056`; audit `12998411` / revision `38` | 2026-09-03 | 用自动塑料/水与既有精炼油组成 10 件有机晶体复验批。两次连续采样抓到 sorter `2032` 携带 item `1117`；钛晶石制造台取得有机晶体并运行，批次最终耗尽，黄糖 lab 同步运行且金刚石仓 `94 -> 84`。全程玩家未搬运有机晶体，普通保存后审计为 2032 built/0 prebuild、三网满供电、Journal `49/49` durable、healthy、无 blocker/checkpoint。v0.3 游戏内容门据此闭合，转入发行包回归。 | R/M/D |
+| save `12996056`; audit `12998411` / revision `38` | 2026-09-03 | 用自动塑料/水与既有精炼油组成 10 件有机晶体复验批。两次连续采样抓到 sorter `2032` 携带 item `1117`；钛晶石制造台取得有机晶体并运行，批次最终耗尽，黄糖 lab 同步运行且金刚石仓 `94 -> 84`。全程玩家未搬运有机晶体，普通保存后审计为 2032 built/0 prebuild、三网满供电、Journal `49/49` durable、healthy、无 blocker/checkpoint。该证据闭合了有机晶体输出桥，但三种本地上游料仍经玩家中转，因此尚不满足 v0.3“不再依赖伊卡洛斯人工携货”门槛。 | R/M/D |
+| tick `13126837` / revision `57` | 2026-09-03 | 从纯塑料仓 `558` 建成 sorter `2038` 和 `2037 -> … -> 2085` 的 52 格无环单链。多组原生可建直达方案与旧带重合 4–21 格，全部在 commit 前丢弃；实际施工分为 5/14/23/10 格四段并逐段复读唯一自由末端。第十写审计为 2071 built/0 prebuild、玩家满电 Walk/0、3/3 施工机 idle、Journal `49/49` durable、healthy、无 blocker/checkpoint。三料未接到仓 `761`，不抢先报完成。 | R/D |
+| tick `13246759` / revision `77` | 2026-09-03 | 主线先经 11/10 格试探到 `2098`，5.64 m 外的首条独立短带因 sorter `TooFar` 保留为不接入试验段；在 3.77 m 处重建 4 格独立带后，sorter `2115` 成功跨线并实际携带塑料。新侧又施工 10/9/9 格安全段到 `2135`，最后一段在 planned index `10/11` 的旧带 `2062/1695` 前停下。中间用现有铁/铜递归手搓 72 条带与 3 sorter；手搓队列清空。审计为 2135 built/0 prebuild、三网满供电、Journal `49/49` durable、healthy、无 blocker/checkpoint。 | R/D |
+| tick `13310101` / revision `95` | 2026-09-03 | 从 `2135` 先到双旧带墙前的 `2144`，再用独立 3 格带和 sorter `2149` 跨到 `2148…2146`；手搓并建成电塔 `2150` 后，`2149` 接入 network `2` 并实际携带塑料。随后以 27/16 格两段到 `2193`，在旧带 `433` 远侧建 9 格独立带 `2194…2202`，sorter `2203` 完成双端拓扑。由于 fresh 复读确认 `2203` 仍为 network `0`、Picking/0，主动在第 9 写提前审计，没有把连接成功冒充通料。审计为 2203 built/0 prebuild（1835 belt、188 inserter、38 power-node），玩家满电 Walk/0、余 75 belt/3 sorter、3/3 施工机 idle，三网 ratio 均 `1.0`，Journal `49/49` durable、healthy、无 blocker/checkpoint。 | R/D |
+| tick `13364570` / revision `113` | 2026-09-03 | 两段正常移动已把玩家带到旧电塔区；第三段在距目标 0.87 m 时由 181-tick 停滞看门狗明确终止，随后仍可在范围内从自动仓守恒取得 100 铁。递归手搓 2 电塔/3 sorter 后，电塔 `2204` 使 sorter `2203` 满电携塑料。主线从 `2202` 侧移到 `2206`，再以独立 5 格带 `2212…2208` 与 sorter `2213` 跨过旧带；`2213` 同样满电携塑料。第十写审计为 2213 built/0 prebuild（1843 belt、189 inserter、39 power-node），玩家满电 Walk/0、余 67 belt/5 sorter/1 power-node，三网 ratio 均 `1.0`，Journal `49/49` durable、healthy、无 blocker/checkpoint。 | R/D |
+| tick `13405919` / revision `131` | 2026-09-03 | 主路贴近油中继仓 `784` 后，复读推翻其“仍为纯油仓”的旧假设：`163/784` 分别残留 12/55 氢；两次 transfer 将 67 氢守恒隔离到玩家，随后两仓均稳定为 600 精炼油。sorter `2218` 把油汇入主干，10 格续线到水仓旁后 sorter `2229` 实际携水；再经 8 格外绕、6 格独立带和满电桥 `2244` 跨过旧线，最后在黄糖旧带远侧建 `2245/2246`。第十写审计为 2246 built/0 prebuild（1873 belt、192 inserter），玩家满电 Walk/0、余 37 belt/2 sorter/1 power-node，三网 ratio 均 `1.0`，Journal `49/49` durable、healthy、无 blocker/checkpoint；目标仓此刻仍空，未提前报闭环。 | R/D |
+| tick `13432430` / revision `150` | 2026-09-03 | sorter `2247/2248` 完成最后跨带和入仓连接，但 50 秒内仓 `761` 只有塑料 `35 -> 75`、油/水仍为 0；源 sorter 满电携货，故定位为单 sorter 下游桥被上游塑料满流量饿死。三个瓶颈各补两只并行 sorter `2249…2254` 后，仓内三料达到 `270/40/25`，化工厂 `760` 与钛晶石制造台 `767` 恢复连续工作。隔离的 67 氢同时守恒归入专用氢仓 `136`。第十写审计为 2254 built/0 prebuild（1873 belt、200 inserter）、写健康正常。 | R/D |
+| `002d 14:14:40` / save `13444822`; audit `13446315` / revision `151` | 2026-09-03 | 全自动三料继续增长到 `304/86/72`；有机晶体输出 sorter `2032`、结构矩阵输出 sorter `779` 与下游 sorter `977` 都被连续采样抓到携带正确物品。钛晶石制造台和黄糖 lab 持续工作，金刚石输入由 `84 -> 74`，保存后进一步到 `55`；玩家背包没有水、油、氢、有机晶体、钛晶石或结构矩阵，因此不是人工搬运。普通保存后 owned save 精确为 tick `13444822`，审计确认 peaceful/non-sandbox/1×、healthy、Journal `49/49` durable、0 prebuild、无 blocker/checkpoint、planned restart 可用。v0.3 游戏内容门正式闭合。 | R/M/D |
 
 ## 科技树与升级
 
@@ -212,7 +219,7 @@
 
 ## 完整决策/经验索引
 
-当前共 `147` 条：`validated=94`、`observed=50`、`invalidated=2`、`superseded=1`。`observed` 表示已有样本但仍需复验；`invalidated` 和 `superseded` 不能继续作为现行规则。每条的适用范围、当前结论、直接证据与复验触发在 [experience-ledger.md](./experience-ledger.md) 中完整保存。
+当前共 `151` 条：`validated=99`、`observed=49`、`invalidated=2`、`superseded=1`。`observed` 表示已有样本但仍需复验；`invalidated` 和 `superseded` 不能继续作为现行规则。每条的适用范围、当前结论、直接证据与复验触发在 [experience-ledger.md](./experience-ledger.md) 中完整保存。
 
 | ID | 状态 | 决策/经验 |
 |---|---|---|
@@ -362,10 +369,14 @@
 | EXP-144 | validated | 跨星取货必须用货槽订单与源库存下降共同验收 |
 | EXP-145 | validated | 密集旧厂区长带必须做全路径占位排除并分段提交 |
 | EXP-146 | validated | 运行时 Journal、逐档日记和工程事故簿必须分层 |
-| EXP-147 | observed | 专用输出仓可经受电分拣器汇入带过滤消费者的既有混合入料带 |
+| EXP-147 | validated | 专用输出仓可经受电分拣器汇入带过滤消费者的既有混合入料带 |
+| EXP-148 | validated | 路由候选器空输出必须区分重叠、材料和计划容量拒绝 |
+| EXP-149 | observed | 同坐标传送带必须用拓扑区分原生转角和游离重复层 |
+| EXP-150 | validated | 满吞吐 sorter 无可配置空窗时须改走有证据的源链纯化 |
+| EXP-151 | observed | 多源共享带的单 sorter 后置桥会被上游满流量饿死 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前在同一受保护 `owned-world-001` 的 planet `104` 运行；硅线保存后的正常关闭和 exact-primary 恢复已经通过。当前为 Walk/0、核心满电、写入健康、无 blocker/checkpoint、planned restart 可用，继续使用同一世界，不开新档。永久有机晶体桥已保存到 tick `12996056`，保存后审计 tick `12998411`、revision `38` 并归零。
-- 当前主线：v0.3 游戏内容门已经闭合；新 sorter `2032` 已两次实际携带有机晶体，钛晶石制造台和黄糖 lab 顺序运行。现在只做 v0.3 发行门：冻结文档、提交并推送当前里程碑，运行锁定恢复、自动测试、完整 solution 构建、自包含打包和干净安装 MCP 握手，不并行开始 v0.4。
-- 双星 ILS、运输船钛/硅实运、母星两种原矿接入、旧石转硅退役、黄糖持续窗口、普通保存/关闭/恢复和永久有机晶体桥均已通过。全部发行回归通过后才创建 `v0.3.0` annotated tag 和 GitHub Release；任一门失败则先修复并重新验证。
+- DSP 当前在同一受保护 `owned-world-001` 的 planet `104` 运行；当前为 Walk/0、核心满电、写入健康、无 blocker/checkpoint、planned restart 可用，继续使用同一世界，不开新档。v0.3 内容门已保存到 tick `13444822`，保存后审计 tick `13446315`、revision `151`；这一写入窗口已经归零。
+- 当前主线：只完成 v0.3 的发布收尾，不并行开始 v0.4。依次整理并提交本次全自动黄糖证据，运行锁定还原、全部自动测试和完整 solution 构建，生成 `0.3.0` 自包含 Windows 包，再用正常关机、干净安装、受保护恢复和 MCP 握手做发行实机回归。
+- 双星 ILS、运输船钛/硅实运、母星两种原矿接入、旧石转硅退役、无玩家搬运的黄糖持续窗口和普通保存均已通过。全部发行回归通过后才创建 `v0.3.0` annotated tag 和 GitHub Release；任一门失败则先修复并重新验证，发布后才把 AGENTS 当前目标切到 v0.4。

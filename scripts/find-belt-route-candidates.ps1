@@ -138,6 +138,8 @@ $sourceDestinationDistance = Get-Distance $source.position $destination.position
 $results = @()
 $activePlanExpirations = [Collections.Generic.List[DateTimeOffset]]::new()
 $attemptsInBatch = 0
+$overlapRejectionCount = 0
+$prepareRejectionCounts = @{}
 foreach ($distance in $CandidateDistances) {
     if ($distance -le 0) {
         continue
@@ -198,6 +200,7 @@ foreach ($distance in $CandidateDistances) {
             }
 
             if ($null -ne $overlappingBelt) {
+                $overlapRejectionCount++
                 Write-Verbose "Rejected distance=$distance angle=$angle because the snapped path overlaps existing belt $($overlappingBelt.objectId)."
                 continue
             }
@@ -241,6 +244,17 @@ foreach ($distance in $CandidateDistances) {
             }
         } catch {
             $attemptsInBatch++
+            $message = [string]$_.Exception.Message
+            $reason = if ($message -match 'failed:\s+([A-Z][A-Z0-9_]+):') {
+                $Matches[1]
+            } else {
+                $_.Exception.GetType().Name
+            }
+            if ($prepareRejectionCounts.ContainsKey($reason)) {
+                $prepareRejectionCounts[$reason]++
+            } else {
+                $prepareRejectionCounts[$reason] = 1
+            }
             Write-Verbose "Rejected distance=$distance angle=${angle}: $($_.Exception.Message)"
         }
     }
@@ -248,6 +262,17 @@ foreach ($distance in $CandidateDistances) {
 
 if (-not $KeepPlansActive) {
     Wait-ForPreparedPlansToExpire $activePlanExpirations
+}
+
+if ($results.Count -eq 0) {
+    $prepareSummary = if ($prepareRejectionCounts.Count -eq 0) {
+        'none'
+    } else {
+        (@($prepareRejectionCounts.GetEnumerator() |
+            Sort-Object Name |
+            ForEach-Object { "$($_.Name)=$($_.Value)" }) -join ', ')
+    }
+    Write-Warning "No zero-overlap belt route candidate remained (overlap=$overlapRejectionCount; prepare=$prepareSummary)."
 }
 
 $results |

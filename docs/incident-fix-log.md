@@ -199,3 +199,20 @@
   最终源码二进制重新部署并受保护恢复后，同快照 tick `13773036` 再次返回母星 generated/exported
   `94688/0` 和远端 planet `102` 的 `4050/0`。150 项测试和完整构建通过。
 - 关联：EXP-021、EXP-142、EXP-156、`docs/research/game-api-overseer.md`；状态：`fixed`。
+
+## IFX-018 — 耗尽矿机的空来源数组阻断整份理论产能快照
+
+- 首见：2026-09-03，v0.4 理论产能首轮实机读取。
+- 症状：三座工厂的只读生产请求整体返回 `BRIDGE_NOT_READY`，消息为
+  `An active vein miner has an invalid source-node index`；其余设备无法获得理论值。
+- 根因：理论扫描先要求 `MinerComponent.veins` 非空，再判断 `veinCount==0`。当前 DSP 会保留
+  已耗尽的满电矿机组件，同时把来源数降为 0 并允许来源数组为空；原生 UI 公式先看
+  `veinCount > 0`，否则该矿机自然贡献 0。
+- 修复：保留负数为非法，但把 `veinCount==0` 提前作为合法零容量终态；只有正来源数才验证
+  数组、当前索引、全部 vein/product 双向身份和扫描预算。纯 Core 同时增加零 source multiplier
+  回归测试，未知/越界正来源仍 fail closed。
+- 验证：fresh 实体读回证明矿机 `14/263/796` 均为 network `1`、serve ratio `1.0`、
+  `resourceNodeCount=0`。修复版经普通保存、正常关窗、7 文件零差异部署和 exact-primary 恢复后，
+  同一存档完整返回三厂 `theoreticalCoverage=complete`；有矿机的覆盖点数精确闭合理论速率，
+  三台耗尽矿机贡献 0。完整 solution 0 warning/0 error，160 项测试通过。
+- 关联：EXP-085、EXP-112、EXP-157、`GameStateReader.TryCaptureMinerTheoreticalRates`；状态：`fixed`。

@@ -2,7 +2,7 @@
 
 更新时间：2026-09-03（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界位于 planet `104`。双星 ILS 已真实运输钛、硅，母星两种原矿都已通过正常物流接入生产；旧石转硅入口停用。塑料、精炼油、水已通过永久三料共享路自动进入有机晶体仓 `761`，有机晶体经 sorter `2032` 继续进入钛晶石和结构矩阵链；玩家不再搬运这条链上的任一中间料。共享路扩容后完成持续黄糖窗口并保存。`v0.3.0` 已从 commit `a52ff44` 正式发布；当前安装的是尚未发布的 `0.4.0` 开发 Plugin。它通过普通保存、正常关窗和受保护 exact-primary resume 继续同一世界，最近自动保存边界为 tick `13767093`。fresh 审计 tick `13775095+` 为 healthy、Journal `49/49` durable、无 blocker/checkpoint，玩家 Walk/0、满核心。Overseer 现已以两个 live 切片读取三个既有 factory（planet `104/102/103`）：原生 600-tick 生产窗口随档持久化且离线不计时，每星球供电/物流与全局科研摘要也在同一游标快照中成立。v0.4 尚未发布，理论速率/利用率、运行时故障分类和上游根因路径仍在开发。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界位于 planet `104`。双星 ILS 已真实运输钛、硅，母星两种原矿都已通过正常物流接入生产；旧石转硅入口停用。塑料、精炼油、水已通过永久三料共享路自动进入有机晶体仓 `761`，有机晶体经 sorter `2032` 继续进入钛晶石和结构矩阵链；玩家不再搬运这条链上的任一中间料。共享路扩容后完成持续黄糖窗口并保存。`v0.3.0` 已从 commit `a52ff44` 正式发布；当前安装的是尚未发布的 `0.4.0` 开发 Plugin。它通过普通保存、正常关窗和受保护 exact-primary resume 继续同一世界，最近自动保存边界为 tick `13831903`。fresh 审计 tick `13861096+` 为 healthy、Journal `49/49` durable、无 blocker/checkpoint，玩家 Walk/0、满核心。Overseer 现已以三个 live 切片读取三个既有 factory（planet `104/102/103`）：原生 600-tick 生产窗口随档持久化且离线不计时；当前组件公式独立给出理论产能/利用率；每星球供电/物流与全局科研摘要也在同一游标快照中成立。v0.4 尚未发布，运行时故障分类、上游根因路径和受控故障验收仍在开发。
 
 ## 结论与证据边界
 
@@ -89,6 +89,7 @@
 | no game write after audit `13520330` | 2026-09-03 | v0.4 首个只读基础切片定义连续游戏 tick 窗口、实际/理论速率和五类首因；跨 session 可按同一受保护存档身份衔接，但回档、计数回退、同 tick 异常增量或采样断层会使窗口失效。故障分类在至少一个完整配方周期前保持沉默。135 项 Core/Contracts/MCP 测试与完整 solution 构建通过；没有部署新 Plugin、重启 DSP 或改变本档。 | D |
 | saves `13617247` / `13621729` / `13626113`; final protected resume/save `13626145`; audit `13630162+` | 2026-09-03 | 三次都先走普通 save、正常关窗，再只消费当次 exact-primary protected ticket 恢复同一 planet `104` 世界；没有开新档或载入其他档。`0.4.0` 开发 Plugin 新增有界多星球原生生产窗口，实机分页完整返回 planet `104/102/103` 三个既有 factory，远端两厂无需加载显示。最后一次保存前红糖窗口计数为 2；恢复后仅 16 tick 首读仍为 2，直接证明 600-tick 环随档恢复且离线不计时。重复 item、17-planet 页大小和错绑 filter 的 cursor 分别以 `INVALID_REQUEST/STALE_CURSOR` 无副作用拒绝。142 项测试、完整 solution、49-tool MCP initialize/list/live call 均通过；最终审计 healthy、Journal `49/49` durable、无 blocker/checkpoint，玩家 Walk/0 且核心满电。 | R/M/D |
 | saves `13665285` / `13696182` / `13725278` / `13767062`; final protected resume/save `13767093`; audit `13775095+` | 2026-09-03 | 继续仅用同一受保护世界完成 Overseer 第二个纵向切片：`limit=1` 的三页共享同一 snapshot/tick，返回 planet `104/102/103` 的有界电网和物流聚合，以及唯一全局科研 `3401`。首次读数揭示旧电力 DTO 把防御场 `energyExport` 误当发电量；源码改为逐发电组件汇总 `generateCurrentTick` 并单列 exported，同时修正 vein collector 互斥分类、空槽一致性、科技队列身份与全域扫描预算。最终源码重新完整构建后，先普通保存 tick `13767062`、正常关窗，再将 7 个 Debug 文件以零哈希差异部署；受保护票据只恢复 exact primary 并自动重存 tick `13767093`。最终三页共享 tick `13773036`，母星 generated/exported 为 `94688/0`，远端 `102` 为 `4050/0`，队列 `[3401]` 及蓝/红/黄矩阵需求正常。旧生产窗仍为 ready；错页大小 cursor/17-planet 分别以 `STALE_CURSOR/INVALID_REQUEST` 拒绝。150 项测试、完整 solution 0 warning/error、50-tool MCP live call 全部通过。最终审计 healthy、Journal `49/49` durable、Walk/0、满核心、3/3 施工机 idle、无 blocker/checkpoint；没有打 tag 或发布。 | R/M/D |
+| saves `13827983` / `13831872`; final protected resume/save `13831903`; audit `13861096+` | 2026-09-03 | Overseer 第三个切片按当前程序集逐组件重算理论产能，不读写 UI 缓存。首轮 live 被三台合法耗尽矿机安全挡下；修正 `veinCount=0` 为零容量后，7 个部署文件与源码零哈希差异，最终 Plugin SHA-256 `5AC257D5AB8013E7D088A8609D08A9FA7FD83A633D4D2DA2F0F549BA53815DC1`，exact-primary 仍只恢复同一 planet `104` 世界。母星矩阵理论值为 `20/10/7.5 min⁻¹`，铁/铜/石/煤矿覆盖点数闭合 `420/60/90/210 min⁻¹`，水/油为 `50/133.15919494628906 min⁻¹`，远端未显示 factory 的硅/钛为 `120/60 min⁻¹`；三页共享 tick `13837732`，游标/页长边界继续拒绝。160 项测试、完整构建和 50-tool MCP `initialize/list/live call` 通过。最终审计为 confirmed peaceful/sandbox disabled/1×、healthy、Journal `49/49` durable、Walk/0、满核心、3/3 施工机 idle、无 blocker/checkpoint、restart 可用；没有开新档、隔离、打 tag 或发布。 | R/M/D |
 
 ## 科技树与升级
 
@@ -384,9 +385,10 @@
 | EXP-154 | validated | 诊断速率只按连续游戏 tick 计算且根因分类须等待完整周期 |
 | EXP-155 | validated | 自动产线实际速率优先复用 DSP 随档持久化的 600-tick 原生环 |
 | EXP-156 | validated | 跨星球摘要必须共享一个有界快照并区分真实发电与防御场导出 |
+| EXP-157 | validated | 理论产能必须从当前组件公式重算，耗尽矿机是合法零容量 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前在同一受保护 `owned-world-001` 的 planet `104` 运行；`0.4.0` 开发 Plugin 最近恢复后自动保存到 tick `13767093`，审计 tick `13775095+` 为 Walk/0、核心满电、写入健康、Journal `49/49` durable、3/3 施工机 idle、无 blocker/checkpoint、planned restart 可用。继续使用同一世界，不开新档。
+- DSP 当前在同一受保护 `owned-world-001` 的 planet `104` 运行；`0.4.0` 开发 Plugin 最近恢复后自动保存到 tick `13831903`，审计 tick `13861096+` 为 Walk/0、核心满电、写入健康、Journal `49/49` durable、3/3 施工机 idle、无 blocker/checkpoint、planned restart 可用。继续使用同一世界，不开新档。
 - `v0.3.0` 已由 clean commit `a52ff44` 创建 annotated tag 和 GitHub Release，最终 ZIP 的线上 digest 与本地已测工件一致；该版本不再有开放发行项。
-- 当前主线：v0.4 Overseer。production statistics/远端 factory 证据、三厂分页、随档 600-tick 实际速率、多星球供电/物流和全局科研摘要、MCP 纵向链路已经通过。下一步按当前程序集重现理论速率/利用率，再把已测的首因分类接到真实设备、物流边与上游路径。完成这些只读层后，才在同档受控制造缺料、断电和物流阻塞，依据诊断逐一正常修复并保存。
+- 当前主线：v0.4 Overseer。production statistics/远端 factory 证据、三厂分页、随档 600-tick 实际速率、当前组件理论速率/利用率、多星球供电/物流、全局科研摘要和 MCP 纵向链路已经通过。下一步把已测的首因分类接到真实设备、缓冲、物流边、矿源与上游路径；只读诊断闭合后，才在同档受控制造缺料、断电和物流阻塞，依据诊断逐一正常修复并保存。

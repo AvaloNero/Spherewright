@@ -314,7 +314,7 @@ public static class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns a cursor-bound page of all already-created owned factories for up to 64 exact item IDs. Actual rates come from DSP's save-persisted 600-game-tick automatic production and consumption window; this first slice reports theoretical coverage as unavailable rather than using stale UI caches.")]
+    [Description("Returns a cursor-bound page of all already-created owned factories for up to 64 exact item IDs. Actual rates come from DSP's save-persisted 600-game-tick automatic production and consumption window; theoretical output capacity is independently recomputed from identity-bound current runtime components without mutating DSP's UI cache.")]
     public static async Task<CallToolResult> GetOverseerProductionAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,

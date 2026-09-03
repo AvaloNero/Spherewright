@@ -248,8 +248,11 @@ public sealed class ProtocolContractTests
                             ItemId = 6003,
                             ProducedCount = 1,
                             ActualProductionPerMinute = 6,
+                            TheoreticalProductionPerMinute = 20,
+                            Utilization = 0.3,
+                            TheoreticalRateSource = OverseerTheoreticalRateSources.CurrentRuntimeComponentFormulaV1,
                             RateSource = OverseerRateSources.NativeFactoryStatisticsLevel0,
-                            TheoreticalCoverage = OverseerTheoreticalCoverageStates.Unavailable,
+                            TheoreticalCoverage = OverseerTheoreticalCoverageStates.Complete,
                         },
                     },
                 },
@@ -264,11 +267,23 @@ public sealed class ProtocolContractTests
             parsed.RootElement.GetProperty("rateSource").GetString());
         Assert.Equal(600, parsed.RootElement.GetProperty("window").GetProperty("elapsedGameTicks").GetInt64());
         Assert.Equal(
-            OverseerTheoreticalCoverageStates.Unavailable,
+            OverseerTheoreticalCoverageStates.Complete,
             parsed.RootElement.GetProperty("planets")[0]
                 .GetProperty("production")[0]
                 .GetProperty("theoreticalCoverage")
                 .GetString());
+        Assert.Equal(
+            OverseerTheoreticalRateSources.CurrentRuntimeComponentFormulaV1,
+            parsed.RootElement.GetProperty("planets")[0]
+                .GetProperty("production")[0]
+                .GetProperty("theoreticalRateSource")
+                .GetString());
+        Assert.Equal(
+            0.3,
+            parsed.RootElement.GetProperty("planets")[0]
+                .GetProperty("production")[0]
+                .GetProperty("utilization")
+                .GetDouble());
         Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("protectedSaveKey", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("authToken", json, StringComparison.OrdinalIgnoreCase);

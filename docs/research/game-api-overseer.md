@@ -89,7 +89,44 @@ cursor advances modulo 600
 
 `ProductionExtraInfoCalculator.CalculateFactory` 会重置并填充 `ProductStat.refProductSpeed/refConsumeSpeed`。对 assembler/lab，它使用每分钟 `3600 * speed / recipeExecuteData.timeSpend` 的基准周期并乘配方数量、增产或加速修正；矿机按矿点数、采矿速度和周期计算，水泵不乘矿点数，油井另含油速倍率。分馏塔、发电机和采集器另有独立分支。
 
-这些 `ref*` 字段是按 UI 请求重算的可变缓存，`ProductStat.Import` 不恢复它们，也没有可验证的新鲜度标记。Overseer 第一条运行时切片不得直接复用一个可能过期的 `refProductSpeed`；在 Spherewright 以深复制输入重现并测试当前版本公式以前，理论速率与利用率必须返回 `null` 并显式标记 `theoreticalCoverage=unavailable`。后续实现公式时要按组件类型报告 coverage，未知类型不能用零冒充已计算容量。
+这些 `ref*` 字段是按 UI 请求重算的可变缓存，`ProductStat.Import` 不恢复它们，也没有可验证的新鲜度标记。因此 Overseer 不读取或调用共享 `ProductionExtraInfoCalculator`，而是在 Unity 主线程从当前 owned factory 的身份绑定组件深复制所需输入，逐项重现当前程序集所有理论“产出”分支：
+
+```text
+assembler / matrix lab:
+  baseCyclesPerMinute = 3600f * speed / recipeExecuteData.timeSpend
+  if incUsed and productive and not forceAccMode: base *= unlockedProductMultiplier
+  else if incUsed:                                 base *= unlockedAccelerationMultiplier
+  output[item] += base * productCount
+
+vein miner:
+  output[item] += float(3600 / period * miningSpeedScale * speed * veinCount)
+oil extractor:
+  output[item] += float(3600 / period * miningSpeedScale * speed
+                        * vein.amount * VeinData.oilSpeedMultiplier)
+water pump:
+  output[planet.waterItemId] += float(3600 / period * miningSpeedScale * speed)
+
+fractionator:
+  output[productId] += 1800f * (incUsed ? accelerationMultiplier : 1)
+                       * produceProb * stackMultiplier
+gamma receiver:
+  output[productId] += 3600f * capacityCurrentTick / productHeat
+orbital collector:
+  output[item] += 3600f * collectionPerTick[item] * collectorSpeedFactor
+```
+
+增产/加速倍率与游戏相同：从 `item 2313` 的 `prefabDesc.incItemId` 中选择已解锁物品的最大 `Ability`，再读 `Cargo.incTableMilli/accTableMilli`。分馏塔 stack multiplier 同样逐 IL 复现；当前 `0.10.34.28529` 的第二个条件再次比较 `inserterStackOutput > multiplier` 后才可能赋 `stationPilerLevel`，而不是比较 `stationPilerLevel`。这看似是本体分支瑕疵，但 Spherewright 为保持同版本 UI 理论值一致而原样保留，并把来源版本化为 `current_runtime_component_formula_v1`；DSP 更新后必须重新反编译，不能自行“修正”旧公式。
+
+只有连接到 `networkId > 0` 的生产组件进入容量，与本体 UI 规则一致；缺料、输出堵塞或当前供电比例低不降低设计容量。普通矿机 `veinCount == 0` 是矿脉耗尽后的合法状态，即使来源数组已经释放也返回 0，而不是让整份快照失败。其他活动组件必须同时通过 component pool、entity、power consumer/generator、network、recipe、source node、station 和 planet 的双向身份检查。当前版本所有能增加 `refProductSpeed` 的类别都包含在上述六域；任何未知 miner 类型、不一致数组/身份、非有限数或预算超限都会使整份理论快照 fail closed，不能用 0 冒充覆盖。
+
+完整扫描成功后，每行返回：
+
+- `theoreticalProductionPerMinute`：该星球所有已连接当前组件的理论产出和，可为 0；
+- `theoreticalRateSource=current_runtime_component_formula_v1`；
+- `theoreticalCoverage=complete`；
+- `utilization=actualProductionPerMinute/theoreticalProductionPerMinute`，仅在原生 600-tick 窗口 `ready` 且理论容量大于 0 时提供。
+
+实际窗口只有 10 游戏秒，离散配方产物可能恰落在窗口边界，所以利用率可暂时超过 `1`；该比值不钳制，以免掩盖采样粒度。窗口 warm-up 或没有已连接理论容量时返回 `null`，不把它解释为 0% 利用率。
 
 拒绝方案：
 
@@ -159,13 +196,15 @@ itemCount = hashCount * pointsPerHash / 3600
 
 - 生产行必须由调用方提供去重后的有效物品 ID，首个切片最多 64 个；不接受“返回所有物品”的无界请求。
 - 工厂遍历同时受 `factoryCount`、数组长度和 512 个已创建 factory 的显式上限约束；每页最多 16 个 planet，快照保持 60 秒且绑定 session、请求类型与页大小。
-- 跨域摘要最多扫描 4096 个 power-network pool 槽、65536 个发电组件引用和 4096 个 station pool 槽；每站最多 64 个 storage slot，科研队列最多扫描 4096 项、返回 64 项，runtime tech catalog 最多扫描 12000 项。超过预算返回明确的非重试 `SERVER_BUSY`，不静默截断聚合总量。
+- 跨域摘要最多扫描 4096 个 power-network pool 槽、65536 个发电组件引用和 4096 个 station pool 槽；每站最多 64 个 storage slot，科研队列最多扫描 4096 项、返回 64 项，runtime tech catalog 最多扫描 12000 项。理论产能另限制最多扫描 131072 个 assembler/lab/miner/fractionator/generator/station pool 槽和 262144 个 recipe input/output、矿点及采集物引用。超过预算返回明确的非重试 `SERVER_BUSY`，不静默截断聚合总量。
 - 当前原生 600-tick 窗口可以稳定给出实际产量，但不能单独解释停产原因。供电不足、缺料、输出堵塞、物流阻塞和矿脉耗尽只有在设备身份、完整周期、缓冲容量、物流订单/源库存和矿脉余量证据齐全时才能标为 confirmed。
 - 现有通用 `ProductionFaultClassifier` 已 fail closed 等待 ready window 和完整周期。设备输出缓冲的真实容量尚未完成当前程序集逐类型复核，所以第一条多星球速率切片不输出“confirmed output_blocked”。
 - 原始 owned save 名、由它派生的持久化 key、auth token、plan token、绝对路径和运行时描述文件不得进入公共 DTO 或诊断包。
 
 ## 已完成的运行时切片
 
-第一条 v0.4 纵向切片在精确 owned session 中，以一个有界物品 ID 集合读取全部已创建工厂的原生 600-tick 自动生产/消耗窗口，并为每行返回星球身份、实际每分钟速率、窗口来源和明确的理论 coverage。
+第一条 v0.4 纵向切片在精确 owned session 中，以一个有界物品 ID 集合读取全部已创建工厂的原生 600-tick 自动生产/消耗窗口，并为每行返回星球身份、实际每分钟速率和窗口来源。
 
-第二条纵向切片用独立的 session/页大小绑定快照返回每星球电网与物流聚合，以及一份全局当前科研摘要。两条切片都不创建 factory、不加载远端显示、不写共享统计缓存。它们已经提供故障诊断的输入，但尚未把理论速率、设备缓冲、物流路径和矿源余量组合成最终根因，因此不提前声称完整 v0.4 验收完成。
+第二条纵向切片用独立的 session/页大小绑定快照返回每星球电网与物流聚合，以及一份全局当前科研摘要。前两条切片都不创建 factory、不加载远端显示、不写共享统计缓存。它们已经提供故障诊断的输入，但尚未把设备缓冲、物流路径和矿源余量组合成最终根因，因此不提前声称完整 v0.4 验收完成。
+
+第三条纵向切片把当前程序集的理论产出公式作为纯 Core 计算器接回第一条生产快照；Plugin 只负责有界、身份绑定的运行时输入扫描。实机先暴露并修正“耗尽矿机 `veinCount=0` 时数组可为空”的合法边界，随后同一三工厂存档完整返回 `complete`：母星蓝/红/黄矩阵分别为 `20/10/7.5 min⁻¹`，铁/铜/石/煤矿由实际覆盖 `14/2/3/7` 个矿点闭合为 `420/60/90/210 min⁻¹`，水泵为 `50 min⁻¹`，油井按当前矿量为 `133.15919494628906 min⁻¹`；远端未显示工厂仍给出硅/钛 `120/60 min⁻¹`。冶炼、化工和制造配方也与实体数量闭合。理论/利用率现已完成，仍待把设备缓冲、物流边和矿源状态接入运行时故障分类与上游根因图，因此不提前声称完整 v0.4 验收完成。

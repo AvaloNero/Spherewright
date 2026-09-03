@@ -34,6 +34,8 @@ internal sealed class GameStateReader
     private const int MaximumOverseerTechQueueCount = 64;
     private const int MaximumOverseerTechQueueScanCount = 4096;
     private const int MaximumOverseerTechnologyScanCount = 12000;
+    private const int MaximumOverseerTheoreticalComponentScanCount = 131072;
+    private const int MaximumOverseerTheoreticalSourceReferenceScanCount = 262144;
     private const int OverseerSnapshotScopeId = int.MaxValue;
     private readonly GameSessionTracker _sessions;
     private readonly SnapshotPageStore<ResourceNodeSnapshot> _resourceSnapshots =
@@ -1474,6 +1476,14 @@ internal sealed class GameStateReader
 
         var capturedAtGameTick = GameMain.gameTick;
         var localPlanetId = gameData.localPlanet?.id ?? 0;
+        var settingsError = TryCaptureOverseerTheoreticalSettings(gameData, out var theoreticalSettings);
+        if (settingsError is not null)
+        {
+            return settingsError;
+        }
+
+        long theoreticalComponentScanCount = 0;
+        long theoreticalSourceReferenceScanCount = 0;
         foreach (var factory in factories)
         {
             var factoryIndex = factory.index;
@@ -1485,6 +1495,19 @@ internal sealed class GameStateReader
             {
                 planets.Clear();
                 return NotReady("An owned factory or its production-statistics identity is inconsistent.");
+            }
+
+            var theoreticalError = TryCaptureOverseerTheoreticalProduction(
+                factory,
+                itemIds,
+                theoreticalSettings!,
+                ref theoreticalComponentScanCount,
+                ref theoreticalSourceReferenceScanCount,
+                out var theoreticalRates);
+            if (theoreticalError is not null)
+            {
+                planets.Clear();
+                return theoreticalError;
             }
 
             var snapshot = new OverseerPlanetProductionSnapshot
@@ -1536,6 +1559,7 @@ internal sealed class GameStateReader
                     capturedAtGameTick,
                     producedCount,
                     consumedCount);
+                var theoreticalProductionPerMinute = theoreticalRates![itemId];
                 snapshot.Production.Add(new ProductionRateSnapshot
                 {
                     PlanetId = factory.planetId,
@@ -1545,10 +1569,14 @@ internal sealed class GameStateReader
                     ConsumedCount = consumedCount,
                     ActualProductionPerMinute = rate.ActualProductionPerMinute,
                     ActualConsumptionPerMinute = rate.ActualConsumptionPerMinute,
-                    TheoreticalProductionPerMinute = null,
-                    Utilization = null,
+                    TheoreticalProductionPerMinute = theoreticalProductionPerMinute,
+                    Utilization = OverseerTheoreticalProductionCalculator.CalculateUtilization(
+                        rate.Window.State,
+                        rate.ActualProductionPerMinute,
+                        theoreticalProductionPerMinute),
+                    TheoreticalRateSource = OverseerTheoreticalRateSources.CurrentRuntimeComponentFormulaV1,
                     RateSource = OverseerRateSources.NativeFactoryStatisticsLevel0,
-                    TheoreticalCoverage = OverseerTheoreticalCoverageStates.Unavailable,
+                    TheoreticalCoverage = OverseerTheoreticalCoverageStates.Complete,
                 });
             }
 
@@ -1556,6 +1584,757 @@ internal sealed class GameStateReader
         }
 
         return null;
+    }
+
+    private static BridgeError? TryCaptureOverseerTheoreticalSettings(
+        GameData gameData,
+        out OverseerTheoreticalSettings? settings)
+    {
+        settings = null;
+        var history = gameData.history;
+        if (history is null
+            || float.IsNaN(history.miningSpeedScale)
+            || float.IsInfinity(history.miningSpeedScale)
+            || history.miningSpeedScale < 0f
+            || Cargo.incTableMilli is null
+            || Cargo.accTableMilli is null)
+        {
+            return NotReady("The owned world's theoretical-production settings are not ready.");
+        }
+
+        var proliferatorAbility = 0;
+        var proliferatorItemIds = LDB.items.Select(2313)?.prefabDesc?.incItemId;
+        if (proliferatorItemIds is not null)
+        {
+            foreach (var itemId in proliferatorItemIds)
+            {
+                var item = itemId > 0 ? LDB.items.Select(itemId) : null;
+                if (item is null || item.Ability < 0)
+                {
+                    return NotReady("The runtime proliferator catalog contains an invalid item or ability.");
+                }
+
+                if (history.ItemUnlocked(itemId) && item.Ability > proliferatorAbility)
+                {
+                    proliferatorAbility = item.Ability;
+                }
+            }
+        }
+
+        if (proliferatorAbility >= Cargo.incTableMilli.Length
+            || proliferatorAbility >= Cargo.accTableMilli.Length)
+        {
+            return NotReady("The unlocked proliferator ability is outside the current runtime multiplier tables.");
+        }
+
+        try
+        {
+            settings = new OverseerTheoreticalSettings
+            {
+                ProductMultiplier = 1f + (float)Cargo.incTableMilli[proliferatorAbility],
+                AccelerationMultiplier = 1f + (float)Cargo.accTableMilli[proliferatorAbility],
+                MiningSpeedScale = history.miningSpeedScale,
+                FractionatorStackMultiplier =
+                    OverseerTheoreticalProductionCalculator.CalculateFractionatorStackMultiplier(
+                        history.TechUnlocked(1607),
+                        history.inserterStackOutput,
+                        history.stationPilerLevel),
+            };
+            return null;
+        }
+        catch (ArgumentException)
+        {
+            return NotReady("The owned world's theoretical-production multipliers are invalid.");
+        }
+    }
+
+    private static BridgeError? TryCaptureOverseerTheoreticalProduction(
+        PlanetFactory factory,
+        IReadOnlyList<int> itemIds,
+        OverseerTheoreticalSettings settings,
+        ref long componentScanCount,
+        ref long sourceReferenceScanCount,
+        out Dictionary<int, double>? rates)
+    {
+        rates = itemIds.ToDictionary(itemId => itemId, _ => 0d);
+        var factorySystem = factory.factorySystem;
+        var powerSystem = factory.powerSystem;
+        var transport = factory.transport;
+        if (factorySystem?.assemblerPool is null
+            || factorySystem.labPool is null
+            || factorySystem.minerPool is null
+            || factorySystem.fractionatorPool is null
+            || powerSystem?.consumerPool is null
+            || powerSystem.genPool is null
+            || powerSystem.netPool is null
+            || transport?.stationPool is null
+            || factory.entityPool is null
+            || factory.veinPool is null
+            || !IsValidPoolCursor(factorySystem.assemblerCursor, factorySystem.assemblerPool.Length)
+            || !IsValidPoolCursor(factorySystem.labCursor, factorySystem.labPool.Length)
+            || !IsValidPoolCursor(factorySystem.minerCursor, factorySystem.minerPool.Length)
+            || !IsValidPoolCursor(factorySystem.fractionatorCursor, factorySystem.fractionatorPool.Length)
+            || !IsValidPoolCursor(powerSystem.consumerCursor, powerSystem.consumerPool.Length)
+            || !IsValidPoolCursor(powerSystem.genCursor, powerSystem.genPool.Length)
+            || !IsValidPoolCursor(powerSystem.netCursor, powerSystem.netPool.Length)
+            || !IsValidPoolCursor(transport.stationCursor, transport.stationPool.Length)
+            || !IsValidPoolCursor(factory.entityCursor, factory.entityPool.Length)
+            || !IsValidPoolCursor(factory.veinCursor, factory.veinPool.Length))
+        {
+            rates = null;
+            return NotReady("An owned factory's theoretical-production pools are not ready.");
+        }
+
+        var additionalComponents =
+            factorySystem.assemblerCursor - 1L
+            + factorySystem.labCursor - 1L
+            + factorySystem.minerCursor - 1L
+            + factorySystem.fractionatorCursor - 1L
+            + powerSystem.genCursor - 1L
+            + transport.stationCursor - 1L;
+        if (!TryConsumeBudget(
+                ref componentScanCount,
+                additionalComponents,
+                MaximumOverseerTheoreticalComponentScanCount))
+        {
+            rates = null;
+            return OverseerScopeExceeded();
+        }
+
+        try
+        {
+            var error = TryCaptureAssemblerTheoreticalRates(
+                factory,
+                settings,
+                rates,
+                ref sourceReferenceScanCount);
+            if (error is not null) return error;
+
+            error = TryCaptureLabTheoreticalRates(
+                factory,
+                settings,
+                rates,
+                ref sourceReferenceScanCount);
+            if (error is not null) return error;
+
+            error = TryCaptureMinerTheoreticalRates(
+                factory,
+                settings,
+                rates,
+                ref sourceReferenceScanCount);
+            if (error is not null) return error;
+
+            error = TryCaptureFractionatorTheoreticalRates(factory, settings, rates);
+            if (error is not null) return error;
+
+            error = TryCaptureGammaTheoreticalRates(factory, rates);
+            if (error is not null) return error;
+
+            error = TryCaptureCollectorTheoreticalRates(
+                factory,
+                settings,
+                rates,
+                ref sourceReferenceScanCount);
+            if (error is not null) return error;
+
+            return null;
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException
+            || exception is OverflowException)
+        {
+            rates = null;
+            return NotReady("An owned factory's theoretical-production formula inputs are invalid or exceed finite bounds.");
+        }
+    }
+
+    private static BridgeError? TryCaptureAssemblerTheoreticalRates(
+        PlanetFactory factory,
+        OverseerTheoreticalSettings settings,
+        Dictionary<int, double> rates,
+        ref long sourceReferenceScanCount)
+    {
+        var factorySystem = factory.factorySystem;
+        for (var assemblerId = 1; assemblerId < factorySystem.assemblerCursor; assemblerId++)
+        {
+            ref var assembler = ref factorySystem.assemblerPool[assemblerId];
+            if (assembler.id == 0) continue;
+            if (assembler.id != assemblerId)
+            {
+                return NotReady("An active assembler does not match its component-pool identity.");
+            }
+
+            var connectionError = TryGetTheoreticalConsumerConnection(
+                factory,
+                TheoreticalProducerKind.Assembler,
+                assemblerId,
+                assembler.entityId,
+                assembler.pcId,
+                out var connected);
+            if (connectionError is not null) return connectionError;
+            if (assembler.recipeId <= 0) continue;
+
+            if (LDB.recipes.Select(assembler.recipeId) is null
+                || assembler.speed <= 0
+                || assembler.recipeExecuteData is null)
+            {
+                return NotReady("An active configured assembler has an invalid runtime recipe or speed.");
+            }
+
+            var recipeError = TryValidateTheoreticalRecipe(
+                assembler.recipeExecuteData,
+                ref sourceReferenceScanCount);
+            if (recipeError is not null) return recipeError;
+            if (!connected) continue;
+
+            for (var index = 0; index < assembler.recipeExecuteData.products.Length; index++)
+            {
+                AddTheoreticalRate(
+                    rates,
+                    assembler.recipeExecuteData.products[index],
+                    OverseerTheoreticalProductionCalculator.CalculateRecipeOutputPerMinute(
+                        assembler.speed,
+                        assembler.recipeExecuteData.timeSpend,
+                        assembler.incUsed,
+                        assembler.recipeExecuteData.productive,
+                        assembler.forceAccMode,
+                        settings.ProductMultiplier,
+                        settings.AccelerationMultiplier,
+                        assembler.recipeExecuteData.productCounts[index]));
+            }
+        }
+
+        return null;
+    }
+
+    private static BridgeError? TryCaptureLabTheoreticalRates(
+        PlanetFactory factory,
+        OverseerTheoreticalSettings settings,
+        Dictionary<int, double> rates,
+        ref long sourceReferenceScanCount)
+    {
+        var factorySystem = factory.factorySystem;
+        for (var labId = 1; labId < factorySystem.labCursor; labId++)
+        {
+            ref var lab = ref factorySystem.labPool[labId];
+            if (lab.id == 0) continue;
+            if (lab.id != labId || (lab.matrixMode && lab.researchMode))
+            {
+                return NotReady("An active lab has inconsistent component identity or operating modes.");
+            }
+
+            var connectionError = TryGetTheoreticalConsumerConnection(
+                factory,
+                TheoreticalProducerKind.Lab,
+                labId,
+                lab.entityId,
+                lab.pcId,
+                out var connected);
+            if (connectionError is not null) return connectionError;
+            if (!lab.matrixMode) continue;
+
+            if (lab.recipeId <= 0
+                || LDB.recipes.Select(lab.recipeId) is null
+                || lab.speed <= 0
+                || lab.recipeExecuteData is null)
+            {
+                return NotReady("An active matrix lab has an invalid runtime recipe or speed.");
+            }
+
+            var recipeError = TryValidateTheoreticalRecipe(
+                lab.recipeExecuteData,
+                ref sourceReferenceScanCount);
+            if (recipeError is not null) return recipeError;
+            if (!connected) continue;
+
+            for (var index = 0; index < lab.recipeExecuteData.products.Length; index++)
+            {
+                AddTheoreticalRate(
+                    rates,
+                    lab.recipeExecuteData.products[index],
+                    OverseerTheoreticalProductionCalculator.CalculateRecipeOutputPerMinute(
+                        lab.speed,
+                        lab.recipeExecuteData.timeSpend,
+                        lab.incUsed,
+                        lab.recipeExecuteData.productive,
+                        lab.forceAccMode,
+                        settings.ProductMultiplier,
+                        settings.AccelerationMultiplier,
+                        lab.recipeExecuteData.productCounts[index]));
+            }
+        }
+
+        return null;
+    }
+
+    private static BridgeError? TryCaptureMinerTheoreticalRates(
+        PlanetFactory factory,
+        OverseerTheoreticalSettings settings,
+        Dictionary<int, double> rates,
+        ref long sourceReferenceScanCount)
+    {
+        var factorySystem = factory.factorySystem;
+        for (var minerId = 1; minerId < factorySystem.minerCursor; minerId++)
+        {
+            ref var miner = ref factorySystem.minerPool[minerId];
+            if (miner.id == 0) continue;
+            if (miner.id != minerId || miner.type == EMinerType.None || miner.period <= 0 || miner.speed <= 0)
+            {
+                return NotReady("An active miner has inconsistent identity, type, period, or speed.");
+            }
+
+            var connectionError = TryGetTheoreticalConsumerConnection(
+                factory,
+                TheoreticalProducerKind.Miner,
+                minerId,
+                miner.entityId,
+                miner.pcId,
+                out var connected);
+            if (connectionError is not null) return connectionError;
+            if (!connected) continue;
+
+            int productId;
+            double sourceMultiplier;
+            switch (miner.type)
+            {
+                case EMinerType.Vein:
+                    if (miner.veinCount < 0)
+                    {
+                        return NotReady("An active vein miner has an invalid source-node index.");
+                    }
+
+                    if (miner.veinCount == 0) continue;
+                    if (miner.veins is null || miner.veinCount > miner.veins.Length)
+                    {
+                        return NotReady("An active vein miner has an invalid source-node index.");
+                    }
+
+                    if (miner.currentVeinIndex < 0 || miner.currentVeinIndex >= miner.veinCount)
+                    {
+                        return NotReady("An active vein miner's current source-node index is invalid.");
+                    }
+
+                    if (!TryConsumeBudget(
+                            ref sourceReferenceScanCount,
+                            miner.veinCount,
+                            MaximumOverseerTheoreticalSourceReferenceScanCount))
+                    {
+                        return OverseerScopeExceeded();
+                    }
+
+                    productId = 0;
+                    for (var index = 0; index < miner.veinCount; index++)
+                    {
+                        var veinError = TryGetTheoreticalVein(factory, miner.veins[index], out var vein);
+                        if (veinError is not null) return veinError;
+                        if (productId == 0) productId = vein.productId;
+                        if (vein.productId != productId)
+                        {
+                            return NotReady("A vein miner references source nodes with different products.");
+                        }
+                    }
+
+                    var currentVeinId = miner.veins[miner.currentVeinIndex];
+                    if (factory.veinPool[currentVeinId].productId != productId)
+                    {
+                        return NotReady("A vein miner's current source node does not match its source set.");
+                    }
+
+                    sourceMultiplier = miner.veinCount;
+                    break;
+
+                case EMinerType.Oil:
+                    if (miner.veins is null || miner.veins.Length == 0)
+                    {
+                        return NotReady("An active oil extractor has no source-node identity.");
+                    }
+
+                    if (!TryConsumeBudget(
+                            ref sourceReferenceScanCount,
+                            1,
+                            MaximumOverseerTheoreticalSourceReferenceScanCount))
+                    {
+                        return OverseerScopeExceeded();
+                    }
+
+                    var oilError = TryGetTheoreticalVein(factory, miner.veins[0], out var oilVein);
+                    if (oilError is not null) return oilError;
+                    if (oilVein.amount < 0)
+                    {
+                        return NotReady("An oil source has a negative runtime amount.");
+                    }
+
+                    productId = oilVein.productId;
+                    sourceMultiplier = oilVein.amount * (double)VeinData.oilSpeedMultiplier;
+                    break;
+
+                case EMinerType.Water:
+                    productId = factory.planet.waterItemId;
+                    sourceMultiplier = 1d;
+                    break;
+
+                default:
+                    return NotReady("An active miner uses an unsupported runtime miner type.");
+            }
+
+            if (productId <= 0 || LDB.items.Select(productId) is null)
+            {
+                return NotReady("An active miner has an invalid runtime product identity.");
+            }
+
+            AddTheoreticalRate(
+                rates,
+                productId,
+                OverseerTheoreticalProductionCalculator.CalculateMinerOutputPerMinute(
+                    miner.period,
+                    settings.MiningSpeedScale,
+                    miner.speed,
+                    sourceMultiplier));
+        }
+
+        return null;
+    }
+
+    private static BridgeError? TryCaptureFractionatorTheoreticalRates(
+        PlanetFactory factory,
+        OverseerTheoreticalSettings settings,
+        Dictionary<int, double> rates)
+    {
+        var factorySystem = factory.factorySystem;
+        for (var fractionatorId = 1; fractionatorId < factorySystem.fractionatorCursor; fractionatorId++)
+        {
+            ref var fractionator = ref factorySystem.fractionatorPool[fractionatorId];
+            if (fractionator.id == 0) continue;
+            if (fractionator.id != fractionatorId)
+            {
+                return NotReady("An active fractionator does not match its component-pool identity.");
+            }
+
+            var connectionError = TryGetTheoreticalConsumerConnection(
+                factory,
+                TheoreticalProducerKind.Fractionator,
+                fractionatorId,
+                fractionator.entityId,
+                fractionator.pcId,
+                out var connected);
+            if (connectionError is not null) return connectionError;
+            if (!connected || fractionator.productId <= 0) continue;
+            if (LDB.items.Select(fractionator.productId) is null)
+            {
+                return NotReady("An active fractionator has an invalid runtime product identity.");
+            }
+
+            AddTheoreticalRate(
+                rates,
+                fractionator.productId,
+                OverseerTheoreticalProductionCalculator.CalculateFractionatorOutputPerMinute(
+                    fractionator.incUsed,
+                    settings.AccelerationMultiplier,
+                    fractionator.produceProb,
+                    settings.FractionatorStackMultiplier));
+        }
+
+        return null;
+    }
+
+    private static BridgeError? TryCaptureGammaTheoreticalRates(
+        PlanetFactory factory,
+        Dictionary<int, double> rates)
+    {
+        var powerSystem = factory.powerSystem;
+        for (var generatorId = 1; generatorId < powerSystem.genCursor; generatorId++)
+        {
+            ref var generator = ref powerSystem.genPool[generatorId];
+            if (generator.id == 0) continue;
+            if (generator.id != generatorId)
+            {
+                return NotReady("An active power generator does not match its component-pool identity.");
+            }
+
+            var connectionError = TryGetTheoreticalGeneratorConnection(
+                factory,
+                generatorId,
+                ref generator,
+                out var connected);
+            if (connectionError is not null) return connectionError;
+            if (!connected || !generator.gamma || generator.productId <= 0) continue;
+            if (LDB.items.Select(generator.productId) is null)
+            {
+                return NotReady("An active gamma receiver has an invalid runtime product identity.");
+            }
+
+            AddTheoreticalRate(
+                rates,
+                generator.productId,
+                OverseerTheoreticalProductionCalculator.CalculateGammaOutputPerMinute(
+                    generator.capacityCurrentTick,
+                    generator.productHeat));
+        }
+
+        return null;
+    }
+
+    private static BridgeError? TryCaptureCollectorTheoreticalRates(
+        PlanetFactory factory,
+        OverseerTheoreticalSettings settings,
+        Dictionary<int, double> rates,
+        ref long sourceReferenceScanCount)
+    {
+        var transport = factory.transport;
+        var collectorFactor = OverseerTheoreticalProductionCalculator.CalculateCollectorSpeedFactor(
+            settings.MiningSpeedScale,
+            factory.planet.gasTotalHeat,
+            transport.collectorsWorkCost);
+        for (var stationId = 1; stationId < transport.stationCursor; stationId++)
+        {
+            var station = transport.stationPool[stationId];
+            if (station is null || station.id == 0) continue;
+            if (station.id != stationId
+                || station.entityId <= 0
+                || station.entityId >= factory.entityCursor
+                || station.entityId >= factory.entityPool.Length)
+            {
+                return NotReady("An active collector station does not match its station or entity pool identity.");
+            }
+
+            ref var entity = ref factory.entityPool[station.entityId];
+            if (entity.id != station.entityId
+                || entity.stationId != stationId
+                || !LogisticsStationIdentityPolicy.MatchesLocalPlanet(
+                    station.isStellar,
+                    station.planetId,
+                    factory.planetId))
+            {
+                return NotReady("An active collector station has inconsistent entity or planet identity.");
+            }
+
+            if (!station.isCollector) continue;
+            if (station.collectionIds is null
+                || station.collectionPerTick is null
+                || station.collectionIds.Length != station.collectionPerTick.Length)
+            {
+                return NotReady("An orbital collector has inconsistent runtime collection arrays.");
+            }
+
+            if (!TryConsumeBudget(
+                    ref sourceReferenceScanCount,
+                    station.collectionIds.Length,
+                    MaximumOverseerTheoreticalSourceReferenceScanCount))
+            {
+                return OverseerScopeExceeded();
+            }
+
+            for (var index = 0; index < station.collectionIds.Length; index++)
+            {
+                var itemId = station.collectionIds[index];
+                if (itemId <= 0 || LDB.items.Select(itemId) is null)
+                {
+                    return NotReady("An orbital collector has an invalid runtime product identity.");
+                }
+
+                AddTheoreticalRate(
+                    rates,
+                    itemId,
+                    OverseerTheoreticalProductionCalculator.CalculateCollectorOutputPerMinute(
+                        station.collectionPerTick[index],
+                        collectorFactor));
+            }
+        }
+
+        return null;
+    }
+
+    private static BridgeError? TryValidateTheoreticalRecipe(
+        RecipeExecuteData recipe,
+        ref long sourceReferenceScanCount)
+    {
+        if (recipe.requires is null
+            || recipe.requireCounts is null
+            || recipe.products is null
+            || recipe.productCounts is null
+            || recipe.timeSpend <= 0
+            || recipe.requires.Length != recipe.requireCounts.Length
+            || recipe.products.Length != recipe.productCounts.Length
+            || recipe.products.Length == 0)
+        {
+            return NotReady("A configured production recipe has inconsistent runtime arrays or cycle time.");
+        }
+
+        if (!TryConsumeBudget(
+                ref sourceReferenceScanCount,
+                recipe.requires.Length + (long)recipe.products.Length,
+                MaximumOverseerTheoreticalSourceReferenceScanCount))
+        {
+            return OverseerScopeExceeded();
+        }
+
+        for (var index = 0; index < recipe.requires.Length; index++)
+        {
+            if (recipe.requires[index] <= 0
+                || recipe.requireCounts[index] <= 0
+                || LDB.items.Select(recipe.requires[index]) is null)
+            {
+                return NotReady("A configured production recipe has an invalid runtime input.");
+            }
+        }
+
+        for (var index = 0; index < recipe.products.Length; index++)
+        {
+            if (recipe.products[index] <= 0
+                || recipe.productCounts[index] <= 0
+                || LDB.items.Select(recipe.products[index]) is null)
+            {
+                return NotReady("A configured production recipe has an invalid runtime output.");
+            }
+        }
+
+        return null;
+    }
+
+    private static BridgeError? TryGetTheoreticalConsumerConnection(
+        PlanetFactory factory,
+        TheoreticalProducerKind producerKind,
+        int componentId,
+        int entityId,
+        int consumerId,
+        out bool connected)
+    {
+        connected = false;
+        if (entityId <= 0
+            || entityId >= factory.entityCursor
+            || entityId >= factory.entityPool.Length
+            || consumerId <= 0)
+        {
+            return NotReady("A theoretical-production component has an invalid entity or power-consumer identity.");
+        }
+
+        ref var entity = ref factory.entityPool[entityId];
+        if (entity.id != entityId
+            || entity.powerConId != consumerId
+            || GetTheoreticalProducerComponentId(ref entity, producerKind) != componentId)
+        {
+            return NotReady("A theoretical-production component does not match its entity identity.");
+        }
+
+        var powerSystem = factory.powerSystem;
+        if (consumerId >= powerSystem.consumerCursor
+            || consumerId >= powerSystem.consumerPool.Length)
+        {
+            return NotReady("A theoretical-production component references an invalid power consumer.");
+        }
+
+        ref var consumer = ref powerSystem.consumerPool[consumerId];
+        if (consumer.id != consumerId || consumer.entityId != entityId || consumer.networkId < 0)
+        {
+            return NotReady("A theoretical-production component does not match its power-consumer identity.");
+        }
+
+        if (consumer.networkId == 0) return null;
+        var networkError = TryValidateTheoreticalNetwork(powerSystem, consumer.networkId);
+        if (networkError is not null) return networkError;
+        connected = true;
+        return null;
+    }
+
+    private static BridgeError? TryGetTheoreticalGeneratorConnection(
+        PlanetFactory factory,
+        int generatorId,
+        ref PowerGeneratorComponent generator,
+        out bool connected)
+    {
+        connected = false;
+        if (generator.entityId <= 0
+            || generator.entityId >= factory.entityCursor
+            || generator.entityId >= factory.entityPool.Length
+            || generator.networkId < 0)
+        {
+            return NotReady("A power generator has an invalid entity or network identity.");
+        }
+
+        ref var entity = ref factory.entityPool[generator.entityId];
+        if (entity.id != generator.entityId || entity.powerGenId != generatorId)
+        {
+            return NotReady("A power generator does not match its entity identity.");
+        }
+
+        if (generator.networkId == 0) return null;
+        var networkError = TryValidateTheoreticalNetwork(factory.powerSystem, generator.networkId);
+        if (networkError is not null) return networkError;
+        connected = true;
+        return null;
+    }
+
+    private static BridgeError? TryValidateTheoreticalNetwork(PowerSystem powerSystem, int networkId)
+    {
+        if (networkId <= 0
+            || networkId >= powerSystem.netCursor
+            || networkId >= powerSystem.netPool.Length)
+        {
+            return NotReady("A theoretical-production component references an invalid power network.");
+        }
+
+        var network = powerSystem.netPool[networkId];
+        return network is null || network.id != networkId
+            ? NotReady("A theoretical-production component's power network does not match its pool identity.")
+            : null;
+    }
+
+    private static BridgeError? TryGetTheoreticalVein(
+        PlanetFactory factory,
+        int veinId,
+        out VeinData vein)
+    {
+        vein = default;
+        if (veinId <= 0 || veinId >= factory.veinCursor || veinId >= factory.veinPool.Length)
+        {
+            return NotReady("A miner references a source node outside the active vein pool.");
+        }
+
+        ref var candidate = ref factory.veinPool[veinId];
+        if (candidate.id != veinId || candidate.productId <= 0 || LDB.items.Select(candidate.productId) is null)
+        {
+            return NotReady("A miner's source node has inconsistent identity or product state.");
+        }
+
+        vein = candidate;
+        return null;
+    }
+
+    private static void AddTheoreticalRate(
+        Dictionary<int, double> rates,
+        int itemId,
+        double contribution)
+    {
+        if (!rates.TryGetValue(itemId, out var current)) return;
+        rates[itemId] = OverseerTheoreticalProductionCalculator.AddRates(current, contribution);
+    }
+
+    private static int GetTheoreticalProducerComponentId(
+        ref EntityData entity,
+        TheoreticalProducerKind producerKind)
+    {
+        return producerKind switch
+        {
+            TheoreticalProducerKind.Assembler => entity.assemblerId,
+            TheoreticalProducerKind.Lab => entity.labId,
+            TheoreticalProducerKind.Miner => entity.minerId,
+            TheoreticalProducerKind.Fractionator => entity.fractionatorId,
+            _ => 0,
+        };
+    }
+
+    private static bool IsValidPoolCursor(int cursor, int poolLength) =>
+        cursor >= 1 && cursor <= poolLength;
+
+    private static bool TryConsumeBudget(ref long total, long additional, long maximum)
+    {
+        if (additional < 0 || additional > maximum || total > maximum - additional)
+        {
+            return false;
+        }
+
+        total += additional;
+        return true;
     }
 
     public GameCallResult<ListAssemblersResult> ListAssemblersOnMainThread(
@@ -2957,7 +3736,7 @@ internal sealed class GameStateReader
     {
         return BridgeError.Create(
             BridgeErrorCodes.ServerBusy,
-            "The owned world's current factory, power, logistics, or technology scope exceeds the bounded Overseer snapshot budget.",
+            "The owned world's current factory, production-component, power, logistics, or technology scope exceeds the bounded Overseer snapshot budget.",
             false,
             "Use the existing narrower observation tools while a future incremental Overseer snapshot implementation handles this scale.");
     }
@@ -3108,5 +3887,24 @@ internal sealed class GameStateReader
         public OverseerResearchSummarySnapshot Research { get; set; } = new OverseerResearchSummarySnapshot();
 
         public OverseerPlanetSummarySnapshot Planet { get; set; } = new OverseerPlanetSummarySnapshot();
+    }
+
+    private sealed class OverseerTheoreticalSettings
+    {
+        public float ProductMultiplier { get; set; }
+
+        public float AccelerationMultiplier { get; set; }
+
+        public float MiningSpeedScale { get; set; }
+
+        public int FractionatorStackMultiplier { get; set; }
+    }
+
+    private enum TheoreticalProducerKind
+    {
+        Assembler,
+        Lab,
+        Miner,
+        Fractionator,
     }
 }

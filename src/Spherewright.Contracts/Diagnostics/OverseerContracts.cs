@@ -33,6 +33,11 @@ public static class OverseerTheoreticalCoverageStates
     public const string Complete = "complete";
 }
 
+public static class OverseerTheoreticalRateSources
+{
+    public const string CurrentRuntimeComponentFormulaV1 = "current_runtime_component_formula_v1";
+}
+
 public static class OverseerFindingKinds
 {
     public const string MaterialShortage = "material_shortage";
@@ -94,6 +99,8 @@ public sealed class ProductionRateSnapshot
     public double? TheoreticalProductionPerMinute { get; set; }
 
     public double? Utilization { get; set; }
+
+    public string? TheoreticalRateSource { get; set; }
 
     public string RateSource { get; set; } = string.Empty;
 

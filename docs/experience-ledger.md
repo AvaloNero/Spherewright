@@ -1950,10 +1950,10 @@
 
 - 状态：`validated`
 - 日期：2026-09-03
-- 适用范围：v0.4 Overseer 的纯 Core 相邻计数采样、实际产消速率/理论利用率计算，以及单生产单元的首要停机原因分类；当前不声称已经接入 DSP 运行时或完成多星球诊断。
+- 适用范围：v0.4 Overseer 的纯 Core 相邻计数采样、实际产消速率/理论利用率计算，以及单生产单元的首要停机原因分类。速率输入后来已由 EXP-155/157 接入 DSP 运行时；本条仍不声称故障分类器或完整上游诊断已经接线。
 - 当前结论：实际速率的分母只能是连续流逝的游戏 tick（当前固定 60 tick/s），墙钟中多出的离线/暂停时间单独标为 excluded，不能稀释或伪造吞吐。相同受保护存档跨新 session 可保持连续，但 owned identity 改变、tick/累计计数回退、同 tick 计数前进或相邻采样超过明确上限都必须把窗口标成 discontinuous 并归零本段速率。故障分类只有在 ready 窗口至少覆盖一个完整配方周期后才运行；当前首因优先级为本机矿源耗尽、断网/供电比不足、满输出缓冲、上游矿源耗尽、物流未配置/有源库存但订单无进展，最后才是一般缺料。已有非零实际产量时不把瞬时空输入误报为停机。
 - 直接证据：新增的无游戏 DLL 测试证明 600 tick/20 件产出恒为 120/min，即使墙钟跨 1 小时也只把额外时间计入 `excludedNonGameSeconds`；同档跨 session 保持 ready，而换档、tick 回退、计数回退、601 tick 采样断层和同 tick 计数前进全部失效。独立分类测试覆盖未满周期不报、供电不足、输出满、矿源耗尽、物流未配置、订单停滞、一般缺料及已有产量不误报。Core/Contracts/MCP 总计 135 项通过（101 + 15 + 19），完整 solution 0 warning / 0 error；源码产品版本同时切到 `0.4.0`。
-- 限制或反例：600 tick 只是当前相邻采样断层默认上限，不是最终公开窗口长度；理论产率、缓冲容量、物流路径和矿量仍需以当前程序集字段研究并由 Plugin 主线程深复制。订单无进展目前只给 `suspected`，不能在没有足够运输时间和源库存证据时升级为 confirmed。分类器当前返回单生产单元的首要原因，不等于已经完成跨实体上游图追踪。
+- 限制或反例：原生实际窗口已经由 EXP-155 固定为 600 tick，理论产率也由 EXP-157 按当前程序集接入；本条原先的“尚待运行时输入”限制因此缩小为缓冲容量、物流路径、矿量和故障分类接线。订单无进展目前只给 `suspected`，不能在没有足够运输时间和源库存证据时升级为 confirmed。分类器当前返回单生产单元的首要原因，不等于已经完成跨实体上游图追踪。
 - 复验触发：接入 DSP production statistics、改变采样频率/持久化格式/窗口长度、引入多星球聚合或上游图、DSP tick rate/配方速度语义变化，以及首次受控实机故障注入。
 - 关联：EXP-030、EXP-062、EXP-127、EXP-142、EXP-144、EXP-153、ROADMAP v0.4、`OverseerCounterWindowAnalyzer`、`ProductionFaultClassifier`。
 - 最近复验：2026-09-03（135 项无游戏 DLL 回归与完整 solution 构建通过）。
@@ -1965,7 +1965,7 @@
 - 适用范围：当前 DSP `0.10.34.28529` / `Assembly-CSharp.dll` SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，v0.4 对精确 active owned `GameData` 中已创建工厂的自动物品生产/消耗实际速率；不涵盖理论容量或故障根因。
 - 当前结论：`FactoryProductionStat` 与 `GameData.factories` 使用相同 factory index；每 tick 的自动 `productRegister/consumeRegister` 被滚入 `ProductStat.total[0]/total[7]` 的 600 槽 level-0 环，当前 60 tick/s 下正好是 10 游戏秒，实际每分钟为计数乘 6。环的 `count/cursor/total/itemId` 随正常存档导出/导入，暂停和离线没有游戏 tick，玩家手搓/机甲活动只增加独立 lifetime `total[6]/total[13]`。因此自动产线速率直接读原生环比另建 Plugin 累计旁路更强；读取必须交叉验证 factory/planet/stat/product 身份，不自建或加载未访问星球。
 - 直接证据：当前程序集反编译确认 `GameData.GetOrCreateFactory`、`ProductionStatistics.CreateFactoryStat/PrepareTick/GameTick`、`FactoryProductionStat.GameTick/AddProductionToTotalArray/AddConsumptionToTotalArray` 和 `ProductStat.Export/Import` 的上述精确语义。新增接口以最多 64 个 item、每页最多 16 个 planet 和 60 秒 session/filter/page-size 绑定游标返回数据；Contracts/Core/MCP `16 + 106 + 20 = 142` 全通过，完整 solution 0 warning / 0 error。开发 Plugin `0.4.0` 经正常保存/关窗和受保护恢复回到同一 planet `104` 世界；planet `104/102/103` 三个 factory 全部通过同一 snapshot 的分页复读，远端两厂在 `factoryDisplayLoaded=false` 时仍可读。更关键的是主档保存 tick `13626113` 前，红糖 level-0 计数为 2；正常关闭并恢复后仅 16 tick 的首次读取仍为 2，远短于重新生产两颗所需周期，直接证明原生窗口随档恢复而非 Plugin 内存重建。源码 MCP `0.4.0.0` 实际完成 initialize、49-tool list 和新工具 live call。
-- 限制或反例：`ProductStat.refProductSpeed/refConsumeSpeed` 是 UI 按需重算且无新鲜度标记的缓存，本切片明确返回 `theoreticalCoverage=unavailable`、理论速率/利用率 null。原生环只能给出物品/星球级实际流量，不能单独确认具体设备的输出堵塞、物流阻塞或上游矿脉耗尽；这些仍需设备容量、订单、源库存和路径证据。当前只在一个三 factory 存档和一个 DSP 版本上实机验证。
+- 限制或反例：`ProductStat.refProductSpeed/refConsumeSpeed` 仍是 UI 按需重算且无新鲜度标记的缓存，不能直接读取；本切片最初返回的 `theoreticalCoverage=unavailable` 已由 EXP-157 的独立当前组件公式取代，而不是放宽为信任该缓存。原生环只能给出物品/星球级实际流量，不能单独确认具体设备的输出堵塞、物流阻塞或上游矿脉耗尽；这些仍需设备容量、订单、源库存和路径证据。当前只在一个三 factory 存档和一个 DSP 版本上实机验证。
 - 复验触发：DSP 版本或程序集哈希变化、统计环长度/tick rate/序列化变化、factory/stat 索引模型变化、扩大 item/page 上限、引入理论速率或设备/物流根因，以及最终 v0.4 clean 工件安装。
 - 关联：EXP-030、EXP-048、EXP-062、EXP-079、EXP-104、EXP-144、EXP-154、`docs/research/game-api-overseer.md`、`NativeProductionRateCalculator`、`GameStateReader.GetOverseerProductionOnMainThread`。
 - 最近复验：2026-09-03（同档保存/16-tick 恢复、三 factory 分页、142 项测试、完整构建及 live MCP 调用通过）。
@@ -1982,7 +1982,21 @@
 - 关联：EXP-021、EXP-030、EXP-104、EXP-142、EXP-154、EXP-155、IFX-017、`docs/research/game-api-overseer.md`、`OverseerPowerSummaryCalculator`、`GameStateReader.GetOverseerSummaryOnMainThread`。
 - 最近复验：2026-09-03（最终源码二进制 mismatch 0 部署、exact-primary 恢复、三 factory 同快照分页、科研队列身份正例、生产窗回归、150 项测试、完整构建及 50-tool MCP 调用通过）。
 
+### EXP-157 — 理论产能必须从当前组件公式重算，耗尽矿机是合法零容量
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：当前 DSP `0.10.34.28529` / `Assembly-CSharp.dll` SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，v0.4 对 exact active owned `GameData` 中 assembler、matrix lab、miner/oil/water、fractionator、gamma receiver 和 orbital collector 的理论物品产出；不涵盖理论消耗或最终故障根因。
+- 当前结论：无时间戳的 `ProductStat.refProductSpeed` 不能作为可靠输入，也不应为只读查询调用会改写共享缓存的 `ProductionExtraInfoCalculator`。应在 Unity 主线程有界扫描全部当前生产组件，交叉验证 component/entity/power/network/recipe/source/station/planet 身份，再用纯 Core 逐 float 运算顺序复现当前程序集所有 `AddRefProductSpeed` 分支。只有整厂六域全部通过才报告 `theoreticalCoverage=complete` 和版本化来源；断网设备计 0，缺料/堵料/欠供电设备仍保留设计容量。普通矿机 `veinCount=0` 是耗尽后的合法零容量，即使 `veins` 已为空也不能让整份快照失败。利用率只在原生窗口 ready 且容量大于 0 时为 `actual/theoretical`，10 秒离散窗口可短暂超过 1，不钳制也不冒充稳定超产。
+- 直接证据：当前程序集反编译确认装配/矩阵配方、三种 miner、分馏塔、gamma receiver 和 orbital collector 公式，以及分馏 stack 分支会再次比较 `inserterStackOutput` 的当前版本行为。首个部署 Plugin `76DAEAA470554EE3A80A36F23E264672A4C19E720F0C09DFC9FBFA439BBBCB82` 在真实存档安全返回 `BRIDGE_NOT_READY: An active vein miner has an invalid source-node index`；fresh miner 快照随后证明实体 `14/263/796` 均为满电、0 source-node 的耗尽矿机。校验顺序改为先接受 `veinCount==0` 后，完整 solution 再次 0 warning/0 error；普通保存 tick `13831872`、正常关窗、7 个文件零哈希差异部署最终 Plugin `5AC257D5AB8013E7D088A8609D08A9FA7FD83A633D4D2DA2F0F549BA53815DC1`，protected exact-primary 恢复并自动重存 tick `13831903`。同档三厂返回 complete：母星蓝/红/黄矩阵 `20/10/7.5 min⁻¹`；铁矿机 6+8 点、铜 2 点、石 3 点、煤 7 点分别闭合 `420/60/90/210 min⁻¹`，三台耗尽矿机为 0，水/油为 `50/133.15919494628906 min⁻¹`；两座铁炉为 `120 min⁻¹`，塑料/有机晶体/钛晶石为 `20/10/11.25 min⁻¹`；远端未显示 factory 的硅/钛为 `120/60 min⁻¹`。三页共享 snapshot tick `13837732`，错 filter cursor 与 limit 17 分别安全返回 `STALE_CURSOR/INVALID_REQUEST`。源码 MCP `0.4.0.0` 完成 initialize、50-tool list 和同一生产工具 live call；Contracts/Core/MCP `17 + 122 + 21 = 160` 项测试通过。最终审计 tick `13861096+` 为 confirmed peaceful/sandbox disabled/1×、healthy、Journal `49/49` durable、Walk/0、满核心、3/3 施工机 idle、无 blocker/checkpoint且 restart 可用。
+- 限制或反例：当前存档为 assembler、lab、普通矿机、油井和水泵提供了正值实机样本，但没有活动分馏塔、gamma receiver 或 orbital collector；后三支只有当前 IL 与纯 Core 自动测试证据，不能写成 live positive-output 验收。理论值是“已连接设备按当前配置的设计容量”，不是供料可持续性、可用功率或实际峰值；单凭低利用率不能区分缺料、堵塞、物流或矿耗尽。当前只绑定一个 DSP 程序集哈希，版本变化必须重查 float 顺序、组件类别和分馏 stack 分支。
+- 复验触发：DSP 版本/程序集哈希变化、增加生产组件类型或增产等级、首次出现分馏塔/gamma/轨道采集器实机样本、改变理论扫描预算、接入缓冲/物流/矿源故障分类或最终 v0.4 clean 工件安装。
+- 关联：EXP-030、EXP-085、EXP-112、EXP-154、EXP-155、`docs/research/game-api-overseer.md`、`OverseerTheoreticalProductionCalculator`、`GameStateReader.GetOverseerProductionOnMainThread`。
+- 最近复验：2026-09-03（最终同批 Plugin 零差异部署、exact-primary 恢复、三 factory 理论值/游标边界、160 项测试与完整构建通过）。
+
 ## 修订记录
+
+- 2026-09-03：新增 EXP-157/IFX-018，并按新证据缩小 EXP-154/155 的过期限制。第三个 v0.4 切片逐 IL 重现理论产出且不触碰 UI `refProductSpeed` 缓存；首轮 live 由三台合法耗尽矿机暴露校验顺序缺陷，修正为 `veinCount=0 -> 0 capacity` 后重新完整构建、正常保存、关窗、零哈希差异部署和 exact-primary 恢复。最终实机闭合母星矩阵、矿点、水/油、冶炼/化工/制造以及远端硅钛理论值，三厂分页和边界拒绝继续成立；共 160 项测试。故障分类、上游图和受控故障仍未完成，本次没有打 tag 或发布。
 
 - 2026-09-03：新增 EXP-156、记录 IFX-017，并复验 EXP-001/021/030/069/072/104/142/152/154/155。第二个 v0.4 只读切片在同一 owned world 的三座已创建工厂上完成电网/物流/全局科研分页；首次 live 读数以“33 个 generator 且满供电、旧 generated 却为 0”证伪早期 `energyExport` 映射，改为逐组件 `generateCurrentTick` checked sum 并单列防御场导出。修正字段后先保存/恢复到 tick `13696182+` 做正例，再补互斥 collector 分类、空槽一致性和全域扫描预算；普通保存 tick `13725278`、正常关窗、7 个文件同批安装零哈希差异，并只消费 exact-primary ticket 恢复 planet `104`、自动重存 tick `13725324`。最终审阅再补科技队列 runtime 双身份检查，重新构建后普通保存 tick `13767062`、正常关闭并以零哈希差异部署最终 Plugin `3766E3A770FFB7BAA24FA870CA569BD90F5BE776802A04F213EB2634B79E9C6E`，受保护恢复自动重存 tick `13767093`。最终三页快照 tick `13773036`、生产窗口回归、队列 `[3401]`、边界拒绝、150 项测试、完整构建和 50-tool MCP live call 均通过；审计 tick `13775095+` 为 healthy、Journal `49/49` durable、Walk/0、满核心且无 blocker/checkpoint。全程未开新档或隔离。后续 tag/Release 仍须按用户新增门禁先提交候选证据审核，本次不发布。
 

@@ -413,7 +413,7 @@ public sealed class SpherewrightToolsTests
         {
             BridgeConnected = true,
             BridgeInstanceId = "instance",
-            PluginVersion = "0.1.0",
+            PluginVersion = Spherewright.Contracts.Versioning.SpherewrightProduct.CurrentVersion,
             ProtocolVersion = ProtocolConstants.CurrentVersion,
             GameVersion = "0.10.34.28529",
             GameLoaded = false,

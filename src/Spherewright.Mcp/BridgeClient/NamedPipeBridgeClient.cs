@@ -14,12 +14,13 @@ using Spherewright.Contracts.Protocol;
 using Spherewright.Contracts.Resources;
 using Spherewright.Contracts.Sessions;
 using Spherewright.Contracts.Testing;
+using Spherewright.Contracts.Versioning;
 
 namespace Spherewright.Mcp.BridgeClient;
 
 internal sealed class NamedPipeBridgeClient : IBridgeClient
 {
-    private const string ClientVersion = "0.1.0";
+    private const string ClientVersion = SpherewrightProduct.CurrentVersion;
     private readonly BridgeClientOptions _options;
     private readonly BridgeDescriptorLocator _locator;
     private readonly FrameCodec _frameCodec = new FrameCodec(ProtocolConstants.DefaultMaxFrameBytes);

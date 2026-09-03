@@ -1,17 +1,26 @@
 [CmdletBinding()]
-param([switch]$LiveBridge)
+param(
+    [switch]$LiveBridge,
+    [string]$ExpectedPluginVersion
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $solutionFilter = Join-Path $repoRoot 'Spherewright.Core.slnf'
+$localDotNet = Join-Path $repoRoot '.local\dotnet\dotnet.exe'
+$dotNet = if (Test-Path -LiteralPath $localDotNet -PathType Leaf) {
+    $localDotNet
+} else {
+    [string](Get-Command dotnet -ErrorAction Stop).Source
+}
 
-dotnet restore $solutionFilter --locked-mode
+& $dotNet restore $solutionFilter --locked-mode
 if ($LASTEXITCODE -ne 0) { throw 'Locked restore failed.' }
-dotnet build $solutionFilter --no-restore
+& $dotNet build $solutionFilter --no-restore
 if ($LASTEXITCODE -ne 0) { throw 'Core build failed.' }
-dotnet test $solutionFilter --no-build
+& $dotNet test $solutionFilter --no-build
 if ($LASTEXITCODE -ne 0) { throw 'Core tests failed.' }
 
 if (-not $LiveBridge) {
@@ -145,6 +154,10 @@ try {
     $status = Read-BridgeFrame -Stream $pipe
     if (-not $status.success -or -not $status.result.bridgeConnected) {
         throw 'Bridge status request failed.'
+    }
+    if ($ExpectedPluginVersion -and
+        -not [string]::Equals([string]$status.result.pluginVersion, $ExpectedPluginVersion, [StringComparison]::Ordinal)) {
+        throw "Live Plugin version $($status.result.pluginVersion) does not match expected version $ExpectedPluginVersion."
     }
 
     [ordered]@{

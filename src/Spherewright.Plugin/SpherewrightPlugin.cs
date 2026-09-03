@@ -1,5 +1,6 @@
 using BepInEx;
 using Spherewright.Contracts.Protocol;
+using Spherewright.Contracts.Versioning;
 using Spherewright.Plugin.Bootstrap;
 using Spherewright.Plugin.Hosting;
 
@@ -11,7 +12,7 @@ public sealed class SpherewrightPlugin : BaseUnityPlugin
 {
     public const string PluginGuid = "dev.spherewright.bridge";
     public const string PluginName = "Spherewright";
-    public const string PluginVersion = "0.1.0";
+    public const string PluginVersion = SpherewrightProduct.CurrentVersion;
 
     private SpherewrightBridgeHost? _host;
 

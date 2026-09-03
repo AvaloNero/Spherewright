@@ -67,6 +67,15 @@ if ($LASTEXITCODE -ne 0) {
     throw 'Release solution build failed.'
 }
 
+$contractsAssemblyPath = Join-Path $repoRoot 'src\Spherewright.Contracts\bin\Release\netstandard2.0\Spherewright.Contracts.dll'
+$contractsAssembly = [Reflection.Assembly]::LoadFrom($contractsAssemblyPath)
+$productVersionType = $contractsAssembly.GetType('Spherewright.Contracts.Versioning.SpherewrightProduct', $true)
+$productVersionField = $productVersionType.GetField('CurrentVersion', [Reflection.BindingFlags]'Public, Static')
+$productVersion = [string]$productVersionField.GetRawConstantValue()
+if (-not [string]::Equals($productVersion, $Version, [StringComparison]::Ordinal)) {
+    throw "Release version $Version does not match the product version $productVersion. Update the single product version source before packaging."
+}
+
 $stagingParent = Join-Path $repoRoot '.local\release-package'
 New-Item -ItemType Directory -Path $stagingParent -Force | Out-Null
 $stagingRoot = Join-Path $stagingParent ([guid]::NewGuid().ToString('N'))
@@ -122,6 +131,7 @@ try {
         schemaVersion = 1
         package = 'Spherewright'
         version = $Version
+        productVersion = $productVersion
         runtime = $Runtime
         sourceCommit = $gitCommit
         sourceDirty = $sourceDirty

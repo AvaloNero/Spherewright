@@ -1922,7 +1922,21 @@
 - 关联：EXP-028、EXP-068、EXP-070、EXP-118、EXP-126、EXP-133、EXP-142、EXP-143、EXP-147、EXP-150。
 - 最近复验：2026-09-03（新增 `2249…2254` 后三料持续增长并穿过有机晶体、钛晶石和结构矩阵完整消费者链，保存后采样仍抓到 sorter `779` 携带 item `6003`）。
 
+### EXP-152 — 正式包必须以单一产品版本源并经实时握手校验
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：Spherewright 的 MSBuild assembly 版本、BepInEx Plugin metadata、Bridge status/handshake、MCP client/server、release manifest、打包测试和当前 Windows 干净安装流程。
+- 当前结论：ZIP 名称、manifest 或 MCP initialize 中任一处显示目标版本，都不能单独证明游戏实际加载了同版 Plugin。产品版本必须来自 Contracts 中唯一的编译期常量，Plugin metadata 和 MCP 客户端共同引用；打包时把命令行版本与已构建常量做 fail-closed 比较，包测试再核对 manifest 与 MCP server version。最终实机门还必须在正常关闭后的干净 Plugin 目录上安装该包，并要求 live Bridge 精确报告同一版本、错误 token 被拒绝、安装版 MCP 能调用 live Bridge、受保护 owned save 能恢复。
+- 直接证据：首次由干净 commit `e2d7cd1` 生成并安装的 `0.3.0` 包，其 manifest 和 MCP server 为 `0.3.0`/`0.3.0.0`，但 `get_bridge_status` 明确返回 Plugin `0.1.0`；因此没有创建 tag。修复后 119 项测试与完整 solution 构建通过，Mono.Cecil 从实际 Plugin DLL 读到 assembly `0.3.0.0` 和 `BepInPlugin` 版本 `0.3.0`。第二次把旧 Plugin/MCP 目录整体移到可恢复备份后从候选 ZIP 干净安装，live smoke 证明 wrong-token rejected 且 Bridge Plugin `0.3.0`；安装版自包含 MCP 以协议 `2025-06-18` 初始化为 `0.3.0.0`，`spherewright_get_status` 成功返回同一 live Plugin `0.3.0`。
+- 限制或反例：live 版本一致只证明装载身份，不替代 manifest 文件哈希、自动测试、游戏版本、存档恢复和功能回归；preview 包可用于验证修复，但 `sourceDirty=true` 不能作为最终 Release 工件。未来预发布后缀必须保留 manifest/product exact 比较，同时只用三段 numeric core 与 CLR assembly version 比较。
+- 复验触发：每次版本号变化、package/release 脚本变化、BepInEx metadata 或握手字段变化、安装目录迁移、最终 tag/Release、任何报告版本不一致。
+- 关联：EXP-001、EXP-030、IFX-016、`scripts/package-release.ps1`、`scripts/test-release-package.ps1`、`scripts/smoke-test.ps1`。
+- 最近复验：2026-09-03（修复候选包完成干净安装、实时 Plugin/MCP 双版本握手与同档 protected resume；最终 Release 仍须由 clean Git commit 重新生成，不能复用 dirty preview ZIP）。
+
 ## 修订记录
+
+- 2026-09-03：新增 EXP-152 并记录 IFX-016。首次 clean `0.3.0` 工件的 233 文件哈希、MCP initialize 和 48 工具均通过，但实机 Bridge 揭示 Plugin 仍报告 `0.1.0`，主动阻止 tag。版本来源统一后新增第 119 项测试，Core/Contracts/MCP 为 `86 + 14 + 19` 全通过，完整 solution 0 warning / 0 error，Mono.Cecil 证明 BepInEx metadata 为 `0.3.0`。主档先普通保存到 tick `13494061`，游戏正常关闭；修复候选包将旧 Plugin 和 MCP 目录分别整体移入可恢复备份后做第二次干净安装。新进程 live Bridge 在主菜单即报告 `0.3.0`；prototype preload 完成前的 resume prepare 以 `BRIDGE_NOT_READY` 无副作用拒绝，等待 ready 后只消费同一 protected ticket，恢复 planet `104`、和平/非沙盒/1×并自动重存到 tick `13494092`。随后 wrong-token 拒绝、正确 Bridge 握手、安装版 MCP `0.3.0.0 -> spherewright_get_status -> Plugin 0.3.0` 全部通过。fresh 审计 tick `13504262` 为 Walk/0、核心 `400/400 MJ`、3/3 drone idle、0 prebuild、Journal `49/49` durable、玩家不持有水/油/有机晶体/钛晶石/结构矩阵；有机晶体和钛晶石设备仍满电运行，sorter `2254` 携精炼油、`977` 携结构矩阵。黄糖 lab 此刻因本批金刚石正常耗尽而停机，不把最后在途矩阵冒充无限供料；此前跨窗持续生产证据仍成立。最终 tag 前必须从 clean Git commit 重打非 dirty 工件。
 
 - 2026-09-03：完成 v0.3 无玩家搬运黄糖链的最后十写审计与里程碑保存，新增 EXP-151，将 EXP-147 升级为 `validated`，并复验 EXP-007/018/021/028/037/062/065/068/070/079/102/118/126/133/142/143/147/150。上一审计后的第 1–2 项 sorter `2247/2248` 分别连接 `2243 -> 2245` 与 `2246 -> storage 761`；50 秒内目标只有塑料 `35 -> 75`，油/水均为 0，而源 sorter `2218/2229` 满电携正确物，定位为三处单 sorter 后置桥被上游塑料持续占满。第 3 项递归手搓 6 sorter；第 4–9 项把 `2249/2250`、`2251/2252`、`2253/2254` 分别并联到三处瓶颈，fresh 反查六只均为正确双端、network `1`、ratio `1.0`。第 10 项将玩家隔离的 67 氢守恒转入专用氢仓 `136`，仓由 7 增至 74、玩家氢归零；另一次对满仓 `907` 的 transfer prepare 以容量不足无副作用拒绝，不计写。严格审计 tick `13432430`、revision `150`、2254 built/0 prebuild（1873 belt、200 inserter），目标仓三料为 `270/40/25`，化工厂 `760` 与制造台 `767` 均工作，healthy。其后只读长窗看到三料增至 `304/86/72`、lab `774` 连续工作、金刚石 `84 -> 74`，并多次抓到 sorter `779/977` 携带 item `6003`；全程玩家没有水、油、氢、有机晶体、钛晶石或结构矩阵。第 1 个新写动作是普通保存 `3215a7f5-2d8a-4c85-af89-c3a8201f71f2`，精确覆盖 tick `13444822`。保存后审计 tick `13446315`、revision `151`、peaceful/non-sandbox/1×、Walk/0、核心 `400/400 MJ`、healthy、0 blocker、planned restart 可用、无 checkpoint、Journal `49/49` durable、2254 built/0 prebuild；仓 `761` 为 `345/179/164`，lab `774` 仍工作，金刚石余 55，采样再次抓到 sorter `779` 携黄糖。电网 `1/4` 满供电，网络 `2` 因风力瞬时波动低于 1，但本链全部关键设备和 sorter 位于满供电 network `1`；未把瞬态概括成全网满供电。v0.3 游戏内容门由此闭合，写计数归零；下一步只做发行回归与打包，不并行启动 v0.4。
 

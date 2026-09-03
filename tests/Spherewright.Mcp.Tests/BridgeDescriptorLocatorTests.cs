@@ -88,7 +88,7 @@ public sealed class BridgeDescriptorLocatorTests : IDisposable
             PipeName = "test-pipe",
             AuthToken = "test-token",
             ProtocolVersion = ProtocolConstants.CurrentVersion,
-            PluginVersion = "0.1.0",
+            PluginVersion = Spherewright.Contracts.Versioning.SpherewrightProduct.CurrentVersion,
             CreatedAtUtc = DateTimeOffset.UtcNow,
         };
         File.WriteAllText(path, McpBridgeJson.Serialize(descriptor));

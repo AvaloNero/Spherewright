@@ -160,3 +160,22 @@
   `powerNetworkId` 与供电比，自动诊断/修复留给 v0.4 Overseer。
 - 验证：电塔落成后 sorter 立即携带硅，熔炉连续工作、成品仓增长。
 - 关联：EXP-021、EXP-145；状态：`mitigated`。
+
+## IFX-016 — 发布包与实时 Plugin 报告不同版本
+
+- 首见：2026-09-03，首次 `0.3.0` 干净安装实机回归。
+- 症状：ZIP manifest 与自包含 MCP 都是 `0.3.0`，但实时 BepInEx Plugin/Bridge 仍报告
+  `0.1.0`；功能握手成功也不能证明装入的是预期发布版本。
+- 根因：Plugin 的 BepInEx metadata 和 MCP 握手客户端版本各自保留了早期硬编码常量，
+  与 MSBuild `Version`、manifest 和 MCP server assembly 没有共同来源；原包测试只验证 MCP
+  初始化和工具表，没有对实时 Plugin 版本设断言。
+- 修复：新增 Contracts 中唯一的 `SpherewrightProduct.CurrentVersion`，Plugin metadata 与 MCP
+  客户端共同引用；`Directory.Build.props` 为开发构建设置同一版本前缀。打包脚本从已构建
+  Contracts 读取该常量并拒绝命令行版本不一致，manifest 同步写入 `productVersion`；包测试
+  校验 manifest/MCP 版本，live smoke 新增 `ExpectedPluginVersion` 严格断言，并自动优先使用
+  仓库 portable SDK。
+- 验证：119 项测试通过、完整 solution 0 warning / 0 error；Mono.Cecil 读回 Plugin assembly
+  `0.3.0.0` 与 `BepInPlugin(..., "0.3.0")`。重新干净安装后 live Bridge 报 `0.3.0`，错误
+  token 被拒绝；安装版 MCP `0.3.0.0` 经 stdio 成功调用同一 live Bridge，受保护同档恢复
+  并自动保存到 tick `13494092`。
+- 关联：EXP-001、EXP-030、EXP-152；状态：`fixed`。

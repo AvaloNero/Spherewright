@@ -8,6 +8,7 @@ using Spherewright.Contracts.Players;
 using Spherewright.Contracts.Protocol;
 using Spherewright.Contracts.Progression;
 using Spherewright.Contracts.Sessions;
+using Spherewright.Contracts.Versioning;
 using Xunit;
 
 namespace Spherewright.Contracts.Tests;
@@ -99,7 +100,7 @@ public sealed class ProtocolContractTests
         {
             BridgeConnected = true,
             BridgeInstanceId = "instance",
-            PluginVersion = "0.1.0",
+            PluginVersion = SpherewrightProduct.CurrentVersion,
             ProtocolVersion = ProtocolConstants.CurrentVersion,
             GameVersion = "0.10.34.28529",
             GameLoaded = false,

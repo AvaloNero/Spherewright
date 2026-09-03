@@ -41,6 +41,9 @@ try {
     $packageRoot = $topLevel[0].FullName
     $manifestPath = Join-Path $packageRoot 'manifest.json'
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    if (-not [string]::Equals([string]$manifest.productVersion, [string]$manifest.version, [StringComparison]::Ordinal)) {
+        throw 'The release manifest product version does not match its package version.'
+    }
     foreach ($entry in @($manifest.files)) {
         $relativePath = [string]$entry.path
         if ([string]::IsNullOrWhiteSpace($relativePath) -or [IO.Path]::IsPathRooted($relativePath)) {
@@ -95,6 +98,12 @@ try {
     if ([int]$initializeResponse.id -ne 1 -or -not $initializeResponse.result.serverInfo) {
         throw 'The packaged MCP returned an invalid initialize response.'
     }
+    $serverVersion = [Version]([string]$initializeResponse.result.serverInfo.version)
+    $serverProductVersion = "$($serverVersion.Major).$($serverVersion.Minor).$($serverVersion.Build)"
+    $manifestVersionCore = ([string]$manifest.productVersion -split '-', 2)[0]
+    if (-not [string]::Equals($serverProductVersion, $manifestVersionCore, [StringComparison]::Ordinal)) {
+        throw "The packaged MCP version $serverProductVersion does not match product version core $manifestVersionCore."
+    }
 
     $initialized = @{ jsonrpc = '2.0'; method = 'notifications/initialized' } | ConvertTo-Json -Compress
     $listTools = @{ jsonrpc = '2.0'; id = 2; method = 'tools/list'; params = @{} } | ConvertTo-Json -Depth 5 -Compress
@@ -113,6 +122,7 @@ try {
 
     [pscustomobject]@{
         version = [string]$manifest.version
+        productVersion = [string]$manifest.productVersion
         zipSha256 = $actualZipHash.ToLowerInvariant()
         manifestFileCount = @($manifest.files).Count
         protocolVersion = [string]$initializeResponse.result.protocolVersion

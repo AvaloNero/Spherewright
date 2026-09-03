@@ -48,12 +48,6 @@ public sealed class SnapshotPageStore<T>
         lock (_gate)
         {
             RemoveExpiredUnsafe();
-            if (_snapshots.Count >= _capacity)
-            {
-                page = null;
-                return false;
-            }
-
             var now = _utcNow();
             var snapshot = new SnapshotRecord(
                 OpaqueToken.Create(),
@@ -63,6 +57,20 @@ public sealed class SnapshotPageStore<T>
                 pageSize,
                 now.Add(_lifetime),
                 items.ToArray());
+            if (snapshot.Items.Count <= pageSize)
+            {
+                // A complete first page has no continuation cursor, so retaining
+                // it would consume bounded capacity without any way to read it.
+                page = CreatePageUnsafe(snapshot, 0);
+                return true;
+            }
+
+            if (_snapshots.Count >= _capacity)
+            {
+                page = null;
+                return false;
+            }
+
             _snapshots.Add(snapshot.Id, snapshot);
             page = CreatePageUnsafe(snapshot, 0);
             return true;

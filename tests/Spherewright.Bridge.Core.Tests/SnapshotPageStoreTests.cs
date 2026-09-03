@@ -44,12 +44,57 @@ public sealed class SnapshotPageStoreTests
         var store = new SnapshotPageStore<int>(TimeSpan.FromSeconds(30), 1, () => now);
 
         Assert.True(store.TryCreate("session", 1001, "filter", new[] { 1, 2 }, 1, out var first));
-        Assert.False(store.TryCreate("session", 1001, "other", new[] { 3 }, 1, out _));
+        Assert.False(store.TryCreate("session", 1001, "other", new[] { 3, 4 }, 1, out _));
 
         now = now.AddSeconds(31);
         Assert.Equal(
             SnapshotCursorStatus.Expired,
             store.TryGetPage(first!.NextCursor, "session", 1001, "filter", 1, out _));
         Assert.True(store.TryCreate("session", 1001, "other", new[] { 3 }, 1, out _));
+    }
+
+    [Fact]
+    public void CompleteFirstPagesDoNotConsumeContinuationCapacity()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T00:00:00Z");
+        var store = new SnapshotPageStore<int>(TimeSpan.FromMinutes(1), 1, () => now);
+
+        for (var index = 0; index < 16; index++)
+        {
+            Assert.True(store.TryCreate(
+                "session",
+                1001,
+                $"complete-{index}",
+                new[] { index },
+                1,
+                out var complete));
+            Assert.Equal(new[] { index }, complete!.Items);
+            Assert.Null(complete.NextCursor);
+        }
+
+        Assert.True(store.TryCreate(
+            "session",
+            1001,
+            "paginated",
+            new[] { 1, 2 },
+            1,
+            out var paginated));
+        Assert.NotNull(paginated!.NextCursor);
+        Assert.False(store.TryCreate(
+            "session",
+            1001,
+            "second-paginated",
+            new[] { 3, 4 },
+            1,
+            out _));
+
+        Assert.True(store.TryCreate(
+            "session",
+            1001,
+            "complete-while-full",
+            new[] { 5 },
+            1,
+            out var completeWhileFull));
+        Assert.Null(completeWhileFull!.NextCursor);
     }
 }

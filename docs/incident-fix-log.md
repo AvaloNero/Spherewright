@@ -258,5 +258,20 @@
 - 症状：路线证据会汇总所有匹配 supply endpoint，但公开 `UpstreamPath` 只能显示一座主 supply station。若把所有供应端的上游候选都注册给同一 material，resolver 可能选到塔 B 后的生产者，而 path 仍显示塔 A。
 - 根因：库存/机队是合理的路线集合指标，但生产者递归是必须保留单条物理来源的路径证明；首版把两种语义共用了同一 supply 列表。
 - 修复：路线总库存、carrier 与时间窗仍使用全部匹配 supply；另外选定一个将写入公开 path 的精确 endpoint，且只注册该 endpoint 的 Input-belt 反向候选。优先有物理输入路径的站，再按库存与稳定身份排序。
-- 验证：编译和 205 项测试通过；live 铛块 path 中显示的 supply `102:44` 与其 Input-belt 后绑定的矿机 `102:1` 处于同一条证据链。
+- 验证：编译和 205 项测试通过；live 钛块 path 中显示的 supply `102:44` 与其 Input-belt 后绑定的矿机 `102:1` 处于同一条证据链。
 - 关联：EXP-159、EXP-162、EXP-165、`OverseerDiagnosticLogisticsIndex.ApplyRouteEvidence`；状态：`fixed`。
+
+## IFX-022 — 无 continuation 的完整首屏耗尽分页快照容量
+
+- 首见：2026-09-03，为捕获真实星际运输活动而高频读取 Overseer 摘要时。
+- 症状：当前世界只有 3 座 factory，`limit=16` 的首屏每次都完整返回且 `nextCursor=null`；连续读取后仍会命中
+  `SERVER_BUSY`，仿佛存在尚待翻页的快照。
+- 根因：`SnapshotPageStore.TryCreate` 在判断是否需要 continuation 之前就检查容量并保存每个 snapshot。
+  完整首屏没有任何 cursor 能再次引用该记录，却仍占用 60 秒有界容量。
+- 修复：先构造不可变记录；当 `items.Count <= pageSize` 时直接生成一次性首屏而不写入 continuation store。
+  只有确实存在下一页的记录才检查并占用容量，原有 session/scope/filter/page-size/expiry 绑定不变。
+- 验证：新增 Core 回归证明 16 个完整首屏不占一个容量槽、真正分页仍占槽且满载拒绝、容量满时完整首屏仍可用。
+  Release 完整构建 0 warning/0 error、206 项测试通过。源码相等部署后，同档 live 连续 16 次完整三星球首屏
+  全部成功；8 个 `limit=1` 首屏占满容量，第 9 个按设计返回 `SERVER_BUSY`，此时完整首屏与既有
+  continuation 仍分别成功。
+- 关联：EXP-125、EXP-156、EXP-166、`SnapshotPageStore<T>`；状态：`fixed`。

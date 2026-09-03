@@ -1,11 +1,11 @@
 # 本局从落地到当前：决策、科技与首次产出总时间线
 
 更新时间：2026-09-03（Asia/Singapore）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界正在 planet `102`。远端 ILS `44` 已接电、限充 30 MW、钛硅各 100 远程供应并装入 1 艘船；10 台风机提供 `55000 J/tick`。76 格钛主带和 sorter `123` 已把钛仓接入站口；44 格硅支线 `173 -> … -> 148` 通过 sorter `175` 在交叉前显式汇入钛带 `102`，没有任何重叠格。观察窗已证明 ILS 钛石 `0 -> 49`、硅石 `0 -> 19`，三只供料/汇流 sorter 均受电并实际工作。里程碑正常保存到 tick `12278450`，fresh revision `115`、healthy、175 built/0 prebuild、journal `48/48` durable、无 checkpoint。当前只读等待槽位到 100 并观察首艘运输船真实起飞；未完成跨星运输前不报 v0.3 完成。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界已返航 planet `104`。远端 ILS `44` 的钛、硅先后达到 100、出现 `remoteOrder=-200`，并分别在来船抵达后降至 23/16；母星 ILS `1657` 随后读到钛石/硅石 `100/100`、订单归零、运输船 `1 idle / 0 working`，证明两种原矿已完成真实跨星运输。返航动作在 planet `104` 连续 600 tick 保持 Walk/0，checkpoint capability 随成功撤销，普通保存已固化 tick `12384194`；fresh revision `137`、healthy、journal `48/48` durable。v0.3 尚差母星 ILS 输出接入既有钛晶石/高纯硅/黄糖上游，以及保存恢复和发行包回归。
 
 ## 结论与证据边界
 
-- 记录仍在。本局受保护日记共有 `48` 条，已经持久化到 sequence `48`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `143` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护日记共有 `48` 条，已经持久化到 sequence `48`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `144` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -69,6 +69,7 @@
 | save `11974991` | 2026-09-03 | 一座 ILS 从仓 `900` 守恒取出并在高净空站址施工为 `1657`；两座新电塔把它接入 network `1`，60 MW 默认充电降到 ILS 原生最低 30 MW。钛石/硅石两槽各配 `100` 远程需求，仓 `893` 的一艘船经玩家守恒装入 fleet。严格十写审计 revision `593`，10/10 terminal/completed/succeeded；充能期 network `1` 仅约 20.37% 供电。随后正常保存，fresh revision `594`、healthy、journal `48/48` durable、无 checkpoint，站能量继续增至约 `1.463 GJ`。 | R/M/D |
 | tick `12052859`–`12222093` | 2026-09-03 | 母星飞前主档正常保存后，两次被中间气态巨行星捕获的失败飞行都只重载同一绑定 checkpoint。确定性中间天体绕行修复部署后，`104 -> 102` 成功稳定落地，立即正常保存到 tick `12071759` 并撤销 checkpoint。远端无线塔 `43` 合并两张旧电网并实测伊卡洛斯自动回充；ILS `44` 接入 network `1`、降至 30 MW，配钛/硅各 100 远程供应并守恒装入 1 船。76 格钛带与 sorter `123` 已连接到 port 0；发现 4 风机的 4.46% 供电不足后，手采/递归手搓 5 风机和 36 带，已先并网风机 `124/125`。第四组十写审计 revision `100`，125 built/0 prebuild、单网 6 风机/`33000 J/tick`、journal `48/48` durable、healthy/无 checkpoint；0.07152 供电比下钛仓/站仍为 `3000/0`，因此尚未报投产。 | R/M/D |
 | save `12278450` | 2026-09-03 | 风机 `126…129` 逐台并入 network `1`，总容量达 `55000 J/tick`，钛 sorter `123` 终于开始往返且 ILS 钛槽从 0 增长。硅仓直连 ILS 的 54 带方案因 planned point 与钛带 `102` 只差 0.00393 m 而在 commit 前丢弃；改为零重叠的 44 带 `173 -> … -> 148`，用受电 sorter `174/175` 形成 `storage 25 -> 硅带 -> belt 102 -> ILS`。实际观察中硅槽 `2 -> 9 -> 14 -> 19`、钛槽 `40 -> 49`，三只 sorter 均实际工作；里程碑普通保存后 revision `115`、175 built/0 prebuild、核心满电、healthy、journal `48/48` durable、无 checkpoint。 | R/M/D |
+| save `12384194` | 2026-09-03 | 远端钛槽达到 100 后出现订单并降至 23，硅在钛满槽期间继续增到 100、随后也出现订单并降至 16；两次源端取货均完成。返航前正常保存并创建独立 flight checkpoint，动作 `ee51b297-e749-4da4-adf3-0db58cd86f25` 稳定落到 planet `104`；母星 ILS 钛/硅均为 100、双订单归零、运输船归队。成功后 checkpoint capability 消失，母星验收点再次普通保存。 | R/M/D |
 
 ## 科技树与升级
 

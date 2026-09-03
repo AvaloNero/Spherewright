@@ -125,7 +125,59 @@ public sealed class ProtocolContractTests
         Assert.Equal("STALE_REVISION", BridgeErrorCodes.StaleRevision);
         Assert.Equal("ACTION_OUTCOME_UNKNOWN", BridgeErrorCodes.ActionOutcomeUnknown);
         Assert.Equal("SANDBOX_MODE_ACTIVE", BridgeErrorCodes.SandboxModeActive);
+        Assert.Equal("USER_CONFIRMATION_REQUIRED", BridgeErrorCodes.UserConfirmationRequired);
         Assert.Equal("confirmed_disabled", SandboxModeStates.ConfirmedDisabled);
+    }
+
+    [Fact]
+    public void UserSaveImportContracts_ExposeConversationGateWithoutSaveIdentityOrCode()
+    {
+        var plan = new PreparedUserSaveImportPlan
+        {
+            Prepared = true,
+            PlanToken = "opaque-plan",
+            ExpectedRevision = 7,
+            OriginalSavePreserved = true,
+            HistoricalCoverageComplete = false,
+            UserConfirmationRequired = true,
+            ConfirmationPrompt = "Confirm this exact import in the conversation.",
+            CommitAllowedNow = false,
+        };
+        var commit = new CommitUserSaveImportRequest
+        {
+            PlanToken = "opaque-plan",
+            IdempotencyKey = "f1078b10-c48b-430f-b0e0-4de18438762c",
+            UserConfirmedInConversation = true,
+            AcknowledgeOriginalSaveRemainsUnchanged = true,
+            AcknowledgeJournalStartsAtImport = true,
+        };
+        var result = new UserSaveImportResult
+        {
+            ActionId = "action",
+            Accepted = true,
+            State = NormalActionStates.Completed,
+            OriginalSavePreserved = true,
+            HistoricalCoverageComplete = false,
+        };
+
+        using var planJson = JsonDocument.Parse(JsonSerializer.Serialize(plan, JsonOptions));
+        using var commitJson = JsonDocument.Parse(JsonSerializer.Serialize(commit, JsonOptions));
+        using var resultJson = JsonDocument.Parse(JsonSerializer.Serialize(result, JsonOptions));
+
+        Assert.True(planJson.RootElement.GetProperty("userConfirmationRequired").GetBoolean());
+        Assert.False(planJson.RootElement.GetProperty("commitAllowedNow").GetBoolean());
+        Assert.True(commitJson.RootElement.GetProperty("userConfirmedInConversation").GetBoolean());
+        Assert.False(commitJson.RootElement.TryGetProperty("authorizationCode", out _));
+        Assert.False(planJson.RootElement.TryGetProperty("saveName", out _));
+        Assert.False(planJson.RootElement.TryGetProperty("savePath", out _));
+        Assert.False(planJson.RootElement.TryGetProperty("expectedPlanetId", out _));
+        Assert.False(planJson.RootElement.TryGetProperty("expectedGameTick", out _));
+        Assert.False(resultJson.RootElement.TryGetProperty("saveName", out _));
+        Assert.False(resultJson.RootElement.TryGetProperty("savePath", out _));
+        Assert.Equal(
+            GameplayJournalTrackingModes.AttachedExistingSave,
+            planJson.RootElement.GetProperty("journalTrackingMode").GetString());
+        Assert.False(planJson.RootElement.GetProperty("historicalCoverageComplete").GetBoolean());
     }
 
     [Fact]

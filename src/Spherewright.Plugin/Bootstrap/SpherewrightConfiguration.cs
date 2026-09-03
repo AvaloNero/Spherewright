@@ -39,6 +39,8 @@ internal sealed class SpherewrightConfiguration
 
     public bool AllowWrites { get; private set; }
 
+    public bool AllowUserSaveImport { get; private set; }
+
     public bool RequirePeacefulSave { get; private set; }
 
     public int PlanTokenLifetimeSeconds { get; private set; }
@@ -73,6 +75,11 @@ internal sealed class SpherewrightConfiguration
             RuntimeDescriptorDirectory = config.Bind("Security", "RuntimeDescriptorDirectory", "%LOCALAPPDATA%/Spherewright/runtime", "Directory used for protected runtime descriptors. Use forward slashes so BepInEx does not interpret backslash escapes.").Value,
             RotateBridgeTokenOnStart = config.Bind("Security", "RotateBridgeTokenOnStart", true, "Rotate the bridge token on each Plugin start.").Value,
             AllowWrites = config.Bind("Safety", "AllowWrites", false, "Allow explicitly committed game writes. The default remains read-only.").Value,
+            AllowUserSaveImport = config.Bind(
+                "Safety",
+                "AllowUserSaveImport",
+                false,
+                "Allow a player-loaded unowned world to be cloned into a new Spherewright-owned save after an explicit confirmation in the Agent conversation.").Value,
             RequirePeacefulSave = config.Bind("Safety", "RequirePeacefulSave", true, "Require confirmed peaceful mode before any future write.").Value,
             PlanTokenLifetimeSeconds = config.Bind("Safety", "PlanTokenLifetimeSeconds", 60, "Lifetime of a dry-run plan token in seconds.").Value,
             IdempotencyRetentionMinutes = config.Bind("Safety", "IdempotencyRetentionMinutes", 30, "Configured action-result retention window in minutes.").Value,

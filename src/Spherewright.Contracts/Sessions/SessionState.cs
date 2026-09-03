@@ -62,5 +62,7 @@ public sealed class SessionState
 
     public bool CurrentSessionLoadedFromFlightCheckpoint { get; set; }
 
+    public bool UserSaveImportConfigured { get; set; }
+
     public List<string> Capabilities { get; set; } = new List<string>();
 }

@@ -1,6 +1,6 @@
 # Spherewright experience ledger
 
-更新时间：2026-09-03（Asia/Singapore）
+更新时间：2026-09-04（Asia/Singapore）
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
@@ -2116,7 +2116,21 @@
 - 关联：EXP-049、EXP-065、EXP-117、EXP-144、EXP-164、`StationComponent.UpdateNeeds/UpdateInputSlots`。
 - 最近复验：2026-09-03（真实钛订单、取货、送达和母星钛块恢复闭合；硅满槽后的再次头部阻塞仍待拆带或持续需求修复）。
 
+### EXP-168 — 人工读档交接采用预检后的对话确认边界
+
+- 状态：`observed`
+- 日期：2026-09-04
+- 适用范围：玩家已在 DSP 中手工载入、但尚未由当前 Spherewright 进程认领的和平/非沙盒/1×世界；当前 `prepare_import_current_game` / `commit_import_current_game` 与对应 MCP 工具。
+- 当前结论：人工读档后不能直接把最初的“继续/接手”当成导入授权。Agent 先读取只含 opaque session/revision 的受限状态，prepare 只在内存绑定当前进程/session/revision/精确 `GameData` 并返回“原档不变、新建 owned 副本、Journal 从导入点开始”的确认问题；收到用户在下一条消息中的明确同意后，commit 才声明对话确认与两个边界确认。commit 再复核对象身份、和平、非沙盒、1×和本地工厂 ready，生成内部高熵名称，通过 DSP 正常保存与精确 header tick 复读后才认领。无需快捷键或验证码；若 save 已返回 true 但 header 证明失败，同一未认领 session 进入隔离，只保留结果查询，必须由玩家主动重载原档形成新 session 后再开始。
+- 直接证据：当前程序集 SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85` 的 `GameMain.gameName` setter、`GameSave.SaveCurrentGame`、`GameData.Export` 与 `GameSave.ReadHeader` 调用链已复核；Contracts DTO 不含原档名/路径/验证码，Core 策略覆盖三项声明缺一即拒绝，MCP 注册与参数映射覆盖 prepare/commit。完整 solution 0 warning / 0 error，`18 + 174 + 22 = 214` 项 Contracts/Core/MCP 测试通过。
+- 限制或反例：Plugin 无法读取聊天历史，`userConfirmedInConversation` 是 MCP 调用方对当前对话证据的声明，真正的“先问再确认”由工具规范与 Agent 行为保证，不应描述为密码学证明。保存失败或在新文件创建后中断可能留下不可达的内部 orphan 副本；此时保持 unowned、不得猜测认领或删除文件。当前只完成程序集/代码/自动测试证据，仍需当前 DSP 实机证明原档 header 不变、新副本可保存恢复、重新进入原档仍受限，才能升级为 `validated` 或进入 `v0.3.1`/`v0.4.0` Release。
+- 复验触发：MCP 工具说明或确认字段、plan/session/revision 绑定、GameData 身份、保存/header API、Journal attached-save 初始化、DSP 版本或 v0.3.1 回移候选变化。
+- 关联：`UserSaveImportCoordinator`、`GameSessionTracker.TryImportCurrentSessionAsOwnedCopyOnMainThread`、`UserSaveImportConfirmationPolicy`、`docs/research/game-api-m0.md`、ROADMAP `0.3.1`。
+- 最近复验：2026-09-04（对话确认设计纠正了未发布的快捷键/验证码方案；完整构建和 214 项离线测试通过，未部署、未改游戏或存档）。
+
 ## 修订记录
+
+- 2026-09-04：新增 EXP-168。用户明确将人工存档交接定义为“prepare 预检后在对话中询问，下一条明确确认后 commit”，因此删除未发布的快捷键/验证码设计，改为三项显式提交声明、短时单次 plan、受限 session/revision/对象绑定、正常另存/header 复读和 attached-existing-save Journal。完整 solution 0 warning/0 error，Contracts/Core/MCP `18/174/22` 共 214 项通过；本批未部署 Plugin、未触发游戏写、未修改任何存档，也未创建 tag 或 Release。
 
 - 2026-09-03：完成上一审计后的 10 个 accepted 游戏写动作复核。前八项为两次返航补煤采集/加注、动作 `3515d9f4-8a65-404b-b7bd-79f75ed7a7bc` 成功返航、主档保存 `dd745e09-3f18-48da-89d9-e35e77f241e8`、直接 EXE 短命进程与 Steam 进程各一次 exact-primary 恢复；后两项为煤节点 `402` 的唯一 20 件采集和守恒加注 `e92fa9ed-a4f5-4e51-aa5c-afb82a40b165`。采集终态已返回后仅展示字段失败，fresh 节点 `52072 -> 52052`、玩家煤 20，再由加注核销为玩家 0、燃料舱 19 且反应堆消耗第 20 件，没有重放。严格审计 tick `14874643+` 为同一 owned planet `104`、confirmed peaceful/sandbox disabled/1×、healthy、0 blocker/checkpoint、restart ticket 可用；玩家 Walk/0、核心 `400/400 MJ`、无手搓、3/3 施工机 idle；Journal `49/49` durable、无 pending/error；母星 `2254 built/0 prebuild`，组件计数与上一审计完全一致，三厂全部分页返回，所有有负载电网最低供电比 1.0，双星 ILS 各 1 idle/0 working vessel 且无订单。600-tick Overseer 窗口 ready；现存缺料/输出堵塞均有结构化 finding，未出现 quarantine、outcome unknown、串料、未解释正增量或时间线分叉。EXP-001/002/007/030/035/047/069/072/083/125/144/154/156/164/166/167 与现场一致；计数在本审计后归零，下一写入才允许创建飞前保存/checkpoint。
 

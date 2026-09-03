@@ -104,10 +104,11 @@
 - 直接证据：为进入自动铁仓 `1511` 的 transfer 半径，唯一 Move 已由公共 action client 等到完成，随后一次性展示代码却误读 `$action.terminal`，而 helper 的终态实际位于 `$action.result`，StrictMode 因而在 commit 后报错。没有重放；fresh player 已从 `(-84.008,-94.47305,-155.256317)` 到达 `(-105.052,-86.7283249,-146.740692)`、Walk/0、距仓 77.69 m、write revision 单调推进，紧接着 normal transfer 又从该仓守恒取得 174 铁块。这个样本再次把“动作执行”和“调用方展示”分开；一次性脚本应只读取 helper 已定义的 `prepared/committed/result` 三层字段。
 - 直接证据：母星 ILS 到钛矿输入仓的 124 格长带已由游戏接受并持续施工约 8 分钟；中途只读状态为 `8 prebuild / 6 pending / 3 working drones`、核心约 `288.6 MJ`，证明动作仍在正常推进。终态返回后，报告代码才访问不存在的 `builtObjectIds` 并抛错，因而没有取得可展示的 action ID；没有重放。fresh 拓扑从 ILS `1657` 的 port `0` 唯一追出 `1783 -> … -> 1771` 共 124 格有向单链，末端距输入仓 `259` 为 `2.516 m`，同时 `prebuild=0`、玩家传送带 `326 -> 202`、write health healthy。随后独立动作 `541ee6f7-784c-4a5e-8440-e0c96e77601d` 建成 sorter `1784`，反查为 `belt 1771 -> storage 259`，且未覆盖仓原有输出 sorter `532`。这个样本同时说明长施工应以 prebuild/无人机/能量的只读进展判断是否停滞，终态后的可选报告字段缺失仍只做 fresh 核销。
 - 直接证据：母星硅线一段 6 格外绕带已经完成 commit，随后一次性展示表达式才把 `Where-Object itemId-eq2001` 错写成无法解析的属性名而退出，因此调用方没有保留 action ID。没有重放；紧邻 fresh 读明确显示传送带 `17 -> 11`、源带 `1967` 已接出预建筑、3 架无人机工作，随后等待 `pending=0/working=0` 后两次有向遍历均稳定得到 191 实体链和自由末端 `1975`。后续独立两格带、sorter `1981` 与 37 格续线又都建立在该唯一末端之后，最终审计为 234 实体无环链，排除了这 6 格未执行或执行两次。
+- 直接证据：0.4 受控故障准备时，煤节点 `402` 的 20 件 harvest 已由公共 helper 等到 terminal，调用方随后才访问 ActionResult 中不存在的 `afterPlayerState` 并在 StrictMode 下退出，因此没有取得可展示的 action ID。没有重放；fresh 节点由 `52072 -> 52052`、玩家煤为精确 20、距节点 `1.19 m` 且 Walk/0，revision 单调推进、写健康保持 healthy。随后唯一 refuel 动作 `e92fa9ed-a4f5-4e51-aa5c-afb82a40b165` 又把玩家煤 `20 -> 0`，燃料舱出现 19 件、反应堆开始消耗第 20 件，完整核销了前一动作。
 - 限制或反例：若 prepare 在任何 commit 前明确失败且无 action ID，可按普通 prepare 失败处理。
 - 复验触发：客户端响应模型、ActionResult 字段或脚本 helper 变化。
 - 关联：`src/Spherewright.Contracts/Actions/ActionResultContracts.cs`、`docs/protocol.md`、`docs/safety-model.md`。
-- 最近复验：2026-09-03（6 格带 commit 后才发生 PowerShell 展示表达式错误；紧邻库存/预建筑读回、施工机清零后的两次稳定遍历和后续唯一续线共同核销，未重复施工）。
+- 最近复验：2026-09-03（harvest terminal 后才发生 `afterPlayerState` 展示字段错误；节点 -20、玩家 +20 的 fresh 状态及随后唯一守恒 refuel 共同核销，未重复采集）。
 
 ### EXP-008 — 施工无人机会使玩家状态哈希短时变化
 
@@ -2116,6 +2117,8 @@
 - 最近复验：2026-09-03（真实钛订单、取货、送达和母星钛块恢复闭合；硅满槽后的再次头部阻塞仍待拆带或持续需求修复）。
 
 ## 修订记录
+
+- 2026-09-03：完成上一审计后的 10 个 accepted 游戏写动作复核。前八项为两次返航补煤采集/加注、动作 `3515d9f4-8a65-404b-b7bd-79f75ed7a7bc` 成功返航、主档保存 `dd745e09-3f18-48da-89d9-e35e77f241e8`、直接 EXE 短命进程与 Steam 进程各一次 exact-primary 恢复；后两项为煤节点 `402` 的唯一 20 件采集和守恒加注 `e92fa9ed-a4f5-4e51-aa5c-afb82a40b165`。采集终态已返回后仅展示字段失败，fresh 节点 `52072 -> 52052`、玩家煤 20，再由加注核销为玩家 0、燃料舱 19 且反应堆消耗第 20 件，没有重放。严格审计 tick `14874643+` 为同一 owned planet `104`、confirmed peaceful/sandbox disabled/1×、healthy、0 blocker/checkpoint、restart ticket 可用；玩家 Walk/0、核心 `400/400 MJ`、无手搓、3/3 施工机 idle；Journal `49/49` durable、无 pending/error；母星 `2254 built/0 prebuild`，组件计数与上一审计完全一致，三厂全部分页返回，所有有负载电网最低供电比 1.0，双星 ILS 各 1 idle/0 working vessel 且无订单。600-tick Overseer 窗口 ready；现存缺料/输出堵塞均有结构化 finding，未出现 quarantine、outcome unknown、串料、未解释正增量或时间线分叉。EXP-001/002/007/030/035/047/069/072/083/125/144/154/156/164/166/167 与现场一致；计数在本审计后归零，下一写入才允许创建飞前保存/checkpoint。
 
 - 2026-09-03：新增 EXP-166/167 与 IFX-022，并复验 EXP-001/002/007/030/069/072/083/125/144/154/156/159/161–165。远端共享输入带暴露“满硅堵钛”的头部阻塞；复核时否决了“100% 整船阈值导致 100 上限不派单”的推断，因为 EXP-144 已证明原生会把阈值收紧到槽上限以下。把源站钛/硅上限调整到 `200/300` 后，真实钛 route 经 `-200/+200` 派单、运输船长时移动、源库存 `200 -> 79`、送达归队和母星钛块 `12 min⁻¹` 完成活动正例，移动 2100+ tick 全程没有误报 stall。远端 save `14535735` 后，返航动作 `3515d9f4-8a65-404b-b7bd-79f75ed7a7bc` 成功落到 planet `104` 并在主档 save `14575384` 固化。高频摘要轮询又发现完整首屏占满不可达 snapshot；修复后只有真正分页记录占容量。四个 Release 文件源/部署一致，Plugin/Contracts/Core 为 `66D6E4631D0AF8DD3B6C7D6AE11DFF02AE37B13EE8A7A8D77DD2BDCF598B38C9` / `D0F580634540C486BFE865A8C6E50402647AD6A435F7D66205D6DDCAB9C2353E` / `DE36BF4028D3C3FED0A5E7CA871F7CA040E66EF0682521A2BF5A25E6BE62AA32`；exact-primary 自动重存 `14575416` 后由 Steam 进程继续同档。live 16 个完整页、8 个分页首屏、满载拒绝、满载完整页和 continuation 全部符合预期。最终只读审计 tick `14585723+` 为 peaceful/non-sandbox/1×、healthy、0 blocker/checkpoint/prebuild、2254 built、Walk/0、3/3 drone idle、Journal `49/49` durable；206 项测试、完整构建和 BepInEx 零 error 通过。活动 shipment 已闭合，受控 stalled shipment 和三类故障收尾仍开放；没有 tag 或 Release。
 

@@ -102,7 +102,7 @@ The Plugin output is `src/Spherewright.Plugin/bin/Debug/net472/Spherewright.Plug
 To produce the versioned Windows release zip, integrity manifest, and SHA-256 sidecar from a clean worktree:
 
 ```powershell
-./scripts/package-release.ps1 -Version 0.3.0
+./scripts/package-release.ps1 -Version 0.4.0
 ```
 
 The packager builds the full solution, publishes `Spherewright.Mcp.exe` self-contained for `win-x64`, verifies every staged file after zip extraction, and writes ignored artifacts under `artifacts/`. Creating an artifact does not create a tag or GitHub Release; those remain gated by [ROADMAP.md](./ROADMAP.md).
@@ -110,7 +110,7 @@ The packager builds the full solution, publishes `Spherewright.Mcp.exe` self-con
 To repeat the package integrity and self-contained MCP `initialize`/`tools/list` smoke test independently:
 
 ```powershell
-./scripts/test-release-package.ps1 -PackagePath ./artifacts/Spherewright-0.3.0-win-x64.zip
+./scripts/test-release-package.ps1 -PackagePath ./artifacts/Spherewright-0.4.0-win-x64.zip
 ```
 
 ## Local setup

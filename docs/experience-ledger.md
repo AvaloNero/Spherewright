@@ -1946,7 +1946,21 @@
 - 关联：EXP-001、EXP-030、EXP-104、EXP-152、IFX-016、`scripts/package-release.ps1`、`scripts/test-release-package.ps1`、`scripts/smoke-test.ps1`。
 - 最近复验：2026-09-03（最终 `v0.3.0` 工件完成 clean install、同档恢复、live Plugin/MCP 调用与线上 digest 核对）。
 
+### EXP-154 — 诊断速率只按连续游戏 tick 计算且根因分类须等待完整周期
+
+- 状态：`validated`
+- 日期：2026-09-03
+- 适用范围：v0.4 Overseer 的纯 Core 相邻计数采样、实际产消速率/理论利用率计算，以及单生产单元的首要停机原因分类；当前不声称已经接入 DSP 运行时或完成多星球诊断。
+- 当前结论：实际速率的分母只能是连续流逝的游戏 tick（当前固定 60 tick/s），墙钟中多出的离线/暂停时间单独标为 excluded，不能稀释或伪造吞吐。相同受保护存档跨新 session 可保持连续，但 owned identity 改变、tick/累计计数回退、同 tick 计数前进或相邻采样超过明确上限都必须把窗口标成 discontinuous 并归零本段速率。故障分类只有在 ready 窗口至少覆盖一个完整配方周期后才运行；当前首因优先级为本机矿源耗尽、断网/供电比不足、满输出缓冲、上游矿源耗尽、物流未配置/有源库存但订单无进展，最后才是一般缺料。已有非零实际产量时不把瞬时空输入误报为停机。
+- 直接证据：新增的无游戏 DLL 测试证明 600 tick/20 件产出恒为 120/min，即使墙钟跨 1 小时也只把额外时间计入 `excludedNonGameSeconds`；同档跨 session 保持 ready，而换档、tick 回退、计数回退、601 tick 采样断层和同 tick 计数前进全部失效。独立分类测试覆盖未满周期不报、供电不足、输出满、矿源耗尽、物流未配置、订单停滞、一般缺料及已有产量不误报。Core/Contracts/MCP 总计 135 项通过（101 + 15 + 19），完整 solution 0 warning / 0 error；源码产品版本同时切到 `0.4.0`。
+- 限制或反例：600 tick 只是当前相邻采样断层默认上限，不是最终公开窗口长度；理论产率、缓冲容量、物流路径和矿量仍需以当前程序集字段研究并由 Plugin 主线程深复制。订单无进展目前只给 `suspected`，不能在没有足够运输时间和源库存证据时升级为 confirmed。分类器当前返回单生产单元的首要原因，不等于已经完成跨实体上游图追踪。
+- 复验触发：接入 DSP production statistics、改变采样频率/持久化格式/窗口长度、引入多星球聚合或上游图、DSP tick rate/配方速度语义变化，以及首次受控实机故障注入。
+- 关联：EXP-030、EXP-062、EXP-127、EXP-142、EXP-144、EXP-153、ROADMAP v0.4、`OverseerCounterWindowAnalyzer`、`ProductionFaultClassifier`。
+- 最近复验：2026-09-03（135 项无游戏 DLL 回归与完整 solution 构建通过）。
+
 ## 修订记录
+
+- 2026-09-03：新增 EXP-154，开始 v0.4 Overseer 首个只读基础切片。新增脱敏窗口/速率/故障证据契约、相邻累计计数连续性分析和五类首因分类；跨 session 仅凭同一受保护存档身份延续，回档、计数回退、同 tick 异常增量和超限采样缺口均 fail-closed。新增 16 项测试后 Contracts/Core/MCP 为 `15 + 101 + 19 = 135` 全通过，完整 solution 0 warning / 0 error；未部署 Plugin、未重启 DSP、未对存档执行写动作。用户新增发行规则已独立提交：今后任何 tag/Release 都必须先提交候选 commit、证据、工件哈希与 Release notes 供用户明确审核。
 
 - 2026-09-03：新增 EXP-153，并完成 v0.3 最终发布复核。最终工件从 clean commit `a52ff440b47830f2f3a06a5ae97c7ff11bd15833` 生成，manifest 为 232 个文件、包内含 manifest 共 233 个文件，工具面 48，SHA-256 为 `705081710b7061c6a00c4c8836a7d2869b13bd8b8fb6f42bfb24b7f0d62783c1`。由于 preview 与最终 payload 实际出现 Plugin `3/4`、MCP `4/224` 文件差异，没有复用候选包的实机结论；普通保存到 tick `13516383` 并正常关闭后，安装最终 ZIP 本体，228 个运行文件逐一核对 mismatch `0`。受保护恢复同一 planet `104` 世界并自动重存 tick `13516415`，119 项测试、错误 token 拒绝、live Plugin `0.3.0` 和安装版 MCP `0.3.0.0` 调用均通过。最终审计 tick `13520330` 为 peaceful/non-sandbox/1×、healthy、0 blocker/checkpoint、0 prebuild、Journal `49/49` durable、Walk/0、核心满电、3/3 drone idle。annotated tag `v0.3.0` 精确指向 `a52ff44`，GitHub Release 已发布且线上 ZIP digest 与本地一致。v0.3 至此关闭，当前目标切换为 v0.4 Overseer。
 

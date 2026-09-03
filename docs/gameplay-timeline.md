@@ -7,7 +7,7 @@
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 共有 `49` 条，已经持久化到 sequence `49`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `153` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护 Journal 共有 `49` 条，已经持久化到 sequence `49`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `154` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -86,6 +86,7 @@
 | `002d 14:14:40` / save `13444822`; audit `13446315` / revision `151` | 2026-09-03 | 全自动三料继续增长到 `304/86/72`；有机晶体输出 sorter `2032`、结构矩阵输出 sorter `779` 与下游 sorter `977` 都被连续采样抓到携带正确物品。钛晶石制造台和黄糖 lab 持续工作，金刚石输入由 `84 -> 74`，保存后进一步到 `55`；玩家背包没有水、油、氢、有机晶体、钛晶石或结构矩阵，因此不是人工搬运。普通保存后 owned save 精确为 tick `13444822`，审计确认 peaceful/non-sandbox/1×、healthy、Journal `49/49` durable、0 prebuild、无 blocker/checkpoint、planned restart 可用。v0.3 游戏内容门正式闭合。 | R/M/D |
 | save `13494061`; protected resume/save `13494092`; audit `13504262` | 2026-09-03 | 首个 `0.3.0` clean 包虽然文件/MCP 校验通过，live Plugin 却暴露仍为 `0.1.0`，因此停止发布而不创建 tag。统一产品版本源后再次普通保存、正常关闭、把旧 Plugin/MCP 整体移到可恢复备份并 clean install；新 Bridge 精确报告 `0.3.0`，错误 token 被拒绝，安装版 MCP `0.3.0.0` 通过 stdio 成功调用 live status。受保护票据只恢复同一 planet `104` 普通世界并自动重存；配置/物流保留，0 prebuild、Journal `49/49` durable。黄糖最后一件仍被 sorter `977` 携带，但 lab 已因本批金刚石耗尽正常停机，未冒充无限原料。 | R/M/D |
 | save `13516383`; protected resume/save `13516415`; audit `13520330` | 2026-09-03 | 从最终 clean commit `a52ff44` 重打工件后，发现其 payload 与已测 preview 并非完全相同，故没有继承候选包结论。正常关闭后重新 clean install 最终 ZIP，228 个运行文件逐一比对 mismatch `0`；受保护票据恢复同一 planet `104` 世界并自动重存，119 项测试、wrong-token 拒绝、live Plugin `0.3.0` 和安装版 MCP `0.3.0.0` 调用全部通过。annotated tag 与 GitHub Release `v0.3.0` 精确指向该 commit，线上 ZIP digest 为 `705081710b7061c6a00c4c8836a7d2869b13bd8b8fb6f42bfb24b7f0d62783c1`。v0.3 正式关闭，后续同档用于 v0.4 Overseer 诊断验收。 | R/M/D |
+| no game write after audit `13520330` | 2026-09-03 | v0.4 首个只读基础切片定义连续游戏 tick 窗口、实际/理论速率和五类首因；跨 session 可按同一受保护存档身份衔接，但回档、计数回退、同 tick 异常增量或采样断层会使窗口失效。故障分类在至少一个完整配方周期前保持沉默。135 项 Core/Contracts/MCP 测试与完整 solution 构建通过；没有部署新 Plugin、重启 DSP 或改变本档。 | D |
 
 ## 科技树与升级
 
@@ -221,7 +222,7 @@
 
 ## 完整决策/经验索引
 
-当前共 `153` 条：`validated=101`、`observed=49`、`invalidated=2`、`superseded=1`。`observed` 表示已有样本但仍需复验；`invalidated` 和 `superseded` 不能继续作为现行规则。每条的适用范围、当前结论、直接证据与复验触发在 [experience-ledger.md](./experience-ledger.md) 中完整保存。
+当前共 `154` 条：`validated=102`、`observed=49`、`invalidated=2`、`superseded=1`。`observed` 表示已有样本但仍需复验；`invalidated` 和 `superseded` 不能继续作为现行规则。每条的适用范围、当前结论、直接证据与复验触发在 [experience-ledger.md](./experience-ledger.md) 中完整保存。
 
 | ID | 状态 | 决策/经验 |
 |---|---|---|
@@ -378,9 +379,10 @@
 | EXP-151 | observed | 多源共享带的单 sorter 后置桥会被上游满流量饿死 |
 | EXP-152 | validated | 正式包必须统一产品版本源并经实时 Plugin/MCP 握手校验 |
 | EXP-153 | validated | 候选包实机通过不能替代最终 clean 工件本体复验 |
+| EXP-154 | validated | 诊断速率只按连续游戏 tick 计算且根因分类须等待完整周期 |
 
 ## 当前短期任务与关机续玩边界
 
 - DSP 当前在同一受保护 `owned-world-001` 的 planet `104` 运行；最终 v0.3 工件恢复后自动保存到 tick `13516415`，审计为 Walk/0、核心满电、写入健康、无 blocker/checkpoint、planned restart 可用。继续使用同一世界，不开新档。
 - `v0.3.0` 已由 clean commit `a52ff44` 创建 annotated tag 和 GitHub Release，最终 ZIP 的线上 digest 与本地已测工件一致；该版本不再有开放发行项。
-- 当前主线：v0.4 Overseer。第一步先实现无游戏写入的采样窗口、摘要与故障分类契约/纯逻辑，再接入 Plugin 主线程深复制读取和 MCP；随后才在同档受控制造缺料、断电和物流阻塞，依据诊断逐一正常修复并保存。
+- 当前主线：v0.4 Overseer。连续采样窗口、速率和首因分类的无游戏 DLL 基础已经通过；下一步以当前程序集证明 production statistics、远端 factory、电力/物流和配方理论速率字段，再接入 Plugin 主线程深复制读取、per-save 保护持久化与 MCP。完成这些只读层后，才在同档受控制造缺料、断电和物流阻塞，依据诊断逐一正常修复并保存。

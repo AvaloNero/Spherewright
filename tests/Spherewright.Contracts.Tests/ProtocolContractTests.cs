@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Spherewright.Contracts.Actions;
+using Spherewright.Contracts.Diagnostics;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Journals;
@@ -173,6 +174,42 @@ public sealed class ProtocolContractTests
         Assert.True(parsed.RootElement.GetProperty("persistencePending").GetBoolean());
         Assert.Equal("IOException", parsed.RootElement.GetProperty("persistenceError").GetString());
         Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("filePath", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void OverseerWindowAndFinding_DoNotExposeProtectedSaveIdentity()
+    {
+        var window = new OverseerWindowSnapshot
+        {
+            State = OverseerWindowStates.Ready,
+            StartGameTick = 100,
+            EndGameTick = 700,
+            ElapsedGameTicks = 600,
+            ElapsedGameSeconds = 10,
+            WallClockElapsedSeconds = 3_610,
+            ExcludedNonGameSeconds = 3_600,
+            CrossedSessionBoundary = true,
+        };
+        var finding = new OverseerFindingSnapshot
+        {
+            Kind = OverseerFindingKinds.MaterialShortage,
+            Confidence = OverseerFindingConfidences.Confirmed,
+            Severity = OverseerFindingSeverities.Stopped,
+            PlanetId = 104,
+            ObjectId = 774,
+            ItemId = 1112,
+            Summary = "Missing diamond",
+        };
+
+        var json = JsonSerializer.Serialize(new { window, finding }, JsonOptions);
+
+        Assert.Contains("\"excludedNonGameSeconds\":3600", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("saveName", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("saveIdentity", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("protectedSaveKey", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("authToken", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("planToken", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("filePath", json, StringComparison.OrdinalIgnoreCase);
     }
 

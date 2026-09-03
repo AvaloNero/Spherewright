@@ -2,12 +2,12 @@
 
 更新时间：2026-09-03（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界位于 planet `104`。双星 ILS 已真实运输钛、硅，母星钛口持续补充钛晶石上游；新硅路现从 ILS `1657` port `1` 经长带和两座受电 sorter bridge 接入高纯硅熔炉 `842`。ILS 硅槽 `100 -> 0`，末端 sorter `2030` 实际携带硅石，熔炉连续工作，成品仓 `2806 -> 2820`；旧石转硅入口已零携货停用。普通保存已固化 tick `12841158`、revision `205`，healthy、journal `48/48` durable、无 checkpoint。v0.3 尚差一次正常关闭/精确恢复、恢复后的黄糖持续运行窗口及发行包回归。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界位于 planet `104`。双星 ILS 已真实运输钛、硅，母星两种原矿都已通过正常物流接入生产；旧石转硅入口停用。硅线里程碑保存 tick `12841158` 后已经正常关闭，并只通过受保护票据精确恢复同档；恢复动作自动重存到 tick `12841190`，healthy、Journal `48/48` durable、无 checkpoint。恢复后运输船继续执行硅订单，硅桥仍携货、高纯硅熔炉仍工作；黄糖当前唯一直接缺口是有机晶体上游缺塑料/水补料。v0.3 尚差黄糖持续运行窗口和发行包最终回归。
 
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 共有 `48` 条，已经持久化到 sequence `48`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `145` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护 Journal 共有 `48` 条，已经持久化到 sequence `48`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `146` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -73,6 +73,7 @@
 | save `12278450` | 2026-09-03 | 风机 `126…129` 逐台并入 network `1`，总容量达 `55000 J/tick`，钛 sorter `123` 终于开始往返且 ILS 钛槽从 0 增长。硅仓直连 ILS 的 54 带方案因 planned point 与钛带 `102` 只差 0.00393 m 而在 commit 前丢弃；改为零重叠的 44 带 `173 -> … -> 148`，用受电 sorter `174/175` 形成 `storage 25 -> 硅带 -> belt 102 -> ILS`。实际观察中硅槽 `2 -> 9 -> 14 -> 19`、钛槽 `40 -> 49`，三只 sorter 均实际工作；里程碑普通保存后 revision `115`、175 built/0 prebuild、核心满电、healthy、journal `48/48` durable、无 checkpoint。 | R/M/D |
 | save `12384194` | 2026-09-03 | 远端钛槽达到 100 后出现订单并降至 23，硅在钛满槽期间继续增到 100、随后也出现订单并降至 16；两次源端取货均完成。返航前正常保存并创建独立 flight checkpoint，动作 `ee51b297-e749-4da4-adf3-0db58cd86f25` 稳定落到 planet `104`；母星 ILS 钛/硅均为 100、双订单归零、运输船归队。成功后 checkpoint capability 消失，母星验收点再次普通保存。 | R/M/D |
 | save `12841158` | 2026-09-03 | 母星硅路从 ILS `1657` port `1` 经长带、sorter bridge `1981/2022` 和末端 sorter `2030` 接入高纯硅熔炉 `842`。第二座桥最初为 network `0`，电塔 `2031` 使其接入 network `1` 后立即携带硅石；旧石转硅 sorter `844` 在零携货窗口改为硅石过滤并停止。ILS 硅槽 `100 -> 0`，末端 sorter 实际携货，熔炉连续运行，成品仓 `2806 -> 2820`。保存后 revision `205`、healthy、无 checkpoint；当前窗口 9 个已接受写动作。 | R/M/D |
+| save `12841190` | 2026-09-03 | 硅线保存后 DSP 正常窗口关闭，进程退出、descriptor 清零且未强杀；重开后只消费 protected planned-restart ticket，exact primary 通过 minimum tick/planet/模式/owned 校验并自动重存。严格审计为 2031 built/0 prebuild、三网满供电、玩家满电 Walk/0、3/3 施工机 idle、Journal `48/48` durable、无 blocker/checkpoint。恢复后 ILS 保留双需求和正确端口选择，唯一运输船继续硅订单，桥接 sorter 携硅且熔炉工作；黄糖站停机收敛为有机晶体上游缺塑料/水。 | R/M/D |
 
 ## 科技树与升级
 
@@ -354,9 +355,12 @@
 | EXP-141 | observed | 星际直线航向必须避开中间天体的原生 1000 m 捕获层 |
 | EXP-142 | validated | 电网连通与建筑受电是两个独立条件 |
 | EXP-143 | observed | 带路交叉时在重叠点前用受电分拣器显式汇流 |
+| EXP-144 | validated | 跨星取货必须用货槽订单与源库存下降共同验收 |
+| EXP-145 | validated | 密集旧厂区长带必须做全路径占位排除并分段提交 |
+| EXP-146 | validated | 运行时 Journal、逐档日记和工程事故簿必须分层 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前正在同一受保护 owned world 的 planet `102` 运行；远端钛/硅自动供料已通过真实站存增长验收，并通过正常保存固化到 tick `12278450`、revision `115`。当前为 Walk/0、核心满电、写入健康、无 flight checkpoint、planned restart 可用，后续继续使用同一世界，不开新档。
-- 当前主线：母星 ILS `1657` 为钛/硅各 100 远程需求并有 1 船；远端 ILS `44` 为双供应、1 船，钛/硅存量至少已增长到 `49/19`。下一步保持只读观察，等任一槽达到 100 后证明远端或母星船进入 working/order；然后在远端再正常保存，为返航单独创建 flight checkpoint，飞回 planet `104` 读取母星 ILS 目标增长，完成真实跨星守恒验收。
-- 粒子容器、物流运输机、行星物流站、真实行星内物流、远端钛/硅矿以及黄糖本地双原料供料均已越过结构化验收与普通保存门槛；v0.3 仍需双星球 ILS、运输船真实运送钛/硅、黄糖上游持续性、重启恢复和干净安装包握手全部通过，才创建 tag 和 GitHub Release。
+- DSP 当前在同一受保护 `owned-world-001` 的 planet `104` 运行；硅线保存后的正常关闭和 exact-primary 恢复已经通过。当前为 Walk/0、核心满电、写入健康、无 blocker/checkpoint、planned restart 可用，继续使用同一世界，不开新档。
+- 当前主线：从现有自动塑料仓 `558` 和自动水仓 `753` 以正常守恒转移补给有机晶体输入仓 `761`，让 `760 -> 762 -> 768 -> 767 -> 769 -> 长带 -> 775 -> 774 -> 778` 再次形成连续黄糖窗口；钛块必须由恢复后仍有效的 ILS/PLS 物流补给，不能用玩家携带外星原矿替代。
+- 双星 ILS、运输船钛/硅实运、母星两种原矿接入、旧石转硅退役和普通保存/关闭/恢复均已通过。黄糖持续窗口成立并再次正常保存后，运行自动测试、完整 solution 构建、`0.3.0` 自包含包与干净安装 MCP 握手；全部通过才创建 `v0.3.0` annotated tag 和 GitHub Release。

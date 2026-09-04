@@ -2,7 +2,7 @@
 
 更新时间：2026-09-04（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界位于 planet `104`。双星 ILS 已真实运输钛、硅，母星两种原矿都已通过正常物流接入生产；旧石转硅入口停用。塑料、精炼油、水已通过永久三料共享路自动进入有机晶体仓 `761`，有机晶体经 sorter `2032` 继续进入钛晶石和结构矩阵链；玩家不再搬运这条链上的任一中间料。共享路扩容后完成持续黄糖窗口并保存。`v0.3.0` 已正式发布，`v0.3.1` 是供另一台电脑实测导入流程的 prerelease；当前安装的是尚未发布的 `0.4.0` 开发 Plugin。远端 ILS `44` 已真实派出一船钛石，Overseer 捕获订单、长时 carrier 移动、取货、送达和母星钛块恢复 `12 min⁻¹` 的完整活动正例，没有误报 stall。最新 source-equal 部署后，同 tick `public_allowlist_v1` 诊断包在三座 factory 上完成分页、错绑 cursor、JSON 脱敏和 53-tool MCP live 复验；exact-primary 自动重存到 tick `17048265`，最终只读审计 tick `17059827+` 保持 healthy、Journal `49/49` durable、无 blocker/checkpoint/prebuild，玩家 Walk/0、3/3 施工机 idle，母星 2254 built。v0.4 尚未发布；受控 stalled shipment 以及缺料/断电/物流阻塞三类故障的制造、修复与保存恢复验收仍在开发。共享单输入带会被满硅槽头部阻塞，最终还需拆带或维持真实需求。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界位于 planet `104`。双星 ILS 已真实运输钛、硅，母星两种原矿都已通过正常物流接入生产；旧石转硅入口停用。塑料、精炼油、水已通过永久三料共享路自动进入有机晶体仓 `761`，有机晶体经 sorter `2032` 继续进入钛晶石和结构矩阵链；玩家不再搬运这条链上的任一中间料。共享路扩容后完成持续黄糖窗口并保存。`v0.3.0` 已正式发布，`v0.3.1` 是供另一台电脑实测导入流程的 prerelease；当前安装的是尚未发布的 `0.4.0` 开发 Plugin。Overseer 的活动运输、同 tick 脱敏诊断包和受控物流故障/恢复均已在同档通过：最新实验只用正常站点配置撤销/恢复本地钛块供应，准确得到 `logistics_blocked / confirmed`，随后由原生无人机送达并把钛晶石实际速率恢复到 `12 min⁻¹`。结果普通保存到 tick `17136808`，fresh revision 8、healthy、无 blocker/checkpoint 且 restart ticket 可用。v0.4 尚未发布；真正的 600-tick 在途停滞、受控缺料/断电及最终保存恢复仍在开发。共享单输入带会被满硅槽头部阻塞，最终还需拆带或维持真实需求。
 
 ## 结论与证据边界
 
@@ -98,6 +98,7 @@
 | protected resume/save `14575416`; live audit `14585723+` | 2026-09-03 | 高频轮询活动状态时发现 3-factory 完整首屏虽无 cursor，旧 store 仍保留 60 秒并最终返回 `SERVER_BUSY`。修复后只让真正多页快照占 continuation 容量；206 项测试与 Release 完整构建通过。游戏在 tick `14575384` 正常保存/关窗，四 DLL source/deployed 一致；直接 EXE 的短命包装完成一次恢复/自动重存后退出，新一代票据仍有效，随后改由 Steam `rungameid` 稳定启动并只恢复同一 exact primary。live 连续 16 个 `limit=16` 完整页全部成功，8 个 `limit=1` 首屏占满容量，第 9 个正确 `SERVER_BUSY`；满载时完整首屏和既有 continuation 仍成功。最终审计为 planet `104`、peaceful/non-sandbox/1×、healthy、2254 built/0 prebuild、所有有负载电网满供电、Walk/0、3/3 drone idle、Journal `49/49` durable、无 blocker/checkpoint/BepInEx error。 | R/M/D |
 | live audit `14874643+` | 2026-09-03 | 下一组十写以返航补给、返航/保存、两次 exact-primary 恢复和新的 20 煤采集/加注组成。最后一次采集已完成后，客户端只因读取不存在的展示字段退出；节点 `402` 精确减少 20、玩家先得到 20 煤，随后唯一 refuel 动作又使玩家归零、燃料舱出现 19 且反应堆消耗第 20 件，没有重放。严格审计保持同一 owned planet `104`、peaceful/non-sandbox/1×、healthy、2254 built/0 prebuild、三张电网满供电、Walk/0、3/3 施工机 idle、Journal `49/49` durable、无 blocker/checkpoint/BepInEx error；三厂及双星 ILS 拓扑未变。用户随后明确要求增加“人工加载私人存档后显式授权导入/认领，再由 Agent 继续”的安全流程，并进一步定稿为 Agent 先无副作用预检、在对话里单独询问、收到下一条明确确认后才提交；无需快捷键或授权码。实现必须保留原档、另存 owned 副本且不补造历史日记。 | R/M/D |
 | save `17048233`; protected resume/save `17048265`; live bundle `17051000`; audit `17059827+` | 2026-09-04 | 为部署第 53 个只读 MCP 工具，先普通保存并正常关窗，再将 Release Plugin/Contracts/Core 以 source-equal 哈希部署；exact-primary 只恢复同一 planet `104` 世界并自动重存。`public_allowlist_v1` 完整页在同一 tick 返回三座 factory，三页 continuation 共享 snapshot/tick；错物品过滤和错页大小 cursor 均以 `STALE_CURSOR` 拒绝。12,156-byte 公共 JSON 未出现受保护存档字段、绝对路径、认证/写计划凭据或内部存档标记；源码 MCP `0.4.0.0` / 53 tools 成功调用 live endpoint。最终健康审计保持 2254 built/0 prebuild、三网满服务、Walk/0、满核心、3/3 施工机 idle、Journal `49/49` durable、无 blocker/checkpoint/BepInEx error。该批只含普通保存/受保护恢复，没有生产写；下一门是受控物流停滞与修复。 | R/M/D |
+| bundle `17130476`; save `17136808` / revision `8` | 2026-09-04 | 为恢复远端共享带，先把母星 ILS 硅需求上限从 100 正常调到 300；原生 `+200` 订单使硅 `133 -> 333`，远端入口释放后又真实送回 189 钛石。本地钛块 PLS `918` 开始积货后，在订单归零窗口用正常 UI 路径暂时把精确供应槽从 Supply 改为 None；钛晶石制造台 `767` 在完整 600-tick 窗口被 Overseer 诊断为 `logistics_blocked / confirmed`、`logistics_configured=false`。随后把同槽恢复为 Supply，原生无人机派单、取货和送达，finding 清零，钛晶石实际速率恢复至 `12 min⁻¹`。普通保存的本地展示读取了不存在的字段而报错，但 fresh `LastOwnedSaveGameTick`、revision、healthy 和新 restart ticket 唯一核销成功，未重放。 | R/M/D |
 
 ## 科技树与升级
 
@@ -404,9 +405,12 @@
 | EXP-165 | validated | 跨星生产者只能从精确供应塔的真实输入带继续证明 |
 | EXP-166 | validated | 无 continuation 的完整首屏不占分页快照容量 |
 | EXP-167 | observed | 混合输入带的满槽物料会造成头部阻塞；起送阈值沿用 EXP-144 |
+| EXP-168 | validated | 人工读档交接必须在无副作用预检后由用户另行对话确认 |
+| EXP-169 | validated | 跨域诊断只在同一主线程 tick 经完整身份匹配后合并 |
+| EXP-170 | validated | 受控物流故障用正常路由配置制造并以真实送达/产量恢复 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前在同一受保护 `owned-world-001` 的 planet `104` 运行；`0.4.0` 开发 Plugin 最近 exact-primary 恢复后自动保存到 tick `17048265`，最终只读审计 tick `17059827+` 为 Walk/0、Journal `49/49` durable、3/3 施工机 idle、2254 built/0 prebuild、三张电网满服务、无 blocker/checkpoint 且 planned restart 可用。继续使用同一世界，不开新档。
+- DSP 当前在同一受保护 `owned-world-001` 的 planet `104` 运行；受控物流故障恢复后普通保存到 tick `17136808`，fresh revision 8、write health healthy、无 blocker/checkpoint 且 planned restart 可用。最近诊断确认钛晶石实际速率 `12 min⁻¹`、finding 为 0。继续使用同一世界，不开新档。
 - `v0.3.0` 已由 clean commit `a52ff44` 正式发布；`v0.3.1` annotated tag `33a733f` 的 prerelease 只含用户授权导入回移，等待另一台电脑实测，不混入 v0.4。
-- 当前主线：v0.4 Overseer。production statistics/远端 factory、三厂分页、随档 600-tick 实际速率、当前组件理论速率/利用率、多星球供电/物流、全局科研摘要、assembler/lab/miner 的直接缓冲/电力/矿源/物理塔路由诊断、同星球与单段精确跨星物流路径上的物理上游递归、按档保护的物流进展窗口和真实活动/送达/产量恢复正例，以及 `public_allowlist_v1` 同 tick 诊断包的 live 分页/脱敏/MCP 调用已经通过。下一步在可逆受控条件下完成 600-tick 停滞与修复；之后在同档受控制造缺料、断电和物流阻塞，依据诊断逐一正常修复并保存。远端共享输入带的硅满槽问题已识别但只被扩容临时缓解，最终还需恢复为不会头部阻塞的正常持续供料拓扑。
+- 当前主线：v0.4 Overseer。production statistics/远端 factory、三厂分页、随档 600-tick 实际速率、理论速率/利用率、多星球供电/物流、科研摘要、物理上游递归、物流进展窗口、活动运输正例、同 tick 脱敏诊断包，以及受控 `logistics_blocked` 制造/修复均已通过。下一步先完成真正的 600-tick 在途停滞与恢复，再制造/修复受控缺料和断电，清除全部故障后做保存恢复门。远端共享输入带仍需最终拆分或维持真实需求。

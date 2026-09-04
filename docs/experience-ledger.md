@@ -2140,7 +2140,21 @@
 - 关联：EXP-125、EXP-154–166、`OverseerDiagnosticBundleComposer`、`GameStateReader.GetOverseerDiagnosticBundleOnMainThread`、`docs/research/game-api-overseer.md`。
 - 最近复验：2026-09-04（同一 owned 三工厂世界完成 source-equal 部署、分页/cursor/JSON/MCP live 复验与健康审计；223 项自动测试和完整 Release 构建通过）。
 
+### EXP-170 — 受控物流故障应切换正常路由配置并以真实送达恢复
+
+- 状态：`validated`
+- 日期：2026-09-04
+- 适用范围：v0.4 在同一 owned world 制造/修复可逆物流故障；当前实机对象为 planet `104` 的钛块 PLS `918 -> 916` 与钛晶石制造台 `767`。
+- 当前结论：验证“物流阻塞”不需要删除建筑、注入物品或冻结游戏。先确保源物料真实到达，再在订单归零窗口用 DSP 正常 `SetStationStorage` 路径把精确供应槽从 Supply 改为 None；需求站、物料、机队和物理带路均保留，使诊断可以把“路由未配置”与普通缺料分开。恢复时只把同一槽改回 Supply，随后必须看到原生订单/无人机送达、finding 清零和下游实际产量恢复，最后普通保存。配置故障正例不能替代 600-tick 在途 carrier 停滞正例。
+- 直接证据：母星硅需求上限 `100 -> 300` 后出现 `+200` 原生订单，硅 `133 -> 333`，远端共享入口释放并送回 189 钛石；本地钛块源塔开始积累。动作 `8cc1d727-e8e8-4643-a2a3-d6c45b40de59` 把 `918:slot0` 的本地逻辑 `Supply -> None`，bundle tick `17130476` 在完整 600-tick 窗口把 `767/item 1118` 分类为 `logistics_blocked / confirmed`，证据含 `logistics_configured=false` 且路径到需求站 `916`。动作 `63745c00-788c-47c5-9bf4-a307fdf345ee` 恢复 Supply；无人机订单/送达后 finding 为 0、钛晶石实际速率达到 `12 min⁻¹`。fresh 状态证明普通保存 tick `17136808`、revision 8、healthy、无 blocker/checkpoint 且 restart ticket 可用。
+- 限制或反例：本条证明的是“路由配置被撤销”这一 confirmed 物流故障，不证明有正 reservation 的 carrier 在 600 tick 内完全不动；后者仍须保持 source inventory、需求缺料、订单和非零机队同时成立，不能用本条替代。共享远端硅/钛单输入带仍可能在本地需求填满后再次头部阻塞。
+- 复验触发：物流站 storage/route UI 语义、`ProductionFaultClassifier` 的 route-not-configured 优先级、物理路径解析、DSP 版本、受控故障验收定义或最终 v0.4 clean 工件变化。
+- 关联：EXP-098、EXP-144、EXP-159、EXP-164、EXP-167、`ProductionFaultClassifier`、`docs/research/game-api-overseer.md`。
+- 最近复验：2026-09-04（同一 save 正常制造、诊断、恢复、实际产量与普通保存闭环）。
+
 ## 修订记录
+
+- 2026-09-04：新增 EXP-170，并复验 EXP-001/007/021/030/069/072/098/144/159/164/167。先以母星硅 `+200` 真实订单清开远端共享输入，使 189 钛石正常送回并恢复本地钛块源。随后只通过正常站点 UI 路径在订单归零窗口暂时撤销 `918:slot0` 的 Supply；完整 600-tick bundle 将 `767/item1118` 精确分类为 `logistics_blocked / confirmed`。恢复 Supply 后原生无人机送达，finding 清零、钛晶石实际产量达到 `12 min⁻¹`。保存结果由 fresh `LastOwnedSaveGameTick=17136808`、revision 8、healthy、0 blocker/checkpoint 和新 restart ticket 核销；本地展示误读了不存在的 action 字段后没有重放保存。真正的在途 600-tick stall、缺料与断电试验仍开放。
 
 - 2026-09-04：EXP-169 由 `observed` 升级为 `validated`，并复验 EXP-001/030/069/072/125/154–166。旧进程普通保存 tick `17048233` 后正常关窗；Release Plugin/Contracts/Core 以 SHA-256 `90408AD2BC9ED88335853F09695BB75A0900522D9CA022AF86E644DC393B1B16` / `583AFCFCC3995C80278679CA891191DA43CFC7B370B6EB2DD4E5CD197524BAF7` / `98DFF4CDA2F192691070892F94AD6FDDB47901E594D410C37AC5222E33131A3F` 零差异部署，exact-primary 只恢复同一 planet `104` 并自动重存 tick `17048265`。live 完整页与三页 continuation、两类错绑 cursor、12,156-byte JSON 脱敏、源码 MCP `0.4.0.0` / 53 tools 调用均通过；最终审计 tick `17059827+` 为 healthy、Journal `49/49` durable、2254 built/0 prebuild、Walk/0、满核心、3/3 idle drone、三网满服务、0 blocker/checkpoint/BepInEx error。受控停滞与三类故障门仍开放。
 

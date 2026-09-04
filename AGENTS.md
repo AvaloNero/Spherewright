@@ -158,7 +158,10 @@ dotnet build Spherewright.sln --no-restore
 ```powershell
 ./scripts/package-release.ps1 -Version 0.3.3
 ./scripts/test-release-package.ps1 -PackagePath ./artifacts/Spherewright-0.3.3-win-x64.zip
+./scripts/test-thunderstore-package.ps1 -PackagePath ./artifacts/Spherewright-0.3.3-thunderstore.zip -ExpectedVersion 0.3.3
 ```
+
+`package-release.ps1` 必须同批产生手动安装包和 `Arcueid_77-Spherewright` Thunderstore 包；两者使用同一版本和 source commit。Thunderstore 包只保留四个 Plugin 侧 DLL 与单文件自包含 MCP，禁止捆绑游戏或 BepInEx 程序集。静态包体校验不等价于 Mod Manager/异机实机验收，验证状态必须分开陈述。
 
 测试至少覆盖 DTO/错误码兼容、规范哈希、计划过期、幂等、single-flight、cursor 绑定、和平模式 fail-closed、沙盒/倍率非门禁、资源预算、动作 outcome、恢复票据/checkpoint 生命周期、MCP 注册与 stdout 纯净。Windows 集成测试覆盖当前用户 ACL、错误 token、畸形/超大帧、队列满、描述文件权限与退出清理。
 
@@ -191,9 +194,9 @@ dotnet build Spherewright.sln --no-restore
 - 不使用 `git reset --hard`、`git clean -fd`、破坏性 checkout、force push 或覆盖用户改动。
 - 不提交游戏 DLL、存档、BepInEx 日志、runtime descriptor、token、个人路径、构建缓存或可重建 artifact。
 - 发行使用标准 MIT License；README、包元数据和 `LICENSE` 保持一致。
-- 每个 `0.x.0` 全部验收通过、工作区干净且最终提交已推送 `main` 后，创建 annotated tag `v0.x.0`，再从该 tag 创建同版本 GitHub Release。
-- Release 至少包含 commit、支持版本、工具/协议变化、安装/升级、已知限制、测试结果、脱敏实机证据、zip、manifest 和 SHA-256。
-- 不提前打 tag；Thunderstore 或其他注册表发布需要用户另行明确授权。
+- 每个 `0.x.0` 全部验收通过、工作区干净且最终提交已推送 `main` 后，先向用户提交候选 commit、测试/实机证据、工件哈希和 Release notes 审核；只有用户明确通过后才创建 annotated tag `v0.x.0`，再从该 tag 创建同版本 GitHub Release。
+- Release 至少包含 commit、支持版本、工具/协议变化、安装/升级、已知限制、测试结果、脱敏实机证据、手动安装 zip、Thunderstore zip、manifest 和各自 SHA-256。
+- 不提前打 tag，不把先前版本的发布授权外推到下一版本；Thunderstore 或其他注册表发布需要用户另行明确授权。
 
 ## 12. 最终汇报
 

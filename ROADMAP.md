@@ -87,6 +87,12 @@
 
 发布前需在另一台电脑上验证包安装、MCP 握手，以及至少一个沙盒或非 1× 的和平档的导入、普通动作、保存与恢复。
 
+## 0.3.2 — New World Naming and Opening Recovery
+
+状态：**GitHub prerelease published; Thunderstore cross-computer validation pending**（2026-09-04，tag/Release `v0.3.2`，commit `da11e44`）。
+
+这是不扩展玩法动作域的修复版：区分 Agent 新档和用户授权导入副本的命名，保持旧 `Spherewright_M0_*` 精确恢复兼容，并把落地基座/局部障碍的有界移动恢复整理为包内文档和 MCP 资源。项目所有者已另行授权以 Team `Arcueid_77` 发布同版本 Thunderstore 包；GitHub 手动安装包与 Thunderstore 包必须来自同一 tag，后者的首次运行验收在另一台电脑完成。
+
 ## 0.4.0 — Overseer
 
 ### 目标

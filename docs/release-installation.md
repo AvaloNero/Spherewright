@@ -4,6 +4,11 @@ The local `v0.3.3` test package targets Windows x64, Dyson Sphere Program `0.10.
 
 The supported gameplay scope is single-player peaceful mode. Sandbox state and resource multiplier are reported but do not block import, normal actions, saving, or protected recovery; they never enable extra Spherewright actions or sandbox-tool calls. The validated reference world is still non-sandbox with 1× resources, so the new compatibility path remains test-candidate evidence until the cross-computer run. Dark Fog/combat, multiplayer or Nebula, broad third-party Mod compatibility, an arbitrary save picker, and arbitrary save-name loads are not guaranteed.
 
+Spherewright is distributed in two layouts with the same gameplay and MCP capabilities:
+
+- `Spherewright-<version>-win-x64.zip` is the complete manual installer package. It installs the Plugin into DSP and keeps the self-contained MCP server under `%LOCALAPPDATA%\Spherewright`.
+- `Spherewright-<version>-thunderstore.zip` is the Mod Manager package published as `Arcueid_77-Spherewright`. It lets Thunderstore Mod Manager or r2modman install and update BepInEx plus the Plugin, and keeps a single-file MCP executable alongside the Plugin.
+
 ## Prerequisites
 
 - Install Dyson Sphere Program and BepInEx 5.
@@ -11,6 +16,20 @@ The supported gameplay scope is single-player peaceful mode. Sandbox state and r
 - Keep the extracted release package until installation has completed and its integrity check succeeds.
 
 ## Install
+
+### Thunderstore Mod Manager or r2modman
+
+Install `Arcueid_77-Spherewright` for Dyson Sphere Program and launch the selected modded profile once. The declared `xiaoye97-BepInEx-5.4.17` dependency is installed by the manager. In the profile directory, locate:
+
+```text
+BepInEx\plugins\Arcueid_77-Spherewright\Spherewright.Mcp.exe
+```
+
+Register that executable as a local stdio MCP server in the external Agent host. Do not pass a runtime descriptor, authentication token, or save identity on the command line. Updating Spherewright through the manager updates both the Plugin and that version's MCP executable together.
+
+The Thunderstore archive uses the store's standard package layout and static integrity checks. Its first runtime check should be performed in a separate Mod Manager profile or clean computer before it is treated as cross-computer validated.
+
+### Manual release package
 
 Extract the zip, open PowerShell in the extracted `Spherewright-<version>` directory, and run:
 

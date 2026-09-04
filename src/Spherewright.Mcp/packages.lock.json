@@ -46,6 +46,12 @@
           "System.Text.Json": "10.0.11"
         }
       },
+      "Microsoft.NET.ILLink.Tasks": {
+        "type": "Direct",
+        "requested": "[8.0.30, )",
+        "resolved": "8.0.30",
+        "contentHash": "SfmwuZjUPBTEoBMAsXZ/hWkaEK9oL+Y/UtAx7N6RyWHfcMt9J0ExrNPuOgTyPbCXIyiTBFsxFNrPLEZNPmJcvA=="
+      },
       "ModelContextProtocol": {
         "type": "Direct",
         "requested": "[2.2.0, )",
@@ -398,7 +404,7 @@
       "spherewright.bridge.core": {
         "type": "Project",
         "dependencies": {
-          "Spherewright.Contracts": "[1.0.0, )"
+          "Spherewright.Contracts": "[0.4.0, )"
         }
       },
       "spherewright.contracts": {

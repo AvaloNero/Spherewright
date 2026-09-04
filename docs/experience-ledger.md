@@ -1970,6 +1970,18 @@
 - 关联：EXP-153、`GameplayModePolicy`、`GameSessionTracker`、`UserSaveImportCoordinator`、`OwnedWorldResumeCoordinator`、`FlightCheckpointReloadCoordinator`。
 - 最近复验：2026-09-05（源码门禁全面检索、8 项新策略用例、158 项总回归与完整 Release 构建通过；等待异机实机证据）。
 
+### EXP-180 — GitHub 手动包与 Thunderstore 包同版本同源码，但安装布局必须分开
+
+- 状态：`observed`
+- 日期：2026-09-04
+- 适用范围：Spherewright Windows x64 自包含发行、Thunderstore/r2modman 的 BepInEx 安装规则，以及 `Arcueid_77-Spherewright` 包命名空间。
+- 当前结论：两个分发渠道必须使用同一 SemVer 和同一 clean source commit，但不能复用同一个 ZIP。GitHub 手动包保留顶层版本目录、安装脚本和多文件自包含 `mcp/`；Thunderstore ZIP 根目录必须直接提供 exact-case `manifest.json`、`README.md`、`icon.png`，并通过 `plugins/` 映射到 `BepInEx/plugins/<Team>-<Package>`。Thunderstore 侧 MCP 应发布成一个自包含 EXE，避免把 200 余个 .NET 运行库 DLL 放进 BepInEx 的递归 Plugin 扫描范围。静态结构/哈希验证与 Mod Manager/异机运行验收必须分开陈述。
+- 直接证据：已从干净 annotated tag `v0.3.2` / commit `da11e4478b2940baf50d61395c324c3a093d0fd2` 生成 `Spherewright-0.3.2-thunderstore.zip`。四个 Plugin DLL 逐字节取自 SHA-256 `144add858a16becd17cd8b842108e9c3397d5e9b04700e05db0f967e8e890260` 的既有 GitHub 工件，MCP 从同一 tag 发布为单文件；最终 ZIP 为 12 files、SHA-256 `7e9d6d8bcb3457fe6ca44e686e20ce3d80ff7e60ee731f59806fb57f3d28b192`，标准 manifest、BepInEx 精确依赖、256×256 PNG、禁止程序集和逐文件哈希静态检查通过，并已作为 v0.3.2 GitHub Release 资产上传。`package-release.ps1` 同批产出两种 ZIP，ILLink 构建工具显式进入锁文件。
+- 限制或反例：按项目所有者要求，本机不启动该 Thunderstore 包的 MCP、不做本机游戏黑盒；首次实际安装、MCP 握手、Plugin 加载和游戏状态读取由另一台电脑完成。Thunderstore 网页版本尚未最终提交时，不得把 GitHub 资产上传等同于注册表已发布。
+- 复验触发：Thunderstore/r2modman 安装规则、Team/Package 名、BepInEx 扫描规则、.NET 单文件发布、每次版本发布、首次异机验收或任一渠道工件来源不一致。
+- 关联：EXP-001、EXP-152、EXP-153、EXP-178、`scripts/package-release.ps1`、`scripts/package-thunderstore.ps1`、`scripts/test-thunderstore-package.ps1`、`packaging/thunderstore/`。
+- 最近复验：2026-09-04（v0.3.2 clean tag 组包、静态校验与 GitHub Release 双资产对齐；Thunderstore/异机 runtime 待完成）。
+
 ## 修订记录
 
 - 2026-09-05：新增 EXP-181。从不可变 `v0.3.2` 建立 `v0.3.3` 维护候选，保留沙盒/倍率观察证据，移除普通写入、导入、计划重启和飞行检查点的对应门禁；不开放沙盒工具或任何旁路写入。离线 158 项测试与完整 Release build 通过，异机 live 待验证。

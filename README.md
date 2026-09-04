@@ -6,7 +6,7 @@
 
 Spherewright is a structured, safety-first control bridge for **Dyson Sphere Program**. It lets an external MCP-capable Agent observe the live game and perform bounded actions through normal DSP systems—without embedding an LLM, editing saves, injecting items, or driving the UI with screenshots and keyboard/mouse macros.
 
-The project is experimental and under active development. The original **M0 — First Red Matrix** milestone is complete; the current development save has also validated automatic power-engine, plastic, titanium-ingot, titanium-alloy, diamond, gear, electric-motor, water, organic-crystal, titanium-crystal, structure-matrix, particle-container, logistics-drone, and planetary-logistics-station production plus same-star interplanetary flight. Two normally built, powered, and complementary planetary logistics stations completed a real 100-titanium local drone shipment, and two normally built interstellar stations completed real vessel delivery of both titanium ore and silicon ore from planet `102` to the home planet. The home station's titanium and silicon outputs are physically connected to production, the temporary stone-to-silicon input is safely disabled, and a sustained structure-matrix run consumed locally automated plastic, refined oil, and water without Icarus cargo. These capabilities shipped in [Spherewright v0.3.0](https://github.com/AvaloNero/Spherewright/releases/tag/v0.3.0). A minimal [v0.3.1 prerelease](https://github.com/AvaloNero/Spherewright/releases/tag/v0.3.1) adds the explicit conversation-confirmed import of a manually loaded save as a new owned copy; cross-computer live validation is still pending. The current development target is **v0.4.0 — Overseer**, a read-oriented diagnostic layer for multi-planet production, power, logistics, and research.
+The project is experimental and under active development. The original **M0 — First Red Matrix** milestone is complete; the current development save has also validated automatic power-engine, plastic, titanium-ingot, titanium-alloy, diamond, gear, electric-motor, water, organic-crystal, titanium-crystal, structure-matrix, particle-container, logistics-drone, and planetary-logistics-station production plus same-star interplanetary flight. Two normally built, powered, and complementary planetary logistics stations completed a real 100-titanium local drone shipment, and two normally built interstellar stations completed real vessel delivery of both titanium ore and silicon ore from planet `102` to the home planet. The home station's titanium and silicon outputs are physically connected to production, the temporary stone-to-silicon input is safely disabled, and a sustained structure-matrix run consumed locally automated plastic, refined oil, and water without Icarus cargo. These capabilities shipped in [Spherewright v0.3.0](https://github.com/AvaloNero/Spherewright/releases/tag/v0.3.0). A minimal [v0.3.1 prerelease](https://github.com/AvaloNero/Spherewright/releases/tag/v0.3.1) adds the explicit conversation-confirmed import of a manually loaded save as a new owned copy. The v0.3.3 maintenance candidate removes sandbox/resource-multiplier gating without enabling sandbox operations; cross-computer live validation is pending. The current development target is **v0.4.0 — Overseer**, a read-oriented diagnostic layer for multi-planet production, power, logistics, and research.
 
 Runtime evidence currently targets DSP `0.10.34.28529`, single-player peaceful mode, sandbox disabled, and 1× resources.
 
@@ -50,7 +50,7 @@ Writes are disabled by default. When enabled, every gameplay mutation is bound t
 
 Spherewright deliberately does not use:
 
-- sandbox mode, item injection, direct buffer writes, instant construction, technology injection, or game-speed changes;
+- sandbox-tool calls, item injection, direct buffer writes, instant construction, technology injection, or game-speed changes;
 - save editing, save enumeration, or loading an arbitrary save name;
 - external memory scanning or modifications to `Assembly-CSharp.dll`;
 - Computer Use, visual recognition, or keyboard/mouse macros for game operations.
@@ -68,10 +68,9 @@ The currently supported runtime scope is deliberately narrow:
 - BepInEx `5.4.17.0`
 - single-player
 - peaceful mode
-- sandbox disabled
-- 1× resources
+- any sandbox setting or resource multiplier; both are reported in session evidence and do not authorize additional actions
 
-Spherewright does not currently guarantee Dark Fog/combat, sandbox, multiplayer or Nebula, non-1× resources, broad third-party Mod compatibility, an arbitrary save picker, or loading an arbitrary caller-supplied save name.
+The validated reference world remains non-sandbox with 1× resources. Sandbox and non-1× compatibility are enabled by the v0.3.3 maintenance candidate but await the documented cross-computer test. Spherewright does not currently guarantee Dark Fog/combat, multiplayer or Nebula, broad third-party Mod compatibility, an arbitrary save picker, or loading an arbitrary caller-supplied save name.
 
 The versioned Windows release package includes a self-contained MCP server; using it does not require the repository, source code, or a .NET SDK. See [release installation](./docs/release-installation.md).
 
@@ -147,7 +146,7 @@ Leave DSP at its idle main menu, set `Safety.AllowWrites=true`, restart DSP, and
 
 ### Continue an existing save
 
-Set both `Safety.AllowWrites=true` and `Safety.AllowUserSaveImport=true`, restart DSP, and manually load the intended peaceful, non-sandbox, single-player, 1× save. Ask the Agent to prepare an import. It must show the returned disclosure and wait for a later explicit confirmation from you before commit creates a separate `Spherewright_Imported_*` copy. The original save is not overwritten, renamed, deleted, or selected by the import API. From then on, both you and the Agent should continue in that copy; after restart, leave DSP at the main menu and use protected resume. After any manual play in the owned copy, the Agent must discard stale observations and plans, read the live state again, and prepare later writes against the current state hashes.
+Set both `Safety.AllowWrites=true` and `Safety.AllowUserSaveImport=true`, restart DSP, and manually load the intended peaceful single-player save. Ask the Agent to prepare an import. It must show the returned disclosure and wait for a later explicit confirmation from you before commit creates a separate `Spherewright_Imported_*` copy. The original save is not overwritten, renamed, deleted, or selected by the import API. Sandbox state and resource multiplier are reported but do not block the import or later normal actions. From then on, both you and the Agent should continue in that copy; after restart, leave DSP at the main menu and use protected resume. After any manual play in the owned copy, the Agent must discard stale observations and plans, read the live state again, and prepare later writes against the current state hashes.
 
 The prefixes are labels, not ownership proofs. A manually loaded save is restricted even if its name looks like a Spherewright name; ownership requires the exact armed new-game transition, a confirmed imported-copy Header proof, or an exact protected resume ticket. An imported save receives a new journal whose coverage begins at the import point and does not invent earlier first-time events.
 
@@ -158,7 +157,7 @@ Repository evidence distinguishes offline build/test and package checks from loc
 The release gates live in [ROADMAP.md](./ROADMAP.md). The current save's complete decision, research, upgrade, and first-output chronology lives in its [save diary](./docs/gameplay-timeline.md), indexed with every owned save in [docs/save-diaries/](./docs/save-diaries/README.md). The short version:
 
 - secure local Bridge and MCP surface: complete;
-- ordinary peaceful 1× owned-world observation and action primitives: complete for the validated DSP build;
+- ordinary owned-world observation and action primitives: complete for the validated peaceful, non-sandbox, 1× reference world; sandbox/multiplier gating is removed and awaits cross-computer compatibility evidence;
 - first automatic red matrix: complete;
 - automatic power engine, plastic, titanium ingot, diamond, gear, electric motor, water, organic crystal, titanium crystal, structure matrix, electromagnetic turbine, high-purity silicon, microcrystalline component, sulfuric acid, processor, graphene, thruster, particle container, logistics drone, and planetary logistics station production: complete;
 - native same-star checkpointed flight: complete for the validated route;

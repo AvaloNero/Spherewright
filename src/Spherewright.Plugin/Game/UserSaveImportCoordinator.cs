@@ -392,31 +392,18 @@ internal sealed class UserSaveImportCoordinator
                 "Do not import this world.");
         }
 
-        if (!descriptor.isPeaceMode)
+        if (!GameplayModePolicy.AllowsNormalActions(
+                descriptorAvailable: true,
+                descriptor.isPeaceMode,
+                descriptor.isSandboxMode,
+                GameMain.sandboxToolsEnabled,
+                descriptor.resourceMultiplier))
         {
             return BridgeError.Create(
                 BridgeErrorCodes.PeacefulModeRequired,
                 "Only a confirmed peaceful world can become Spherewright-owned.",
                 false,
                 "Load a peaceful world manually, then prepare and confirm it.");
-        }
-
-        if (descriptor.isSandboxMode || GameMain.sandboxToolsEnabled)
-        {
-            return BridgeError.Create(
-                BridgeErrorCodes.SandboxModeActive,
-                "Sandbox mode or sandbox tools are active in the confirmed world.",
-                false,
-                "Use a non-sandbox save, then prepare and confirm it.");
-        }
-
-        if (Math.Abs(descriptor.resourceMultiplier - 1f) > 0.0001f)
-        {
-            return BridgeError.Create(
-                BridgeErrorCodes.NormalResourceMultiplierRequired,
-                "Only a normal 1x-resource world can become Spherewright-owned.",
-                false,
-                "Load a 1x-resource world manually, then prepare and confirm it.");
         }
 
         return null;

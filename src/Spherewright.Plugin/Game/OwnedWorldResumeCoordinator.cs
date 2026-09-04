@@ -100,8 +100,8 @@ internal sealed class OwnedWorldResumeCoordinator
             CommitAllowedNow = blockers.Count == 0,
             CommitBlockers = blockers,
             CompletionCondition = string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
-                ? "A healthy planned restart loads only the exact primary owned save named inside the protected ticket after its header proves the minimum game tick; adoption still requires the embedded high-entropy owned name, planet, peaceful mode, non-sandbox mode, and 1x resources."
-                : "Quarantine recovery loads only the fresh fixed LastExit slot after its header proves the minimum game tick; adoption still requires the embedded high-entropy owned name, planet, peaceful mode, non-sandbox mode, and 1x resources.",
+                ? "A healthy planned restart loads only the exact primary owned save named inside the protected ticket after its header proves the minimum game tick; adoption still requires the embedded high-entropy owned name, planet, and peaceful mode. Sandbox state and resource multiplier are preserved and reported but do not gate adoption."
+                : "Quarantine recovery loads only the fresh fixed LastExit slot after its header proves the minimum game tick; adoption still requires the embedded high-entropy owned name, planet, and peaceful mode. Sandbox state and resource multiplier are preserved and reported but do not gate adoption.",
         });
     }
 

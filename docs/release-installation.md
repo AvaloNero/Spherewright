@@ -2,7 +2,7 @@
 
 The versioned release package targets Windows x64, Dyson Sphere Program `0.10.34.28529`, and BepInEx `5.4.17.0`. Its exact Spherewright version is recorded in `manifest.json` and reported by the installer. The package includes the Plugin and a self-contained MCP executable; end users do not need the repository, source code, or a .NET SDK.
 
-The supported gameplay scope is single-player, peaceful, non-sandbox, and 1× resources. Dark Fog/combat, sandbox, multiplayer or Nebula, non-1× resources, broad third-party Mod compatibility, an arbitrary save picker, and arbitrary save-name loads are not guaranteed.
+The supported gameplay scope is single-player peaceful mode. Sandbox state and resource multiplier are reported but do not block import, normal actions, saving, or protected recovery; they never enable extra Spherewright actions or sandbox-tool calls. The validated reference world is still non-sandbox with 1× resources, so the new compatibility path remains test-candidate evidence until the cross-computer run. Dark Fog/combat, multiplayer or Nebula, broad third-party Mod compatibility, an arbitrary save picker, and arbitrary save-name loads are not guaranteed.
 
 Spherewright is distributed in two layouts with the same gameplay and MCP capabilities:
 

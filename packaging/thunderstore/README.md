@@ -15,9 +15,9 @@ End users do not need the source repository or a .NET SDK.
 - Dyson Sphere Program `0.10.34.28529`
 - BepInEx `5.4.17`
 - Windows x64
-- single-player, peaceful, non-sandbox, 1× resources
+- single-player peaceful mode; sandbox state and resource multiplier are reported but do not gate normal actions
 
-Dark Fog/combat, sandbox, multiplayer or Nebula, non-1× resources, and broad third-party Mod compatibility are not supported.
+The validated reference world remains non-sandbox with 1× resources. Sandbox and non-1× compatibility are enabled in 0.3.3 but await cross-computer live validation; Spherewright still never calls sandbox tools or injects resources. Dark Fog/combat, multiplayer or Nebula, and broad third-party Mod compatibility are not supported.
 
 ## Install with a Mod Manager
 

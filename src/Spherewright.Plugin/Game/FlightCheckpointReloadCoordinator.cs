@@ -97,7 +97,7 @@ internal sealed class FlightCheckpointReloadCoordinator
             SavedGameTick = ticket.SavedGameTick,
             CommitAllowedNow = blockers.Count == 0,
             CommitBlockers = blockers,
-            CompletionCondition = "DSP loads only the internally generated pre-flight save whose exact name and game tick match the protected reusable ticket; the embedded primary owned-save identity, origin planet, peaceful mode, non-sandbox mode, and 1x resources must all match before adoption.",
+            CompletionCondition = "DSP loads only the internally generated pre-flight save whose exact name and game tick match the protected reusable ticket; the embedded primary owned-save identity, origin planet, and peaceful mode must match before adoption. Sandbox state and resource multiplier are preserved and reported but do not gate adoption.",
         });
     }
 

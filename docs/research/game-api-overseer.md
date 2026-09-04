@@ -244,6 +244,10 @@ MinerComponent:
 
 当前同档部署已经创建 3 条实际物理塔路由的受保护基线；文档为 version 1、DSP `0.10.34.28529`，route key 全部哈希，未包含原始高熵 save identity，DACL 禁止其他 SID。后续真实钛运输把 `102:44 -> 104:1657` 的活动分支完整闭合：供应槽达到 200 后源/需 reservation 为 `-200/+200`，运输船移动超过 2100 tick 时没有 finding；源钛在取货后 `200 -> 79`，送达后双方订单归零、船归队，母星钛块实际速率恢复到 `12 min⁻¹`，远端矿机为 `30 min⁻¹`。因此活动/warm-up/送达清除已经有实机正例；仍缺的是故意连续 600 tick 无进展、形成 suspected stall 后再恢复的正例。fractionator、gamma receiver 和 orbital collector 已计入理论产能，但尚未接入同等级直接缓冲诊断；请求物品若由这些设备直接生产，`directDiagnosticCoverage=partial`。
 
+后续同档用两轮活动运输专门复验跨保存边界。硅 route 在普通保存 tick `17572610`、正常退出和 exact-primary 自动重存 `17572642` 后继续移动并送达；钛 route 又在保存 tick `17579665`、恢复/自动重存 `17579696` 后继续。新进程首个受保护钛样本 tick `17580795` 同时为需求订单 200、消费者缺料、源库存 60、fleet 1/active 1，且 `stagnantSinceGameTick=lastGameTick=17580795`、finding 0，直接证明离线墙钟未被累计。随后送达 90、订单归零，钛块实际速率保持 `12 min⁻¹`；最终普通保存 tick `17584412` 和审计 tick `17585687–17600202` 均为 healthy、0 blocker/checkpoint，Journal `49/49` durable、三网 ratio 1、0 power/logistics finding。
+
+当前程序集的 `StationComponent.InternalTickRemote` 对活动运输船每个 game tick 都推进阶段、位置、速度或曲速状态，站点断电不冻结已出发 carrier；`tripRangeShips` 只控制派单。暂停游戏不会增加 game tick，改需求/路线或拆塔会改变 qualifying route，只有直接改写 `stage/t/uPos/uSpeed/warpState` 才能强行造出静止指纹，而这违反普通玩法边界。因此真实 600-tick stalled-carrier/recovery 仍明确标为未实机覆盖；Core 自动测试继续锁定该状态机，但不能替代或冒充 live 证据。
+
 所有 finding 都包含同 tick 的设备、物料和可证明物流节点；它们是瞬时诊断，不是跨 tick 不变事实。实机中同一制造台 `715` 曾在网络服务率约 `0.94038` 时返回 `insufficient_power`，供电恢复后又自然变为缺 item `1109` 的 `material_shortage`，证明调用方必须按 `capturedAtGameTick` 使用证据，不能缓存旧根因继续写入。
 
 ## 有界输出与诊断限制
@@ -255,7 +259,7 @@ MinerComponent:
 - 跨域摘要最多扫描 4096 个 power-network pool 槽、65536 个发电组件引用和 4096 个 station pool 槽；每站最多 64 个 storage slot，科研队列最多扫描 4096 项、返回 64 项，runtime tech catalog 最多扫描 12000 项。理论产能另限制最多扫描 131072 个 assembler/lab/miner/fractionator/generator/station pool 槽和 262144 个 recipe input/output、矿点及采集物引用。超过预算返回明确的非重试 `SERVER_BUSY`，不静默截断聚合总量。
 - 直接诊断另受 131072 个组件/拓扑节点和 262144 个配方、来源及站槽引用的总预算；每个 item 最多返回 16 条 finding，每个 planet 最多返回 16 条无已知 item 身份的基础设施 finding，同时保留未截断总数和 `truncated` 标志。预算溢出会让整份首屏 fail closed，不能返回不完整总量。
 - 当前立即生产者诊断和递归生产者都只覆盖 assembler、matrix lab 和三类 miner；fractionator、gamma receiver 与 orbital collector 作为请求物品的直接生产者时会显式令 `directDiagnosticCoverage=partial`。递归只沿物料兼容且物理可达的受支持生产者，或沿一个精确 demand/supply station route 进入同一 supply endpoint 的真实 Input belt；最多 8 层/64 个 producer。人工填塔、无输入带、未证明的多段塔中继和未支持设备不会被猜测补全，路径预算/环路停止会进入 evidence。
-- 具备载具的物流订单已经接入跨 tick、按存档保护的窗口，真实活动 shipment 已通过派单、2100+ tick carrier 移动、取货、送达和最终产量恢复；在故意停滞 shipment 形成 600-tick suspected finding 并修复前，不能把活动正例或单元测试冒充停滞分支实机验收。受控缺料、断电、物流阻塞三类故障制造/修复和保存恢复验收仍未完成。
+- 具备载具的物流订单已经接入跨 tick、按存档保护的窗口。真实活动 shipment 已覆盖派单、2100+ tick carrier 移动、取货、送达、下游 `12 min⁻¹` 恢复，以及两轮活动状态普通保存/正常退出/exact-primary 恢复；恢复后的首个样本从新 session 当前 game tick 建基线，退出期间墙钟时间没有形成假 stall。受控缺料、断电和物流配置阻塞三类故障的制造、区分、正常修复、finding 清除与最终 healthy 保存均已有 live 证据。真实 carrier 连续 600 tick 完全静止再恢复仍未实机发生；当前 DSP 没有保持相同订单/路线的安全普通停航控制，因此该分支只保留自动测试和明确覆盖限制，不得用直接运行时字段写入伪造。
 - 原始 owned save 名、由它派生的持久化 key、auth token、plan token、绝对路径和运行时描述文件不得进入公共 DTO 或诊断包。
 
 ## 已完成的运行时切片

@@ -2075,10 +2075,11 @@
 - 当前结论：单个订单快照不能证明停滞。只有消费者输入少于一周期用量、需求端 reservation 为正、候选供应槽总库存大于零、供需站去重后的 idle+work fleet 大于零时，路线才进入时间窗；供给端负 reservation 不是待满足需求。消费者重新供足、需求库存增加、需求订单幅度缩减、精确路线 active-carrier 数变化，或无人机 `direction/maxt/t` 与运输船 `stage/uPos/uSpeed/warpState/direction` 指纹变化都重置基线。连续 600 游戏 tick 没有任何进展才允许输出 suspected `logistics_blocked`，而不是 confirmed；活动或仍在 warm-up 的路线不回退成 generic shortage。换档、路线拓扑变化、tick 回退、同 tick 状态突变或相邻采样超过 3600 tick 均使证明失连续；跨进程只累计 game tick，墙钟离线时间单列排除。一次读取的所有路线只做一次原子批量替换，且只有 durable analysis 才进入公共 DTO。
 - 直接证据：当前程序集反编译确认 `StationComponent.workDroneDatas/workDroneOrders` 与 `workShipDatas/workShipOrders` 的派单、飞行和交货更新语义；纯 Core 回归覆盖 600-tick 成熟、carrier 移动、送达/订单缩减、消费者供足重置、跨 session 离线排除、无订单/无源/无 fleet、save/route/tick/gap discontinuity、same-tick 突变和重复成熟读取。最终 suite 为 Contracts/Core/MCP `17 + 166 + 21 = 204`，完整 solution 0 warning / 0 error。最终审查把逐 route 同步写盘改成同次读取一次原子批量替换，落盘失败不公开 temporal analysis；需求端只认正 reservation。普通保存 tick `14290235`、正常关窗和四 DLL 零差异部署后，exact-primary 只恢复 minimum tick `14290235` 的 planet `104` 同档并自动重存 `14290266`；最终 Plugin/Core SHA-256 为 `A66033BFC60DBCAC8B2E798F815E7A22E635AAFCBFDD7F604E5256F191E3CDC5` / `EE9F5519C23A1EC9BC21987D78D29D90A79E561EBEE80F72702A74678B8E492E`。live 文档为 version 1、2942 bytes、3 条哈希 route，DACL 禁止其他 SID allow，不含原始 save identity，恢复后样本全部属于新 session，且消费者输入充足/不足状态均出现；tick `14293735+` 的黄糖读取仍返回三厂和既有四节点根因。
 - 补充实机证据：把远端 ILS `102:44` 的钛/硅供应上限从不够一船的 `100/100` 调整为 `200/300` 后，钛槽达到 200 并出现 `remoteOrder=-200`，母星需求端同时出现 `+200` 且 1 艘船工作。运输船移动超过 2100 tick 时 item `1106` 的 `findingCount` 始终为 0，证明 carrier 指纹变化持续重置窗口；随后源钛 `200 -> 79`、订单归零，母星工作船归队，钛块实际产量恢复到 `12 min⁻¹`，远端矿机为 `30 min⁻¹`，仍无 finding。结果在远端 save `14535735`、成功返航动作 `3515d9f4-8a65-404b-b7bd-79f75ed7a7bc` 和母星 save `14575384` 中固化。
-- 限制或反例：真实活动、取货、送达和产量恢复正例已经闭合，但尚未故意制造连续 600 tick 无进展并再修复的 stalled 正例，故整体仍保持 `observed`。候选 supply 是当前物理需求配置下的有界集合；距离、起送阈值、曲速器与电量等更细分原因仍统一落在 suspected logistics block，不在本条中猜测子因。
-- 复验触发：首次真实活动/送达 shipment、首次受控停滞与修复、route key 或 carrier fingerprint 变化、持久化损坏/权限错误、DSP station/ship/drone 结构变化、最终 v0.4 clean 工件安装。
+- 补充跨会话证据：两条真实 shipment 分别在普通保存 tick `17572610/17579665` 时保持活动，正常退出后由 exact-primary 恢复并自动重存 `17572642/17579696`。第二次恢复后的首个钛 route 样本在 tick `17580795` 同时满足 200 需求订单、消费者缺料、源库存 60、fleet 1/active 1，但 `stagnantSinceGameTick` 与 `lastGameTick` 都从该新 session 当前 tick 起算且 finding 为 0；退出期间的墙钟时间没有被计入。随后真实送达 90、订单清零，钛块继续为 `12 min⁻¹`，最终普通保存 tick `17584412`。
+- 限制或反例：真实活动、取货、送达、跨会话离线排除和产量恢复正例已经闭合，但尚未故意制造连续 600 tick 无进展并再修复的 stalled 正例，故整体仍保持 `observed`。EXP-177 证明当前普通游戏接口没有可逆方式冻结已出发 carrier；不得用直接字段写入伪造此证据。候选 supply 是当前物理需求配置下的有界集合；距离、起送阈值、曲速器与电量等更细分原因仍统一落在 suspected logistics block，不在本条中猜测子因。
+- 复验触发：首次真实自然停滞与修复、route key 或 carrier fingerprint 变化、持久化损坏/权限错误、DSP station/ship/drone 结构变化、出现保持路线/订单的原生停航开关或最终 v0.4 clean 工件安装。
 - 关联：EXP-030、EXP-069、EXP-072、EXP-154、EXP-159、EXP-161–163、IFX-020、`LogisticsProgressWindowAnalyzer`、`OverseerLogisticsProgressStore`、`GameStateReader.OverseerDiagnostics.cs`、`docs/research/game-api-overseer.md`。
-- 最近复验：2026-09-03（真实 `102:44 -> 104:1657` 钛运输的派单、长时移动、取货、送达与钛块 `12 min⁻¹` 恢复均未误报；停滞/修复正例仍待实机）。
+- 最近复验：2026-09-04（两轮活动运输跨普通保存/恢复后都从新 session tick 建基线，离线墙钟未误报；送达与钛块 `12 min⁻¹` 闭环，停滞/修复正例仍保留为未实机覆盖限制）。
 
 ### EXP-165 — 跨星生产者只能从精确供应塔的真实输入带继续证明
 
@@ -2212,8 +2213,33 @@
 - 关联：EXP-021、EXP-069、EXP-098、EXP-144、EXP-156、EXP-171/172/174、`ProductionFaultClassifier`、`PowerNetworkSnapshot`。
 - 最近复验：2026-09-04（真实派船扣能、同 tick 六设备低压分类、正常配置恢复与 finding 清零闭环）。
 
+### EXP-176 — 活跃运输跨保存/恢复时必须从新会话游戏 tick 重建连续窗
+
+- 状态：`validated`
+- 日期：2026-09-04
+- 适用范围：当前 DSP `0.10.34.28529`、同一 owned save 的 v0.4 星际物流进展窗口，以及运输船在途时的普通保存、正常退出和 exact-primary 恢复；不外推到换档、回档或路线拓扑变化。
+- 当前结论：运输船在途时可以正常保存并恢复，但跨进程后的首个持久化样本必须把停滞基线重置到新 session 的当前 game tick；退出期间的墙钟时间不得折算成 600 个游戏 tick，也不得让一条仍在正常移动的路线立即产生 suspected stall。恢复后 carrier 指纹、订单和库存继续按原生进展更新，送达后订单清零和下游非零产量共同核销结果。
+- 直接证据：把母站硅需求上限正常扩到 1600 后触发真实 200 硅订单；运输中普通保存已由 fresh `lastOwnedSaveGameTick=17572610` 唯一核销，随后正常关窗并由动作 `2030dc9a-2eab-482c-a350-de1389e26c6c` 精确恢复、自动重存到 `17572642`。tick `17574886` 仍见 1 艘活动船和 200 订单而没有 logistics finding，硅最终送达至 1533。下一笔钛订单活动时，保存动作 `8498e7c8-a6fd-4035-be1e-19f6efcc56e4` 固化 tick `17579665`；再次正常退出后，动作 `ce9e0a04-131e-458a-8358-e86aac678d69` 只恢复该 exact primary 并自动重存 `17579696`。恢复后的首个 bundle tick `17580795` 返回钛块实际产量 `12 min⁻¹`、0 logistics finding；受保护路线同时为 `stagnantSinceGameTick=lastGameTick=17580795`、需求订单 200、消费者缺料、源库存 60、fleet 1/active 1，证明离线墙钟没有成熟成旧停滞窗。钛送达 90、订单归零后，tick `17583913` 仍为 `12 min⁻¹`；最终保存动作 `1c27da6e-aaf0-4706-98a9-e041110d8f97` 固化 tick `17584412`。
+- 限制或反例：该样本验证活动 carrier、两次保存/恢复、离线排除和送达，不证明真实 carrier 连续 600 game tick 完全静止的分类分支；当前自然物流仍会继续产生新订单，不能把审计时存在正常在途船当成残留故障。
+- 复验触发：session/tick 连续性、持久化文档版本、carrier fingerprint、resume coordinator、DSP 物流存档字段或最终 v0.4 clean 工件变化。
+- 关联：EXP-005、EXP-030、EXP-069、EXP-072、EXP-125、EXP-144、EXP-154、EXP-164、`LogisticsProgressWindowAnalyzer`、`OverseerLogisticsProgressStore`。
+- 最近复验：2026-09-04（两轮活动运输普通保存/正常退出/exact-primary 恢复；新会话基线、无离线误报、送达与钛块 `12 min⁻¹` 闭环）。
+
+### EXP-177 — 当前普通游戏接口不能安全冻结已出发 carrier，停滞正例不得伪造
+
+- 状态：`validated`
+- 日期：2026-09-04
+- 适用范围：当前 DSP `0.10.34.28529` 的 `StationComponent` 远程运输更新、Spherewright 已采用的正常 UI 等价配置动作和 v0.4 stalled-carrier 实机覆盖声明。
+- 当前结论：当前版本没有一个可逆的普通游戏配置能让已经出发的运输船保持同一路线、同一订单和同一 carrier 指纹连续静止 600 game tick。`InternalTickRemote` 在每个游戏 tick 推进活动船，站点供电不参与已经出发船只的运动；`tripRangeShips` 只限制新派单。暂停游戏不会推进 game tick，撤销需求、改路线或拆塔会使路线不再同一且重置窗口。直接改写 `stage/t/uPos/uSpeed/warpState` 才能强行冻结，但违反“不直接写运行时物流字段”的边界，因此不得为了过门制造假证据。
+- 直接证据：当前程序集反编译显示远程 tick 对活动 `workShipDatas` 持续更新，派单范围检查与在途推进分离；实机多轮正常运输在供电正常、受控欠压、保存恢复和源站无船等条件下都持续改变 carrier 指纹并最终送达。把远程逻辑、需求或拓扑改掉会立即改变 qualifying route；没有正常 API 能同时保留全部停滞前提。Core 的 600-tick mature/recovery 分支仍有自动测试，但文档不把它冒充 live 正例。
+- 限制或反例：未来 DSP 若加入“停航/禁用运输”且保持订单和路线的原生开关，或 Spherewright 采用新的正常玩法动作，该结论需要重验。真实自然故障也可能产生停滞样本；在发生前只能把该分支列为未实机覆盖限制。
+- 复验触发：DSP 版本、`StationComponent.InternalTickRemote`、舰船 UI/配置、物流动作面或 temporal classifier 验收策略变化。
+- 关联：EXP-030、EXP-069、EXP-144、EXP-164、EXP-176、`StationComponent.InternalTickRemote`、`LogisticsProgressWindowAnalyzer`。
+- 最近复验：2026-09-04（程序集控制流与多轮在途/欠压/重启实机对照；拒绝直接字段冻结）。
+
 ## 修订记录
 
+- 2026-09-04：新增 EXP-176/177，并完成第七组累计十个 accepted 游戏写动作强制审计。十项依次为硅需求上限扩到 900/1200、火电 sorter 清回无过滤、ILS 上限恢复 30 MW、硅需求扩到 1600、运输中普通保存 tick `17572610`、exact-primary 恢复/自动重存 `17572642`、钛运输中保存 `17579665`、再次恢复/自动重存 `17579696`、最终保存 `17584412`；首个保存的 action ID 因 commit 后展示字段错误遗失，以 fresh tick/revision 唯一核销且未重放，其余已知 action 均 terminal/completed/succeeded、0 stalled/recovery/reconciliation。两次跨进程都保持同一 owned planet `104`，恢复后活动船继续移动且首个受保护样本从新 session 当前 tick 建基线，离线墙钟未产生假 stall；硅送达至 1533，钛送达 90 并恢复钛块 `12 min⁻¹`。严格审计 tick `17585687–17600202`、revision `2`：confirmed peaceful/non-sandbox/1×、healthy、0 blocker/checkpoint、restart 可用；玩家 Walk/0、核心 `400/400 MJ`、空手搓、3/3 施工机 idle，仍守恒持有远端取回的 1 船；2254 built/0 prebuild（1873 belt、200 sorter），Journal `49/49` durable、0 pending/error，三网 ratio 1，火电拓扑 `163 -> 678 -> 183` 已恢复且 ILS 为 12 GJ/30 MW。same-tick bundle `17600202` 为 ready、三星球完整页、母星 minimum ratio 1、钛块 `12 min⁻¹`、0 power/logistics finding；当前新订单属于正常自动运输。当前 BepInEx 进程日志 0 error。审计后写计数归零。
 - 2026-09-04：EXP-174 升级为 validated，新增 EXP-175，并修正“完整往返未见扣能”的过时推断：那是轮询漏过短启程窗口。第六次强制审计后的 accepted 游戏写目前为 4：`191b9971-09fe-4ad9-94bd-867b506bbb0d` 将硅需求上限扩至 900 并触发首个可见约 59.7 MJ 扣能；硅送达 `533 -> 733` 后，`1ca254f1-6f1a-4b87-8e5a-4543d3d9e885` 将上限扩至 1200。随后的原生硅送达 `733 -> 933` 与下一笔钛派船在 tick `17505966–17505969` 形成 11.873 GJ/9.14 MW、network `1` ratio 约 0.5815 以及六条同 tick `insufficient_power / confirmed`。恢复动作 `0f7c84b7-847b-4502-81b2-5384db1e4bfa` / `427099af-62d2-41fb-a1ad-75d6314d55cd` 清回火电 sorter filter 0、恢复 ILS 30 MW；tick `17512817` 已回到 ratio 1、underpowered station 0、power finding 0。尚未达到十写，当前无需冻结；下一门仍是真正 600-tick carrier stall/recovery。
 - 2026-09-04：第六组累计十个 accepted 游戏写动作后复验 EXP-001/007/021/030/035/036/047/069/072/080/083/084/098/140/144/156/172–174。本窗从煤节点 `379` 正常采 200 煤开始；长动作完成但本地回显丢失，已以节点 `31788 -> 31588`、背包 `0 -> 200`、revision `90 -> 92` 和未重放唯一核销。加注 `4c7b3f2e-dbe9-4855-b47d-a60687c9dda2` 先守恒转入 100；因首格边烧边空，另一次 100 的 prepare 以“当下只会移动 4”无副作用拒绝。核心充满后，`4bc076c4-e3b0-4074-ae7a-3f80a39da46f` / `196f63f9-7353-4c01-9c67-25f09755945b` 按 `71 + 29` 精确加注，最终核心 400 MJ、燃料仓 129 煤、背包煤 0；飞前普通保存 `74166db9-19a6-4d2d-a49b-bc807fff735f` 固化 tick `17409786`。返航 commit 后本地回显再因读取不存在字段中断，未重放；从受保护 ticket 只读恢复 action `efabaa9f-7e11-49f6-8f4a-27d018239b67`，该动作于 tick `17418292` 在 planet `104` 稳定 Walk/0 连续 600 tick 后 completed，checkpoint 撤销；落地保存 `f88836b3-d5d1-4e03-aaab-d7e93ac0286e` 固化 tick `17420046`。母站充电上限 `e8302062-7e22-4d3f-8107-db0cd9b1d776` 调为 150 MW，燃料 sorter `2f0ae8c7-b94f-46dd-9bd1-2fb1212cfecc` 过滤后火电 `183` 自然归零，钛需求 `b6041ba9-a2f0-4e1f-9639-fe4945e2b625` 使母站唯一船发出并形成 200 订单。强制审计 tick `17442891+`、revision `106`：9 个可寻址 action 全部 unique/terminal/completed/succeeded、0 stall/recovery/reconciliation，采煤由 fresh 状态唯一核销；同一 owned 和平非沙盒 1× planet `104`，healthy、0 blocker/checkpoint、2254 built/0 prebuild、Journal `49/49` durable、0 pending/error、0 BepInEx error。玩家 Walk/0、核心约 305.2 MJ、空燃料/手搓、3/3 施工机 idle，仍持远端取回的 1 船。母站为 12 GJ/60 kW、0 idle/1 working、钛订单 200，供给星 bundle 为 0/0 fleet/0 order；三网 ratio 1，尚无 `insufficient_power`。本审计后账本归零，先只读观察取货/返程阶段，不冒充断电正例。
 

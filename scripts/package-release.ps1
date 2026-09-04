@@ -5,6 +5,8 @@ param(
     [string]$Version,
     [ValidateSet('win-x64')]
     [string]$Runtime = 'win-x64',
+    [ValidatePattern('^[A-Za-z0-9_]+$')]
+    [string]$ThunderstoreTeam = 'Arcueid_77',
     [string]$DspDir,
     [string]$OutputDirectory,
     [string]$DotNetPath,
@@ -93,6 +95,22 @@ try {
         throw 'Self-contained MCP publish failed.'
     }
 
+    $thunderstoreMcpDirectory = Join-Path $stagingRoot 'thunderstore-mcp'
+    & $resolvedDotNet publish (Join-Path $repoRoot 'src\Spherewright.Mcp\Spherewright.Mcp.csproj') `
+        -c Release -r $Runtime --self-contained true `
+        --source 'https://api.nuget.org/v3/index.json' `
+        -p:RestoreLockedMode=true -p:PublishSingleFile=true `
+        -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true `
+        -p:Version=$Version -p:DebugType=None -p:DebugSymbols=false `
+        -o $thunderstoreMcpDirectory
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Single-file MCP publish for Thunderstore failed.'
+    }
+    $thunderstoreMcpExecutable = Join-Path $thunderstoreMcpDirectory 'Spherewright.Mcp.exe'
+    if (-not (Test-Path -LiteralPath $thunderstoreMcpExecutable -PathType Leaf)) {
+        throw "Single-file MCP publish did not produce the expected executable: $thunderstoreMcpExecutable"
+    }
+
     $pluginOutput = Join-Path $repoRoot 'src\Spherewright.Plugin\bin\Release\net472'
     $pluginDirectory = Join-Path $packageRoot 'BepInEx\plugins\Spherewright'
     New-Item -ItemType Directory -Path $pluginDirectory -Force | Out-Null
@@ -174,6 +192,23 @@ try {
 
     & (Join-Path $PSScriptRoot 'test-release-package.ps1') -PackagePath $zipPath -ExpectedMinimumToolCount 1 | Out-Null
 
+    $thunderstoreArguments = @{
+        Version = $Version
+        PluginDirectory = $pluginOutput
+        McpExecutablePath = $thunderstoreMcpExecutable
+        TeamName = $ThunderstoreTeam
+        SourceRoot = $repoRoot
+        OutputDirectory = $outputRoot
+    }
+    if ($AllowDirty) {
+        $thunderstoreArguments.AllowDirty = $true
+    }
+    if ($Force) {
+        $thunderstoreArguments.Force = $true
+    }
+    $thunderstoreJson = & (Join-Path $PSScriptRoot 'package-thunderstore.ps1') @thunderstoreArguments | Out-String
+    $thunderstore = $thunderstoreJson | ConvertFrom-Json
+
     [pscustomobject]@{
         version = $Version
         runtime = $Runtime
@@ -184,6 +219,16 @@ try {
         sha256 = $zipHash
         fileCount = $manifestFiles.Count + 1
         verified = $true
+        thunderstore = [ordered]@{
+            team = [string]$thunderstore.team
+            fullName = [string]$thunderstore.fullName
+            zipPath = [string]$thunderstore.zipPath
+            sha256Path = [string]$thunderstore.sha256Path
+            sha256 = [string]$thunderstore.sha256
+            fileCount = [int]$thunderstore.fileCount
+            staticStructureVerified = [bool]$thunderstore.staticStructureVerified
+            runtimeBlackBoxTested = [bool]$thunderstore.runtimeBlackBoxTested
+        }
     } | ConvertTo-Json -Depth 3
 } finally {
     $resolvedStagingParent = [IO.Path]::GetFullPath($stagingParent).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar

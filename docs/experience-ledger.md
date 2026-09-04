@@ -2261,6 +2261,18 @@
 - 关联：EXP-007、EXP-009、EXP-035、EXP-036、EXP-039、EXP-057、EXP-061、EXP-076、IFX-003、`docs/agent-playbook.md`。
 - 最近复验：2026-09-04（默认 180/600-tick、恢复 advice、MCP Resource 注册/内容、新世界工具提示和发行包 stdio/resource smoke 共 246 项自动测试及完整 Release build 通过；候选二进制 live 新档完成“着陆舱可见→首方向第 181 tick 结构化 stall→不同正交方向脱困→业务 prepare 通过即采集→矿量/背包守恒读回→正常保存”闭环）。
 
+### EXP-180 — GitHub 手动包与 Thunderstore 包同版本同源码，但安装布局必须分开
+
+- 状态：`observed`
+- 日期：2026-09-04
+- 适用范围：Spherewright Windows x64 自包含发行、Thunderstore/r2modman 的 BepInEx 安装规则，以及 `Arcueid_77-Spherewright` 包命名空间。
+- 当前结论：两个分发渠道必须使用同一 SemVer 和同一 clean source commit，但不能复用同一个 ZIP。GitHub 手动包保留顶层版本目录、安装脚本和多文件自包含 `mcp/`；Thunderstore ZIP 根目录必须直接提供 exact-case `manifest.json`、`README.md`、`icon.png`，并通过 `plugins/` 映射到 `BepInEx/plugins/<Team>-<Package>`。Thunderstore 侧 MCP 应发布成一个自包含 EXE，避免把 200 余个 .NET 运行库 DLL 放进 BepInEx 的递归 Plugin 扫描范围。静态结构/哈希验证与 Mod Manager/异机运行验收必须分开陈述。
+- 直接证据：已从干净 annotated tag `v0.3.2` / commit `da11e4478b2940baf50d61395c324c3a093d0fd2` 生成 `Spherewright-0.3.2-thunderstore.zip`。四个 Plugin DLL 逐字节取自 SHA-256 `144add858a16becd17cd8b842108e9c3397d5e9b04700e05db0f967e8e890260` 的既有 GitHub 工件，MCP 从同一 tag 发布为单文件；最终 ZIP 为 12 files、SHA-256 `7e9d6d8bcb3457fe6ca44e686e20ce3d80ff7e60ee731f59806fb57f3d28b192`，标准 manifest、BepInEx 精确依赖、256×256 PNG、禁止程序集和逐文件哈希静态检查通过，并已作为 v0.3.2 GitHub Release 资产上传。`package-release.ps1` 同批产出两种 ZIP，ILLink 构建工具显式进入锁文件。
+- 限制或反例：按项目所有者要求，本机不启动该 Thunderstore 包的 MCP、不做本机游戏黑盒；首次实际安装、MCP 握手、Plugin 加载和游戏状态读取由另一台电脑完成。Thunderstore 网页版本尚未最终提交时，不得把 GitHub 资产上传等同于注册表已发布。
+- 复验触发：Thunderstore/r2modman 安装规则、Team/Package 名、BepInEx 扫描规则、.NET 单文件发布、每次版本发布、首次异机验收或任一渠道工件来源不一致。
+- 关联：EXP-001、EXP-152、EXP-153、EXP-178、`scripts/package-release.ps1`、`scripts/package-thunderstore.ps1`、`scripts/test-thunderstore-package.ps1`、`packaging/thunderstore/`。
+- 最近复验：2026-09-04（v0.3.2 clean tag 组包、静态校验与 GitHub Release 双资产对齐；Thunderstore/异机 runtime 待完成）。
+
 ## 修订记录
 
 - 2026-09-04：EXP-179 升级为 validated，IFX-003 升级为 fixed。隔离候选插件使用独立 descriptor 与 handoff 目录创建和平、非沙盒、1× 新档；飞行舱在 vegetation resource 中为 `protoId=9999`、距出生点 1.439 m，factory entity 为空。第一个正交 4 m Move 于 181 tick 返回结构化 `position_stalled` 且未重放，第二个正交目标完成；fresh `Walk`/0/充足能量后，在 12.445 m 处直接通过 harvest prepare 并完成首次铁矿采集，矿量 `-1`、背包 `+1`。最终保存 tick `22222`、revision `7`、healthy。整个验收无键鼠、无传送、无位置写入，所有 committed action 均轮询至 terminal。随后正常关闭候选进程，逐字节恢复原配置、原 Plugin 和原 handoff 目录；原 protected resume 也以 terminal/completed/succeeded 返回长期 owned planet 104，fresh tick `18081842`、revision `1`、和平/非沙盒/1×、healthy，证明隔离验收没有消费或替换长期档的恢复链。

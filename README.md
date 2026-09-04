@@ -107,18 +107,21 @@ If DSP is installed somewhere the locator cannot find automatically:
 
 The Plugin output is `src/Spherewright.Plugin/bin/Debug/net472/Spherewright.Plugin.dll` by default, or the corresponding `Release` directory when built with `--configuration Release`.
 
-To produce the versioned Windows release zip, integrity manifest, and SHA-256 sidecar from a clean worktree:
+To produce both supported distribution formats and their SHA-256 sidecars from a clean worktree:
 
 ```powershell
 ./scripts/package-release.ps1 -Version 0.4.0
 ```
 
-The packager builds the full solution, publishes `Spherewright.Mcp.exe` self-contained for `win-x64`, verifies every staged file after zip extraction, and writes ignored artifacts under `artifacts/`. Creating an artifact does not create a tag or GitHub Release; those remain gated by [ROADMAP.md](./ROADMAP.md).
+The command creates `Spherewright-<version>-win-x64.zip` for manual installation and `Spherewright-<version>-thunderstore.zip` for Thunderstore/r2modman. The manual package contains the full self-contained MCP directory and installer; the Mod package uses a single-file MCP executable so BepInEx does not scan its runtime dependencies as Plugins. Both archives carry Spherewright integrity metadata and are written under the ignored `artifacts/` directory. The Thunderstore namespace is `Arcueid_77-Spherewright`.
+
+The manual package keeps its extracted-file and MCP handshake smoke test. The Thunderstore package is checked for its required root files, manifest/dependency metadata, 256×256 icon, exact payload hashes, and forbidden bundled game/loader assemblies; runtime installation is then validated in a separate Mod Manager profile or another computer. Creating artifacts does not create a tag, GitHub Release, or Thunderstore version; publication remains gated by [ROADMAP.md](./ROADMAP.md).
 
 To repeat the package integrity and self-contained MCP `initialize`/`tools/list` smoke test independently:
 
 ```powershell
 ./scripts/test-release-package.ps1 -PackagePath ./artifacts/Spherewright-0.4.0-win-x64.zip
+./scripts/test-thunderstore-package.ps1 -PackagePath ./artifacts/Spherewright-0.4.0-thunderstore.zip -ExpectedVersion 0.4.0
 ```
 
 ## Local setup

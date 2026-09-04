@@ -2,7 +2,7 @@
 
 更新时间：2026-09-04（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界位于 planet `102`。双星 ILS 已真实运输钛、硅，母星两种原矿都已通过正常物流接入生产；旧石转硅入口停用。Overseer 的活动运输、同 tick 脱敏诊断包、受控物流故障/恢复和受控缺料/恢复均已在同档通过。为制造可归因的母站充电低压，母星钛/硅远程需求先正常暂停、充电恢复 30 MW，并保存 tick `17296462`；煤动力动作 `2209a388-9f77-41f7-bd31-d32f7d9e6066` 随后创建独立 checkpoint、稳定飞到 `102` 并自动撤销 checkpoint，落地普通保存 tick `17305571`。第三次十写审计为 healthy、Journal `49/49` durable、无 blocker/checkpoint/prebuild/error。远端 ILS `44` 当前有钛 `200/200`、硅 `109/300`、1 艘 idle vessel；下一步正常取走这艘船，确保返航后只能由母站派船，再完成受控断电。v0.4 尚未发布；真正的 600-tick 在途停滞和最终保存恢复仍在开发。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界在母星 planet `104` 连续自动运输钛、硅，旧石转硅入口已停用。Overseer 的活动运输、同 tick 脱敏诊断包、受控物流故障/恢复、缺料/恢复和断电/恢复均已在同档通过。断电正例在 tick `17505966–17505969` 同时证明母站约 126.5 MJ 能量缺口、9.14 MW 请求、network `1` 约 0.5815 供电比和六条 `insufficient_power / confirmed`；恢复火电输入与 30 MW 上限后，塔已回满、电网 ratio 1、power finding 0。远端供给塔仍 0/0 fleet，玩家仍携带取回的 1 船；母站自有船仍在正常运输。当前强制审计后累计 4 个 accepted 写；下一门是真正 600-tick 在途停滞/恢复，再做最终保存恢复。v0.4 尚未发布。
 
 ## 结论与证据边界
 
@@ -102,6 +102,10 @@
 | actions `17175929–17189787`; bundle `17177994`; audit `17196640+` | 2026-09-04 | 在唯一连续工作的精炼厂 `141` 上，把空载输入 sorter `162` 从无过滤临时设为源带不存在的铁矿；原有 4 原油耗尽后，Overseer 以原油 `0/需2` 和 600-tick 精炼油 `0 min⁻¹` 返回 `material_shortage / confirmed`。清回 filter 0 后 sorter 真实搬入原油，finding 清零，后续完整窗口恢复生产/消耗各 `12 min⁻¹`。随后把满电 ILS 充电上限 30→150 MW、钛需求 100→300；因无可用远端发货，塔仍满电、60 kW idle request、0 order，故没有把预期当成断电结果。累计十写审计核销七个 action ID 和三个保存/恢复状态：同一 owned 和平非沙盒 1× 世界、2254/0、三网 ratio 1、Walk/0、满核心、3/3 idle、Journal `49/49` durable、healthy、0 blocker/checkpoint/BepInEx error；下一写先恢复塔充电上限。 | R/M/D |
 | silicon delivery `333 -> 533`; audit `17272033+` | 2026-09-04 | 第一轮扩硅需求延迟形成 `+200` 订单并真实完成往返，但连续采样证明母塔 energy 始终 12 GJ、request 始终 60 kW、network ratio 始终 1，不能从 `working vessel` 反推母塔付能。第二轮先关需求、把充电上限升至 150 MW、让火电 sorter 停料直至机组 output 0，再开放 `533/700` 需求；远端无现货，仍未派单或低压。第十写恢复火电后审计核销九个 action 与一个 fresh 槽状态：2254/0、三网 ratio 1、Walk/0、满核心、3/3 idle、Journal `49/49` durable、healthy、0 blocker/checkpoint/error。该两轮是明确负例，不冒充 `insufficient_power` 门。 | R/M/D |
 | flight `2209a388-9f77-41f7-bd31-d32f7d9e6066`; save `17305571`; audit `17309480+` | 2026-09-04 | 首次 18 煤飞行预检以约 449 MJ 低于 600 MJ 安全拒绝，未创建 checkpoint。煤节点 `402` 共原生采集 80 并守恒加注；其中最后 20+20 两动作完成后汇总脚本因空集合 `.Sum` 报错，fresh 节点、背包、燃料仓核销且没有重放。飞前保存 `17296462` 后，同一原生飞行动作使距离持续下降、速度最终到 1000 m/s；煤功率不足使核心中段为 0，但航迹仍正常推进，最终在 `102` 连续 600 tick Walk/0 完成，checkpoint 撤销。第十项落地保存后审计：175 built/0 prebuild、network 1 ratio 1、Journal `49/49` durable、healthy、0 blocker/checkpoint/error；ILS `44` 持钛 200、硅 109 和 1 艘 idle vessel。 | R/M/D |
+| vessel transfer/save `17333987/17334563`; audit `17338179+` | 2026-09-04 | 从落地点到远端 ILS 的 217.8 m 计划路程拆成八段约 27 m 球面短弧，全部正常 completed；一次残余速度导致下一 prepare `STALE_STATE`，等待 Walk/0 fresh 后继续，未重放。fleet transfer 使站内 idle vessel `1 -> 0`、玩家 `0 -> 1`，working 0、站能量 12 GJ 和 configuration hash 不变。第十项保存后审计核销 10/10 action：175 built/0 prebuild、单网 ratio 1、Journal `49/49` durable、healthy、0 blocker/checkpoint/error；供给塔钛 200、硅 109、Remote Supply、0 order、0/0 fleet。 | R/M/D |
+| audit `17371613+` / revision `90` | 2026-09-04 | 取船后以 10 段受控短弧走到煤节点 `379` 旁；10 个 action 全部 unique/terminal/completed/succeeded，无 stall/recovery/reconciliation。玩家 Walk/0、核心约 `213.6/400 MJ`、空燃料仓、背包仍持 1 船，节点距离 `7.444 m`且剩余 `31788`煤。严格审计同时保持 175 built/0 prebuild、单网 `4050/4050` ratio 1、Journal `49/49` durable、healthy、0 blocker/checkpoint/BepInEx error；远端塔仍满电、钛 200/硅 109、Remote Supply、0 order、0/0 fleet。账本更新后写计数归零，允许开始采煤。 | R/D |
+| saves `17409786/17420046`; return `17418292`; audit `17442891+` | 2026-09-04 | 煤节点 `379` 正常减少 200，背包先增 200；采集已完成但本地回显丢失，以 fresh 双端状态唯一核销并未重放。第一批 100 煤边充边烧时，另一次 100 预检正确按单格实际容量无副作用拒绝；核心充满后以 `71 + 29` 守恒加注，形成 129 煤返航储备。飞前保存后，返航 action `efabaa9f-7e11-49f6-8f4a-27d018239b67` 从受保护 ticket 恢复丢失的回显身份，稳定落到 `104` 并撤销 checkpoint，落地后再保存。母站上限 150 MW、火电 sorter 过滤并等待输出自然归零后，开钛需求使母站唯一船发出，订单 200。第十写审计核销 9 个 action ID 与采煤 fresh 状态：2254 built/0 prebuild、Journal `49/49` durable、healthy、0 blocker/checkpoint/error。当时低频读数仍为 12 GJ/60 kW、三网 ratio 1，后续证明是漏过了短启程窗口，不是运输无扣能。 | R/M/D |
+| logistics/power `17471345–17512817` | 2026-09-04 | 硅需求 `533/700 -> 533/900` 后原生发船，tick `17472191` 高频读到母站约 59.7 MJ 扣能和 8.30 MW 请求，证明旧轮询只是漏过短窗口；该批硅送达 `533 -> 733`。再扩容至 1200 后，下一批硅送达 `733 -> 933`，唯一船随即切入 200 钛订单。tick `17505966–17505969` 同时抓到 ILS `11.873/12 GJ`、request `9.14 MW`、network `1` required/served/capacity `197786/115000/115000`、ratio 约 `0.5815`，bundle 对六台真实生产设备返回 `insufficient_power / confirmed`。正常清回火电 sorter filter 和 ILS 30 MW 上限后，tick `17512817` 已回到满供电、underpowered station 0、power finding 0。 | R/M/D |
 
 ## 科技树与升级
 
@@ -414,9 +418,11 @@
 | EXP-171 | validated | 受控缺料用空载输入过滤制造并以真实补料/速率恢复 |
 | EXP-172 | validated | 物流塔充电上限不是负载；断电试验先证明真实能量缺口 |
 | EXP-173 | validated | 飞行预算与燃料功率分维；终态由持续航迹和 600-tick 落地证明 |
+| EXP-174 | validated | 需求端耗能归因前先建立供给端有货、无船、零订单条件 |
+| EXP-175 | validated | 受控断电需同 tick 证明负载/电网/分类，并按原配置恢复 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前在同一受保护 `owned-world-001` 的 planet `102` 运行；稳定落地后普通保存 tick `17305571`，fresh revision 52、write health healthy、无 blocker/checkpoint 且 planned restart 可用。玩家 Walk/0，远端 ILS `44` 满电并持钛 200、硅 109、1 艘 idle vessel。继续使用同一世界，不开新档。
+- DSP 当前在同一受保护 `owned-world-001` 的母星 planet `104` 运行；稳定返航后普通保存 tick `17420046`，第六次十写审计为 tick `17442891+` / revision `106`、write health healthy、无 blocker/checkpoint。玩家 Walk/0、核心约 305.2/400 MJ、空燃料仓、背包仍持从远端取回的 1 艘运输船；母站的自有船正在 200 钛订单中。继续使用同一世界，不开新档。
 - `v0.3.0` 已由 clean commit `a52ff44` 正式发布；`v0.3.1` annotated tag `33a733f` 的 prerelease 只含用户授权导入回移，等待另一台电脑实测，不混入 v0.4。
-- 当前主线：v0.4 Overseer。production statistics/远端 factory、三厂分页、随档 600-tick 实际速率、理论速率/利用率、多星球供电/物流、科研摘要、物理上游递归、物流进展窗口、活动运输正例、同 tick 脱敏诊断包，以及受控 `logistics_blocked`、`material_shortage` 制造/修复均已通过。下一步在远端安全接近 ILS 并正常取走唯一 idle vessel，返航后用已暂存的真实供给强制母站派船，完成受控断电；之后完成真正的 600-tick 在途停滞与恢复并做最终保存/恢复门。
+- 当前主线：v0.4 Overseer。production statistics/远端 factory、三厂分页、随档 600-tick 实际速率、理论速率/利用率、多星球供电/物流、科研摘要、物理上游递归、物流进展窗口、活动运输正例、同 tick 脱敏诊断包，以及受控 `logistics_blocked`、`material_shortage`、`insufficient_power` 制造/修复均已通过。火电和 ILS 30 MW 上限已恢复，电网 ratio 1。当前强制审计后 4 个 accepted 写；下一门是真正的 600-tick 在途停滞与恢复，随后做最终保存/恢复门。

@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Spherewright v0.3.2 Sol Max 与 Luna Max 黑盒验收对比</title>
+  <desc id="desc">两次独立新世界黑盒验证均完成原矿到电磁矩阵的全自动生产。Sol Max 更快，Luna Max 的 API 等价成本约低 94%。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07111f"/>
+      <stop offset="0.55" stop-color="#0a1728"/>
+      <stop offset="1" stop-color="#101a31"/>
+    </linearGradient>
+    <linearGradient id="solPanel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a201c"/>
+      <stop offset="1" stop-color="#141d2b"/>
+    </linearGradient>
+    <linearGradient id="lunaPanel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#102b3b"/>
+      <stop offset="1" stop-color="#141d2b"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#000814" flood-opacity="0.35"/>
+    </filter>
+    <style>
+      .font { font-family: "Microsoft YaHei", "Noto Sans SC", "PingFang SC", Arial, sans-serif; }
+      .title { fill: #f5f8fc; font-size: 42px; font-weight: 700; letter-spacing: 0.5px; }
+      .subtitle { fill: #aab8ca; font-size: 18px; font-weight: 400; }
+      .panel-title { fill: #f5f8fc; font-size: 28px; font-weight: 700; }
+      .label { fill: #93a4b8; font-size: 15px; font-weight: 500; }
+      .value { fill: #f5f8fc; font-size: 29px; font-weight: 700; }
+      .small-value { fill: #e7edf5; font-size: 20px; font-weight: 700; }
+      .axis { fill: #8fa1b6; font-size: 14px; font-weight: 500; }
+      .lane { fill: #f5f8fc; font-size: 18px; font-weight: 700; }
+      .event { fill: #dce5f0; font-size: 14px; font-weight: 500; }
+      .event-muted { fill: #96a7ba; font-size: 13px; font-weight: 500; }
+      .take-title { fill: #95a6ba; font-size: 15px; font-weight: 600; }
+      .take-value { fill: #f5f8fc; font-size: 25px; font-weight: 700; }
+      .foot { fill: #8495aa; font-size: 13px; font-weight: 400; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+  <circle cx="1480" cy="-40" r="280" fill="#18304e" opacity="0.28"/>
+  <circle cx="120" cy="1030" r="290" fill="#1c304b" opacity="0.2"/>
+
+  <g class="font">
+    <text class="title" x="72" y="72">Spherewright v0.3.2 双模型黑盒验收</text>
+    <text class="subtitle" x="72" y="105">同一发行 ZIP · 两个独立新世界 · 仅使用公开 MCP 与包内 playbook · 结果均为 PASS</text>
+    <g transform="translate(1310 54)">
+      <rect width="218" height="42" rx="21" fill="#19352c"/>
+      <circle cx="23" cy="21" r="8" fill="#56e39f"/>
+      <text x="43" y="27" fill="#c9f9e1" font-size="16" font-weight="700">2 / 2 PASS</text>
+    </g>
+
+    <g filter="url(#shadow)">
+      <rect x="72" y="140" width="706" height="238" rx="22" fill="url(#solPanel)" stroke="#5b4432"/>
+      <rect x="822" y="140" width="706" height="238" rx="22" fill="url(#lunaPanel)" stroke="#24536b"/>
+    </g>
+
+    <g>
+      <circle cx="105" cy="181" r="10" fill="#ffaa5c"/>
+      <text class="panel-title" x="126" y="191">Sol Max</text>
+      <text class="label" x="690" y="187" text-anchor="end">更快完成</text>
+
+      <text class="label" x="104" y="230">完整链首次蓝糖 · 游戏时间</text>
+      <text class="value" x="104" y="267">03:03:05</text>
+      <text class="label" x="336" y="230">端到端验收 · 墙钟</text>
+      <text class="value" x="336" y="267">03:17:48</text>
+      <text class="label" x="568" y="230">冻结窗口实测</text>
+      <text class="value" x="568" y="267">19.88/min</text>
+
+      <line x1="104" y1="292" x2="746" y2="292" stroke="#5b4432" opacity="0.75"/>
+      <text class="label" x="104" y="326">总 token</text>
+      <text class="small-value" x="104" y="354">104.25M</text>
+      <text class="label" x="336" y="326">API 等价成本</text>
+      <text x="336" y="354" fill="#ffaa5c" font-size="25" font-weight="700">$51.00</text>
+      <text class="label" x="568" y="326">移动 / 恢复</text>
+      <text class="small-value" x="568" y="354">无 stall · 无重开</text>
+    </g>
+
+    <g>
+      <circle cx="855" cy="181" r="10" fill="#56d2ff"/>
+      <text class="panel-title" x="876" y="191">Luna Max</text>
+      <text class="label" x="1440" y="187" text-anchor="end">更低成本</text>
+
+      <text class="label" x="854" y="230">完整链首次蓝糖 · 游戏时间</text>
+      <text class="value" x="854" y="267">04:31:51</text>
+      <text class="label" x="1086" y="230">端到端验收 · 墙钟</text>
+      <text class="value" x="1086" y="267">05:04:46</text>
+      <text class="label" x="1318" y="230">冻结窗口实测</text>
+      <text class="value" x="1318" y="267">15.00/min</text>
+
+      <line x1="854" y1="292" x2="1496" y2="292" stroke="#24536b" opacity="0.85"/>
+      <text class="label" x="854" y="326">总 token</text>
+      <text class="small-value" x="854" y="354">89.25M</text>
+      <text class="label" x="1086" y="326">API 等价成本</text>
+      <text x="1086" y="354" fill="#56d2ff" font-size="25" font-weight="700">$2.86</text>
+      <text class="label" x="1318" y="326">移动 / 恢复</text>
+      <text class="small-value" x="1318" y="354">有界脱困 · 无重开</text>
+    </g>
+
+    <text x="72" y="430" fill="#f5f8fc" font-size="25" font-weight="700">自动产物时间轴</text>
+    <text class="subtitle" x="324" y="430">游戏内经过时间（小时）</text>
+
+    <g>
+      <line x1="190" y1="475" x2="1510" y2="475" stroke="#314258"/>
+      <line x1="190" y1="475" x2="190" y2="704" stroke="#314258"/>
+      <line x1="454" y1="475" x2="454" y2="704" stroke="#23344a"/>
+      <line x1="718" y1="475" x2="718" y2="704" stroke="#23344a"/>
+      <line x1="982" y1="475" x2="982" y2="704" stroke="#23344a"/>
+      <line x1="1246" y1="475" x2="1246" y2="704" stroke="#23344a"/>
+      <line x1="1510" y1="475" x2="1510" y2="704" stroke="#314258"/>
+      <text class="axis" x="190" y="463" text-anchor="middle">0h</text>
+      <text class="axis" x="454" y="463" text-anchor="middle">1h</text>
+      <text class="axis" x="718" y="463" text-anchor="middle">2h</text>
+      <text class="axis" x="982" y="463" text-anchor="middle">3h</text>
+      <text class="axis" x="1246" y="463" text-anchor="middle">4h</text>
+      <text class="axis" x="1510" y="463" text-anchor="middle">5h</text>
+
+      <text class="lane" x="72" y="530">Sol</text>
+      <line x1="190" y1="524" x2="995" y2="524" stroke="#ffaa5c" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="280" cy="524" r="8" fill="#ffaa5c"/>
+      <text class="event" x="280" y="506" text-anchor="middle">铁矿 00:20</text>
+      <rect x="516" y="516" width="16" height="16" transform="rotate(45 524 524)" fill="none" stroke="#ffaa5c" stroke-width="3"/>
+      <text class="event-muted" x="524" y="553" text-anchor="middle">临时蓝糖 01:15</text>
+      <circle cx="749" cy="524" r="8" fill="#ffaa5c"/>
+      <text class="event" x="749" y="553" text-anchor="middle">铜矿 02:07</text>
+      <circle cx="817" cy="524" r="6" fill="#ffaa5c"/>
+      <circle cx="832" cy="524" r="6" fill="#ffaa5c"/>
+      <circle cx="851" cy="524" r="6" fill="#ffaa5c"/>
+      <path d="M832 516 L832 501" stroke="#6b7889"/>
+      <text class="event" x="832" y="494" text-anchor="middle">铁块 02:22 · 磁铁 02:25 · 铜块 02:30</text>
+      <circle cx="936" cy="524" r="7" fill="#ffaa5c"/>
+      <circle cx="965" cy="524" r="7" fill="#ffaa5c"/>
+      <text class="event" x="943" y="553" text-anchor="middle">电路板 02:51 · 磁线圈 02:56</text>
+      <circle cx="995" cy="524" r="13" fill="#56e39f" stroke="#d7ffeb" stroke-width="3"/>
+      <text x="1018" y="530" fill="#c9f9e1" font-size="16" font-weight="700">全链蓝糖 03:03</text>
+
+      <text class="lane" x="72" y="660">Luna</text>
+      <line x1="190" y1="654" x2="1386" y2="654" stroke="#56d2ff" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="400" cy="654" r="8" fill="#56d2ff"/>
+      <text class="event" x="400" y="636" text-anchor="middle">铁矿 00:47</text>
+      <circle cx="511" cy="654" r="8" fill="#56d2ff"/>
+      <text class="event" x="511" y="683" text-anchor="middle">铜矿 01:12</text>
+      <circle cx="968" cy="654" r="6" fill="#56d2ff"/>
+      <circle cx="994" cy="654" r="6" fill="#56d2ff"/>
+      <circle cx="1027" cy="654" r="6" fill="#56d2ff"/>
+      <circle cx="1035" cy="654" r="6" fill="#56d2ff"/>
+      <path d="M1003 646 L1003 610" stroke="#6b7889"/>
+      <text class="event" x="1003" y="587" text-anchor="middle">铜块 02:56 · 铁块 03:02</text>
+      <text class="event" x="1003" y="606" text-anchor="middle">磁铁 03:10 · 磁线圈 03:12</text>
+      <circle cx="1295" cy="654" r="8" fill="#56d2ff"/>
+      <text class="event" x="1295" y="636" text-anchor="middle">电路板 04:11</text>
+      <circle cx="1386" cy="654" r="13" fill="#56e39f" stroke="#d7ffeb" stroke-width="3"/>
+      <text x="1386" y="688" fill="#c9f9e1" font-size="16" font-weight="700" text-anchor="middle">全链蓝糖 04:31</text>
+    </g>
+
+    <line x1="72" y1="730" x2="1528" y2="730" stroke="#2a3a50"/>
+    <g>
+      <rect x="72" y="762" width="456" height="120" rx="18" fill="#111f30"/>
+      <text class="take-title" x="98" y="795">完成速度</text>
+      <text class="take-value" x="98" y="835">Sol 快 01:46:58</text>
+      <text class="subtitle" x="98" y="861">完整验收用时约为 Luna 的 64.9%</text>
+
+      <rect x="572" y="762" width="456" height="120" rx="18" fill="#111f30"/>
+      <text class="take-title" x="598" y="795">Token 成本</text>
+      <text class="take-value" x="598" y="835">Luna 便宜 94.38%</text>
+      <text class="subtitle" x="598" y="861">$2.86 vs $51.00 · 约 17.8×</text>
+
+      <rect x="1072" y="762" width="456" height="120" rx="18" fill="#111f30"/>
+      <text class="take-title" x="1098" y="795">产品能力</text>
+      <text class="take-value" x="1098" y="835">同一闭环，均可复现</text>
+      <text class="subtitle" x="1098" y="861">0 重开 · 0 回档 · 正常保存</text>
+    </g>
+
+    <text class="foot" x="72" y="925">产量为正式冻结窗口实测：Sol +39 / 117.693s；Luna +5 / 20s。两条线均为单矩阵研究站，名义上限 20/min；窗口长度不同，不应视为长期产能排名。</text>
+    <text class="foot" x="72" y="950">Token 为两个验证子 Agent 的 rollout 文本用量；成本按当时 OpenAI API 文本单价折算，不等于 Codex 套餐实际账单。</text>
+    <text x="1528" y="950" text-anchor="end" fill="#6f8299" font-size="13">Spherewright · 2026-09-05</text>
+  </g>
+</svg>

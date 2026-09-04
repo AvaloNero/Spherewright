@@ -11,6 +11,7 @@ using Spherewright.Contracts.Resources;
 using Spherewright.Contracts.Sessions;
 using Spherewright.Contracts.Testing;
 using Spherewright.Mcp.BridgeClient;
+using Spherewright.Mcp.Resources;
 
 namespace Spherewright.Mcp.Tools;
 
@@ -29,7 +30,7 @@ public static class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns the authenticated local Spherewright bridge, plugin, protocol, game-version, and write-health status. This Gate A tool never reads save contents or changes the game.")]
+    [Description("Returns the authenticated local Spherewright bridge, plugin, protocol, game-version, and write-health status. Read the advertised opening-movement Agent playbook resource before the first gameplay action, including after new-world creation. This tool never reads save contents or changes the game.")]
     public static async Task<CallToolResult> GetStatusAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Cancellation token supplied by the MCP host.")] CancellationToken cancellationToken)
@@ -40,6 +41,8 @@ public static class SpherewrightTools
             Success = result.Success,
             Status = result.Value,
             Error = result.Error,
+            AgentPlaybookResourceUri = AgentPlaybookResources.OpeningMovementUri,
+            RecommendedFirstStep = "Read the opening-movement Agent playbook MCP resource before the first gameplay action.",
         };
         var text = result.Success
             ? "Spherewright bridge is connected."
@@ -63,7 +66,7 @@ public static class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns a privacy-gated game-session snapshot. Save, planet, and factory metadata are returned only for a dedicated world created by the current Spherewright Plugin process.")]
+    [Description("Returns a privacy-gated game-session snapshot. Before the first gameplay action in a session, read MCP resource spherewright://agent/playbooks/opening-movement-v1. Save, planet, and factory metadata are returned only for an owned world.")]
     public static async Task<CallToolResult> GetSessionStateAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Cancellation token supplied by the MCP host.")] CancellationToken cancellationToken)
@@ -911,7 +914,7 @@ public static class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Starts the prepared movement through DSP's Player.Order path and returns a pollable action. It never writes player position.")]
+    [Description("Starts the prepared movement through DSP's Player.Order path and returns a pollable action. Poll its actionId to terminal. On position_stalled or route_stalled, follow the opening-movement playbook and never retry the same target. It never writes player position.")]
     public static async Task<CallToolResult> CommitMoveAsync(
         IBridgeClient bridgeClient,
         string sessionId,
@@ -1247,7 +1250,7 @@ public static class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Consumes one unexpired plan to start a fresh peaceful 1x non-sandbox world through DSP's official new-game flow. Requires writes enabled and a UUID idempotency key.")]
+    [Description("Consumes one unexpired plan to start a fresh peaceful 1x non-sandbox world through DSP's official new-game flow. Requires writes enabled and a UUID idempotency key. After creation, read MCP resource spherewright://agent/playbooks/opening-movement-v1 before the first gameplay action.")]
     public static async Task<CallToolResult> CommitTestWorldAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Single-use plan token returned by spherewright_prepare_new_game.")] string planToken,

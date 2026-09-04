@@ -1,5 +1,14 @@
 namespace Spherewright.Contracts.Actions;
 
+public static class MovementFailureKinds
+{
+    public const string PositionStalled = "position_stalled";
+
+    public const string RouteStalled = "route_stalled";
+
+    public const string BoundedTimeout = "bounded_timeout";
+}
+
 public sealed class GetActionResultRequest
 {
     public string ActionId { get; set; } = string.Empty;
@@ -60,4 +69,20 @@ public sealed class ActionResultSnapshot
     public bool Stalled { get; set; }
 
     public bool RecoveryRequired { get; set; }
+
+    public string? FailureKind { get; set; }
+
+    public long? StalledGameTicks { get; set; }
+
+    public double? RemainingDistance { get; set; }
+
+    public bool DoNotRetrySameTarget { get; set; }
+
+    public string? RecommendedRecovery { get; set; }
+
+    public double? RecommendedShortMoveDistanceMeters { get; set; }
+
+    public double? OrthogonalProbeDistanceMeters { get; set; }
+
+    public int? MaximumOrthogonalProbeAttempts { get; set; }
 }

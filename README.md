@@ -14,6 +14,7 @@ Runtime evidence currently targets DSP `0.10.34.28529`, single-player peaceful m
 
 - An authenticated, current-user-only Named Pipe between the game Plugin and the local MCP server.
 - Structured reads for the player, progression, recipes, build catalog, resources, factory entities—including detailed logistics-station state—power, the local star system, actions, the per-save gameplay journal, a bounded v0.4 multi-planet native production window with independently recomputed theoretical capacity/utilization, cursor-stable per-planet power/logistics plus global-research summaries, and a versioned same-tick diagnostic bundle that joins those public domains without save identities, paths, or write credentials.
+- A directly discoverable MCP Agent playbook resource for opening movement, terminal polling, and bounded recovery from landing-capsule or factory collisions; the same concise file is included in release packages as `AGENT-PLAYBOOK.md`.
 - Two-phase `prepare → commit` actions for movement, harvesting, handcrafting, research, construction, building configuration—including no-inventory-mutation logistics-station storage and output-belt selection—player/storage and conservation-checked station-fleet transfers, refuelling, saving, and recovery.
 - Native-tick same-star flight with a separately saved, expiring pre-flight checkpoint that remains reusable only while that exact flight needs recovery, then loses its capability on success and retires after the covering primary save.
 - Exact owned-world restart handoff: healthy planned restarts load only the ticket-bound primary save, while quarantine recovery alone may use a fresh fixed LastExit whose header already proves the minimum tick. Spherewright never exposes a save picker or enumerates unrelated saves.
@@ -139,7 +140,7 @@ Runtime descriptors and credentials are protected for the current Windows user a
 
 ### Start a new world
 
-Leave DSP at its idle main menu, set `Safety.AllowWrites=true`, restart DSP, and ask the Agent to create a new world. Spherewright uses DSP's normal peaceful, non-sandbox, 1× new-game flow and saves it as `Spherewright_New_*`. Existing `Spherewright_M0_*` worlds keep their original names and remain eligible for their exact protected resume tickets; Spherewright does not migrate or rename them.
+Leave DSP at its idle main menu, set `Safety.AllowWrites=true`, restart DSP, and ask the Agent to create a new world. Spherewright uses DSP's normal peaceful, non-sandbox, 1× new-game flow and saves it as `Spherewright_New_*`. Before the first gameplay action, the Agent should read MCP resource `spherewright://agent/playbooks/opening-movement-v1`; it explains how to leave the landing capsule without replaying a stalled target. Existing `Spherewright_M0_*` worlds keep their original names and remain eligible for their exact protected resume tickets; Spherewright does not migrate or rename them.
 
 ### Continue an existing save
 

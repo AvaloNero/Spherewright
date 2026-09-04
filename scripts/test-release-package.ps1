@@ -61,6 +61,16 @@ try {
     }
 
     $executable = Join-Path $packageRoot 'mcp\Spherewright.Mcp.exe'
+    $packagedPlaybookPath = Join-Path $packageRoot 'AGENT-PLAYBOOK.md'
+    if (-not (Test-Path -LiteralPath $packagedPlaybookPath -PathType Leaf)) {
+        throw 'The packaged Agent playbook is missing.'
+    }
+    $packagedPlaybook = Get-Content -LiteralPath $packagedPlaybookPath -Raw
+    if ($packagedPlaybook -notmatch 'do not submit the same target again' `
+        -or $packagedPlaybook -notmatch 'four targets' `
+        -or $packagedPlaybook -notmatch 'each direction \*\*once\*\*') {
+        throw 'The packaged Agent playbook is missing required bounded-recovery rules.'
+    }
     $startInfo = [Diagnostics.ProcessStartInfo]::new()
     $startInfo.FileName = $executable
     $startInfo.WorkingDirectory = Split-Path -Parent $executable
@@ -120,6 +130,41 @@ try {
         throw "The packaged MCP exposed only $($tools.Count) tools; expected at least $ExpectedMinimumToolCount."
     }
 
+    $listResources = @{ jsonrpc = '2.0'; id = 3; method = 'resources/list'; params = @{} } | ConvertTo-Json -Depth 5 -Compress
+    $process.StandardInput.WriteLine($listResources)
+    $process.StandardInput.Flush()
+    $resourceListTask = $process.StandardOutput.ReadLineAsync()
+    if (-not $resourceListTask.Wait(10000)) {
+        throw 'The packaged MCP resources/list request timed out.'
+    }
+    $resourceListResponse = $resourceListTask.Result | ConvertFrom-Json
+    $playbookResource = @($resourceListResponse.result.resources) |
+        Where-Object { $_.uri -eq 'spherewright://agent/playbooks/opening-movement-v1' } |
+        Select-Object -First 1
+    if (-not $playbookResource) {
+        throw 'The packaged MCP did not advertise the opening-movement Agent playbook resource.'
+    }
+
+    $readResource = @{
+        jsonrpc = '2.0'
+        id = 4
+        method = 'resources/read'
+        params = @{ uri = [string]$playbookResource.uri }
+    } | ConvertTo-Json -Depth 5 -Compress
+    $process.StandardInput.WriteLine($readResource)
+    $process.StandardInput.Flush()
+    $resourceReadTask = $process.StandardOutput.ReadLineAsync()
+    if (-not $resourceReadTask.Wait(10000)) {
+        throw 'The packaged MCP resources/read request timed out.'
+    }
+    $resourceReadResponse = $resourceReadTask.Result | ConvertFrom-Json
+    $resourceText = [string]@($resourceReadResponse.result.contents)[0].text
+    if ($resourceText -notmatch 'do not submit the same target again' `
+        -or $resourceText -notmatch 'about \*\*5 m\*\*' `
+        -or $resourceText -notmatch 'four targets') {
+        throw 'The packaged MCP returned an incomplete opening-movement Agent playbook.'
+    }
+
     [pscustomobject]@{
         version = [string]$manifest.version
         productVersion = [string]$manifest.productVersion
@@ -129,6 +174,9 @@ try {
         serverName = [string]$initializeResponse.result.serverInfo.name
         serverVersion = [string]$initializeResponse.result.serverInfo.version
         toolCount = $tools.Count
+        resourceCount = @($resourceListResponse.result.resources).Count
+        hasOpeningMovementPlaybook = $true
+        packagedPlaybookBytes = (Get-Item -LiteralPath $packagedPlaybookPath).Length
         hasSessionState = $tools.name -contains 'spherewright_get_session_state'
         hasStationConfiguration = $tools.name -contains 'spherewright_prepare_configure_building'
         verified = $true

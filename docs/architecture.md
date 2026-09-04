@@ -5,7 +5,7 @@ Spherewright has four boundaries:
 1. `Spherewright.Contracts` contains stable wire DTOs and error codes.
 2. `Spherewright.Bridge.Core` contains framing, authentication, bounded queues, plans, idempotency, state/resource fingerprints, action states, and quarantine logic without game assemblies.
 3. `Spherewright.Plugin` is a thin BepInEx 5 adapter. It owns the secure Named Pipe and accesses DSP only from Unity's main thread.
-4. `Spherewright.Mcp` exposes structured tools over MCP stdio and never references game DLLs.
+4. `Spherewright.Mcp` exposes structured tools plus a small embedded Agent playbook resource over MCP stdio and never references game DLLs.
 
 ```text
 External Agent
@@ -18,6 +18,8 @@ External Agent
 ```
 
 The Pipe worker parses bounded DTO envelopes and enqueues immutable commands. `SpherewrightBridgeHost.PumpMainThread` updates session identity and runs a bounded number of commands inside a frame budget. Results leave the main thread only as Spherewright-owned deep copies.
+
+Movement planning remains outside the Plugin. `prepare_move` validates one surface target but does not inspect a future collision corridor. The Plugin's 180/600-tick watchdog terminates physical or route stalls, aborts only its exact owned order, and returns structured bounded-recovery fields. The MCP resource `spherewright://agent/playbooks/opening-movement-v1` turns the validated operating experience into host-readable guidance; all suggested escape candidates still go through normal fresh-read, prepare, commit, and terminal polling.
 
 Overseer keeps separate bounded snapshot stores for production, cross-domain summaries, and the combined diagnostic bundle. A fresh bundle executes both captures synchronously inside one dispatched main-thread command, then the game-independent composer admits a planet only when both DTOs share the exact factory/planet identity, runtime flags, and game tick. Only this allowlisted joined DTO is retained for continuation pages; the bundle does not carry a game object or introduce another persistence source.
 

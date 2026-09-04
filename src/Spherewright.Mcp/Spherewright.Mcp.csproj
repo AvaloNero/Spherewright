@@ -15,4 +15,9 @@
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="System.IO.FileSystem.AccessControl" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\docs\agent-playbook.md"
+                      Link="Resources\agent-playbook.md"
+                      LogicalName="Spherewright.Mcp.agent-playbook.md" />
+  </ItemGroup>
 </Project>

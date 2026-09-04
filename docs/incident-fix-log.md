@@ -1,6 +1,6 @@
 # Spherewright 首次问题与代码修复记录
 
-更新时间：2026-09-03（Asia/Singapore）
+更新时间：2026-09-04（Asia/Singapore）
 
 本文件专门记录项目第一次遇到的可复用工程问题：现场症状、根因、代码或协议
 修复、验证证据和仍有限制。它不是逐局流水账，也不是当前规则的唯一来源。
@@ -39,13 +39,24 @@
 
 - 首见：2026-08-31，密集设施区；随后在液罐基座、带区和处理器区复现。
 - 症状：订单仍 active，但位置或到目标的最佳距离不再改善，最终可能耗尽能量；
-  早期终态还会残留不属于当前动作的底层订单。
-- 根因：只看全局 timeout，未区分位移停滞、目标进展、能源饥饿和订单归属。
-- 修复：加入位移/最佳距离双 watchdog、能源暂停与恢复窗口重置、精确 `OrderNode`
-  所有权和结构化 stalled 终态；失败后只从 fresh 停点重新规划净空 waypoint。
-- 验证：180-tick 满能量卡脚能在耗尽前终止，旧订单不再靠坐标猜测清理；
-  密集设施路线按分段锚点恢复。
-- 关联：EXP-036、EXP-039；状态：`fixed`。
+  早期终态还会残留不属于当前动作的底层订单。v0.3.1 虽已有看门狗，线上 ZIP 却没有
+  playbook/experience/ledger，失败只用自然语言说明；普通外部 Agent 因而不知道开局着陆舱和
+  密集基座应如何有界脱困，容易重放相同目标。
+- 根因：最初只看全局 timeout，未区分位移停滞、目标进展、能源饥饿和订单归属；随后验证出的
+  5 m 单障碍背离、四个 4 m 正交探测和“业务 prepare 已过就别撞中心”仍只存在约 600 KB 的仓库
+  experience ledger，没有进入 MCP capability discovery 或发行包。`prepare_move` 本身也只验证
+  球面目标，不是碰撞路径预演器。
+- 修复：保留位移/最佳距离双 watchdog、能源暂停与恢复窗口重置和精确 `OrderNode` 所有权；
+  action result 增加 failure kind、停滞 tick、剩余距离、禁止同目标重试和有界恢复参数。新增可由
+  普通 Host `resources/list/read` 直接取得的精简 MCP playbook，并把同一份约 2.6 KB 文档放入发行包；
+  所有候选仍使用现有 prepare/commit Move，不在 Plugin 内寻路、传送或写位置。
+- 验证：既有实机多次证明 180-tick 满能量卡脚会在耗尽前终止且只清理 owned order；新增默认
+  180/600-tick、结构化 advice、Resource 发现/读取、新世界提示和包内文件自动测试通过，dirty
+  0.4.0 预演包以真实 stdio 读回 1 个 resource。候选二进制的新档完整实测中，飞行舱只在
+  vegetation resource 可见；首个正交 4 m Move 于 181 tick 返回结构化 `position_stalled`，未重放
+  原目标，第二方向成功，随后直接通过 harvest prepare 并完成首份铁矿采集。全程无键鼠、传送或
+  位置写入，所有 committed action 均有 terminal 结果。
+- 关联：EXP-036、EXP-039、EXP-057、EXP-061、EXP-076、EXP-179；状态：`fixed`。
 
 ## IFX-004 — 飞行检查点可在成功后回滚数小时进度
 

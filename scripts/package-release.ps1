@@ -113,6 +113,7 @@ try {
     Copy-Item -LiteralPath (Join-Path $repoRoot 'scripts\install-release.ps1') -Destination (Join-Path $packageRoot 'install.ps1')
     Copy-Item -LiteralPath (Join-Path $repoRoot 'scripts\locate-dsp.ps1') -Destination (Join-Path $packageRoot 'locate-dsp.ps1')
     Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\release-installation.md') -Destination (Join-Path $packageRoot 'INSTALL.md')
+    Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\agent-playbook.md') -Destination (Join-Path $packageRoot 'AGENT-PLAYBOOK.md')
     Copy-Item -LiteralPath (Join-Path $repoRoot 'LICENSE') -Destination (Join-Path $packageRoot 'LICENSE')
 
     $manifestFiles = @(

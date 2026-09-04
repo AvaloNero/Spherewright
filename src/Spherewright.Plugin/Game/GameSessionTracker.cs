@@ -1,4 +1,5 @@
 using BepInEx.Logging;
+using Spherewright.Bridge.Core.Safety;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Sessions;
 using Spherewright.Plugin.RuntimeDescriptor;
@@ -474,11 +475,9 @@ internal sealed class GameSessionTracker
         savedGameTick = null;
         outcomeUnknown = false;
         rejection = null;
-        if (!_writesConfigured
-            || !_userSaveImportConfigured
+        if (!UserSaveImportSafetyPolicy.IsEnabled(_writesConfigured, _userSaveImportConfigured)
             || !string.Equals(_writeHealth, WriteHealthStates.Healthy, StringComparison.Ordinal)
             || string.IsNullOrWhiteSpace(newOwnedSaveName)
-            || !newOwnedSaveName.StartsWith("Spherewright_Imported_", StringComparison.Ordinal)
             || newOwnedSaveName.Length > 96
             || !Guid.TryParse(actionId, out _))
         {
@@ -488,8 +487,13 @@ internal sealed class GameSessionTracker
 
         if (!TryGetCurrentUnownedImportCandidateOnMainThread(expectedSessionId, out var currentData, out var candidateRejection)
             || currentData is null
-            || !ReferenceEquals(currentData, expectedData)
-            || _revision != expectedRevision)
+            || !UserSaveImportSafetyPolicy.MatchesPreparedCandidate(
+                expectedSessionId,
+                _sessionId,
+                expectedRevision,
+                _revision,
+                expectedData,
+                currentData))
         {
             rejection = string.IsNullOrWhiteSpace(candidateRejection)
                 ? "The exact confirmed world or revision changed before save."
@@ -557,7 +561,10 @@ internal sealed class GameSessionTracker
 
             saveReturnedTrue = true;
             GameSave.ReadHeader(newOwnedSaveName, false, out var header);
-            if (header is null || header.gameTick != expectedSavedTick)
+            if (!UserSaveImportSafetyPolicy.HasVerifiedCopyHeader(
+                    saveReturnedTrue,
+                    expectedSavedTick,
+                    header?.gameTick))
             {
                 GameMain.gameName = originalGameName;
                 outcomeUnknown = true;
@@ -953,7 +960,9 @@ internal sealed class GameSessionTracker
             return false;
         }
 
-        if (!string.Equals(currentData.gameName, ticket.OwnedSaveName, StringComparison.Ordinal))
+        if (!OwnedWorldProvenancePolicy.MatchesProtectedSaveIdentity(
+                ticket.OwnedSaveName,
+                currentData.gameName))
         {
             rejection = "The flight checkpoint did not contain the exact primary owned-save identity.";
             return false;
@@ -1006,7 +1015,9 @@ internal sealed class GameSessionTracker
     {
         pending = false;
         rejection = string.Empty;
-        if (!string.Equals(currentData.gameName, ticket.OwnedSaveName, StringComparison.Ordinal))
+        if (!OwnedWorldProvenancePolicy.MatchesProtectedSaveIdentity(
+                ticket.OwnedSaveName,
+                currentData.gameName))
         {
             rejection = "The resumed payload did not contain the exact high-entropy owned save identity.";
             return false;

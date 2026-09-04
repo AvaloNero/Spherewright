@@ -93,7 +93,9 @@ internal sealed class UserSaveImportCoordinator
                 "Read restricted session state and prepare a fresh plan for its exact revision."));
         }
 
-        var generatedSaveName = $"Spherewright_Imported_{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}";
+        var generatedSaveName = SpherewrightSaveNameFactory.CreateImportedWorldName(
+            DateTimeOffset.UtcNow,
+            Guid.NewGuid());
         var payload = new UserSaveImportPlanPayload(
             requestedSessionId!,
             request.ExpectedRevision,

@@ -8,6 +8,8 @@ The first message on every Pipe connection must be an authenticated `handshake` 
 
 ## Current public MCP surface
 
+The MCP server also exposes the direct text resource `spherewright://agent/playbooks/opening-movement-v1`. It is available without a live Bridge and tells the Agent to poll every returned action to terminal, never replay a stalled target, use a single-obstacle 5 m tangent escape or at most four one-shot orthogonal 4 m probes, and fresh-read `Walk`/speed/energy after success. The `spherewright_get_status` payload and the session-state, Move, and new-world tool descriptions point clients to this resource before their first gameplay action.
+
 ```text
 spherewright_get_status
 spherewright_get_session_state
@@ -102,3 +104,5 @@ Responses never contain the Pipe name, bridge authentication token, descriptor p
 All normal-game mutations use separate `prepare_*` and `commit_*` methods. Prepare is read-only even when writes are disabled. Commit is single-flight by `(sessionId, idempotencyKey)`, rereads all preconditions on the Unity main thread, and records a queryable action state.
 
 If a commit may have been accepted but its result is unavailable, the MCP mapping returns `ACTION_OUTCOME_UNKNOWN`; clients must retry with the same request/key or query `get_action_result`. They must never use a new key to guess-replay the action.
+
+`prepare_move` validates the current owned session, planet, fresh player hash, finite surface target and arrival tolerance. It deliberately does not predict the collision-free path. A terminal movement stall now returns `failureKind` (`position_stalled` after the 180-tick displacement window or `route_stalled` after the 600-tick target-progress window), `stalledGameTicks`, `remainingDistance`, `doNotRetrySameTarget`, `recommendedRecovery`, `recommendedShortMoveDistanceMeters`, `orthogonalProbeDistanceMeters`, and `maximumOrthogonalProbeAttempts`. The coordinator still aborts only the exact `OrderNode` reference that it owns. It does not teleport, write position, or run an internal pathfinder.

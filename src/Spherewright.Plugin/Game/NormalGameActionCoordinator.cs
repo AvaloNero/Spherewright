@@ -863,6 +863,8 @@ internal sealed partial class NormalGameActionCoordinator
         if (progress.Status != MovementProgressStatus.Progressing)
         {
             AbortPlayerOrderIfOwned(action);
+            action.Stalled = true;
+            ApplyMovementFailureAdvice(action, MovementFailureRecoveryAdvisor.ForStall(progress));
             var condition = progress.Status == MovementProgressStatus.PositionStalled
                 ? $"made less than {MovementProgressWatchdog.DefaultMinimumDisplacement:F2} metres of physical progress"
                 : $"did not reduce its best remaining distance by {MovementProgressWatchdog.DefaultMinimumTargetProgress:F2} metres";
@@ -875,8 +877,27 @@ internal sealed partial class NormalGameActionCoordinator
         if (GameMain.gameTick > action.StartedAtGameTick + Math.Max(3600, action.Plan.EstimatedTicks * 8))
         {
             AbortPlayerOrderIfOwned(action);
+            ApplyMovementFailureAdvice(
+                action,
+                MovementFailureRecoveryAdvisor.ForBoundedTimeout(
+                    GameMain.gameTick - action.StartedAtGameTick,
+                    distance));
             Fail(action, "The normal movement order did not reach its target within the bounded game-tick window.");
         }
+    }
+
+    private static void ApplyMovementFailureAdvice(
+        ActionRecord action,
+        MovementFailureRecoveryAdvice advice)
+    {
+        action.FailureKind = advice.FailureKind;
+        action.StalledGameTicks = advice.StalledGameTicks;
+        action.RemainingDistance = advice.RemainingDistance;
+        action.DoNotRetrySameTarget = advice.DoNotRetrySameTarget;
+        action.RecommendedRecovery = advice.RecommendedRecovery;
+        action.RecommendedShortMoveDistanceMeters = advice.RecommendedShortMoveDistanceMeters;
+        action.OrthogonalProbeDistanceMeters = advice.OrthogonalProbeDistanceMeters;
+        action.MaximumOrthogonalProbeAttempts = advice.MaximumOrthogonalProbeAttempts;
     }
 
     private void UpdateHarvest(ActionRecord action)
@@ -1374,6 +1395,14 @@ internal sealed partial class NormalGameActionCoordinator
             FlightCheckpointGameTick = action.FlightCheckpointGameTick,
             Stalled = action.Stalled,
             RecoveryRequired = action.RecoveryRequired,
+            FailureKind = action.FailureKind,
+            StalledGameTicks = action.StalledGameTicks,
+            RemainingDistance = action.RemainingDistance,
+            DoNotRetrySameTarget = action.DoNotRetrySameTarget,
+            RecommendedRecovery = action.RecommendedRecovery,
+            RecommendedShortMoveDistanceMeters = action.RecommendedShortMoveDistanceMeters,
+            OrthogonalProbeDistanceMeters = action.OrthogonalProbeDistanceMeters,
+            MaximumOrthogonalProbeAttempts = action.MaximumOrthogonalProbeAttempts,
         };
         var after = action.AfterInventory ?? CaptureInventory(GameMain.mainPlayer);
         foreach (var itemId in action.BeforeInventory.Keys.Concat(after.Keys).Distinct().OrderBy(id => id))
@@ -2087,6 +2116,14 @@ internal sealed partial class NormalGameActionCoordinator
         public bool Stalled { get; set; }
 
         public bool RecoveryRequired { get; set; }
+        public string? FailureKind { get; set; }
+        public long? StalledGameTicks { get; set; }
+        public double? RemainingDistance { get; set; }
+        public bool DoNotRetrySameTarget { get; set; }
+        public string? RecommendedRecovery { get; set; }
+        public double? RecommendedShortMoveDistanceMeters { get; set; }
+        public double? OrthogonalProbeDistanceMeters { get; set; }
+        public int? MaximumOrthogonalProbeAttempts { get; set; }
         public List<int> PrebuildIds { get; set; } = new List<int>();
         public List<BuildExpectedEntity> ExpectedBuildEntities { get; set; } = new List<BuildExpectedEntity>();
         public HashSet<int> PreexistingBuildEntityIds { get; } = new HashSet<int>();

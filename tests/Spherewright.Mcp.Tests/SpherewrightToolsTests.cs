@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol.Server;
+using Spherewright.Bridge.Core.Safety;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Errors;
@@ -13,6 +14,7 @@ using Spherewright.Contracts.Resources;
 using Spherewright.Contracts.Sessions;
 using Spherewright.Contracts.Testing;
 using Spherewright.Mcp.BridgeClient;
+using Spherewright.Mcp.Resources;
 using Spherewright.Mcp.Tools;
 using Xunit;
 
@@ -97,6 +99,50 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void AssemblyRegistration_ExposesReadableOpeningMovementPlaybookResource()
+    {
+        var services = new ServiceCollection();
+        services.AddMcpServer().WithResourcesFromAssembly(typeof(AgentPlaybookResources).Assembly);
+        using var provider = services.BuildServiceProvider();
+
+        var resource = Assert.Single(provider.GetServices<McpServerResource>());
+        Assert.False(resource.IsTemplated);
+        var descriptor = resource.ProtocolResource
+            ?? throw new InvalidOperationException("Expected a direct MCP resource descriptor.");
+        Assert.Equal(AgentPlaybookResources.OpeningMovementUri, descriptor.Uri);
+        Assert.Equal("text/markdown", descriptor.MimeType);
+
+        var contents = AgentPlaybookResources.GetOpeningMovementPlaybook();
+        Assert.Equal(AgentPlaybookResources.OpeningMovementUri, contents.Uri);
+        Assert.Contains("do not submit the same target again", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("about **5 m**", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("four targets", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("each direction **once**", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("movementState=Walk", contents.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NewWorldCommit_AdvertisesDiscoverableOpeningPlaybook()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer()
+            .WithToolsFromAssembly(typeof(SpherewrightTools).Assembly)
+            .WithResourcesFromAssembly(typeof(AgentPlaybookResources).Assembly);
+        using var provider = services.BuildServiceProvider();
+
+        var commitNewGame = Assert.Single(
+            provider.GetServices<McpServerTool>(),
+            tool => tool.ProtocolTool.Name == "spherewright_commit_new_game");
+        var playbook = Assert.Single(provider.GetServices<McpServerResource>());
+        var playbookDescriptor = playbook.ProtocolResource
+            ?? throw new InvalidOperationException("Expected a direct MCP resource descriptor.");
+
+        Assert.Contains(AgentPlaybookResources.OpeningMovementUri, commitNewGame.ProtocolTool.Description, StringComparison.Ordinal);
+        Assert.Equal(AgentPlaybookResources.OpeningMovementUri, playbookDescriptor.Uri);
+    }
+
+    [Fact]
     public async Task StatusTool_ReturnsStructuredSuccess()
     {
         var result = await SpherewrightTools.GetStatusAsync(
@@ -108,7 +154,50 @@ public sealed class SpherewrightToolsTests
         var structured = result.StructuredContent.Value;
         Assert.True(structured.GetProperty("success").GetBoolean());
         Assert.True(structured.GetProperty("status").GetProperty("bridgeConnected").GetBoolean());
+        Assert.Equal(
+            AgentPlaybookResources.OpeningMovementUri,
+            structured.GetProperty("agentPlaybookResourceUri").GetString());
+        Assert.Contains("before the first gameplay action", structured.GetProperty("recommendedFirstStep").GetString(), StringComparison.Ordinal);
         Assert.False(structured.TryGetProperty("authToken", out _));
+    }
+
+    [Fact]
+    public async Task ActionResultTool_ReturnsStructuredMovementRecovery()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            ActionResult = new ActionResultSnapshot
+            {
+                ActionId = "move-stall",
+                ActionKind = NormalActionKinds.Move,
+                State = NormalActionStates.ActionFailed,
+                Terminal = true,
+                Succeeded = false,
+                Stalled = true,
+                FailureKind = MovementFailureKinds.PositionStalled,
+                StalledGameTicks = 180,
+                RemainingDistance = 12.5,
+                DoNotRetrySameTarget = true,
+                RecommendedRecovery = MovementFailureRecoveryAdvisor.RecoverySummary,
+                RecommendedShortMoveDistanceMeters = 5,
+                OrthogonalProbeDistanceMeters = 4,
+                MaximumOrthogonalProbeAttempts = 4,
+            },
+        };
+
+        var result = await SpherewrightTools.GetActionResultAsync(
+            bridge,
+            "move-stall",
+            CancellationToken.None);
+
+        var action = result.StructuredContent!.Value.GetProperty("result");
+        Assert.Equal("position_stalled", action.GetProperty("failureKind").GetString());
+        Assert.Equal(180, action.GetProperty("stalledGameTicks").GetInt64());
+        Assert.Equal(12.5, action.GetProperty("remainingDistance").GetDouble());
+        Assert.True(action.GetProperty("doNotRetrySameTarget").GetBoolean());
+        Assert.Equal(5, action.GetProperty("recommendedShortMoveDistanceMeters").GetDouble());
+        Assert.Equal(4, action.GetProperty("orthogonalProbeDistanceMeters").GetDouble());
+        Assert.Equal(4, action.GetProperty("maximumOrthogonalProbeAttempts").GetInt32());
     }
 
     [Fact]
@@ -469,6 +558,8 @@ public sealed class SpherewrightToolsTests
 
         public BridgeCallResult<ListAssemblersResult>? ListResult { get; set; }
 
+        public ActionResultSnapshot? ActionResult { get; set; }
+
         public string? LastSessionId { get; private set; }
 
         public ListAssemblersRequest? LastListRequest { get; private set; }
@@ -643,14 +734,15 @@ public sealed class SpherewrightToolsTests
             GetActionResultRequest request,
             CancellationToken cancellationToken)
         {
-            return Task.FromResult(BridgeCallResult<ActionResultSnapshot>.Succeeded(new ActionResultSnapshot
+            var result = ActionResult ?? new ActionResultSnapshot
             {
                 ActionId = request.ActionId,
                 ActionKind = "new-game",
                 State = "completed",
                 Terminal = true,
                 Succeeded = true,
-            }));
+            };
+            return Task.FromResult(BridgeCallResult<ActionResultSnapshot>.Succeeded(result));
         }
 
         public Task<BridgeCallResult<PreparedNormalAction>> PrepareMoveAsync(

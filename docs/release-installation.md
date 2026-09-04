@@ -26,7 +26,7 @@ For a nonstandard DSP location:
 .\install.ps1 -DspDir 'D:\Games\Dyson Sphere Program'
 ```
 
-The command returns JSON containing the exact installed Plugin directory and MCP executable. Register that `Spherewright.Mcp.exe` path as a stdio MCP server in the external Agent host; do not pass runtime descriptors, authentication tokens, or save identities as arguments.
+The command returns JSON containing the exact installed Plugin directory and MCP executable. Register that `Spherewright.Mcp.exe` path as a stdio MCP server in the external Agent host; do not pass runtime descriptors, authentication tokens, or save identities as arguments. The package also includes the concise `AGENT-PLAYBOOK.md`; ordinary MCP hosts can discover and read the same content at `spherewright://agent/playbooks/opening-movement-v1`.
 
 Reinstalling the same MCP version requires `-Force`. The installer never starts DSP, changes a save, enables writes, or installs BepInEx. Spherewright's generated BepInEx configuration remains observation-only by default; enable `Safety.AllowWrites` only when you intend to authorize structured commits. Importing a world that you loaded manually also requires the separate `Safety.AllowUserSaveImport=true` opt-in, followed at runtime by a fresh no-side-effect prepare and your subsequent explicit confirmation in the Agent conversation.
 
@@ -34,7 +34,7 @@ Reinstalling the same MCP version requires `-Force`. The installer never starts 
 
 ### Start a new world
 
-Leave DSP at the idle main menu, set `Safety.AllowWrites=true`, restart DSP, and ask the Agent to create a new world. The normal new-game flow creates a peaceful, non-sandbox, 1× save named `Spherewright_New_*`. Legacy `Spherewright_M0_*` saves are not migrated or renamed and can still be resumed only through their exact protected tickets.
+Leave DSP at the idle main menu, set `Safety.AllowWrites=true`, restart DSP, and ask the Agent to create a new world. The normal new-game flow creates a peaceful, non-sandbox, 1× save named `Spherewright_New_*`. Before moving from the landing site, have the Agent read MCP resource `spherewright://agent/playbooks/opening-movement-v1` and follow its terminal-polling and bounded four-direction recovery rules. Legacy `Spherewright_M0_*` saves are not migrated or renamed and can still be resumed only through their exact protected tickets.
 
 ### Continue an existing save
 

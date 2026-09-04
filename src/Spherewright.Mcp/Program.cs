@@ -19,6 +19,7 @@ builder.Services.AddSingleton<IBridgeClient, NamedPipeBridgeClient>();
 builder.Services
     .AddMcpServer()
     .WithStdioServerTransport()
-    .WithToolsFromAssembly();
+    .WithToolsFromAssembly()
+    .WithResourcesFromAssembly();
 
 await builder.Build().RunAsync().ConfigureAwait(false);

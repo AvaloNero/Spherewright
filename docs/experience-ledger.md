@@ -1946,7 +1946,21 @@
 - 关联：`ROADMAP.md`、`scripts/package-release.ps1`、`docs/release-installation.md`、`src/Spherewright.Plugin/Game/UserSaveImportCoordinator.cs`。
 - 最近复验：2026-09-04（隔离分支 Release 构建与 127 项自动测试通过；未部署、未启动 DSP、未改任何存档）。
 
+### EXP-179 — 开局移动恢复规则必须随 MCP 和发行包交付
+
+- 状态：`validated`
+- 日期：2026-09-04
+- 适用范围：当前 DSP `0.10.34.28529`、新档跳过序章后的着陆舱附近移动，以及所有由 180/600-tick 看门狗终止的普通地表 Move。
+- 当前结论：`prepare_move` 只验证 owned session、当前星球、fresh player hash、有限球面目标和容差，不预判沿途碰撞；因此外部 Agent 在首次动作前必须取得一份与二进制同版本的操作规则。每个 commit 返回的 `actionId` 都要轮询到 terminal；`position_stalled/route_stalled` 后禁止重放同一目标。单一可识别障碍只做一次约 5 m 局部切向背离；多障碍或无法可靠识别着陆舱时最多做四个正交约 4 m 候选、每向一次，成功即停。成功后 fresh 复读 `Walk`、速度约 `<=0.1 m/s` 与能量；原业务 prepare 已通过时直接执行业务，不继续撞设备/资源中心。
+- 直接证据：既有 EXP-057/061/076 已在电塔、仓、液罐、制造台、带和矿机夹缝形成多组实机正反样本，180-tick 看门狗多次在核心耗尽前终止并仅清理精确 owned `OrderNode`。2026-09-04 的候选二进制新档实测又完成完整闭环：新世界在 tick 38 成为 `Spherewright_New_*` owned、和平、非沙盒、1×；全量 18,595 个 vegetation 的 186 页里，最近节点是距玩家 1.439 m 的飞行舱 `protoId=9999`，同时 factory entity 为 0。朝最近铁矿的第一个正交 4 m Move 在实际移动约 2.7 m 后被舱体边缘挡住，于第 181 tick 以 terminal `position_stalled` 结束，返回 `doNotRetrySameTarget=true` 和完整有界恢复字段；该目标未重放。第二个正交 4 m 目标一次成功，终点误差 0.207 m，fresh 状态为 `Walk`、速度 0、能量约 99.67%。最近铁矿此时距 12.445 m 且 `prepare_harvest` 已通过，因此没有继续撞矿脉中心；首次正常采集 terminal/completed/succeeded，矿量 `-1`、背包铁矿 `+1`，fresh 为 `Walk`/0、能量约 98.99%。最终普通保存 terminal/completed/succeeded，tick 22222、revision 7、write health healthy。全程只走 Bridge 的 prepare/commit/poll/fresh，没有键鼠、传送、位置写入或失败目标重复提交。线上 v0.3.1 ZIP SHA-256 `b05eabb20928e98850f6792ea001149fd2e30c92082994e6d9c43254e611cdcf` 的 235 个 ZIP entry 中没有 playbook/experience/ledger 文件。当前实现新增 MCP direct resource `spherewright://agent/playbooks/opening-movement-v1`、结构化失败字段和约 2.6 KB 的发行文件；预演包的真实 stdio `resources/list`/`resources/read` 已通过，且不包含完整账本。
+- 限制或反例：这仍不是全局寻路；四向全失败必须重新观察并停止扩张，不能无限尝试。飞行舱在当前版本可由 vegetation resource 明确认出，但 factory entity API 看不到它，且未来版本仍不能假设名称本地化文本稳定；水面 Drift、悬崖、飞行和断能另走各自状态机。
+- 复验触发：每个新档首次 Move、任一 structured stall、DSP 的 landing capsule 表示变化、watchdog 阈值/订单归属变化、MCP Resource 或发行包内容变化。
+- 关联：EXP-007、EXP-009、EXP-035、EXP-036、EXP-039、EXP-057、EXP-061、EXP-076、IFX-003、`docs/agent-playbook.md`。
+- 最近复验：2026-09-04（默认 180/600-tick、恢复 advice、MCP Resource 注册/内容、新世界工具提示和发行包 stdio/resource smoke 共 246 项自动测试及完整 Release build 通过；候选二进制 live 新档完成“着陆舱可见→首方向第 181 tick 结构化 stall→不同正交方向脱困→业务 prepare 通过即采集→矿量/背包守恒读回→正常保存”闭环）。
+
 ## 修订记录
+
+- 2026-09-04：EXP-179 升级为 validated，IFX-003 升级为 fixed。隔离候选插件使用独立 descriptor 与 handoff 目录创建和平、非沙盒、1× 新档；飞行舱在 vegetation resource 中为 `protoId=9999`、距出生点 1.439 m，factory entity 为空。第一个正交 4 m Move 于 181 tick 返回结构化 `position_stalled` 且未重放，第二个正交目标完成；fresh `Walk`/0/充足能量后，在 12.445 m 处直接通过 harvest prepare 并完成首次铁矿采集，矿量 `-1`、背包 `+1`。最终保存 tick `22222`、revision `7`、healthy。整个验收无键鼠、无传送、无位置写入，所有 committed action 均轮询至 terminal。随后正常关闭候选进程，逐字节恢复原配置、原 Plugin 和原 handoff 目录；原 protected resume 也以 terminal/completed/succeeded 返回长期 owned planet 104，fresh tick `18081842`、revision `1`、和平/非沙盒/1×、healthy，证明隔离验收没有消费或替换长期档的恢复链。
 
 - 2026-09-03：新增 EXP-152 并记录 IFX-016。首次 clean `0.3.0` 工件的 233 文件哈希、MCP initialize 和 48 工具均通过，但实机 Bridge 揭示 Plugin 仍报告 `0.1.0`，主动阻止 tag。版本来源统一后新增第 119 项测试，Core/Contracts/MCP 为 `86 + 14 + 19` 全通过，完整 solution 0 warning / 0 error，Mono.Cecil 证明 BepInEx metadata 为 `0.3.0`。主档先普通保存到 tick `13494061`，游戏正常关闭；修复候选包将旧 Plugin 和 MCP 目录分别整体移入可恢复备份后做第二次干净安装。新进程 live Bridge 在主菜单即报告 `0.3.0`；prototype preload 完成前的 resume prepare 以 `BRIDGE_NOT_READY` 无副作用拒绝，等待 ready 后只消费同一 protected ticket，恢复 planet `104`、和平/非沙盒/1×并自动重存到 tick `13494092`。随后 wrong-token 拒绝、正确 Bridge 握手、安装版 MCP `0.3.0.0 -> spherewright_get_status -> Plugin 0.3.0` 全部通过。fresh 审计 tick `13504262` 为 Walk/0、核心 `400/400 MJ`、3/3 drone idle、0 prebuild、Journal `49/49` durable、玩家不持有水/油/有机晶体/钛晶石/结构矩阵；有机晶体和钛晶石设备仍满电运行，sorter `2254` 携精炼油、`977` 携结构矩阵。黄糖 lab 此刻因本批金刚石正常耗尽而停机，不把最后在途矩阵冒充无限供料；此前跨窗持续生产证据仍成立。最终 tag 前必须从 clean Git commit 重打非 dirty 工件。
 

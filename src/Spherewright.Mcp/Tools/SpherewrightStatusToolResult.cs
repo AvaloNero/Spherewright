@@ -10,5 +10,9 @@ public sealed class SpherewrightStatusToolResult
     public BridgeStatus? Status { get; set; }
 
     public BridgeError? Error { get; set; }
+
+    public string AgentPlaybookResourceUri { get; set; } = string.Empty;
+
+    public string RecommendedFirstStep { get; set; } = string.Empty;
 }
 

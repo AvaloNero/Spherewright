@@ -275,3 +275,12 @@
   全部成功；8 个 `limit=1` 首屏占满容量，第 9 个按设计返回 `SERVER_BUSY`，此时完整首屏与既有
   continuation 仍分别成功。
 - 关联：EXP-125、EXP-156、EXP-166、`SnapshotPageStore<T>`；状态：`fixed`。
+
+## IFX-023 — 新版候选包内的安装说明仍把自己称为 v0.3.0
+
+- 首见：2026-09-04，从 clean commit `f43c8ce` 生成并实装首个 v0.4.0 候选包后复读包内 `INSTALL.md` 时。
+- 症状：manifest、Plugin 和自包含 MCP 都正确报告 `0.4.0`，但安装说明首句仍写死“`v0.3.0` release package”。安装步骤本身可用，却会让试用者误判包版本，也破坏 Release notes 与工件自描述的一致性。
+- 根因：`package-release.ps1` 原样复制仓库的通用 `docs/release-installation.md`；该文档在 v0.3 发布时把版本号写成常量，版本源统一只覆盖程序集和 manifest，没有覆盖这段人类可读文字。
+- 修复：把安装说明改成不写死 Spherewright 版本的通用表述，明确以 `manifest.json` 和安装器回显为 exact version 权威；DSP/BepInEx 已验证版本仍显式保留。首个 `f43c8ce` 包降级为预演证据，不能作为最终候选，必须从包含本修复的 clean commit 重新打包并复读包内说明。
+- 验证：修复后先用源码检索确认通用说明不再含旧版本常量；最终状态还要求新包 manifest/source commit、包内 `INSTALL.md`、自包含 MCP 版本和 live 安装结果一致。
+- 关联：EXP-152、EXP-153、`scripts/package-release.ps1`、`docs/release-installation.md`；状态：`fixed`。

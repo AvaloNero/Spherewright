@@ -1,6 +1,6 @@
 # Installing a Spherewright release
 
-The `v0.3.0` release package targets Windows x64, Dyson Sphere Program `0.10.34.28529`, and BepInEx `5.4.17.0`. It includes the Plugin and a self-contained MCP executable; end users do not need the repository, source code, or a .NET SDK.
+The versioned release package targets Windows x64, Dyson Sphere Program `0.10.34.28529`, and BepInEx `5.4.17.0`. Its exact Spherewright version is recorded in `manifest.json` and reported by the installer. The package includes the Plugin and a self-contained MCP executable; end users do not need the repository, source code, or a .NET SDK.
 
 ## Prerequisites
 

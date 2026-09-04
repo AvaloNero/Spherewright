@@ -2152,7 +2152,49 @@
 - 关联：EXP-098、EXP-144、EXP-159、EXP-164、EXP-167、`ProductionFaultClassifier`、`docs/research/game-api-overseer.md`。
 - 最近复验：2026-09-04（同一 save 正常制造、诊断、恢复、实际产量与普通保存闭环）。
 
+### EXP-171 — 受控缺料应阻断一条空载输入配置并按真实补料恢复
+
+- 状态：`validated`
+- 日期：2026-09-04
+- 适用范围：v0.4 同一 owned world 的可逆 `material_shortage` 制造/修复；当前实机对象为 planet `104` 原油精炼厂 `141`、输入 sorter `162` 与原油 item `1007`。
+- 当前结论：选择已有连续产量、输入带物料单一且 sorter 正处于空载窗口的设备，通过 DSP 正常 sorter UI 字段把输入过滤器临时设成该带不存在的已解锁物料，可以在不搬运/注入物品、不改缓冲且不拆建筑的条件下制造真实缺料。验收必须等设备吃完原输入，看到精确缺料 item/available/required 和 600-tick 实际产量归零；恢复必须清回原过滤器、看到真实货物被 sorter 搬入、finding 清除和后续完整窗口恢复非零产量。
+- 直接证据：动作 `a470c63b-9422-4554-968b-4179b9ca0ab6` 在 sorter `162` 空载时把无过滤改成铁矿 `1001`；源带只运原油。bundle tick `17177994` 将 refinery `141` 分类为 `material_shortage / confirmed`，证据为原油 `input_item_id=1007`、`input_available=0`、`input_required_per_cycle=2`，精炼油 600-tick 实际产量为 0。动作 `84f54718-8c66-4413-a1ab-e903fef1ba46` 清回 filter 0；随后原油输入恢复为 4、finding 清零，独立完整窗口达到精炼油生产/消耗各 `12 min⁻¹`。
+- 限制或反例：若源带混料，把 sorter 过滤成另一种实际存在的物料可能串料，不能使用；若设备原本输出堵塞或另一原料已经短缺，也不能把结果归因给目标输入。当前短窗口后来可能因批次边界显示 0，但已取得一次完整恢复窗口，验收不依赖单帧 `isWorking`。
+- 复验触发：sorter UI 赋值字段、cargo-free guard、原料带拓扑、生产诊断优先级、DSP 版本或受控故障验收定义变化。
+- 关联：EXP-021、EXP-104、EXP-154、EXP-155、EXP-170、`SorterFilterPolicy`、`ProductionFaultClassifier`。
+- 最近复验：2026-09-04（同档正常配置、缺料、清除配置、真实补料与完整速率窗口闭环）。
+
+### EXP-172 — 物流塔充电上限不是负载，供电试验必须先证明真实能量缺口
+
+- 状态：`validated`
+- 日期：2026-09-04
+- 适用范围：当前 DSP 版本的物流塔最大充电功率配置与 v0.4 `insufficient_power` 受控试验设计。
+- 当前结论：`maximumChargePowerWatts` 只是上限；满电物流塔仍只请求 60 kW idle floor。单独提高上限不会拉低电网，必须先以原生运输制造可观察的站内能量缺口，并同时证明 station requested charge 上升和同网生产者尚有完整输入/输出空间，才能把低功率 finding 归因于受控供电。扩大需求但没有可用远端供应也不会发船或耗能；即使本地快照显示 working vessel，也不能推断能量一定由本地塔支付，必须连续读回本塔 energy/request。
+- 直接证据：动作 `a95b2580-5f08-4bbc-933d-24263b6a27d6` 把满电 ILS `1657` 的充电上限从 30 MW 调到 150 MW，能量仍为 `12,000,000,000/12,000,000,000`，requested charge 仍为 60 kW，三网供电比均为 1。动作 `e262a00a-4dba-44a9-82b0-3c17d53cdde0` 又把钛需求上限 `100 -> 300`，但远端没有满足起送条件，订单保持 0、运输船 `1 idle / 0 working`、能量不变。后来硅需求 `300 -> 500` 延迟建立 `+200` 原生订单，本地快照经历 `0 idle / 1 working`，并真实送达 `333 -> 533`；覆盖完整往返的连续采样仍得到本塔 minimum energy 12 GJ、maximum requested charge 60 kW、network ratio minimum 1.0。再以“150 MW 上限 + 火电自然停料至 output 0 + 533/700 硅需求”组合时，远端又无现货而不派单，仍没有低压。因此两轮均明确未宣称断电门完成。
+- 限制或反例：运输出发后的瞬时充电窗口可能很短，也可能由另一端塔承担；后续试验需先在供给星建立可控库存、关闭母星需求，回到母星后再让只有母站舰队可发起的路线起送，或建立可控负载/电源拓扑。不得直接写 station energy、consumer request 或电网字段来制造结果。
+- 复验触发：物流塔 UI 充电语义、运输耗能、派送阈值、供电汇总/诊断公式、DSP 版本或新建安全供电原语变化。
+- 关联：EXP-069、EXP-098、EXP-144、EXP-156、EXP-170、`PowerNetworkSnapshot`、`ProductionFaultClassifier`。
+- 最近复验：2026-09-04（满电 30→150 MW、真实硅往返但本塔无能量缺口，以及无供应的放大试验均只产生预期无故障反例）。
+
+### EXP-173 — 飞行预算通过不代表核心全程有余量，终态仍以原生航迹和稳定落地为准
+
+- 状态：`validated`
+- 日期：2026-09-04
+- 适用范围：当前 DSP 与 flight controller、planet `104 -> 102` 约 61 km 同星系航段、400 MJ 核心和煤燃料样本。
+- 当前结论：飞行 prepare 的 600 MJ 保守总储备门能阻止明显不足，但燃料发电功率与推进瞬时消耗是另一维度；低功率煤可让核心在加速期降至 0，同时机甲仍靠反应堆继续加速和航行。不得看到核心 0 就自行中止已经持续接近目标的原生 Sail，也不得把本样本外推为所有航线安全。成功仍要求距离持续下降、速度/状态合理、目标星落地后连续 600 tick 保持 alive、grounded、Walk/0，并撤销 checkpoint capability。
+- 直接证据：18 煤时 prepare 只算出约 449 MJ 并以 `ACTION_REJECTED` 无副作用拒绝。节点 `402` 随后按正常采集共减少 80 煤，原生 refuel 后 fresh 燃料仓为 91；飞前普通保存 tick `17296462`。动作 `2209a388-9f77-41f7-bd31-d32f7d9e6066` 创建独立 checkpoint 后从 Fly 进入 Sail，距离约 `63.5 km -> 59.0 -> 51.8 -> 41.7 -> 28.5 -> 13.5 km`，速度约 `228 -> 387 -> 578 -> 774 -> 980 -> 1000 m/s`；核心中段为 0 后仍恢复至约 7.1 MJ。最终在 planet `102` grounded/Walk 连续 600 tick，于 `17304833` completed，checkpoint 消失；落地普通保存 tick `17305571`。
+- 限制或反例：该航段消耗后玩家只剩 35 煤且核心约 76.7 MJ，返航前必须在远端满充或补足高功率燃料并重新通过 prepare；煤样本不替代氢燃料的更高功率经验。任何距离不降、状态错误或结构化 `recovery_required` 仍须回载本次 flight checkpoint，而不是硬撑。
+- 复验触发：flight energy budget、燃料发电功率、推进/加速公式、600-tick 落地门、DSP 版本或返航样本变化。
+- 关联：EXP-047、EXP-051–053、EXP-080、EXP-083/084、`PrepareInterplanetaryFlightRequest`。
+- 最近复验：2026-09-04（同档 104→102 煤动力航行、稳定落地、checkpoint retirement 与普通保存闭环）。
+
 ## 修订记录
+
+- 2026-09-04：新增 EXP-173，并在第三组累计十个 accepted 游戏写动作后复验 EXP-001/007/021/030/047/069/072/080/083/084/144/156/172。八个保留 action 全部 `completed/succeeded`；展示失败前已经完成的 20 煤采集/加注由节点 `51992 -> 51972`、背包 `20 -> 0`、飞前燃料仓 fresh 91 与未重放共同核销。飞行 `2209a388-9f77-41f7-bd31-d32f7d9e6066` 在独立 checkpoint 后稳定落地 `102`，checkpoint 自动撤销；第十项普通保存 `04239b93-aa4e-46b4-8b89-aa78fc4793c2` 固化 tick `17305571`。严格审计 tick `17309480+` 为同一 owned 和平非沙盒 1× 世界、healthy、0 blocker/checkpoint、Walk/0、Journal `49/49` durable、175 built/0 prebuild、network 1 ratio 1、0 BepInEx error。远端 ILS `44` 满电、30 MW、钛 `200/200`、硅 `109/300`、两槽 Remote Supply、0 order、`1 idle / 0 working` vessel；玩家核心约 76.7/400 MJ、35 煤、空手搓、3/3 施工机 idle。下一写前账本已更新；后续先安全接近站体并正常取走远端唯一 idle vessel，建立母站单端派船条件。
+
+- 2026-09-04：第二组累计十个 accepted 游戏写动作后复验 EXP-001/007/021/030/069/072/098/144/156/170–172。九个可寻址 action 全部 `completed/succeeded`，组合脚本在第一个槽已成功后因第二槽自然出现订单而停止；未重放的第十项由钛槽 `item1004 / 0/300 / remote None / orders0` 与 revision 唯一核销。两轮供电试验均按事实判为负例：一次 `+200` 硅真实往返使库存 `333 -> 533`，但母塔连续 minimum energy 12 GJ、maximum request 60 kW、minimum ratio 1；第二次火电 output 自然归零并把上限升至 150 MW，`533/700` 却因远端无现货不派单。恢复火电后的严格审计 tick `17272033+` 为同一 owned 和平非沙盒 1× 世界、healthy、0 blocker/checkpoint、2254 built/0 prebuild、三网 ratio 1、Walk/0、满核心、空手搓、3/3 施工机 idle、Journal `49/49` durable、0 pending/error、0 BepInEx error。火电 sorter 已恢复 `163 -> 678 -> 183` 无过滤，机组输出 `18335/tick`；ILS 满电、0 order，150 MW 上限仍只是无负载暂存值，下一写先恢复 30 MW。
+
+- 2026-09-04：新增 EXP-171/172，并在累计十个 accepted 游戏写动作后复验 EXP-001/007/021/030/069/072/098/104/144/154–156/159/164/167/170。七个仍在当前 action store 的配置动作全部为 `completed/succeeded` 且未 reconciliation/stall/recovery；三次跨进程保存/恢复由 exact-primary tick `17048233/17048265` 与 fresh 主档 tick `17136808` 唯一核销。严格审计 tick `17196640+` 为同一 owned planet `104`、和平/非沙盒/1×、healthy、0 blocker/checkpoint、2254 built/0 prebuild、三网 ratio 1、Walk/0、满核心、空手搓、3/3 施工机 idle、Journal `49/49` durable、0 pending/error、0 BepInEx error。sorter `162` 已恢复无过滤的 `161 -> 141` 拓扑，PLS `918` 保持 Supply；ILS `1657` 满电、0 order，150 MW 只是暂存的已证明配置，下一游戏写将先恢复 30 MW。
 
 - 2026-09-04：新增 EXP-170，并复验 EXP-001/007/021/030/069/072/098/144/159/164/167。先以母星硅 `+200` 真实订单清开远端共享输入，使 189 钛石正常送回并恢复本地钛块源。随后只通过正常站点 UI 路径在订单归零窗口暂时撤销 `918:slot0` 的 Supply；完整 600-tick bundle 将 `767/item1118` 精确分类为 `logistics_blocked / confirmed`。恢复 Supply 后原生无人机送达，finding 清零、钛晶石实际产量达到 `12 min⁻¹`。保存结果由 fresh `LastOwnedSaveGameTick=17136808`、revision 8、healthy、0 blocker/checkpoint 和新 restart ticket 核销；本地展示误读了不存在的 action 字段后没有重放保存。真正的在途 600-tick stall、缺料与断电试验仍开放。
 

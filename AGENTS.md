@@ -4,7 +4,7 @@
 
 Spherewright 是面向外部 Agent 的《戴森球计划》结构化控制层。Plugin 负责当前 DSP 版本的薄适配，Bridge 负责本机安全协议，MCP Server 暴露观察与受控动作；项目不内置 LLM、自主 Goal Planner 或长期自主循环。
 
-当前版本是 **v0.3.1 — Authorized Save Import**，它是从不可变的 `v0.3.0` 基线制作的窄范围兼容性补丁。M0 首颗红色矩阵和 `v0.3.0` 物流塔能力只是历史锚点；当前补丁范围、后续版本边界和发行门以 [ROADMAP.md](./ROADMAP.md) 为准。
+当前版本是 **v0.3.3 — Gameplay Mode Compatibility**，它从不可变的 `v0.3.2` 发布基线回移一项窄范围兼容性修复：沙盒状态和资源倍率继续被观察、报告和保留，但不再作为普通动作、导入或恢复的授权门禁。M0 首颗红色矩阵和 `v0.3.0` 物流塔能力只是历史锚点；补丁不引入 v0.4 Overseer 能力或新动作域。
 
 本轮允许：继承 `v0.3.0` 的普通生产、科研、供电、地表移动、同星系原生飞行、受保护恢复和物流塔原语；另允许一次明确的“用户授权导入/认领当前存档”入口。玩家必须已经在 DSP 内手工载入目标世界；Agent 先做无游戏副作用的导入预检并在对话中单独询问，只有用户随后明确确认，Spherewright 才可用 DSP 正常保存 API 创建服务端命名的新 owned 副本。补丁不引入 v0.4 Overseer 能力或其他新动作域。
 
@@ -13,7 +13,7 @@ Spherewright 是面向外部 Agent 的《戴森球计划》结构化控制层。
 - 内置 Agent/LLM、自主规划循环和一次调用批量盖章的蓝图施工；
 - 黑雾、战斗、多人、Nebula 和跨恒星曲速自动化；
 - Computer Use、截图识别、键鼠宏、外部内存扫描或游戏程序集修改；
-- 沙盒、物品注入、直接填写设备/物流塔缓冲、直接解锁科技、瞬建、瞬移、游戏加速或存档编辑；
+- 调用或依赖沙盒工具、物品注入、直接填写设备/物流塔缓冲、直接解锁科技、瞬建、瞬移、游戏加速或存档编辑；存档处于沙盒模式本身不再构成拒绝理由；
 - 枚举、主动读取或载入任何非 Spherewright 自建并登记的存档；唯一例外是玩家已在 DSP 中手工载入、完成预检并在对话中随后明确确认的当前内存世界，可按本文件第 5 节另存为新 owned 副本。
 
 ## 1. 权威文档
@@ -78,12 +78,12 @@ DSP native gameplay systems
 
 ## 5. Owned world 与恢复
 
-- 新世界固定为单人、和平、1× 资源、关闭沙盒；任何一项未知都 fail-closed。
+- Spherewright 新建世界的基准默认仍是单人、和平、1× 资源、关闭沙盒。已存在或已导入的 owned world 必须能证明和平模式；沙盒状态和资源倍率只是运行证据，不是写入、导入或恢复门禁。
 - 保存名由服务端生成并内部保留，客户端不能指定、枚举或选择存档。
 - 当前进程以精确 `GameData` 实例和受保护登记证明所有权；进入其他世界时只能返回受限状态，不读取其内容。
 - 导入只能从玩家已经手工载入的当前世界发起。Agent 必须先调用 prepare 做无游戏/存档副作用的预检并展示返回的确认语义，然后在对话里单独询问；先前“继续”“接手”等请求不能替代这次预检后的确认。
 - 只有用户在预检之后的消息中明确同意，Agent 才能在 commit 中声明 `userConfirmedInConversation=true`，并同时确认“原档不变”和“Journal 从导入点开始”。Plugin 不声称能读取聊天记录；这些字段是 MCP 调用方对当前对话证据的声明。
-- 导入计划必须短时、单次，只绑定当前进程、session、revision 和精确 `GameData`；切换世界、revision 变化、过期或开始保存尝试后不能复用。commit 还要复核和平、非沙盒、1×、本地工厂 ready、写开关和同一对象身份。
+- 导入计划必须短时、单次，只绑定当前进程、session、revision 和精确 `GameData`；切换世界、revision 变化、过期或开始保存尝试后不能复用。commit 还要复核和平模式、实际沙盒/倍率证据、本地工厂 ready、写开关和同一对象身份；沙盒/倍率值不用于拒绝。
 - 导入只调用 DSP 正常保存 API，把当前内存世界另存为服务端生成的高熵 owned 名称；原始保存名和路径不得进入公共 DTO、日志或文档，原存档不得覆盖、改名、删除或成为恢复目标。保存及 header 复读证明成功前不得取得 ownership。
 - 导入是显式时间边界：逐档 Journal 从导入时开始并标记历史覆盖不完整；不得根据导入时已有的物品、科技、升级或设备补造此前的“首次”事件。
 - 正常保存只允许当前 owned identity，并调用 DSP 正常保存 API。
@@ -123,7 +123,7 @@ state hash 使用版本化、无歧义规范编码；列表 cursor 绑定 sessio
 
 ## 8. 当前 v0.3 验收
 
-完整版本门以 Roadmap 为准。`v0.3.1` 继承已发布 `v0.3.0` 的物流塔与发行证据；本补丁发布候选还必须满足：
+完整版本门以 Roadmap 为准。`v0.3.3` 继承已发布 `v0.3.2` 的能力与发行证据；本补丁发布候选还必须满足：
 
 - 两个星球各有一座普通施工、正常供电的 ILS；运输船真实搬运远端钛和硅。
 - 母星钛/硅输出通过正常物流接入生产，临时石转硅安全退役或明确转为备用。
@@ -132,7 +132,7 @@ state hash 使用版本化、无歧义规范编码；列表 cursor 绑定 sessio
 - 普通保存、正常关闭、精确恢复后配置与运输继续有效。
 - Core/Contracts/MCP 自动测试、完整 solution 构建、当前 DSP 实机回归和经验账本审计通过。
 - 用户授权导入满足“预检后单独询问、用户后续明确确认”、计划单次/过期/session/revision/对象绑定、原档不变、正常另存、header 复读、失败不认领和导入前 Journal 历史未知等安全门。
-- `v0.3.1` 自包含 Windows 包在干净受支持环境启动并完成 MCP 握手；当前 DSP 的跨电脑原档/副本实机验证在预发布说明中明确标为待完成。
+- `v0.3.3` 包在异机受支持环境启动并完成 MCP 握手；至少分别验证一个沙盒或非 1× 的和平存档可导入、执行普通动作、保存并恢复，而实际模式证据始终可见。
 
 完成当前版本后，先用独立提交把本文件“当前目标”切换到下一版本，再开始新增动作域。
 
@@ -156,11 +156,11 @@ dotnet build Spherewright.sln --no-restore
 发行包：
 
 ```powershell
-./scripts/package-release.ps1 -Version 0.3.1
-./scripts/test-release-package.ps1 -PackagePath ./artifacts/Spherewright-0.3.1-win-x64.zip
+./scripts/package-release.ps1 -Version 0.3.3
+./scripts/test-release-package.ps1 -PackagePath ./artifacts/Spherewright-0.3.3-win-x64.zip
 ```
 
-测试至少覆盖 DTO/错误码兼容、规范哈希、计划过期、幂等、single-flight、cursor 绑定、模式 fail-closed、资源预算、动作 outcome、恢复票据/checkpoint 生命周期、MCP 注册与 stdout 纯净。Windows 集成测试覆盖当前用户 ACL、错误 token、畸形/超大帧、队列满、描述文件权限与退出清理。
+测试至少覆盖 DTO/错误码兼容、规范哈希、计划过期、幂等、single-flight、cursor 绑定、和平模式 fail-closed、沙盒/倍率非门禁、资源预算、动作 outcome、恢复票据/checkpoint 生命周期、MCP 注册与 stdout 纯净。Windows 集成测试覆盖当前用户 ACL、错误 token、畸形/超大帧、队列满、描述文件权限与退出清理。
 
 实机验收必须使用当前支持的 DSP/BepInEx，记录脱敏 before/after、动作终态、供电/物流/产量、保存与恢复。截图只能补充展示，不能代替结构化证据。
 
@@ -177,7 +177,7 @@ dotnet build Spherewright.sln --no-restore
 累计第 10 个 accepted 游戏写动作后，先冻结下一次游戏 commit，完成严格审计并更新账本。审计至少包括：
 
 - 10 个动作的终态或唯一 fresh 状态核销；
-- 和平、非沙盒、1×、owned、write health、blockers 和 checkpoint；
+- 和平、实际沙盒状态、实际资源倍率、owned、write health、blockers 和 checkpoint；
 - 玩家移动/能量/手搓/施工状态；
 - journal durable-through、pending 和 persistence error；
 - 工厂 built/prebuild、相关有向拓扑、设备供电和关键库存；

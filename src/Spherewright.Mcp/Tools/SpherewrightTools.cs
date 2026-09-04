@@ -1262,7 +1262,7 @@ public static class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Loads DSP's fresh fixed LastExit slot, or after a failed shutdown only the exact fresh primary owned save sealed inside the protected ticket, through DSPGame.StartGame. Adoption still requires the ticket's embedded high-entropy owned name, minimum tick, planet, peaceful/non-sandbox state, and 1x resources to match.")]
+    [Description("Loads DSP's fresh fixed LastExit slot, or after a failed shutdown only the exact fresh primary owned save sealed inside the protected ticket, through DSPGame.StartGame. Adoption still requires the ticket's embedded high-entropy owned name, minimum tick, planet, and peaceful state to match; sandbox state and resource multiplier are preserved and reported but do not gate adoption.")]
     public static async Task<CallToolResult> CommitOwnedWorldResumeAsync(
         IBridgeClient bridgeClient,
         string planToken,
@@ -1305,7 +1305,7 @@ public static class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Interrupts only its bound flight attempt, then loads the internally named checkpoint through DSPGame.StartGame. Adoption requires its exact saved tick, embedded primary owned-save identity, origin planet, peaceful/non-sandbox state, and 1x resources; the ticket remains reusable for another failed attempt.")]
+    [Description("Interrupts only its bound flight attempt, then loads the internally named checkpoint through DSPGame.StartGame. Adoption requires its exact saved tick, embedded primary owned-save identity, origin planet, and peaceful state; sandbox state and resource multiplier are preserved and reported but do not gate adoption, and the ticket remains reusable for another failed attempt.")]
     public static async Task<CallToolResult> CommitFlightCheckpointReloadAsync(
         IBridgeClient bridgeClient,
         string planToken,

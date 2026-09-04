@@ -1958,7 +1958,21 @@
 - 关联：EXP-007、EXP-009、EXP-035、EXP-036、EXP-039、EXP-057、EXP-061、EXP-076、IFX-003、`docs/agent-playbook.md`。
 - 最近复验：2026-09-04（默认 180/600-tick、恢复 advice、MCP Resource 注册/内容、新世界工具提示和发行包 stdio/resource smoke 共 246 项自动测试及完整 Release build 通过；候选二进制 live 新档完成“着陆舱可见→首方向第 181 tick 结构化 stall→不同正交方向脱困→业务 prepare 通过即采集→矿量/背包守恒读回→正常保存”闭环）。
 
+### EXP-181 — 存档模式证据不应与动作授权混为同一门禁
+
+- 状态：`observed`
+- 日期：2026-09-05
+- 适用范围：`v0.3.3` 和后续版本的 owned peaceful world，包括导入、普通写入、planned restart 和 flight-checkpoint adoption。
+- 当前结论：沙盒状态和资源倍率应持续在 session DTO 中如实报告，但不应决定是否可以调用 Spherewright 已有的有界普通动作。真正的安全边界是工具面和不变量：仍禁止沙盒工具、物品/能量/科技注入、瞬建、瞬移和缓冲直写。当前战斗域未实现，因此可读且确认和平模式仍是门禁。
+- 直接证据：旧实现在 `GameSessionTracker` 的全局 write blockers、导入采用、计划重启采用、飞行检查点采用及 handoff 脚本中重复拒绝 sandbox/non-1×，导致同一存档可能在某个阶段可见、恢复阶段却失去所有权。`GameplayModePolicy` 现将五项模式输入集中为“描述符存在 + 和平”唯一授权条件，6 组 sandbox/倍率组合正样本和 2 组缺失/战斗反样本均通过；Core/Contracts/MCP 共 158 项测试通过（`120 + 15 + 23`），完整 Release solution 构建 0 warning / 0 error。
+- 限制或反例：当前只有离线策略与编译证据；沙盒存档、沙盒工具已开和非 1× 存档尚需在异机验证导入、普通动作、保存和恢复；未经证明前不宣称其与基准档具有相同实机兼容性。
+- 复验触发：异机首次安装，沙盒或非 1× 档的首次导入/动作/保存/恢复，DSP 版本变化，任何新动作依赖 sandbox flag 或 resource multiplier，以及后续发布门复核。
+- 关联：EXP-153、`GameplayModePolicy`、`GameSessionTracker`、`UserSaveImportCoordinator`、`OwnedWorldResumeCoordinator`、`FlightCheckpointReloadCoordinator`。
+- 最近复验：2026-09-05（源码门禁全面检索、8 项新策略用例、158 项总回归与完整 Release 构建通过；等待异机实机证据）。
+
 ## 修订记录
+
+- 2026-09-05：新增 EXP-181。从不可变 `v0.3.2` 建立 `v0.3.3` 维护候选，保留沙盒/倍率观察证据，移除普通写入、导入、计划重启和飞行检查点的对应门禁；不开放沙盒工具或任何旁路写入。离线 158 项测试与完整 Release build 通过，异机 live 待验证。
 
 - 2026-09-04：EXP-179 升级为 validated，IFX-003 升级为 fixed。隔离候选插件使用独立 descriptor 与 handoff 目录创建和平、非沙盒、1× 新档；飞行舱在 vegetation resource 中为 `protoId=9999`、距出生点 1.439 m，factory entity 为空。第一个正交 4 m Move 于 181 tick 返回结构化 `position_stalled` 且未重放，第二个正交目标完成；fresh `Walk`/0/充足能量后，在 12.445 m 处直接通过 harvest prepare 并完成首次铁矿采集，矿量 `-1`、背包 `+1`。最终保存 tick `22222`、revision `7`、healthy。整个验收无键鼠、无传送、无位置写入，所有 committed action 均轮询至 terminal。随后正常关闭候选进程，逐字节恢复原配置、原 Plugin 和原 handoff 目录；原 protected resume 也以 terminal/completed/succeeded 返回长期 owned planet 104，fresh tick `18081842`、revision `1`、和平/非沙盒/1×、healthy，证明隔离验收没有消费或替换长期档的恢复链。
 

@@ -1,8 +1,8 @@
 # Installing a Spherewright release
 
-The local `v0.3.2` release-candidate package targets Windows x64, Dyson Sphere Program `0.10.34.28529`, and BepInEx `5.4.17.0`. It includes the Plugin and a self-contained MCP executable; end users do not need the repository, source code, or a .NET SDK. This patch is awaiting local end-to-end and cross-computer live validation of the explicitly confirmed save-import flow; keep an untouched backup of any save used for testing. Building this candidate does not mean that a `v0.3.2` tag or GitHub Release exists.
+The local `v0.3.3` test package targets Windows x64, Dyson Sphere Program `0.10.34.28529`, and BepInEx `5.4.17.0`. It includes the Plugin and a self-contained MCP executable; end users do not need the repository, source code, or a .NET SDK. This patch is awaiting cross-computer live validation of sandbox/non-1× compatibility and the explicitly confirmed save-import flow; keep an untouched backup of any save used for testing. Building this candidate does not mean that a `v0.3.3` tag or GitHub Release exists.
 
-The supported gameplay scope is single-player, peaceful, non-sandbox, and 1× resources. Dark Fog/combat, sandbox, multiplayer or Nebula, non-1× resources, broad third-party Mod compatibility, an arbitrary save picker, and arbitrary save-name loads are not guaranteed.
+The supported gameplay scope is single-player peaceful mode. Sandbox state and resource multiplier are reported but do not block import, normal actions, saving, or protected recovery; they never enable extra Spherewright actions or sandbox-tool calls. The validated reference world is still non-sandbox with 1× resources, so the new compatibility path remains test-candidate evidence until the cross-computer run. Dark Fog/combat, multiplayer or Nebula, broad third-party Mod compatibility, an arbitrary save picker, and arbitrary save-name loads are not guaranteed.
 
 ## Prerequisites
 

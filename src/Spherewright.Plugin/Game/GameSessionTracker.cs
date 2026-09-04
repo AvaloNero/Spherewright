@@ -328,7 +328,7 @@ internal sealed class GameSessionTracker
                 ? SandboxModeStates.Enabled
                 : SandboxModeStates.ConfirmedDisabled;
         var localPlanet = _observedData.localPlanet;
-        var blockers = CreateWriteBlockers(descriptor, peacefulState, sandboxState);
+        var blockers = CreateWriteBlockers(peacefulState);
         var writesAllowed = blockers.Count == 0;
 
         var owned = new SessionState
@@ -512,12 +512,14 @@ internal sealed class GameSessionTracker
 
         var descriptor = currentData.gameDesc;
         if (descriptor is null
-            || !descriptor.isPeaceMode
-            || descriptor.isSandboxMode
-            || GameMain.sandboxToolsEnabled
-            || Math.Abs(descriptor.resourceMultiplier - 1f) > 0.0001f)
+            || !GameplayModePolicy.AllowsNormalActions(
+                descriptorAvailable: true,
+                descriptor.isPeaceMode,
+                descriptor.isSandboxMode,
+                GameMain.sandboxToolsEnabled,
+                descriptor.resourceMultiplier))
         {
-            rejection = "The exact confirmed world no longer satisfies peaceful, non-sandbox, 1x import policy.";
+            rejection = "The exact confirmed world no longer satisfies the confirmed peaceful-mode policy.";
             return false;
         }
 
@@ -989,12 +991,14 @@ internal sealed class GameSessionTracker
 
         var descriptor = currentData.gameDesc;
         if (descriptor is null
-            || !descriptor.isPeaceMode
-            || descriptor.isSandboxMode
-            || GameMain.sandboxToolsEnabled
-            || Math.Abs(descriptor.resourceMultiplier - 1f) > 0.0001f)
+            || !GameplayModePolicy.AllowsNormalActions(
+                descriptorAvailable: true,
+                descriptor.isPeaceMode,
+                descriptor.isSandboxMode,
+                GameMain.sandboxToolsEnabled,
+                descriptor.resourceMultiplier))
         {
-            rejection = "The flight checkpoint did not prove peaceful, non-sandbox, normal 1x settings.";
+            rejection = "The flight checkpoint did not prove a readable peaceful-mode setting.";
             return false;
         }
 
@@ -1031,12 +1035,14 @@ internal sealed class GameSessionTracker
 
         var descriptor = currentData.gameDesc;
         if (descriptor is null
-            || !descriptor.isPeaceMode
-            || descriptor.isSandboxMode
-            || GameMain.sandboxToolsEnabled
-            || Math.Abs(descriptor.resourceMultiplier - 1f) > 0.0001f)
+            || !GameplayModePolicy.AllowsNormalActions(
+                descriptorAvailable: true,
+                descriptor.isPeaceMode,
+                descriptor.isSandboxMode,
+                GameMain.sandboxToolsEnabled,
+                descriptor.resourceMultiplier))
         {
-            rejection = "The resumed payload did not prove peaceful, non-sandbox, normal 1x settings.";
+            rejection = "The resumed payload did not prove a readable peaceful-mode setting.";
             return false;
         }
 
@@ -1057,10 +1063,7 @@ internal sealed class GameSessionTracker
         return true;
     }
 
-    private List<WriteBlocker> CreateWriteBlockers(
-        GameDesc? descriptor,
-        string peacefulState,
-        string sandboxState)
+    private List<WriteBlocker> CreateWriteBlockers(string peacefulState)
     {
         var blockers = new List<WriteBlocker>();
         if (string.Equals(_writeHealth, WriteHealthStates.Quarantined, StringComparison.Ordinal))
@@ -1094,32 +1097,6 @@ internal sealed class GameSessionTracker
             {
                 Code = BridgeErrorCodes.PeacefulModeRequired,
                 Message = "M0 writes require a peaceful world.",
-            });
-        }
-
-        if (string.Equals(sandboxState, SandboxModeStates.Unknown, StringComparison.Ordinal))
-        {
-            blockers.Add(new WriteBlocker
-            {
-                Code = BridgeErrorCodes.SandboxModeUnknown,
-                Message = "Sandbox mode could not be confirmed disabled.",
-            });
-        }
-        else if (!string.Equals(sandboxState, SandboxModeStates.ConfirmedDisabled, StringComparison.Ordinal))
-        {
-            blockers.Add(new WriteBlocker
-            {
-                Code = BridgeErrorCodes.SandboxModeActive,
-                Message = "M0 writes are forbidden while DSP sandbox tools are active.",
-            });
-        }
-
-        if (descriptor is not null && Math.Abs(descriptor.resourceMultiplier - 1f) > 0.0001f)
-        {
-            blockers.Add(new WriteBlocker
-            {
-                Code = BridgeErrorCodes.NormalResourceMultiplierRequired,
-                Message = "M0 requires the normal 1x resource multiplier.",
             });
         }
 

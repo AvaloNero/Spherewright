@@ -66,10 +66,8 @@ if (-not $session.gameLoaded `
     -or [int]$session.localPlanetId -le 0 `
     -or $null -eq $session.lastOwnedSaveGameTick `
     -or [long]$session.lastOwnedSaveGameTick -lt 0 `
-    -or $session.peacefulMode -ne 'confirmed_peaceful' `
-    -or $session.sandboxMode -ne 'confirmed_disabled' `
-    -or [Math]::Abs([double]$session.resourceMultiplier - 1.0) -gt 0.0001) {
-    throw 'A healthy, normally saved, owned peaceful 1x session is required before arming planned restart.'
+    -or $session.peacefulMode -ne 'confirmed_peaceful') {
+    throw 'A healthy, normally saved, owned peaceful session is required before arming planned restart.'
 }
 
 $gameProcess = Get-Process -Id ([int]$descriptor.processId) -ErrorAction Stop

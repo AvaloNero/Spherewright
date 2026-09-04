@@ -82,7 +82,7 @@
 
 ## 0.4.0 — Overseer
 
-状态：**current development target**。
+状态：**release candidate awaiting owner review**。
 
 ### 目标
 
@@ -102,7 +102,7 @@
 
 四项明确验收门已有候选证据：受控物流配置阻塞、空载输入缺料与真实运输负载下的断电分别稳定得到 `logistics_blocked / confirmed`、`material_shortage / confirmed`、`insufficient_power / confirmed`；三者都通过正常配置恢复，并由真实补料、送达、网络 ratio 1、finding 清除与钛块 `12 min⁻¹` 核销。两轮活动运输分别在 tick `17572610/17579665` 普通保存、正常退出，再由 exact-primary 恢复并自动重存 `17572642/17579696`；新 session 的物流基线从恢复后的当前 game tick 重建，离线墙钟没有成熟成假 stall。最终 healthy 普通保存为 tick `17584412`，第七次十写审计保持同一和平、非沙盒、1× owned world、2254 built/0 prebuild、Journal `49/49` durable、三网满供电且 0 blocker/checkpoint/BepInEx error。
 
-当前唯一的 live 覆盖缺口是真实 carrier 连续 600 game tick 完全静止后再恢复。当前程序集与实机对照表明：已出发运输船会由 `StationComponent.InternalTickRemote` 持续推进，站点断电不冻结它；暂停不推进 game tick，改需求/路线或拆塔会改变 qualifying route，而直接改 `stage/t/uPos/uSpeed/warpState` 违反项目边界。该分支保留 Core 自动测试和明确已知限制，不能伪造实机证据。下一步是 clean Release 构建、包体/安装版 MCP/同档回归并形成候选材料；是否接受这一无法由普通玩法安全制造的 live 限制，将随 commit、测试、工件哈希和 Release notes 一并交给项目所有者审核，审核前不创建 tag 或 Release。
+当前唯一的 live 覆盖缺口是真实 carrier 连续 600 game tick 完全静止后再恢复。当前程序集与实机对照表明：已出发运输船会由 `StationComponent.InternalTickRemote` 持续推进，站点断电不冻结它；暂停不推进 game tick，改需求/路线或拆塔会改变 qualifying route，而直接改 `stage/t/uPos/uSpeed/warpState` 违反项目边界。该分支保留 Core 自动测试和明确已知限制，不能伪造实机证据。clean Release 构建、223 项自动测试、manifest/ZIP 自检、包内安装说明复读、逐文件安装校验、安装版 Plugin/MCP、错绑 cursor/公共 JSON 脱敏、同档 exact-primary 恢复、完整世界状态审计和 Windows CI 均已通过；下一步只剩把最新候选 commit、工件哈希、上述证据和 Release notes 交给项目所有者审核。是否接受这一无法由普通玩法安全制造的 live 限制属于本次审核的一部分；审核前不创建 tag 或 Release。
 
 ### 验收门
 

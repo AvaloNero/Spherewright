@@ -2,7 +2,7 @@
 
 更新时间：2026-09-04（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界在母星 planet `104` 连续自动运输钛、硅，旧石转硅入口已停用。Overseer 的活动运输、同 tick 脱敏诊断包、受控物流故障/恢复、缺料/恢复、断电/恢复，以及活动运输跨普通保存/恢复后的离线时间排除均已在同档通过。断电正例在 tick `17505966–17505969` 同时证明母站约 126.5 MJ 能量缺口、9.14 MW 请求、network `1` 约 0.5815 供电比和六条 `insufficient_power / confirmed`；恢复火电输入与 30 MW 上限后，塔已回满、电网 ratio 1、power finding 0。远端供给塔仍 0/0 fleet，玩家仍携带取回的 1 船；母站自有船持续正常运输。第七次十写强制审计已完成并归零；最终普通保存为 tick `17584412`。当前普通游戏接口无法安全冻结已出发 carrier，故 600-tick 真停滞正例保留为明确未实机覆盖限制，不用直接字段写入伪造。v0.4 尚未发布，正在进入 clean 工件与发布候选复核。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界在母星 planet `104` 连续自动运输钛、硅，旧石转硅入口已停用。Overseer 的活动运输、同 tick 脱敏诊断包、受控物流故障/恢复、缺料/恢复、断电/恢复，以及活动运输跨普通保存/恢复后的离线时间排除均已在同档通过。断电正例在 tick `17505966–17505969` 同时证明母站约 126.5 MJ 能量缺口、9.14 MW 请求、network `1` 约 0.5815 供电比和六条 `insufficient_power / confirmed`；恢复火电输入与 30 MW 上限后，塔已回满、电网 ratio 1、power finding 0。远端供给塔仍 0/0 fleet，玩家仍携带取回的 1 船；母站自有船持续正常运输。第七次十写强制审计后共有 4 个 accepted 写：两次候选验收前普通保存与两次 exact-primary 恢复；最近一次恢复动作 `a231843e-9ebc-4992-8bd0-4052022a6c7d` 自动重存到 tick `17665255`。随后安装态审计到 tick `17681699` 仍为 healthy、2254 built/0 prebuild、Journal `49/49` durable、三厂供电正常且 BepInEx 0 error。当前普通游戏接口无法安全冻结已出发 carrier，故 600-tick 真停滞正例保留为明确未实机覆盖限制，不用直接字段写入伪造。v0.4 尚未发布；clean 候选已通过安装与同档回归，等待项目所有者审核。
 
 ## 结论与证据边界
 
@@ -428,6 +428,6 @@
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前在同一受保护 `owned-world-001` 的母星 planet `104` 运行；候选预演前普通保存 tick `17635167`，安装版 exact-primary 恢复后自动重存 tick `17635198`、revision `1`、write health healthy、无 blocker/checkpoint。玩家 Walk/0、核心 `400/400 MJ`、空燃料仓/手搓队列、背包仍持从远端取回的 1 艘运输船；母站自有船继续按正常需求自动运输。继续使用同一世界，不开新档。
+- DSP 当前在同一受保护 `owned-world-001` 的母星 planet `104` 运行；修正版候选安装前普通保存 tick `17665205`，安装后 exact-primary 恢复动作 `a231843e-9ebc-4992-8bd0-4052022a6c7d` 自动重存 tick `17665255`、revision `1`、write health healthy、无 blocker/checkpoint。玩家 Walk/0、核心 `400/400 MJ`、空手搓队列、3/3 施工机 idle；母站自有船继续按正常需求自动运输。继续使用同一世界，不开新档。
 - `v0.3.0` 已由 clean commit `a52ff44` 正式发布；`v0.3.1` annotated tag `33a733f` 的 prerelease 只含用户授权导入回移，等待另一台电脑实测，不混入 v0.4。
-- 当前主线：v0.4 Overseer。production statistics/远端 factory、三厂分页、随档 600-tick 实际速率、理论速率/利用率、多星球供电/物流、科研摘要、物理上游递归、物流进展窗口、活动运输正例、同 tick 脱敏诊断包，以及受控 `logistics_blocked`、`material_shortage`、`insufficient_power` 制造/修复均已通过。火电和 ILS 30 MW 上限已恢复，电网 ratio 1；活动运输的两轮保存/恢复与离线时间排除也已闭环。当前审计后 accepted 写计数为 2；下一步是提交包内安装说明修复，从新的 clean commit 重打并复验最终候选。真实 600-tick carrier stall 保留为当前普通游戏接口无法安全制造的已知 live 覆盖限制。
+- 当前主线：v0.4 Overseer。production statistics/远端 factory、三厂分页、随档 600-tick 实际速率、理论速率/利用率、多星球供电/物流、科研摘要、物理上游递归、物流进展窗口、活动运输正例、同 tick 脱敏诊断包，以及受控 `logistics_blocked`、`material_shortage`、`insufficient_power` 制造/修复均已通过。火电和 ILS 30 MW 上限已恢复，电网 ratio 1；活动运输的两轮保存/恢复与离线时间排除也已闭环。clean 候选的构建、包测、安装态 Plugin/MCP、同档恢复、分页/脱敏、世界审计和 Windows CI 均已通过；当前审计后 accepted 写计数为 4。下一步是从本次文档同步后的 clean commit 重打最终审核工件并提交 owner review；真实 600-tick carrier stall 保留为当前普通游戏接口无法安全制造的已知 live 覆盖限制。

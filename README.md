@@ -60,11 +60,17 @@ See [ROADMAP.md](./ROADMAP.md), [docs/protocol.md](./docs/protocol.md), the [sav
 
 ## Requirements
 
-Release package users need:
+The currently supported runtime scope is deliberately narrow:
 
-- Windows
+- Windows x64
 - Dyson Sphere Program (the currently validated build is `0.10.34.28529`)
-- BepInEx 5 installed in DSP
+- BepInEx `5.4.17.0`
+- single-player
+- peaceful mode
+- sandbox disabled
+- 1× resources
+
+Spherewright does not currently guarantee Dark Fog/combat, sandbox, multiplayer or Nebula, non-1× resources, broad third-party Mod compatibility, an arbitrary save picker, or loading an arbitrary caller-supplied save name.
 
 The versioned Windows release package includes a self-contained MCP server; using it does not require the repository, source code, or a .NET SDK. See [release installation](./docs/release-installation.md).
 
@@ -128,6 +134,20 @@ To repeat the package integrity and self-contained MCP `initialize`/`tools/list`
 5. Register that stdio command with your MCP host.
 
 Runtime descriptors and credentials are protected for the current Windows user and rotate when the Plugin starts. Do not copy them into logs, issues, or configuration files.
+
+## Quick start
+
+### Start a new world
+
+Leave DSP at its idle main menu, set `Safety.AllowWrites=true`, restart DSP, and ask the Agent to create a new world. Spherewright uses DSP's normal peaceful, non-sandbox, 1× new-game flow and saves it as `Spherewright_New_*`. Existing `Spherewright_M0_*` worlds keep their original names and remain eligible for their exact protected resume tickets; Spherewright does not migrate or rename them.
+
+### Continue an existing save
+
+Set both `Safety.AllowWrites=true` and `Safety.AllowUserSaveImport=true`, restart DSP, and manually load the intended peaceful, non-sandbox, single-player, 1× save. Ask the Agent to prepare an import. It must show the returned disclosure and wait for a later explicit confirmation from you before commit creates a separate `Spherewright_Imported_*` copy. The original save is not overwritten, renamed, deleted, or selected by the import API. From then on, both you and the Agent should continue in that copy; after restart, leave DSP at the main menu and use protected resume. After any manual play in the owned copy, the Agent must discard stale observations and plans, read the live state again, and prepare later writes against the current state hashes.
+
+The prefixes are labels, not ownership proofs. A manually loaded save is restricted even if its name looks like a Spherewright name; ownership requires the exact armed new-game transition, a confirmed imported-copy Header proof, or an exact protected resume ticket. An imported save receives a new journal whose coverage begins at the import point and does not invent earlier first-time events.
+
+Repository evidence distinguishes offline build/test and package checks from local live and cross-computer live validation. The save-import path currently has offline implementation/package evidence only in the checked-in record; local end-to-end and cross-computer live import validation remain open and are not implied by these instructions.
 
 ## Development status
 

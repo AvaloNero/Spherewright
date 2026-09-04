@@ -59,7 +59,7 @@ internal sealed class TestWorldCoordinator
             return GameCallResult<PreparedTestWorldPlan>.Failed(readinessError);
         }
 
-        var saveName = $"Spherewright_M0_{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}";
+        var saveName = SpherewrightSaveNameFactory.CreateNewWorldName(DateTimeOffset.UtcNow, Guid.NewGuid());
         var payload = new TestWorldPlanPayload(saveName, request.GalaxySeed, request.StarCount);
         PreparedPlan<TestWorldPlanPayload> plan;
         try

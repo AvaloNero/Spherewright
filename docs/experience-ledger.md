@@ -2130,17 +2130,19 @@
 
 ### EXP-169 — 跨域诊断只能在同一主线程 tick 经身份全匹配后合并
 
-- 状态：`observed`
+- 状态：`validated`
 - 日期：2026-09-04
 - 适用范围：v0.4 `get_overseer_diagnostic_bundle` 对已有生产/根因与供电/物流/科研 DTO 的聚合；不改变底层设备或物流诊断覆盖率。
 - 当前结论：外部调用方分别读取 production 和 summary 后自行拼接，可能把相邻 tick 的电力、库存、订单和 finding 当成同一现场。可信诊断包必须在一个无异步让出的 Unity 主线程任务内捕获两域，并逐 factory 要求 index、planet ID/name、local/display flags 与 `capturedAtGameTick` 全相等；任一不符都整包 fail closed。对外只复制版本化白名单 DTO，不能为了“便于调试”附带内部 save key、真实 save identity、runtime path、auth 或 plan credential。
-- 直接证据：`OverseerDiagnosticBundleComposerTests` 覆盖正常同 tick 合并，以及 factory、planet、tick、name、display flag 错配和公共域集合缺失时的拒绝；Contracts JSON 回归固定 `schemaVersion=1` / `privacyProfile=public_allowlist_v1` 并检查敏感字段缺失；MCP 注册/映射覆盖新工具。Release 完整 solution 为 0 warning / 0 error，Contracts/Core/MCP `19 + 181 + 23 = 223` 项通过，公共工具面为 53。
-- 限制或反例：当前只完成代码、程序集构建和自动测试，尚未部署到 DSP；还需在同一 owned 三工厂世界验证首屏/continuation 同 tick、错 filter cursor 拒绝、公开 JSON 无敏感字段和安装版 MCP 调用。bundle 继承现有 fractionator/gamma/orbital direct coverage partial、单段物流边和每域扫描上限，不因聚合而变完整。
+- 直接证据：`OverseerDiagnosticBundleComposerTests` 覆盖正常同 tick 合并，以及 factory、planet、tick、name、display flag 错配和公共域集合缺失时的拒绝；Contracts JSON 回归固定 `schemaVersion=1` / `privacyProfile=public_allowlist_v1` 并检查敏感字段缺失；MCP 注册/映射覆盖新工具。Release 完整 solution 为 0 warning / 0 error，Contracts/Core/MCP `19 + 181 + 23 = 223` 项通过，公共工具面为 53。源码相等部署后，live 完整页在 tick `17051000` 返回三厂；三页 continuation 共享 snapshot/tick，错 filter 与错 page size 均返回 `STALE_CURSOR`。12,156-byte 原始 JSON 的敏感字段名、Windows/UNC 绝对路径和内部存档标记审计均为 0；源码 MCP `0.4.0.0` / 53 tools 成功调用 live endpoint。
+- 限制或反例：bundle 继承现有 fractionator/gamma/orbital direct coverage partial、单段物流边和每域扫描上限，不因聚合而变完整；本次只验证当前同档三座 factory，最终 clean `v0.4.0` 工件仍须独立重验。
 - 复验触发：任一 Overseer DTO/捕获顺序、Unity 主线程 dispatcher、snapshot store、cursor binding、隐私字段、生产/摘要预算、DSP 版本或最终 v0.4 clean 工件变化。
 - 关联：EXP-125、EXP-154–166、`OverseerDiagnosticBundleComposer`、`GameStateReader.GetOverseerDiagnosticBundleOnMainThread`、`docs/research/game-api-overseer.md`。
-- 最近复验：2026-09-04（离线实现批次；223 项自动测试和完整 Release 构建通过，未启动/部署游戏）。
+- 最近复验：2026-09-04（同一 owned 三工厂世界完成 source-equal 部署、分页/cursor/JSON/MCP live 复验与健康审计；223 项自动测试和完整 Release 构建通过）。
 
 ## 修订记录
+
+- 2026-09-04：EXP-169 由 `observed` 升级为 `validated`，并复验 EXP-001/030/069/072/125/154–166。旧进程普通保存 tick `17048233` 后正常关窗；Release Plugin/Contracts/Core 以 SHA-256 `90408AD2BC9ED88335853F09695BB75A0900522D9CA022AF86E644DC393B1B16` / `583AFCFCC3995C80278679CA891191DA43CFC7B370B6EB2DD4E5CD197524BAF7` / `98DFF4CDA2F192691070892F94AD6FDDB47901E594D410C37AC5222E33131A3F` 零差异部署，exact-primary 只恢复同一 planet `104` 并自动重存 tick `17048265`。live 完整页与三页 continuation、两类错绑 cursor、12,156-byte JSON 脱敏、源码 MCP `0.4.0.0` / 53 tools 调用均通过；最终审计 tick `17059827+` 为 healthy、Journal `49/49` durable、2254 built/0 prebuild、Walk/0、满核心、3/3 idle drone、三网满服务、0 blocker/checkpoint/BepInEx error。受控停滞与三类故障门仍开放。
 
 - 2026-09-04：复验 EXP-168。用户已明确批准 v0.3.1 先发包到另一台电脑实测；annotated tag `v0.3.1` 指向最小回移 commit `33a733f`，直接父是 v0.3.0 `a52ff44`，没有混入 v0.4。GitHub prerelease ZIP 为 `sourceDirty=false`、232 manifest entries、MCP `0.3.1.0` / 50 tools、127 tests、SHA-256 `b05eabb20928e98850f6792ea001149fd2e30c92082994e6d9c43254e611cdcf`。仍明确保留跨电脑 DSP 实机门，不把发布动作冒充原档/副本/恢复验证。
 

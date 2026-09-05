@@ -103,6 +103,8 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             gameVersion,
             sessionTracker,
             logger);
+        sessionTracker.SetGameplayJournalCheckpointProvider(
+            gameplayJournalManager.CaptureResumeCheckpointOnMainThread);
         var normalActionCoordinator = new NormalGameActionCoordinator(
             configuration.PlanTokenLifetimeSeconds,
             configuration.IdempotencyRetentionMinutes,

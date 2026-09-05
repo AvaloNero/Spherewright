@@ -1,8 +1,8 @@
 using System.Globalization;
-using System.Security.Cryptography;
 using System.Text;
 using BepInEx.Logging;
 using Spherewright.Bridge.Core.Journals;
+using Spherewright.Bridge.Core.Safety;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Journals;
 using Spherewright.Plugin.RuntimeDescriptor;
@@ -176,6 +176,40 @@ internal sealed class GameplayJournalManager : IDisposable
         });
     }
 
+    public OwnedWorldGameplayJournalCheckpoint CaptureResumeCheckpointOnMainThread()
+    {
+        UpdateOnMainThread();
+        if (!_sessions.IsCurrentSessionOwned
+            || string.IsNullOrWhiteSpace(_sessions.SessionId)
+            || !string.Equals(_activeSessionId, _sessions.SessionId, StringComparison.Ordinal)
+            || _document is null
+            || _document.Entries is null
+            || _document.Entries.Any(entry => entry is null)
+            || _pendingPersist
+            || !string.IsNullOrWhiteSpace(_persistenceError))
+        {
+            throw new InvalidOperationException("The protected gameplay journal is not durably ready for restart-resume.");
+        }
+
+        var sequences = _document.Entries.Select(entry => entry.Sequence).ToArray();
+        var durableThroughSequence = sequences.Length == 0 ? 0L : sequences[sequences.Length - 1];
+        if (_durableThroughSequence != durableThroughSequence
+            || !GameplayJournalContinuityPolicy.HasContinuousSequence(sequences))
+        {
+            throw new InvalidDataException("The protected gameplay journal does not have one continuous durable sequence.");
+        }
+
+        return new OwnedWorldGameplayJournalCheckpoint
+        {
+            Version = OwnedWorldGameplayJournalCheckpoint.CurrentVersion,
+            JournalId = _document.JournalId,
+            TrackingMode = _document.TrackingMode,
+            HistoricalCoverageComplete = _document.HistoricalCoverageComplete,
+            TrackingStartedAtGameTick = _document.TrackingStartedAtGameTick,
+            MinimumDurableThroughSequence = _durableThroughSequence,
+        };
+    }
+
     public void Dispose()
     {
         if (_pendingPersist)
@@ -190,9 +224,10 @@ internal sealed class GameplayJournalManager : IDisposable
     {
         ResetActiveSession();
         var sessionId = _sessions.SessionId!;
-        var identityHash = HashOwnedIdentity(_sessions.OwnedSaveName!);
+        var identityHash = GameplayJournalIdentity.HashOwnedSaveIdentity(_sessions.OwnedSaveName!);
         var journalId = identityHash;
         var path = Path.Combine(_journalDirectory, $"gameplay-{journalId}.json");
+        var expectedResumeCheckpoint = _sessions.PendingResumeGameplayJournalCheckpoint;
         try
         {
             WindowsCurrentUserSecurity.EnsureSecureDirectory(_journalDirectory);
@@ -204,10 +239,31 @@ internal sealed class GameplayJournalManager : IDisposable
                     || document.Version != DocumentVersion
                     || !string.Equals(document.JournalId, journalId, StringComparison.Ordinal)
                     || !string.Equals(document.OwnedSaveIdentityHash, identityHash, StringComparison.Ordinal)
-                    || !string.Equals(document.GameVersion, _gameVersion, StringComparison.Ordinal))
+                    || !string.Equals(document.GameVersion, _gameVersion, StringComparison.Ordinal)
+                    || document.Entries is null
+                    || document.Entries.Any(entry => entry is null)
+                    || !GameplayJournalContinuityPolicy.HasContinuousSequence(
+                        document.Entries.Select(entry => entry.Sequence).ToArray()))
                 {
                     throw new InvalidDataException("The protected gameplay journal identity did not match the owned save.");
                 }
+            }
+
+            if (expectedResumeCheckpoint is not null
+                && (document is null
+                    || !GameplayJournalContinuityPolicy.MatchesCheckpoint(
+                        expectedResumeCheckpoint.JournalId,
+                        expectedResumeCheckpoint.TrackingMode,
+                        expectedResumeCheckpoint.HistoricalCoverageComplete,
+                        expectedResumeCheckpoint.TrackingStartedAtGameTick,
+                        expectedResumeCheckpoint.MinimumDurableThroughSequence,
+                        document.JournalId,
+                        document.TrackingMode,
+                        document.HistoricalCoverageComplete,
+                        document.TrackingStartedAtGameTick,
+                        document.Entries.Select(entry => entry.Sequence).ToArray())))
+            {
+                throw new InvalidDataException("The protected gameplay journal is missing or older than the resume ticket checkpoint.");
             }
 
             if (document is null)
@@ -231,6 +287,11 @@ internal sealed class GameplayJournalManager : IDisposable
                 return;
             }
 
+            if (expectedResumeCheckpoint is not null)
+            {
+                _sessions.ConfirmResumeGameplayJournalContinuityOnMainThread(expectedResumeCheckpoint);
+            }
+
             _logger.LogInfo("Spherewright attached the protected per-save gameplay journal");
         }
         catch (Exception exception) when (
@@ -245,6 +306,11 @@ internal sealed class GameplayJournalManager : IDisposable
             _document = null;
             _detector = null;
             _persistenceError = exception.GetType().Name;
+            if (expectedResumeCheckpoint is not null)
+            {
+                _sessions.RejectResumeGameplayJournalContinuityOnMainThread(
+                    "The protected per-save gameplay journal could not prove the resume ticket's durable checkpoint. Restore the exact journal backup before retrying this ticket.");
+            }
             _logger.LogError($"Spherewright gameplay journal attachment failed ({_persistenceError})");
         }
     }
@@ -563,15 +629,6 @@ internal sealed class GameplayJournalManager : IDisposable
         _durableThroughSequence = 0L;
         _pendingPersist = false;
         _persistenceError = null;
-    }
-
-    private static string HashOwnedIdentity(string ownedSaveName)
-    {
-        using (var sha256 = SHA256.Create())
-        {
-            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes($"spherewright-gameplay-journal-v1\n{ownedSaveName}"));
-            return BitConverter.ToString(bytes).Replace("-", string.Empty).ToLowerInvariant();
-        }
     }
 
     private static void AddCount(IDictionary<int, long> counts, int itemId, long count)

@@ -29,6 +29,7 @@ internal sealed class GameSessionTracker
     private string? _writeQuarantineActionId;
     private string? _writeQuarantineReason;
     private OwnedWorldResumeTicket? _expectedResumeTicket;
+    private OwnedWorldResumeTicket? _pendingJournalResumeTicket;
     private string? _resumeAdoptionError;
     private FlightCheckpointTicket? _expectedFlightCheckpoint;
     private string? _currentFlightCheckpointId;
@@ -79,6 +80,27 @@ internal sealed class GameSessionTracker
     public string? CurrentFlightCheckpointId => _currentFlightCheckpointId;
 
     public bool CurrentSessionLoadedFromFlightCheckpoint => _currentSessionLoadedFromFlightCheckpoint;
+
+    public OwnedWorldGameplayJournalCheckpoint? PendingResumeGameplayJournalCheckpoint =>
+        _pendingJournalResumeTicket?.GameplayJournalCheckpoint;
+
+    private Func<OwnedWorldGameplayJournalCheckpoint>? _gameplayJournalCheckpointProvider;
+
+    public void SetGameplayJournalCheckpointProvider(
+        Func<OwnedWorldGameplayJournalCheckpoint> gameplayJournalCheckpointProvider)
+    {
+        if (gameplayJournalCheckpointProvider is null)
+        {
+            throw new ArgumentNullException(nameof(gameplayJournalCheckpointProvider));
+        }
+
+        if (_gameplayJournalCheckpointProvider is not null)
+        {
+            throw new InvalidOperationException("The gameplay-journal checkpoint provider is already configured.");
+        }
+
+        _gameplayJournalCheckpointProvider = gameplayJournalCheckpointProvider;
+    }
 
     public void ExpectNextSessionToBeOwned(string saveName)
     {
@@ -133,6 +155,7 @@ internal sealed class GameSessionTracker
                 _writeQuarantineReason = null;
                 _currentFlightCheckpointId = null;
                 _currentSessionLoadedFromFlightCheckpoint = false;
+                _pendingJournalResumeTicket = null;
                 CurrentOwnedSessionStartedAsNewGame = false;
             }
 
@@ -246,9 +269,18 @@ internal sealed class GameSessionTracker
             _ownedSaveError = null;
             _ownedSessionStartTick = GameMain.gameTick;
             _lastOwnedSaveGameTick = null;
-            _resumeTickets.Consume(ticket.ResumeToken);
+            if (ticket.GameplayJournalCheckpoint is null)
+            {
+                _resumeTickets.Consume(ticket.ResumeToken);
+            }
+            else
+            {
+                _pendingJournalResumeTicket = ticket;
+            }
             CurrentOwnedSessionStartedAsNewGame = false;
-            _logger.LogInfo("Spherewright adopted the exact normally saved owned world through one-time restart-resume proof");
+            _logger.LogInfo(ticket.GameplayJournalCheckpoint is null
+                ? "Spherewright adopted the exact normally saved owned world through legacy one-time restart-resume proof"
+                : "Spherewright adopted the exact normally saved owned world and is validating its protected gameplay-journal checkpoint");
         }
 
         if (!IsCurrentSessionOwned)
@@ -264,6 +296,45 @@ internal sealed class GameSessionTracker
 
         _lastPlanetId = localPlanetId;
         TrySaveOwnedWorldOnMainThread(currentData);
+    }
+
+    public void ConfirmResumeGameplayJournalContinuityOnMainThread(
+        OwnedWorldGameplayJournalCheckpoint checkpoint)
+    {
+        var ticket = _pendingJournalResumeTicket;
+        if (ticket?.GameplayJournalCheckpoint is null
+            || !ReferenceEquals(ticket.GameplayJournalCheckpoint, checkpoint)
+            || !IsCurrentSessionOwned)
+        {
+            throw new InvalidOperationException("No matching resumed gameplay-journal checkpoint is pending.");
+        }
+
+        _resumeTickets.Consume(ticket.ResumeToken);
+        _pendingJournalResumeTicket = null;
+        _logger.LogInfo("Spherewright confirmed gameplay-journal continuity and consumed the one-time resume ticket");
+    }
+
+    public void RejectResumeGameplayJournalContinuityOnMainThread(string rejection)
+    {
+        if (_pendingJournalResumeTicket is null)
+        {
+            return;
+        }
+
+        _pendingJournalResumeTicket = null;
+        _ownedData = null;
+        _ownedSaveName = null;
+        _ownedSaveState = OwnedSaveStates.None;
+        _ownedSaveError = null;
+        _lastOwnedSaveGameTick = null;
+        _currentFlightCheckpointId = null;
+        _currentSessionLoadedFromFlightCheckpoint = false;
+        CurrentOwnedSessionStartedAsNewGame = false;
+        _resumeAdoptionError = string.IsNullOrWhiteSpace(rejection)
+            ? "The resumed gameplay journal did not match its protected checkpoint."
+            : rejection;
+        _revision++;
+        _logger.LogError("Spherewright rejected resumed-world ownership because gameplay-journal continuity could not be proved");
     }
 
     public SessionState CaptureOnMainThread()
@@ -597,7 +668,8 @@ internal sealed class GameSessionTracker
                     newOwnedSaveName,
                     expectedSessionId,
                     localPlanet.id,
-                    expectedSavedTick);
+                    expectedSavedTick,
+                    CaptureGameplayJournalCheckpointOnMainThread());
             }
             catch (Exception exception)
             {
@@ -670,6 +742,8 @@ internal sealed class GameSessionTracker
     private void TrySaveOwnedWorldOnMainThread(GameData currentData)
     {
         if (!string.Equals(_ownedSaveState, OwnedSaveStates.WaitingToSave, StringComparison.Ordinal)
+            || _pendingJournalResumeTicket is not null
+            || !string.Equals(_writeHealth, WriteHealthStates.Healthy, StringComparison.Ordinal)
             || string.IsNullOrWhiteSpace(_ownedSaveName)
             || currentData.localLoadedPlanetFactory is null
             || GameMain.gameTick < _ownedSessionStartTick + 30)
@@ -726,7 +800,8 @@ internal sealed class GameSessionTracker
                         _ownedSaveName!,
                         _sessionId!,
                         localPlanetId,
-                        _lastOwnedSaveGameTick.Value);
+                        _lastOwnedSaveGameTick.Value,
+                        CaptureGameplayJournalCheckpointOnMainThread());
                 }
                 catch (Exception exception)
                 {
@@ -770,7 +845,8 @@ internal sealed class GameSessionTracker
                     _sessionId!,
                     _lastPlanetId,
                     GameMain.gameTick,
-                    _writeQuarantineActionId!);
+                    _writeQuarantineActionId!,
+                    CaptureGameplayJournalCheckpointOnMainThread());
             }
         }
         catch (Exception exception)
@@ -1075,6 +1151,14 @@ internal sealed class GameSessionTracker
                 Message = _writeQuarantineReason ?? "The current session write subsystem is quarantined.",
             });
         }
+        if (_pendingJournalResumeTicket is not null)
+        {
+            blockers.Add(new WriteBlocker
+            {
+                Code = BridgeErrorCodes.BridgeNotReady,
+                Message = "Writes are blocked until the protected gameplay journal proves the resume ticket's durable checkpoint.",
+            });
+        }
         if (!_writesConfigured)
         {
             blockers.Add(new WriteBlocker
@@ -1102,5 +1186,15 @@ internal sealed class GameSessionTracker
         }
 
         return blockers;
+    }
+
+    private OwnedWorldGameplayJournalCheckpoint CaptureGameplayJournalCheckpointOnMainThread()
+    {
+        if (_gameplayJournalCheckpointProvider is null)
+        {
+            throw new InvalidOperationException("The gameplay-journal checkpoint provider is unavailable.");
+        }
+
+        return _gameplayJournalCheckpointProvider();
     }
 }

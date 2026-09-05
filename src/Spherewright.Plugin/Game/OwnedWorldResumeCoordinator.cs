@@ -100,8 +100,8 @@ internal sealed class OwnedWorldResumeCoordinator
             CommitAllowedNow = blockers.Count == 0,
             CommitBlockers = blockers,
             CompletionCondition = string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
-                ? "A healthy planned restart loads only the exact primary owned save named inside the protected ticket after its header proves the minimum game tick; adoption still requires the embedded high-entropy owned name, planet, and peaceful mode. Sandbox state and resource multiplier are preserved and reported but do not gate adoption."
-                : "Quarantine recovery loads only the fresh fixed LastExit slot after its header proves the minimum game tick; adoption still requires the embedded high-entropy owned name, planet, and peaceful mode. Sandbox state and resource multiplier are preserved and reported but do not gate adoption.",
+                ? "A healthy planned restart loads only the exact primary owned save named inside the protected ticket after its header proves the minimum game tick and its protected per-save journal proves the ticket's durable checkpoint; adoption still requires the embedded high-entropy owned name, planet, and peaceful mode. Sandbox state and resource multiplier are preserved and reported but do not gate adoption."
+                : "Quarantine recovery loads only the fresh fixed LastExit slot after its header proves the minimum game tick and its protected per-save journal proves the ticket's durable checkpoint; adoption still requires the embedded high-entropy owned name, planet, and peaceful mode. Sandbox state and resource multiplier are preserved and reported but do not gate adoption.",
         });
     }
 
@@ -390,6 +390,12 @@ internal sealed class OwnedWorldResumeCoordinator
                 ticket.GameVersion,
                 ticket.ExpectedPlanetId,
                 ticket.MinimumGameTick,
+                ticket.GameplayJournalCheckpoint?.Version ?? 0,
+                ticket.GameplayJournalCheckpoint?.JournalId ?? string.Empty,
+                ticket.GameplayJournalCheckpoint?.TrackingMode ?? string.Empty,
+                ticket.GameplayJournalCheckpoint?.HistoricalCoverageComplete ?? false,
+                ticket.GameplayJournalCheckpoint?.TrackingStartedAtGameTick ?? 0L,
+                ticket.GameplayJournalCheckpoint?.MinimumDurableThroughSequence ?? 0L,
                 ticket.QuarantineActionId,
                 ticket.IssuedAtUtc,
                 ticket.ExpiresAtUtc,

@@ -1,6 +1,6 @@
 # Spherewright 首次问题与代码修复记录
 
-更新时间：2026-09-04（Asia/Singapore）
+更新时间：2026-09-05（Asia/Singapore）
 
 本文件专门记录项目第一次遇到的可复用工程问题：现场症状、根因、代码或协议
 修复、验证证据和仍有限制。它不是逐局流水账，也不是当前规则的唯一来源。
@@ -295,3 +295,12 @@
 - 修复：把安装说明改成不写死 Spherewright 版本的通用表述，明确以 `manifest.json` 和安装器回显为 exact version 权威；DSP/BepInEx 已验证版本仍显式保留。首个 `f43c8ce` 包降级为预演证据，不能作为最终候选，必须从包含本修复的 clean commit 重新打包并复读包内说明。
 - 验证：修复后先用源码检索确认通用说明不再含旧版本常量；最终状态还要求新包 manifest/source commit、包内 `INSTALL.md`、自包含 MCP 版本和 live 安装结果一致。
 - 关联：EXP-152、EXP-153、`scripts/package-release.ps1`、`docs/release-installation.md`；状态：`fixed`。
+
+## IFX-024 — 隔离验证恢复了世界票据，却没有恢复同档 Journal
+
+- 首见：2026-09-05，v0.3.3 本机兼容性验证后重回 `owned-world-001`。
+- 症状：受保护恢复首先正确载入最后一个早期测试副本，而非长期世界。在使用受保护的归档归属证据恢复长期世界后，世界的 planet/tick/ownership 全部正确，但运行时生成了一份 `attached_existing_save` 的 0-entry Journal，与该档已证明的 `49/49` 时间线冲突。
+- 根因：隔离验证把 Plugin/描述文件/交接票据当成一组环境状态，却没有把按 owned-save hash 分开的 Journal 目录纳入同一备份与恢复事务。恢复票据又只绑世界身份、planet 和 minimum tick；`GameplayJournalManager` 对缺失文件按“旧档首次挂接”创建新文档，无法知道票据签发时已存在 49 条记录。单个 current resume ticket 也不是多世界注册表。
+- 修复：新签发的健康/隔离恢复票据必须先获取已落盘的 Journal checkpoint，绑定不可逆身份、tracking mode/起点/历史覆盖标志和 minimum durable sequence。prepare 和 commit 在载入前检查保护文件；世界采用后 Journal 挂接再检查一次，通过前不消费票据、不自动保存、不开放普通写入。缺失、重建、截断、断号或身份不匹配会使载入前 fail-closed；极小 TOCTOU 窗口内的变化则在采用后把当前世界降为 restricted，保留原票据以便精确修复重试。旧 version-1 票据保持兼容，下一次健康保存自动升级。
+- 恢复与验证：先正常保存并关闭早期测试副本，未对其执行生产/科技/移动写入。只使用明确归属的受保护备份重签短时票据，header 复读后回到 planet `104` 且 tick 不低于 `18143540`。唯一 49-entry 备份的 `journalId`/owned hash/game version 与当前空文档全部相同；DSP 停止后保留空文档证据并恢复该备份，三个精确目标的 DACL 均复读为关闭继承、无外部 allow。Luna Max 再次 protected resume 后于 tick `18145258+` 确认 owned/saved/healthy、Journal `49/49` durable、0 pending/error、无 blocker/checkpoint。新代票据的 fail-closed/live 复归尚在进行。
+- 关联：EXP-048、EXP-069、EXP-072、EXP-146、EXP-182、`GameplayJournalContinuityPolicy`、`OwnedWorldResumeTicketStore`；状态：`mitigated`。

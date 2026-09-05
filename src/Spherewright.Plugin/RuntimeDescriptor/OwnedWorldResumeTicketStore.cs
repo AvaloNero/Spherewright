@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using BepInEx.Logging;
+using Spherewright.Bridge.Core.Safety;
+using Spherewright.Plugin.Game;
 using Spherewright.Plugin.Security;
 using Spherewright.Plugin.Transport;
 
@@ -47,13 +49,15 @@ internal sealed class OwnedWorldResumeTicketStore
         string ownedSaveName,
         string sessionId,
         int planetId,
-        long minimumGameTick)
+        long minimumGameTick,
+        OwnedWorldGameplayJournalCheckpoint gameplayJournalCheckpoint)
     {
         Arm(
             ownedSaveName,
             sessionId,
             planetId,
             minimumGameTick,
+            gameplayJournalCheckpoint,
             quarantineActionId: string.Empty);
         _logger.LogInfo("Spherewright armed a one-time exact planned-restart ticket from a healthy owned save");
     }
@@ -63,14 +67,15 @@ internal sealed class OwnedWorldResumeTicketStore
         string sessionId,
         int planetId,
         long minimumGameTick,
-        string quarantineActionId)
+        string quarantineActionId,
+        OwnedWorldGameplayJournalCheckpoint gameplayJournalCheckpoint)
     {
         if (string.IsNullOrWhiteSpace(quarantineActionId))
         {
             throw new InvalidOperationException("A quarantined owned session requires its exact action identity.");
         }
 
-        Arm(ownedSaveName, sessionId, planetId, minimumGameTick, quarantineActionId);
+        Arm(ownedSaveName, sessionId, planetId, minimumGameTick, gameplayJournalCheckpoint, quarantineActionId);
         _logger.LogInfo("Spherewright armed a one-time exact quarantine-recovery ticket");
     }
 
@@ -79,12 +84,22 @@ internal sealed class OwnedWorldResumeTicketStore
         string sessionId,
         int planetId,
         long minimumGameTick,
+        OwnedWorldGameplayJournalCheckpoint gameplayJournalCheckpoint,
         string quarantineActionId)
     {
         if (string.IsNullOrWhiteSpace(ownedSaveName)
             || string.IsNullOrWhiteSpace(sessionId)
             || planetId <= 0
-            || minimumGameTick < 0)
+            || minimumGameTick < 0
+            || gameplayJournalCheckpoint is null
+            || gameplayJournalCheckpoint.Version != OwnedWorldGameplayJournalCheckpoint.CurrentVersion
+            || !string.Equals(
+                gameplayJournalCheckpoint.JournalId,
+                GameplayJournalIdentity.HashOwnedSaveIdentity(ownedSaveName),
+                StringComparison.Ordinal)
+            || string.IsNullOrWhiteSpace(gameplayJournalCheckpoint.TrackingMode)
+            || gameplayJournalCheckpoint.TrackingStartedAtGameTick < 0
+            || gameplayJournalCheckpoint.MinimumDurableThroughSequence < 0)
         {
             throw new InvalidOperationException("A complete owned-session identity is required to arm restart-resume.");
         }
@@ -102,6 +117,7 @@ internal sealed class OwnedWorldResumeTicketStore
             GameVersion = _gameVersion,
             ExpectedPlanetId = planetId,
             MinimumGameTick = minimumGameTick,
+            GameplayJournalCheckpoint = gameplayJournalCheckpoint,
             QuarantineActionId = quarantineActionId,
             IssuedAtUtc = issuedAt,
             ExpiresAtUtc = issuedAt.AddHours(24),
@@ -156,9 +172,81 @@ internal sealed class OwnedWorldResumeTicketStore
             return false;
         }
 
+        if (!TryValidateGameplayJournalContinuity(candidate, out rejection))
+        {
+            return false;
+        }
+
         _currentTicket = candidate;
         ticket = candidate;
         return true;
+    }
+
+    private bool TryValidateGameplayJournalContinuity(
+        OwnedWorldResumeTicket ticket,
+        out string rejection)
+    {
+        rejection = string.Empty;
+        var checkpoint = ticket.GameplayJournalCheckpoint;
+        if (checkpoint is null)
+        {
+            // Version-1 tickets issued before the continuity checkpoint was
+            // introduced remain compatible. Every newly armed ticket carries
+            // the checkpoint and therefore takes the strict path below.
+            return true;
+        }
+
+        try
+        {
+            var identityHash = GameplayJournalIdentity.HashOwnedSaveIdentity(ticket.OwnedSaveName);
+            if (checkpoint.Version != OwnedWorldGameplayJournalCheckpoint.CurrentVersion
+                || !string.Equals(checkpoint.JournalId, identityHash, StringComparison.Ordinal))
+            {
+                rejection = "The protected gameplay journal checkpoint does not match the owned-world ticket.";
+                return false;
+            }
+
+            var path = Path.Combine(_runtimeDirectory, "journals", $"gameplay-{identityHash}.json");
+            if (!File.Exists(path))
+            {
+                rejection = "The protected gameplay journal required by this resume ticket is unavailable.";
+                return false;
+            }
+
+            var document = PluginJson.Deserialize<GameplayJournalDocument>(File.ReadAllText(path));
+            if (document is null
+                || document.Version != 1
+                || !string.Equals(document.OwnedSaveIdentityHash, identityHash, StringComparison.Ordinal)
+                || !string.Equals(document.GameVersion, _gameVersion, StringComparison.Ordinal)
+                || document.Entries is null
+                || document.Entries.Any(entry => entry is null)
+                || !GameplayJournalContinuityPolicy.MatchesCheckpoint(
+                    checkpoint.JournalId,
+                    checkpoint.TrackingMode,
+                    checkpoint.HistoricalCoverageComplete,
+                    checkpoint.TrackingStartedAtGameTick,
+                    checkpoint.MinimumDurableThroughSequence,
+                    document.JournalId,
+                    document.TrackingMode,
+                    document.HistoricalCoverageComplete,
+                    document.TrackingStartedAtGameTick,
+                    document.Entries.Select(entry => entry.Sequence).ToArray()))
+            {
+                rejection = "The protected gameplay journal is missing, truncated, or does not match this resume ticket.";
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception exception) when (
+            exception is IOException
+            || exception is UnauthorizedAccessException
+            || exception is Newtonsoft.Json.JsonException
+            || exception is ArgumentException)
+        {
+            rejection = $"The protected gameplay journal continuity check failed ({exception.GetType().Name}).";
+            return false;
+        }
     }
 
     public void Consume(string resumeToken)
@@ -532,11 +620,30 @@ internal sealed class OwnedWorldResumeTicket
 
     public long MinimumGameTick { get; set; }
 
+    public OwnedWorldGameplayJournalCheckpoint? GameplayJournalCheckpoint { get; set; }
+
     public string QuarantineActionId { get; set; } = string.Empty;
 
     public DateTimeOffset IssuedAtUtc { get; set; }
 
     public DateTimeOffset ExpiresAtUtc { get; set; }
+}
+
+internal sealed class OwnedWorldGameplayJournalCheckpoint
+{
+    public const int CurrentVersion = 1;
+
+    public int Version { get; set; }
+
+    public string JournalId { get; set; } = string.Empty;
+
+    public string TrackingMode { get; set; } = string.Empty;
+
+    public bool HistoricalCoverageComplete { get; set; }
+
+    public long TrackingStartedAtGameTick { get; set; }
+
+    public long MinimumDurableThroughSequence { get; set; }
 }
 
 internal sealed class OwnedWorldResumeConsumptionTombstone

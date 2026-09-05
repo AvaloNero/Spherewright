@@ -1,13 +1,13 @@
 # 存档日记 001：从落地到当前的决策、科技与首次产出
 
-更新时间：2026-09-04（Asia/Singapore）
+更新时间：2026-09-05（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界在母星 planet `104` 连续自动运输钛、硅，旧石转硅入口已停用。Overseer 的活动运输、同 tick 脱敏诊断包、受控物流故障/恢复、缺料/恢复、断电/恢复，以及活动运输跨普通保存/恢复后的离线时间排除均已在同档通过。断电正例在 tick `17505966–17505969` 同时证明母站约 126.5 MJ 能量缺口、9.14 MW 请求、network `1` 约 0.5815 供电比和六条 `insufficient_power / confirmed`；恢复火电输入与 30 MW 上限后，塔已回满、电网 ratio 1、power finding 0。远端供给塔仍 0/0 fleet，玩家仍携带取回的 1 船；母站自有船持续正常运输。第七次十写强制审计后共有 4 个 accepted 写：两次候选验收前普通保存与两次 exact-primary 恢复；最近一次恢复动作 `a231843e-9ebc-4992-8bd0-4052022a6c7d` 自动重存到 tick `17665255`。随后安装态审计到 tick `17681699` 仍为 healthy、2254 built/0 prebuild、Journal `49/49` durable、三厂供电正常且 BepInEx 0 error。当前普通游戏接口无法安全冻结已出发 carrier，故 600-tick 真停滞正例保留为明确未实机覆盖限制，不用直接字段写入伪造。v0.4 尚未发布；clean 候选已通过安装与同档回归，等待项目所有者审核。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界已恢复到母星 planet `104`。v0.3.3 隔离验证遗留的 active ticket 先正确载入早期测试副本；关闭该副本后，长期档只通过已归档的精确 owned proof 和 header 恢复，未枚举或依赖存档名前缀。首读发现同档 Journal 被重建为 0-entry 后立即停止所有游戏写入；DSP 停止后保留证据并以 journal/owned/game-version 三重身份恢复唯一 49-entry 备份。Luna Max 再次 protected resume 在 tick `18145258+` 确认 owned/saved/healthy、Journal `49/49` durable、0 pending/error、无 blocker/checkpoint；只读 Overseer 盘点到 tick `18160377+` 显示三张有效电网 ratio 1、物流 0 order，当前科技 `3401` 正常排队但蓝/红/黄矩阵链分别处于缺料或输出堵塞。v0.4 的功能门仍完成；发布候选正刷新 Journal 水位绑定保护，新票据实机回归和重打 clean 工件完成前不提交 owner review。真实 carrier 连续 600 tick 完全静止仍是普通游戏接口无法安全制造的明确 live 覆盖限制。
 
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 共有 `49` 条，已经持久化到 sequence `49`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `178` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护 Journal 共有 `49` 条，已经持久化到 sequence `49`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `182` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -108,6 +108,7 @@
 | logistics/power `17471345–17512817` | 2026-09-04 | 硅需求 `533/700 -> 533/900` 后原生发船，tick `17472191` 高频读到母站约 59.7 MJ 扣能和 8.30 MW 请求，证明旧轮询只是漏过短窗口；该批硅送达 `533 -> 733`。再扩容至 1200 后，下一批硅送达 `733 -> 933`，唯一船随即切入 200 钛订单。tick `17505966–17505969` 同时抓到 ILS `11.873/12 GJ`、request `9.14 MW`、network `1` required/served/capacity `197786/115000/115000`、ratio 约 `0.5815`，bundle 对六台真实生产设备返回 `insufficient_power / confirmed`。正常清回火电 sorter filter 和 ILS 30 MW 上限后，tick `17512817` 已回到满供电、underpowered station 0、power finding 0。 | R/M/D |
 | active-route saves `17572610/17579665`; resumes `17572642/17579696`; final save `17584412`; audit `17585687–17600202` | 2026-09-04 | 硅需求正常扩至 1600 后，真实运输在普通保存/正常退出/exact-primary 恢复之间继续；硅最终送达至 1533。下一笔钛运输又在活动状态保存并恢复，新 session 首个受保护样本 tick `17580795` 把 `stagnantSinceGameTick` 重置为同一当前 tick，而不是把退出期间墙钟时间算成 600-tick 停滞；200 订单、消费者缺料、源库存 60、fleet 1/active 1 均存在但 finding 为 0。随后钛送达 90、订单清零，钛块保持 `12 min⁻¹`，最终普通保存到 `17584412`。第七次十写审计确认 2254 built/0 prebuild、Journal `49/49` durable、三网 ratio 1、ILS 12 GJ/30 MW、火电链恢复、healthy、0 blocker/checkpoint/BepInEx error；玩家 Walk/0、满核心、空手搓、3/3 施工机 idle，仍守恒持有远端取回的 1 船。 | R/M/D |
 | candidate preflight save `17635167`; installed-package resume `17635198`; live MCP `17640449/17647128` | 2026-09-04 | 第七次审计后先普通保存并正常关闭，再从 clean commit `f43c8ce` 生成首个 v0.4.0 预演包。manifest 232 entries、ZIP SHA-256 `b586a79452c50b94282e08f4ea09adc6766abbe08a7b0386ef6a0a2a493392a3`；包内 4 个 Plugin 运行 DLL 和 224 个自包含 MCP 文件实装哈希 mismatch 0。exact-primary 只恢复同一 planet `104` 世界并自动重存；安装版 Plugin 拒绝错误 token，安装版 MCP `0.4.0.0` / 53 tools 返回 ready 的三星球诊断包，三页共享 tick，错 item/limit cursor 都以 `STALE_CURSOR` 拒绝，公共 JSON 无禁止字段或绝对路径。最终复读发现包内安装说明仍把自己称为 v0.3.0，故该 ZIP 被明确降级为预演而非最终候选；IFX-023 已修正文档，等待从下一 clean commit 重打。 | R/M/D |
+| preflight save `18143540`; recovered resumes `18144741/18145258`; audit `18160377+` | 2026-09-05 | v0.3.3 隔离兼容性验证后，active ticket 按设计恢复了最后测试副本，没有猜测长期档。只对该副本普通保存/正常关闭，再以已归档的精确归属证明和 header 重建一次短时恢复；长期世界回到 planet `104`。首读发现运行时 Journal 被重建为 0-entry，因此没有生产/科技/移动写入并再次正常关闭。只有一份 49-entry 备份同时匹配 journal ID、owned hash 和 game version；保留空文档证据后恢复它，两份文件和目录都复读 current-user-only DACL。Luna Max 后续 protected resume 确认 `49/49` durable、0 pending/error、healthy、无 blocker/checkpoint；随后只读盘点三张工厂与 Overseer，不执行游戏写入。新代恢复票据开始绑定 Journal 最小 durable sequence，未完成 live 复归前不回到发布审核态。 | R/M/D |
 
 ## 科技树与升级
 
@@ -425,9 +426,13 @@
 | EXP-176 | validated | 活跃运输跨保存/恢复时从新 session 游戏 tick 重建连续窗并排除离线墙钟 |
 | EXP-177 | validated | 当前普通接口不能安全冻结在途 carrier，停滞实机证据不得用直接字段伪造 |
 | EXP-178 | validated | 候选包必须复读包内人类文档，二进制与 manifest 版本一致仍不够 |
+| EXP-179 | validated | 开局移动恢复规则必须随 MCP 和发行包交付 |
+| EXP-180 | observed | GitHub 手动包与 Thunderstore 包同版本同源码，但安装布局必须分开 |
+| EXP-181 | validated | 存档模式证据不应与动作授权混为同一门禁 |
+| EXP-182 | observed | 隔离验证必须把恢复票据和逐档 Journal 作为同一边界备份/恢复 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前在同一受保护 `owned-world-001` 的母星 planet `104` 运行；修正版候选安装前普通保存 tick `17665205`，安装后 exact-primary 恢复动作 `a231843e-9ebc-4992-8bd0-4052022a6c7d` 自动重存 tick `17665255`、revision `1`、write health healthy、无 blocker/checkpoint。玩家 Walk/0、核心 `400/400 MJ`、空手搓队列、3/3 施工机 idle；母站自有船继续按正常需求自动运输。继续使用同一世界，不开新档。
+- DSP 当前在同一受保护 `owned-world-001` 的母星 planet `104` 运行；Luna Max 恢复后于 tick `18145258+` 复读 owned/saved/healthy、Journal `49/49` durable、0 pending/error、无 blocker/checkpoint。玩家 Walk/0、核心 `400/400 MJ`、空手搓队列、3/3 施工机 idle；只读盘点后未执行新写入。继续使用同一世界，不开新档。
 - `v0.3.0` 已由 clean commit `a52ff44` 正式发布；`v0.3.1` annotated tag `33a733f` 的 prerelease 只含用户授权导入回移，等待另一台电脑实测，不混入 v0.4。
-- 当前主线：v0.4 Overseer。production statistics/远端 factory、三厂分页、随档 600-tick 实际速率、理论速率/利用率、多星球供电/物流、科研摘要、物理上游递归、物流进展窗口、活动运输正例、同 tick 脱敏诊断包，以及受控 `logistics_blocked`、`material_shortage`、`insufficient_power` 制造/修复均已通过。火电和 ILS 30 MW 上限已恢复，电网 ratio 1；活动运输的两轮保存/恢复与离线时间排除也已闭环。clean 候选的构建、包测、安装态 Plugin/MCP、同档恢复、分页/脱敏、世界审计和 Windows CI 均已通过；当前审计后 accepted 写计数为 4。下一步是从本次文档同步后的 clean commit 重打最终审核工件并提交 owner review；真实 600-tick carrier stall 保留为当前普通游戏接口无法安全制造的已知 live 覆盖限制。
+- 当前主线：v0.4 Overseer 功能门仍全部完成。隔离验证恢复暴露的 IFX-024 已进入候选刷新：新恢复票据绑定 Journal identity/tracking boundary/minimum durable sequence，load 前和 adoption 后双重检查；离线回归已有 262 tests 和完整 Release build 0 warning/0 error。下一步先完成新票据正常恢复与缺失/截断 Journal 的受保护负例，再重打 clean 工件并恢复 owner-review 状态。游戏进度的最小后续目标是按 Overseer 诊断恢复蓝矩阵的电路板输入，再用 fresh 600-tick 速率和 `3401` 科研增长核销；该游戏写仅由 Luna Max 子 Agent 执行。真实 600-tick carrier stall 仍保留为普通玩法无法安全制造的已知 live 覆盖限制。

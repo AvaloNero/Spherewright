@@ -90,6 +90,7 @@ DSP native gameplay systems
 - 正常保存只允许当前 owned identity，并调用 DSP 正常保存 API。
 - 健康的计划重启只载入 ticket-bound exact primary；只有隔离恢复可以采用已经在读取 header 时满足最低 tick 的受限 LastExit 路径。
 - 恢复票据必须一次性、可过期，并有 durable consumed tombstone；恢复后重新生成 session，旧 cursor、plan 和 capability 全失效。
+- 新签发的恢复票据还必须绑定该 owned save 当前已落盘 Journal 的身份、跟踪边界和最小 durable sequence。prepare/commit 在载入前检查，世界采用后再检查一次；Journal 缺失、被重建或序列倒退时不消费票据、不自动保存且不开放游戏写入。旧票据仅为兼容可无此水位，下一次健康保存必须升级为新语义。
 - 星际飞行前单独保存绑定该次飞行的 checkpoint。失败时可反复读取同一 checkpoint；飞行成功后立即撤销 reload capability，并在覆盖主档保存成功后 retire checkpoint，绝不能让旧 checkpoint 回滚后续进度。
 - 写入隔离时停止新的 commit，先复读精确 action；不能证明结果时正常关闭并通过受保护的同档恢复路径重启。不得因隔离开新档或加载其他档。
 

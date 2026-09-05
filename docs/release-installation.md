@@ -61,6 +61,8 @@ Set `Safety.AllowWrites=true` and `Safety.AllowUserSaveImport=true`, restart DSP
 
 A Spherewright-looking filename never grants ownership. Import does not provide arbitrary save selection or loading, and the imported copy's journal begins at the import point rather than reconstructing earlier history.
 
+Every newly issued protected-resume ticket records the owned copy's current durable journal checkpoint. Keep the protected runtime journal data together with the resume-ticket replicas during backup or isolated package testing. If that journal is missing, recreated, truncated, or belongs to another tracking boundary, Spherewright refuses resume before gameplay and keeps the one-time ticket available for an exact repair and retry; it does not silently create a replacement timeline.
+
 The repository records offline, local-live, and cross-computer-live evidence separately. At present, the checked-in save-import evidence is offline only; these setup steps do not claim that the full import flow has completed local or cross-computer live validation.
 
 ## Verify or troubleshoot

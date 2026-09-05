@@ -1865,10 +1865,11 @@
 - 适用范围：Spherewright owned save 的首次事件证据、仓库进度文档和跨存档工程经验；不把仓库文档当作 Plugin 自动持久化能力。
 - 当前结论：运行时 Journal 是 Plugin 按 owned save 隔离、自动落盘的机器可读首次事件源；逐档日记是一档一份的人类可读时间线，整理 Journal、运行态、决策、事故和保存/Git 边界；工程事故簿跨存档记录第一次遇到的问题、根因、代码/协议修复和验证。事故可以同时保留在当档日记，但三者不得互相冒充。现行操作规则及复验触发仍统一进入本经验账本。
 - 直接证据：当前 `owned-world-001` 的 Journal 以 save identity 派生独立文件并在恢复后保持 sequence `49/49` durable；`docs/save-diaries/README.md` 登记该档及后续建档规则，`docs/gameplay-timeline.md` 明确改为该档日记，`docs/incident-fix-log.md` 从历史证据抽取首批 15 个问题/修复。提交 `18f0a69` 同时删除旧阶段状态/手工验收/接手页并修复全部本地 Markdown 链接。
+- 直接证据：`3401` 完成后，正常选择 `1608` 在运行时自动追加 sequence `50` 的 `technology_first_selected`；事件的实际时间 `2026-09-05T18:47:34.1336132+08:00`、tick `18653068`、本局 `003d 14:21:24` 与 fresh queue `[1608]` 对齐，并立即报告 durable/entries `50/50`、pending false、error null。仓库逐档日记同批只整理这条真实新事件，没有修改或补造 sequence `1..49`。
 - 限制或反例：Plugin 只自动维护运行时 Journal；仓库内逐档日记和事故簿由开发流程维护。Journal 上线前的旧档事件只能记录可证明上界或未知，不能补造点击实际时间或精确首次产出。
 - 复验触发：创建下一个 owned save、Journal 文件/身份派生或 durability 语义变化、存档退役、事故分类与经验账本发生冲突、发布文档重组。
 - 关联：EXP-037、EXP-048、`docs/save-diaries/README.md`、`docs/gameplay-timeline.md`、`docs/incident-fix-log.md`、提交 `18f0a69`。
-- 最近复验：2026-09-03（运输船引擎首次升级选择把当前档 Journal 推进到 `49/49` durable、无 pending/error；存档索引仅使用公开别名，不含真实保存名或恢复凭据）。
+- 最近复验：2026-09-05（配送物流系统首次选择把同档 Journal 从 `49/49` 追加到 `50/50` durable；逐档日记只整理该真实事件，历史序列未补造）。
 
 ### EXP-147 — 专用输出仓可经受电分拣器汇入带过滤消费者的既有混合入料带
 
@@ -2302,8 +2303,21 @@
 - 关联：EXP-004、EXP-048、EXP-069、EXP-072、EXP-146、IFX-024、`GameplayJournalContinuityPolicy`、`OwnedWorldResumeTicketStore`。
 - 最近复验：2026-09-05（长期世界精确 `49/49` Journal、checkpoint-bearing 新票据正常恢复、缺失/sequence-48 截断双负例 fail-closed、原件恢复后同票据成功复归、current-user-only DACL、双 store tombstone 与敏感测试备份清理）。
 
+### EXP-183 — 下一科技候选必须从完整 progression catalog 按前置条件筛选
+
+- 状态：`validated`
+- 日期：2026-09-05
+- 适用范围：当前 DSP `0.10.34.28529`、科技/升级 progression catalog、空研究队列后的下一项选择，以及 `prepare_select_research` 的原生 `CanEnqueueTech` 复核。
+- 当前结论：当前科技完成且队列为空时，不能只筛 `unlocked=true` 项来找下一目标；该集合在当前 DTO 中会集中表现为已经完成或满级的历史项。应读取完整 progression catalog，先排除已完成/已满级条目，再要求每个列出的 prerequisite 已完成，并把候选的矩阵预算、解锁配方和当前路线目标一起比较。最终可选性仍以 fresh `prepare_select_research` 调用 DSP 原生 `CanEnqueueTech` 为准；不能仅凭前置列表或猜测 ID 提交。
+- 直接证据：`3401 运输船引擎` 于 tick `18593844` 达到 `36000/36000` 后，current tech 为 0、队列为空。只看 40 个 `unlocked` 条目时它们全部 completed/maxed，表面上没有下一项；完整读取 314 条 state 后得到 274 条未完成/未满级项，其中 30 条的已列前置均完成。物流方向的 `1608 配送物流系统` 明确依赖已完成的 `1602/1702`，预算为蓝矩阵 600、红矩阵 300并解锁 recipe `122/123`；fresh prepare 的原生 `CanEnqueueTech` 允许后才唯一 commit。动作于 tick `18653067` terminal/completed/succeeded，fresh queue 仅 `[1608]`；Journal sequence `50` 在 tick `18653068`、本局 `003d 14:21:24` durable 记录首次选择。
+- 限制或反例：当前只验证一项普通科技候选，不证明所有隐藏科技、无限升级、跨等级升级或互斥分支都可仅靠“已列前置完成”判定；最终 prepare 仍可能因状态变化、矩阵规则或原生队列限制拒绝。目录和科技语义随 DSP 版本变化后必须重验。
+- 复验触发：`1608` 完成后的下一次选择、升级多等级、隐藏/重复科技、catalog DTO 变化、`CanEnqueueTech` 路径变化或 DSP 版本变化。
+- 关联：EXP-037、EXP-048、EXP-063、EXP-073、EXP-146、EXP-156、`ResearchSelectionPolicy`。
+- 最近复验：2026-09-05（完整 314 条目录筛出 30 个前置完成候选，原生 prepare 再确认 `1608`，唯一选择动作和 Journal sequence `50` 闭环）。
+
 ## 修订记录
 
+- 2026-09-05：新增 EXP-183，并复验 EXP-146。`3401` 于 tick `18593844` 自然完成，普通保存 terminal/completed/succeeded 到 tick `18639872`；完整 314 条 progression catalog 避免了“40 条 unlocked 均完成所以无候选”的误判，筛出 30 个前置完成候选。原生 prepare 允许后唯一选择 `1608 配送物流系统`，动作 tick `18653067` 完成；Journal sequence `50` 在 tick `18653068`（实际 `2026-09-05T18:47:34.1336132+08:00`、本局 `003d 14:21:24`）durable。fresh queue `[1608]`、revision `12`、healthy、无 blocker/checkpoint；完整窗口蓝/红/黄 `24/12/6 min⁻¹`、finding 0。当前 accepted count 9，下一写后必须严格审计。
 - 2026-09-05：复验 EXP-145。`114 -> 716` 石墨自动线在 tick `18524236+` 只做 bounded prepare 与全厂占位复读：仓到仓直连被原生拒绝，约 20 格直线及南北/北端分段候选分别命中旧带、仓体、旧带墙或约 1.22 m 设备净空。全部 token 未 commit，当前 installed-package session accepted count 仍为 7、revision `9`、healthy、Journal `49/49`。该项记录为现有普通路线候选内 blocked，不以额外玩家转运冒充自动化，也不继续无界搜索。
 - 2026-09-05：复验 EXP-079/080。黄矩阵停产的当前根因是钻石线输入仓 `716` 无石墨；两次正常 transfer 以源仓 `3000 -> 1000`、玩家 `0 -> 2000 -> 0`、目标动作内 `0 -> 2000` 守恒，fresh `1998` 由既有生产取走。无需新增建筑或改配置，原有钻石长带和黄矩阵转换段恢复；完整窗口 tick `18484804` 为石墨/金刚石/黄矩阵 `12/30/6 min⁻¹`，最终 bundle tick `18489233` 为蓝/红/黄 `12/6/12 min⁻¹` 且全部 finding 0。保存 terminal/completed/succeeded 到 tick `18487805`；fresh revision `9`、owned/saved/healthy、Journal `49/49` durable、无 blocker/checkpoint。`114 -> 716` 仍无自动入边，2000 件只作为有界缓冲，不冒充全自动供应。
 - 2026-09-05：复验 EXP-067/073。安装态 Overseer 在 tick `18410193` 同时看到实验室 `76` 缺电路板与制造台 `36` 输出 `20/20`；端点均存在，断点是输入 sorter `573` 误过滤铜块 `1104`。Luna Max 只通过正常配置改为电路板 `1301`，terminal 成功且 fresh 立即携货；tick `18434641` 的完整原生窗口为电路板 `24 min⁻¹`、蓝矩阵 `18 min⁻¹`、0 finding，科技 `3401` 由 `3728 -> 4584`。普通保存 terminal/completed/succeeded 到 tick `18438905`，fresh revision `4`、owned/saved/healthy、Journal `49/49` durable、无 blocker/checkpoint。没有手工搬运、建造或重复提交。

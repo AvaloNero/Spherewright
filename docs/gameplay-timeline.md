@@ -2,7 +2,7 @@
 
 更新时间：2026-09-05（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界已恢复到母星 planet `104`。v0.3.3 隔离验证遗留的 active ticket 先正确载入早期测试副本；关闭该副本后，长期档只通过已归档的精确 owned proof 和 header 恢复，未枚举或依赖存档名前缀。首读发现同档 Journal 被重建为 0-entry 后立即停止所有游戏写入；DSP 停止后保留证据并以 journal/owned/game-version 三重身份恢复唯一 49-entry 备份。修复版 `7e44e48` 已把新恢复票据绑定到该 Journal 的 tracking tick `4428079` 和 minimum durable sequence `49`：正常恢复通过，缺失与连续 sequence `1..48` 截断两种负例都在 prepare 阶段 fail-closed、没有启动加载，恢复原件后同一票据于 tick `18291377` 成功复归。clean `8c49bcb` 的实际候选包安装后又一次恢复到 tick `18319586`，安装态 MCP 的 3/3-factory bundle 到 tick `18334303`。Luna Max 随后只改正蓝矩阵输入 sorter `573` 的过滤值，再把已有自动高能石墨从源仓经玩家守恒转运到钻石线输入仓；最终 bundle tick `18489233` 证明蓝/红/黄矩阵分别 `12/6/12 min⁻¹`、全部 finding 为 0，科技 `3401` 持续增长到 `16380/36000`。普通保存到 tick `18487805` 后仍为 owned/saved/healthy、Journal `49/49` durable、0 pending/error、无 blocker/checkpoint。自动连接 `114 -> 716` 的有界候选均因旧带/设备占位或安全净空不足被丢弃，0 commit，现有黄线仍靠 2000 件有界石墨缓冲；下一小步是完成当前科技并按 fresh 诊断继续。v0.4 候选等待 owner review，未 tag/release；真实 carrier 连续 600 tick 完全静止仍是普通游戏接口无法安全制造的明确 live 覆盖限制。
+当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界已恢复到母星 planet `104`。v0.3.3 隔离验证遗留的 active ticket 先正确载入早期测试副本；关闭该副本后，长期档只通过已归档的精确 owned proof 和 header 恢复，未枚举或依赖存档名前缀。首读发现同档 Journal 被重建为 0-entry 后立即停止所有游戏写入；DSP 停止后保留证据并以 journal/owned/game-version 三重身份恢复唯一 49-entry 备份。修复版 `7e44e48` 已把新恢复票据绑定到该 Journal 的 tracking tick `4428079` 和 minimum durable sequence `49`：正常恢复通过，缺失与连续 sequence `1..48` 截断两种负例都在 prepare 阶段 fail-closed、没有启动加载，恢复原件后同一票据于 tick `18291377` 成功复归。clean `8c49bcb` 的实际候选包安装后又一次恢复到 tick `18319586`，安装态 MCP 的 3/3-factory bundle 到 tick `18334303`。Luna Max 随后只改正蓝矩阵输入 sorter `573` 的过滤值，再把已有自动高能石墨从源仓经玩家守恒转运到钻石线输入仓；最终 bundle tick `18489233` 证明蓝/红/黄矩阵分别 `12/6/12 min⁻¹`、全部 finding 为 0。`3401` 于 tick `18593844` 自然完成并保存到 `18639872`；完整目录审计后正常选择 `1608 配送物流系统`，Journal sequence `50` durable，当前三色供给持续无 finding。自动连接 `114 -> 716` 的有界候选均因旧带/设备占位或安全净空不足被丢弃，0 commit，现有黄线仍靠 2000 件有界石墨缓冲。当前 owned/saved/healthy、Journal `50/50` durable、0 pending/error、无 blocker/checkpoint；下一小步是让 `1608` 自然完成并执行第十写审计。v0.4 候选等待 owner review，未 tag/release；真实 carrier 连续 600 tick 完全静止仍是普通游戏接口无法安全制造的明确 live 覆盖限制。
 
 ## 结论与证据边界
 
@@ -114,6 +114,7 @@
 | blue-line repair bundle `18410193–18434641`; save `18438905` | 2026-09-05 | clean 候选包运行态中，Overseer 先把实验室 `76` 的蓝矩阵 `0 min⁻¹` 定位为缺电路板 `1301`，同时把唯一电路板制造台 `36` 定位为输出堵塞 `20/20`。端点复读确认 `36 -> 714 -> 571` 和 `565 -> 573 -> 76` 都存在，实际断点是入口 sorter `573` 误过滤铜块 `1104`。Luna Max 只通过正常 sorter 配置动作改为电路板 `1301`；fresh 立即看到 sorter 携带 1 件电路板。完整原生 600-tick 窗口随后返回电路板 `24 min⁻¹`、蓝矩阵 `18 min⁻¹`、两者 0 finding，科技 `3401` 的 hash uploaded `3728 -> 4584`。普通保存 terminal/completed/succeeded，fresh `lastOwnedSaveGameTick=18438905`、revision `4`、owned/saved/healthy、Journal `49/49` durable、无 blocker。没有手工搬运或新增建筑。 | R/M/D |
 | graphite transfers `18467403/18469135`; yellow save `18487805`; final bundle `18489233` | 2026-09-05 | 蓝线保存后的 fresh bundle 先确认红矩阵 `6 min⁻¹`，并把黄矩阵停产定位到制造台 `715` 缺高能石墨；自动源仓 `114` 有 3000 石墨，输入仓 `716` 为空且无自动入边。端点复读确认石墨源 `113 -> 116 -> 114`、钻石段 `716 -> 720 -> 715 -> 719 -> 717` 和既有 `717 -> 1212 -> belts -> 1116 -> 775 -> 777 -> 774` 均闭合。Luna Max 正常接近两座相距 18.41 m 的仓，用两次 terminal/completed transfer 守恒搬运 2000 石墨：源仓 `3000 -> 1000`、玩家 `0 -> 2000 -> 0`、目标仓动作内 `0 -> 2000`，fresh `1998` 已由生产自然取走。没有新增建筑或配置。完整窗口 tick `18484804` 为石墨 `12`、金刚石 `30`、黄矩阵 `6 min⁻¹`，最终 tick `18489233` 为蓝/红/黄 `12/6/12 min⁻¹`、石墨 `18`、金刚石 `30 min⁻¹`，全部 finding 0；三座矩阵 lab 均工作，科技 `3401` 增至 `16380/36000`。保存 terminal/completed/succeeded，fresh revision `9`、owned/saved/healthy、Journal `49/49` durable、无 blocker/checkpoint。该结果证明有界补料后的既有链恢复，不声称 `114 -> 716` 已自动化。 | R/M/D |
 | graphite-route preflight `18524236+` | 2026-09-05 | 为消除 `114 -> 716` 的人工补料边界，Luna Max 先核销当前安装包 session 仅有 7 个 accepted writes，再只做有界预检。仓到仓直连被原生 `BUILD_CONNECTION_INVALID` 无副作用拒绝，确认必须使用自由带和两端 sorter。多条普通 belt prepare 虽返回合法 plan，但全路径复读后均被丢弃：最短约 20 格路线与旧 belt `246/1706` 重叠并穿过实体；南北平移分别撞仓 `717` 或旧带墙；北端两段候选又与 `644/649/1118/1121/1688` 等链重叠，唯一无重叠候选距最近实体约 1.22 m，低于当前厂区采用的安全净空。全程 0 commit/action、revision 保持 `9`、healthy、Journal `49/49`。该自动线在当前有界普通路线集合内明确 blocked，不继续无界枚举，也不以额外 transfer 冒充修复。 | R/D |
+| upgrade completion `18593844`; save `18639872`; tech selection `18653067/18653068` | 2026-09-05 | 三色矩阵持续生产期间，升级 `3401 运输船引擎` 自然达到 `36000/36000` 并在本局 `003d 14:04:57` 完成。普通保存 terminal/completed/succeeded；fresh tick `18639912`、revision `10`、healthy、Journal `49/49`。随后只读完整 314 条 progression state，而不是把 40 条已完成 unlocked 项误当成无科技可选；274 条未完成/未满级中有 30 条前置均已完成。运行时 `CanEnqueueTech` 允许物流方向的 `1608 配送物流系统`（前置 `1602/1702`，需蓝 600、红 300，解锁 recipe `122/123`），唯一选择动作 terminal/completed/succeeded。Journal sequence `50` 在 tick `18653068`（实际 `2026-09-05T18:47:34.1336132+08:00`、本局 `003d 14:21:24`）durable 记录首次科技选择；fresh 队列仅 `[1608]`、revision `12`。完整窗口 tick `18658636` 为蓝/红/黄 `24/12/6 min⁻¹` 且全部 finding 0；当前 installed session accepted count 为 9。 | J/R/D |
 
 ## 科技树与升级
 
@@ -169,7 +170,8 @@
 | 39 | 科技 | 1114 加力推进器 | 2026-09-02 12:48:46.7314534 +08:00 | 8714995 / `001d 16:20:49` | 10088609 / `001d 22:42:23` |
 | 40 | 科技 | 1414 高强度钛合金 | 2026-09-02 12:48:47.0102461 +08:00 | 8715000 / `001d 16:20:50` | 11098574 / `002d 03:22:56` |
 | 44 | 科技 | 1605 星际物流系统 | 2026-09-03 05:08:03.9709304 +08:00 | 11122095 / `002d 03:29:28` | 11808407 / `002d 06:40:13` |
-| 49 | 升级 | 3401 运输船引擎 | 2026-09-03 14:11:00.9597999 +08:00 | 12956512 / `002d 11:59:01` | 进行中；tick `12959635` 为 `1928/36000` |
+| 49 | 升级 | 3401 运输船引擎 | 2026-09-03 14:11:00.9597999 +08:00 | 12956512 / `002d 11:59:01` | 18593844 / `003d 14:04:57` |
+| 50 | 科技 | 1608 配送物流系统 | 2026-09-05 18:47:34.1336132 +08:00 | 18653068 / `003d 14:21:24` | 进行中；tick `18658617` 为 `11100/108000` |
 
 ## 第一次手搓与第一次流水线产出
 
@@ -435,9 +437,10 @@
 | EXP-180 | observed | GitHub 手动包与 Thunderstore 包同版本同源码，但安装布局必须分开 |
 | EXP-181 | validated | 存档模式证据不应与动作授权混为同一门禁 |
 | EXP-182 | validated | 隔离验证必须把恢复票据和逐档 Journal 作为同一边界备份/恢复 |
+| EXP-183 | validated | 下一科技候选必须从完整 progression catalog 按前置条件筛选 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前在同一受保护 `owned-world-001` 的母星 planet `104` 运行；三色矩阵恢复后普通保存到 tick `18487805`，fresh 为 revision `9`、owned/saved/healthy、Journal `49/49` durable、0 pending/error、无 blocker/checkpoint。继续使用同一世界，不开新档。
+- DSP 当前在同一受保护 `owned-world-001` 的母星 planet `104` 运行；`3401` 完成后普通保存到 tick `18639872`，随后正常选择 `1608`；fresh 为 revision `12`、owned/saved/healthy、Journal `50/50` durable、0 pending/error、无 blocker/checkpoint。继续使用同一世界，不开新档。
 - `v0.3.0` 已由 clean commit `a52ff44` 正式发布；`v0.3.1` annotated tag `33a733f` 的 prerelease 只含用户授权导入回移，等待另一台电脑实测，不混入 v0.4。
-- 当前主线：v0.4 Overseer 功能门、IFX-024 补充回归、clean 双包、实装恢复、安装态 MCP/Overseer 和 Windows CI 均完成，候选等待 owner review；审核前不 tag/release。当前蓝/红/黄矩阵均有完整窗口非零产量，游戏进度的最小后续目标是完成科技 `3401`，再以 fresh bundle 选择下一科技与真实产线瓶颈。高能石墨源仓 `114` 到输入仓 `716` 的有限安全路线预检已明确 blocked，本次 2000 件缓冲只算普通补料恢复；后续自动化需要新的可证明施工策略或接口能力，不能无限枚举现有候选。游戏写仍仅由 Luna Max 子 Agent 执行。真实 600-tick carrier stall 继续作为普通玩法无法安全制造的已知 live 覆盖限制。
+- 当前主线：v0.4 Overseer 功能门、IFX-024 补充回归、clean 双包、实装恢复、安装态 MCP/Overseer 和 Windows CI 均完成，候选等待 owner review；审核前不 tag/release。`3401` 已完成，`1608 配送物流系统` 正常入队且三色产量持续非零；游戏进度的最小后续目标是让 `1608` 自然完成，以普通保存作为当前 session 第 10 个 accepted write，并立即完成严格审计，再读取 recipe `122/123` 的实际产品和生产预算。高能石墨 `114 -> 716` 的有限安全路线仍 blocked；后续自动化需要新的可证明施工策略或接口能力。游戏写仍仅由 Luna Max 子 Agent 执行。真实 600-tick carrier stall 继续作为普通玩法无法安全制造的已知 live 覆盖限制。

@@ -2751,6 +2751,9 @@ internal sealed partial class GameStateReader
                 RoughRadius = item.prefabDesc.roughRadius,
                 PowerConnectDistance = item.prefabDesc.powerConnectDistance,
                 PowerCoverRadius = item.prefabDesc.powerCoverRadius,
+                ProductionSpeedRaw = item.prefabDesc.isAssembler ? item.prefabDesc.assemblerSpeed
+                    : item.prefabDesc.isLab ? item.prefabDesc.labAssembleSpeed : (int?)null,
+                WorkEnergyPerTick = item.prefabDesc.workEnergyPerTick,
             });
         }
 

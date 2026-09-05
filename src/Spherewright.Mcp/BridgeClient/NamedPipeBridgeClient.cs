@@ -41,6 +41,10 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
             cancellationToken).ConfigureAwait(false);
     }
 
+    public Task<BridgeCallResult<FoundryPlanSnapshot>> GetFoundryPlanAsync(
+        string sessionId, GetFoundryPlanRequest request, CancellationToken cancellationToken) =>
+        CallAsync<GetFoundryPlanRequest, FoundryPlanSnapshot>(BridgeMethods.GetFoundryPlan, sessionId, request, cancellationToken);
+
     public async Task<BridgeCallResult<SessionState>> GetSessionStateAsync(CancellationToken cancellationToken)
     {
         return await CallAsync<EmptyPayload, SessionState>(

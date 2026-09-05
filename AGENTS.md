@@ -28,6 +28,7 @@ Spherewright 是面向外部 Agent 的《戴森球计划》结构化控制层。
 - [docs/research/environment.md](./docs/research/environment.md)：本机版本、程序集与部署证据。
 - [docs/research/game-api-m0.md](./docs/research/game-api-m0.md)：从早期基线延续至当前版本的 DSP API 调用证据；文件名是历史来源，不是当前阶段门禁。
 - [docs/research/game-api-overseer.md](./docs/research/game-api-overseer.md)：v0.4 多行星统计、窗口、理论速率和诊断数据源证据。
+- [docs/research/game-api-foundry.md](./docs/research/game-api-foundry.md)：v0.4 建厂物料、设备规模计算与现场适配证据。
 - [docs/save-diaries/README.md](./docs/save-diaries/README.md)：逐存档日记索引、命名和证据边界。
 - [docs/gameplay-timeline.md](./docs/gameplay-timeline.md)：`owned-world-001` 的存档日记。
 - [docs/incident-fix-log.md](./docs/incident-fix-log.md)：首次问题、根因、代码/协议修复和验证记录。

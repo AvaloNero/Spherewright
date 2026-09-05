@@ -55,6 +55,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_commit_transfer",
                 "spherewright_get_action_result",
                 "spherewright_get_build_catalog",
+                "spherewright_get_foundry_plan",
                 "spherewright_get_gameplay_journal",
                 "spherewright_get_local_star_system",
                 "spherewright_get_overseer_diagnostic_bundle",
@@ -100,6 +101,20 @@ public sealed class SpherewrightToolsTests
             tools.Where(tool => tool.ProtocolTool.Name.StartsWith("spherewright_commit_", StringComparison.Ordinal)),
             tool => Assert.True(tool.ProtocolTool.Annotations?.DestructiveHint));
         Assert.DoesNotContain(tools, tool => tool.ProtocolTool.Name.Contains("basic_production_line", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task FoundryPlan_MapsExplicitRecipeAndSupplyChoicesWithoutCommit()
+    {
+        var client = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.GetFoundryPlanAsync(client, "session", 104, 1203, 20.5m,
+            new[] { 1101 }, new[] { new FoundryRecipeChoice { ItemId = 1203, RecipeId = 16, BuildingItemId = 2303 } });
+        Assert.False(result.IsError);
+        Assert.Equal("session", client.LastSessionId);
+        var request = Assert.IsType<GetFoundryPlanRequest>(client.LastFoundryRequest);
+        Assert.Equal(20.5m, request.TargetRatePerMinute);
+        Assert.Equal(1101, Assert.Single(request.ExternalSupplyItemIds));
+        Assert.Equal(2303, Assert.Single(request.RecipeChoices).BuildingItemId);
     }
 
     [Fact]
@@ -1021,6 +1036,20 @@ public sealed class SpherewrightToolsTests
                 EntityId = request.EntityId,
             }));
         }
+
+        public Task<BridgeCallResult<FoundryPlanSnapshot>> GetFoundryPlanAsync(
+            string sessionId, GetFoundryPlanRequest request, CancellationToken cancellationToken)
+        {
+            LastSessionId = sessionId;
+            LastFoundryRequest = request;
+            return Task.FromResult(BridgeCallResult<FoundryPlanSnapshot>.Succeeded(new FoundryPlanSnapshot
+            {
+                SessionId = sessionId, PlanetId = request.PlanetId,
+                TargetItemId = request.TargetItemId, TargetRatePerMinute = request.TargetRatePerMinute,
+            }));
+        }
+
+        public GetFoundryPlanRequest? LastFoundryRequest { get; private set; }
 
         public Task<BridgeCallResult<BuildCatalog>> GetBuildCatalogAsync(
             string sessionId,

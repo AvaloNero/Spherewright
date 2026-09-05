@@ -21,6 +21,7 @@ public static class BridgeMethods
     public const string ListAssemblers = "list_assemblers";
     public const string InspectAssembler = "inspect_assembler";
     public const string GetBuildCatalog = "get_build_catalog";
+    public const string GetFoundryPlan = "get_foundry_plan";
     public const string PrepareNewGame = "prepare_new_game";
     public const string CommitNewGame = "commit_new_game";
     public const string PrepareImportCurrentGame = "prepare_import_current_game";

@@ -2352,7 +2352,21 @@
 - 关联：EXP-037、EXP-070、EXP-145、EXP-168、EXP-184、ROADMAP `0.5.0`、`docs/research/game-api-m0.md`。
 - 最近复验：2026-09-05（live MCP 四层缺口审计 + 当前程序集 add-on/transport 精确签名，0 game write）。
 
+### EXP-187 — Foundry 规模计算必须绑定设备速度、批量和显式供给边界
+
+- 状态：`validated`
+- 日期：2026-09-05
+- 适用范围：当前 DSP `0.10.34.28529` 的 assembler/smelter/refinery/matrix-lab 物料草案及无游戏 DLL 的编译测试；不外推为建厂实机验收。
+- 当前结论：同一上游物品的各下游需求先聚合，再按运行时配方批量和 prefab 速度取整设备数。原料或显式外供是供应需求，不是已经证明的自动供给；副产物必须保留去向需求。基础机器功率不含分拣器、物流与电网设施。草案哈希必须包含原始配方批量，不能只散列总用料和机器数。
+- 直接证据：本机程序集证明 speed 使用 10000 标度、配方执行耗时为 `TimeSpend*10000`；Core 测试覆盖共享铁输入、0.75× 设备、每周期多产物和批量加倍但需求/台数不变的哈希反例。浮点猜测或极小 decimal 下溢不能让输入/机器数量凭空消失。
+- 限制或反例：当前工具 `spherewright_get_foundry_plan` 返回 `material_plan/executable=false`，不含现场绑定、物流/供电完整成本、不可变动作图或跨重启进度。Luna Max 对长期档的只读选址另证明：低密度候选地距可见铜输出约 68.6 m，铜矿 node 7 仅余约 1197；几何候选和满供电矿机不能证明长期稳定供给或无碰撞路线。
+- 复验触发：配方/生产设备/DSP 变化；新增增产、采矿或分馏机制；首次部署新字段；现场布局/动作图/恢复能力开放前。
+- 关联：`FoundryPlanCompiler`、`FoundryPlanCompilerTests`、`docs/research/game-api-foundry.md`、EXP-145/184/186。
+- 最近复验：2026-09-05（离线计算和程序集审计；新工具 live 仍待同档正常保存/重启部署）。
+
 ## 修订记录
+
+- 2026-09-05：新增 EXP-187；实现只读 Foundry 物料/规模编译和 MCP 映射，保留不可执行草案边界。复核 EXP-001/072：Core 测试之外单独完整 Release 构建，部署仍需正常退出后安装同批依赖；未用新能力直接写游戏。
 
 - 2026-09-05：项目所有者明确将原 0.5.0 Foundry 的全部范围和验收门并入 0.4.0，与 Overseer 一起实现。原诊断候选验证仍有效，但不代表合并版完成。复核 EXP-145/184/186：密集旧厂的有限候选失败只证明该候选集合不可行；配送器原语是配送型计划的前提，不是所有空地建厂计划的前提。当前优先复用普通 belt/sorter 和运行时依赖图完成三级链计划、逐实体执行与跨重启去重。
 - 2026-09-05：再次复验 EXP-037/080/146/183/185。完整 progression state 中正常选择 `4001 配送范围`，Journal sequence `51` 在 tick `18989824`（实际 `2026-09-05T20:21:27.8001916+08:00`、本局 `003d 15:54:57`）durable；临时 runner 未在 post-read 前保留选择 action ID/阶段 tick，因此保持 unavailable 且未重放。既有蓝/红矩阵链把研究自然完成到 tick `19048625`（本局 `003d 16:11:17`），fresh 为 `36000/36000`、unlocked、队列空。第 5 写普通保存 action `aad54910-edb2-490e-adc2-00c33c1b7a8c` 先完整保留 terminal receipt，再 fresh 核销：保存 tick `19060582`、revision `45`、owned/saved/healthy、Journal `51/51` durable、无 blocker/checkpoint；EXP-185 的新顺序在该保存动作上得到正例。

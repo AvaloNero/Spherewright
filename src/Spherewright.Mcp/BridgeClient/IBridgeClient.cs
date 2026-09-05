@@ -14,6 +14,9 @@ namespace Spherewright.Mcp.BridgeClient;
 
 public interface IBridgeClient
 {
+    Task<BridgeCallResult<FoundryPlanSnapshot>> GetFoundryPlanAsync(
+        string sessionId, GetFoundryPlanRequest request, CancellationToken cancellationToken);
+
     Task<BridgeCallResult<BridgeStatus>> GetBridgeStatusAsync(CancellationToken cancellationToken);
 
     Task<BridgeCallResult<SessionState>> GetSessionStateAsync(CancellationToken cancellationToken);

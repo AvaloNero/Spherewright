@@ -296,6 +296,20 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             cancellationToken).ConfigureAwait(false);
                         break;
                     }
+                case BridgeMethods.GetFoundryPlan:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<GetFoundryPlanRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+
+                        await DispatchAndWriteAsync(pipe, header.RequestId, header.SessionId,
+                            () => _gameStateReader.GetFoundryPlanOnMainThread(header.SessionId, request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
                 case BridgeMethods.ListResourceNodes:
                     {
                         var request = PluginJson.Deserialize<BridgeRequestEnvelope<ListResourceNodesRequest>>(requestJson);

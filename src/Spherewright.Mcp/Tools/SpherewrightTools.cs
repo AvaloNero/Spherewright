@@ -16,7 +16,7 @@ using Spherewright.Mcp.Resources;
 namespace Spherewright.Mcp.Tools;
 
 [McpServerToolType]
-public static class SpherewrightTools
+public static partial class SpherewrightTools
 {
     private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
     {

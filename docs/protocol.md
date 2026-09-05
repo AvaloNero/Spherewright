@@ -19,6 +19,7 @@ spherewright_get_gameplay_journal
 spherewright_get_local_star_system
 spherewright_get_recipe_catalog
 spherewright_get_build_catalog
+spherewright_get_foundry_plan
 spherewright_get_power_summary
 spherewright_get_overseer_diagnostic_bundle
 spherewright_get_overseer_production
@@ -67,6 +68,12 @@ spherewright_commit_reload_flight_checkpoint
 ```
 
 `prepare_new_game` and `commit_new_game` now describe only a peaceful 1x non-sandbox world. The old sandbox basic-production-line methods are not registered as MCP tools and are excluded from M0.
+
+### Foundry material draft
+
+`spherewright_get_foundry_plan` is a read-only helper for the current owned local planet. It takes `sessionId`, `planetId`, `targetItemId`, `targetRatePerMinute`, optional `externalSupplyItemIds`, and optional `{itemId, recipeId, buildingItemId}` choices. A zero building ID selects the lowest compatible available grade. It uses current unlocked runtime recipes and base machine speed, aggregates shared inputs, and returns dependency-ordered stages, machine counts/cost, working-power watts, external input rates and explicit byproduct rates. Rates are items per game minute at full power without proliferation; raw items form external-supply boundaries automatically.
+
+The current result has `phase=material_plan`, `executable=false` and `remainingChecks`. `machineCost` excludes belts, sorters, storage and power infrastructure. No source inventory, candidate site, automatic supply, native collision/terrain validity or finished line is proved. There are at most 64 recipe stages, 16 levels and 256 production machines; cycles, unavailable selections, unused choices and unsafe numeric budgets are rejected. The material `planHash` is deterministic across captures but is not a live `stateHash`, write token, persistent plan or ownership capability. All actual construction still requires fresh existing single-action prepare/commit and terminal readback.
 
 `spherewright_prepare_save_import` is the only entry point for a player-loaded unowned world. It accepts the restricted session ID and exact revision, creates only an in-memory short-lived plan bound to that process/session/revision/`GameData`, and returns a `confirmationPrompt`; it does not save, adopt, enumerate, actively load, or return the original save identity, planet, or game tick. After prepare succeeds, the Agent must ask that question and wait for a subsequent explicit user reply. `spherewright_commit_save_import` may set `userConfirmedInConversation` and the two boundary acknowledgements only after that later reply; missing declarations return `USER_CONFIRMATION_REQUIRED` without consuming the plan. The Plugin treats these fields as the MCP caller's declaration about conversation evidence—it does not claim access to chat history. Commit then revalidates the same object plus peaceful-mode/ready-local-factory state, records the actual sandbox/resource settings without using them as gates, generates an internal high-entropy name, calls DSP's normal save API, rereads the exact header tick, and adopts only on proof. The original remains unchanged, and the new per-save journal uses `attached_existing_save` with incomplete historical coverage. If the normal save reports success but header proof fails, that unowned session enters write quarantine: same-key result lookup remains available, but no new import plan/commit is accepted until the player deliberately reloads the intended original world into a new session.
 

@@ -46,6 +46,10 @@ public sealed class BuildCatalogItem
     public float PowerConnectDistance { get; set; }
 
     public float PowerCoverRadius { get; set; }
+
+    public int? ProductionSpeedRaw { get; set; }
+
+    public long? WorkEnergyPerTick { get; set; }
 }
 
 public sealed class BuildCatalogRecipe

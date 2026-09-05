@@ -1,4 +1,4 @@
-# Spherewright 0.3–0.9 Roadmap
+# Spherewright 0.3–1.0 Roadmap
 
 本文定义 Spherewright 从当前 Post-M0 开发基线走向 `1.0.0` 的公开能力路线、版本验收门和发行规则。它描述目标，不替代 [AGENTS.md](./AGENTS.md) 的当前阶段授权与安全约束。
 
@@ -9,7 +9,17 @@
 - `v0.3.0` 是本路线图下第一个正式发布版本。之后每个 `0.x.0` 都必须形成独立、可安装、可验收的完整能力切片。
 - `0.x.y` 只用于缺陷修复、兼容性、诊断、文档和发行修正，不在补丁版本中引入新的主要玩法动作域。`v0.3.1` 回移用户确认的存档导入，`v0.3.2` 修正新建档命名并补齐 Thunderstore 工件，`v0.3.3` 则只移除沙盒状态和资源倍率的运行门禁，不开放任何沙盒工具或旁路写入。
 
-2026-09-05 按项目所有者要求，将原 `0.5.0 — Foundry` 的全部范围和验收门合并进尚未发布的 `0.4.0`，与 Overseer 一起实现和验收。`0.5.0` 不再单独承载 Foundry；`0.6–0.9` 保留原编号和范围，不自动前移。
+2026-09-05 按项目所有者最新要求，将原 `0.5.0 — Foundry` 与原 `0.6.0 — Governor` 的全部范围和验收门合并进尚未发布的 `0.4.0`，与 Overseer 一起交付，整体目标是**为跨星系扩张做准备**。原 Voyager、Ascension、Release Candidate 依次前移；先前“0.6–0.9 保持编号”的安排已被本次决定替代。已发布的 `0.3.x` 不改号，`1.0.0` 仍是正式版晋升点。
+
+| 当前版本 | 内容 | 原路线来源 |
+|---|---|---|
+| `0.4.0` | Overseer, Foundry & Governor：诊断、新建、配平扩产与跨星系准备 | 原 `0.4` + `0.5` + `0.6` |
+| `0.5.0` | Voyager：实际跨恒星飞行与物流 | 原 `0.7` |
+| `0.6.0` | Ascension：戴森系统设计、发射与功率 | 原 `0.8` |
+| `0.7.0` | Release Candidate：公共面冻结、发行工程与全流程验收 | 原 `0.9` |
+| `1.0.0` | 从最后一个合格 `0.7.x` 的同批工件晋升 | 正式版编号不变 |
+
+下文为唯一现行版本安排；历史日记中的旧编号保留其当时语义，不代表额外待发布版本。
 
 ## 开发与发行规则
 
@@ -25,7 +35,7 @@
 
 ## 全路线持续约束
 
-以下内容不进入 `0.3–0.9`：
+以下内容不进入本路线所述的 `0.3–1.0` 版本：
 
 - 内置 LLM、自主 Goal Planner 或长期自主循环；
 - Computer Use、截图识别、键鼠宏或外部内存控制；
@@ -94,13 +104,15 @@
 
 本机以发行 Plugin 完成三条 live 路径：新建和平/非沙盒/1× 世界、导入和平/非沙盒/100× 世界、导入和平/沙盒/1× 世界。三个世界都从空库存按正常机制采集、手搓磁线圈、选择电磁学、取得游戏奖励并由施工无人机建成首座电力感应塔，随后正常保存；两个外部原档的文件修改时间保持不变，改动只进入独立副本。该证据证明本机兼容性，不冒充独立的异机运行结果。
 
-## 0.4.0 — Overseer & Foundry
+## 0.4.0 — Overseer, Foundry & Governor
 
-状态：**in development**（2026-09-05 合并 Foundry）。Overseer 与 Journal 连续性已有自动测试、双包及本机实装证据；它们只证明已完成的诊断部分。合并版还需完成下面的建厂计划、逐步施工与重启续建验收，再生成新的完整候选供审核。
+状态：**in development**（2026-09-05 合并 Foundry 与 Governor）。Overseer 与 Journal 连续性已有自动测试、双包及本机实装证据，Foundry 物料草案也已有本机读回；这些只证明各自已完成的部分。合并版还需完成建厂/续建、存量产线扩产及出发星系准备验收，再生成一个完整候选供审核。
 
 ### 目标
 
-把多星球工厂状态压缩为外部 Agent 可直接诊断的生产、供电、物流和科研视图，并把“目标物品与目标速率”编译为可检查、可恢复、逐实体执行的空地建厂计划。
+在当前出发星系内建立可持续供给、可诊断、可扩产和可恢复的工业基础，为 `0.5.0` 的实际跨星系探索与物流做准备：Overseer 发现问题，Foundry 把目标物品/速率编译为可检查、可恢复的空地建厂计划，Governor 对已有产线配平、扩产、补电和换源。三部分作为一个完整版本验收，不因某一个 helper 已完成就提前发布。
+
+本版本补齐关键科技/机甲升级、翘曲器与燃料供应、运输能力和远征备料；不把跨恒星飞行、曲速航线或跨恒星物流调度提前混入 `0.4.0`。
 
 ### Overseer 范围
 
@@ -116,11 +128,11 @@
 
 四项明确验收门已有候选证据：受控物流配置阻塞、空载输入缺料与真实运输负载下的断电分别稳定得到 `logistics_blocked / confirmed`、`material_shortage / confirmed`、`insufficient_power / confirmed`；三者都通过正常配置恢复，并由真实补料、送达、网络 ratio 1、finding 清除与钛块 `12 min⁻¹` 核销。两轮活动运输分别在 tick `17572610/17579665` 普通保存、正常退出，再由 exact-primary 恢复并自动重存 `17572642/17579696`；新 session 的物流基线从恢复后的当前 game tick 重建，离线墙钟没有成熟成假 stall。最终 healthy 普通保存为 tick `17584412`，第七次十写审计保持同一和平、非沙盒、1× owned world、2254 built/0 prebuild、Journal `49/49` durable、三网满供电且 0 blocker/checkpoint/BepInEx error。
 
-Overseer 部分保留的 live 覆盖缺口是真实 carrier 连续 600 game tick 完全静止后再恢复。当前程序集与实机对照表明：已出发运输船会由 `StationComponent.InternalTickRemote` 持续推进，站点断电不冻结它；暂停不推进 game tick，改需求/路线或拆塔会改变 qualifying route，而直接改 `stage/t/uPos/uSpeed/warpState` 违反项目边界。该分支保留 Core 自动测试和明确已知限制，不能伪造实机证据。clean `8c49bcb` 的 Release 构建为 0 warning/0 error，262 项自动测试全通过；Windows Core CI run `33957178227` 成功。手动包为 234 files、233 manifest entries、53 tools、1 resource，SHA-256 `001323b108d76b0de4fdc9102312a8db2c8ba85d555392e7b8b572ad32542ee8`；Thunderstore 包为 12 entries，SHA-256 `c8e53d60b37940cca9fe229dbaecaf4f72f4c71c599e5a63d685ae2a7a5c33ed`。两包均为 `sourceDirty=false` 且绑定 commit `8c49bcba1226e152a653fb5cfded7face00db86b`。实际手动包安装后，4/4 Plugin 和 224/224 MCP 文件无缺失/哈希差异，MCP 无额外文件；3 个旧 PDB 不在 manifest 且不是运行程序集。安装态 protected resume 在 ticket minimum `18318499` 后完成，fresh tick `18319586` 为 owned/saved/healthy、Journal `49/49`，live MCP `0.4.0.0` 的 53 tools、playbook 和 tick `18334303` 的 3/3-factory `public_allowlist_v1` bundle 均通过。这些是合并前 Overseer 候选的历史证据；合并后的 Foundry 仍须独立完成下列验收，最终工件必须重新构建与验证。
+Overseer 部分保留的 live 覆盖缺口是真实 carrier 连续 600 game tick 完全静止后再恢复。当前程序集与实机对照表明：已出发运输船会由 `StationComponent.InternalTickRemote` 持续推进，站点断电不冻结它；暂停不推进 game tick，改需求/路线或拆塔会改变 qualifying route，而直接改 `stage/t/uPos/uSpeed/warpState` 违反项目边界。该分支保留 Core 自动测试和明确已知限制，不能伪造实机证据。clean `8c49bcb` 的 Release 构建为 0 warning/0 error，262 项自动测试全通过；Windows Core CI run `33957178227` 成功。手动包为 234 files、233 manifest entries、53 tools、1 resource，SHA-256 `001323b108d76b0de4fdc9102312a8db2c8ba85d555392e7b8b572ad32542ee8`；Thunderstore 包为 12 entries，SHA-256 `c8e53d60b37940cca9fe229dbaecaf4f72f4c71c599e5a63d685ae2a7a5c33ed`。两包均为 `sourceDirty=false` 且绑定 commit `8c49bcba1226e152a653fb5cfded7face00db86b`。实际手动包安装后，4/4 Plugin 和 224/224 MCP 文件无缺失/哈希差异，MCP 无额外文件；3 个旧 PDB 不在 manifest 且不是运行程序集。安装态 protected resume 在 ticket minimum `18318499` 后完成，fresh tick `18319586` 为 owned/saved/healthy、Journal `49/49`，live MCP `0.4.0.0` 的 53 tools、playbook 和 tick `18334303` 的 3/3-factory `public_allowlist_v1` bundle 均通过。这些是合并前 Overseer 候选的历史证据；合并后的 Foundry、Governor 与准备清单仍须分别完成下列验收，最终工件必须重新构建与验证。
 
 2026-09-05 的候选刷新另增一项发布前回归：每张新恢复票据必须绑定逐档 Journal 最小 durable sequence，并在载入前/采用后双重验证。该回归已在同一 `owned-world-001` 上完成：旧票据兼容恢复并自动升级；新票据精确记录 `attached_existing_save`、tracking tick `4428079` 和 minimum durable sequence `49`；正常保存/关闭后的 checkpoint-bearing 恢复通过。随后在 current-user-only 受保护副本中先移走 Journal、再放回连续但只到 sequence `48` 的截断件，两次有效 prepare 都 fail-closed、没有 plan/commit/action/loader，且同一 token 保持可用；逐字节恢复原 `49/49` 文档后，同一票据在 minimum tick `18290246` 上恢复成功，最终 fresh tick `18291377`、owned/saved/healthy、无 blocker/checkpoint。旧 token 在两份 store 中均有 durable tombstone，新票据重新签发，临时敏感备份已删除；最终 clean 包安装后的又一次受保护恢复保持同一边界。
 
-### 验收门
+### Overseer 验收门
 
 - 在受控条件下分别制造缺料、断电和物流阻塞，Overseer 能稳定区分三者。
 - 外部 Agent 依据诊断修复至少一个场景，随后把三个故障全部清除。
@@ -137,7 +149,7 @@ Overseer 部分保留的 live 覆盖缺口是真实 carrier 连续 600 game tick
 - 明确区分计划生成、用户或外部 Agent 选择，以及逐步执行；人工操作造成现场改变时用 fresh 状态重新规划。
 - 普通 belt/sorter 产线可先用既有原语贯通；配送型计划只有在物流配送器 add-on、状态/配置、配送运输机守恒转移获得独立安全原语后才可执行（EXP-186），它不是所有 Foundry 计划的通用前置。
 
-### Foundry 验收门（与 Overseer 同时满足后才发布 0.4.0）
+### Foundry 验收门
 
 实现进度（2026-09-05）：第一块只读 Core 编译器与 `spherewright_get_foundry_plan` 已实现，复用运行时依赖图计算共享上游用量、实际设备速度下的台数和基础功率，并显式报告外供/副产物。当前仅为 `material_plan/executable=false` 草案；284 项无游戏 DLL 测试通过，完整 Release 构建零警告/零错误；源码 MCP 实际 stdio 握手为 54 tools / 1 resource，Foundry 标记只读并能从 playbook 发现。最终代码 `b9e74bd` 的 Windows Core CI run `33971193774` 成功。同批 Plugin 4/4 DLL 实装哈希匹配，同档 protected resume 后由 Luna Max 通过真实 MCP 调用验证 `1203 @ 30/min`：三级配方、4 熔炉+4 制造台、机器基础功率 2.52 MW、铁矿 120/min、铜矿 15/min；重复草案哈希稳定，零速率和错误 session 均拒绝。Journal `51/51` durable，最终 fresh tick `19393344`、saved tick `19369366`、healthy。场地绑定、完整物流与电网成本、不可变动作图和受保护续建仍未实现；本次普通恢复不冒充建厂中途续建，未声称上述新设备或实际产量已经建成。
 
@@ -147,33 +159,39 @@ Overseer 部分保留的 live 覆盖缺口是真实 carrier 连续 600 game tick
 - 计划失效、现场占用或资源变化时重新规划，而不是复用陈旧 token 或强行落地。
 - 发布前复跑 Overseer、owned save/import/resume、Journal 和原有动作语义回归；由 Luna Max 子 Agent 在同一长期存档验证建厂与续建，主会话负责接口设计和代码实现。
 
-## 0.5.0 — Merged into 0.4.0
-
-状态：**merged**（2026-09-05）。原 Foundry 内容已完整移入上面的 `0.4.0 — Overseer & Foundry`；不为相同内容安排第二次发布。该编号未来若要承载其他目标，需另行确定范围。
-
-## 0.6.0 — Governor
-
-### 目标
+### Governor 范围（原 0.6.0，完整并入本版本）
 
 分析存量产线的稳态和瓶颈，为外部 Agent 提供确定性的配平、扩产与换源方案。
-
-### 范围
 
 - 复用现有运行时配方依赖图完成确定性配方分解，不另起不一致的配方模型。
 - 计算设备数量、物流吞吐、供电预算、理论速率和实际速率。
 - 生成扩产、补电、物流增强和矿脉替换方案。
-- `0.4` 的 Foundry 负责空地新建计划；`0.6` 负责存量产线分析和再规划，并复用 Foundry 的规模计算 helper。
+- 同一 `0.4.0` 内，Foundry 负责空地新建计划，Governor 负责存量产线分析和再规划，并复用 Foundry 的规模计算 helper。
 - 方案由外部 Agent 选择，执行仍通过 `0.4` 的 Foundry 计划或既有安全原语逐步完成，不内置自主扩产循环。
 - 每个计划明确记录基线、目标速率、允许误差和稳态窗口。
 
-### 验收门
+### Governor 验收门
 
 - 选定一条现有生产线，把目标吞吐提高到基线的两倍。
 - 在计划声明的误差范围内连续保持至少十分钟游戏时间。
 - 期间无电网失稳、物流死锁、不可解释资源变化或写入隔离。
 - 现场条件改变后能提供可解释的新方案，而不是继续依赖旧规模结论。
 
-## 0.7.0 — Voyager
+基线必须是执行前 fresh 采样得到的稳定非零实际吞吐；目标、误差和窗口在执行前声明，不能以理论产能替代实测，也不能事后放宽误差来通过验收。
+
+### 跨星系准备与整体交付验收
+
+三级链建厂和存量扩产优先选择服务远征准备的真实需求，不为演示另起无关产线；同一条线可以提供多项验收证据，但物料预算、实际吞吐、重启续建和出发准备必须各自证明。
+
+- 通过正常科研与升级补齐跨恒星航行、物流所需的前置条件；具体前置和配方来自当前运行时目录，不能凭历史经验硬填或直接解锁。
+- 空间翘曲器与选定常规燃料具备持续自动补充能力；星际物流站、运输船及远端采矿、供电、输送所需建材通过正常生产备齐。手搓可用于启动或补缺，但不能替代关键消耗品的持续产线。
+- 外部 Agent 明确选择准备清单及目标数量/速率；每项记录来源、现有库存、实际补充速率、供电/运输余量与剩余缺口。目标必须以 fresh 读回和声明的游戏时间窗口核销，不能只用理论产能或一次库存快照宣称准备完成。
+- Overseer、Foundry、Governor 的验收门和准备清单同时通过后，在同一 owned save 正常保存并验证恢复、Journal 连续性和 healthy writes；再重新构建完整发行包交用户审核。旧诊断候选或物料草案的证据不替代这一整体验收。
+- 本版本只准备出发星系一侧，不新增跨恒星飞行/曲速调度，不泄露未探索星系资源；实际往返、目标星系资源获取和跨恒星物流路线由 `0.5.0` 验收。
+
+## 0.5.0 — Voyager
+
+状态：**planned**（原 `0.7.0`，范围与验收门完整前移）。
 
 ### 目标
 
@@ -194,9 +212,11 @@ Overseer 部分保留的 live 覆盖缺口是真实 carrier 连续 600 game tick
 - 建立并证明至少一条持续工作的跨恒星物流路线。
 - 人为制造一次可恢复的飞行失败，只能使用该次飞行的精确检查点恢复，不得回滚已被后续主档覆盖的世界。
 
-当前顺序是产品选择，而非技术硬依赖：Voyager 主要依赖 `0.3` 的物流塔能力和现有飞行原语。
+技术上复用 `0.3` 物流塔与既有检查点飞行原语；产品上接续 `0.4` 已验收的出发准备、诊断、新建与扩产能力。跨恒星航线、实际航行预算和曲速适配仍须在本版本按当前程序集单独实现和验证。
 
-## 0.8.0 — Ascension
+## 0.6.0 — Ascension
+
+状态：**planned**（原 `0.8.0`，范围与验收门完整前移）。
 
 ### 目标
 
@@ -217,7 +237,9 @@ Overseer 部分保留的 live 覆盖缺口是真实 carrier 连续 600 game tick
 - 射线接收站在正常条件下持续输出非零功率。
 - 保存、重启和长时间运行后，设计、发射状态和进度保持一致。
 
-## 0.9.0 — Release Candidate
+## 0.7.0 — Release Candidate
+
+状态：**planned**（原 `0.9.0`，范围与验收门完整前移）。
 
 ### 目标
 
@@ -237,11 +259,11 @@ Overseer 部分保留的 live 覆盖缺口是真实 carrier 连续 600 game tick
 - 使用将晋升为 `1.0.0` 的同一批最终工件，从新的 Spherewright owned world 走到持续戴森功率，并归档完整脱敏证据。
 - 在第二个独立 owned world 完成安装、升级、保存和恢复回归。
 - 覆盖多轮正常关闭、一次异常退出、长期离线恢复和多日长跑，不重复拆分互相矛盾的证据链。
-- 最后一个 `0.9.x` 与 `1.0.0` 之间的 MCP 工具面、协议和错误码 diff 为空，并由自动检查证明。
+- 最后一个 `0.7.x` 与 `1.0.0` 之间的 MCP 工具面、协议和错误码 diff 为空，并由自动检查证明。
 - 公开缺陷清单中没有已知 P0/P1；结论写入 release notes，而非口头声明。
 - README、AGENTS、CHANGELOG、LICENSE、安装说明和发行元数据一致。
 - 最终用户不需要源码或 .NET SDK，且安装、升级、卸载、失败回滚均可复现。
 
 ## 1.0.0 晋升规则
 
-`1.0.0` 只从通过全部 `0.9` 验收门的同一批工件晋升。晋升阶段只允许修复阻断发布的缺陷；其他兼容性修复进入 `1.0.x`，新能力进入后续路线图。
+`1.0.0` 只从通过全部 `0.7` Release Candidate 验收门的同一批工件晋升。晋升阶段只允许修复阻断发布的缺陷；其他兼容性修复进入 `1.0.x`，新能力进入后续路线图。

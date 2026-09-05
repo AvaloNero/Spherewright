@@ -2366,6 +2366,8 @@
 
 ## 修订记录
 
+- 2026-09-05：项目所有者进一步把原 0.6.0 Governor 的全部范围与验收门并入 0.4.0，整体目标确定为跨星系准备；原 0.7 Voyager → 0.5，原 0.8 Ascension → 0.6，原 0.9 RC → 0.7，1.0 晋升点不变。此决定替代本日早先“0.6–0.9 编号不变”的安排，历史条目不机械改号。复核 EXP-187：现有只读物料 helper 可供 Governor 复用，但不证明实际翻倍吞吐、十分钟稳态或准备完成；新建/扩产优先服务关键科技、翘曲器/燃料、运输与远征物资。当前授权仍限出发星系准备及既有正常原语，实际跨恒星控制留到 0.5；本轮仅改规范/路线，无新代码、游戏写入或实机验收。
+
 - 2026-09-05：EXP-187 完成本机新工具 live 复验。长期档从 minimum tick `19369335` 正常 protected resume，内置自动重存到 `19369366`；唯一显式 resume action 的 terminal/succeeded 已观察，仅前缀 `e0b2a01d` 保留，完整 ID 不补造。新 MCP Host 通过 Foundry 正/负例后关闭 stdin 并正常退出，最终 tick `19393344`、revision 1、owned/saved/healthy、Walk/0、Journal 51/51 durable；本批 accepted count 为 7，自动重存属于同一 resume 流程而非第二个公开 accepted action。新增包内 playbook 规则要求先保留 action ID/终态再展示可选字段，避免再次出现 EXP-007 的证据丢失。
 
 - 2026-09-05：复验 EXP-007/072。Foundry 部署前唯一正常保存已由 helper 等到 terminal，展示却访问不存在的 `capturedAtGameTick` 后失败；fresh tick `19369335`、revision `46`、owned/saved/healthy、planned-resume 和 Journal `51/51` 唯一核销，未重放。此前缺 payload sessionId 的一次 commit 是无 action 的 STALE_SESSION 拒绝，不能算 accepted。正常退出且 DSP/descriptor 均为 0 后才安装 `b9e74bd`，4 个 Plugin DLL 与同批 Release 输出全部一致。MCP 的通用 -32603 本身不证明另一常驻进程抢占 Bridge；源码每请求新建/释放 pipe，不能凭一个存活 PID 杀掉不明归属的 Host。

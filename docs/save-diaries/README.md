@@ -1,6 +1,6 @@
 # Spherewright 存档日记索引
 
-更新时间：2026-09-03（Asia/Singapore）
+更新时间：2026-09-05（Asia/Singapore）
 
 每个由 Spherewright 创建并登记的 owned save 都必须有且只有一份仓库内的
 人类可读存档日记。日记使用公开别名，不记录真实存档名、恢复 token 或本机
@@ -26,7 +26,7 @@
 
 | 公开存档 ID | 创建来源 | 日记 | 状态 |
 |---|---|---|---|
-| `owned-world-001` | Spherewright 在本机从普通和平、1×、非沙盒新世界创建 | [存档日记 001](../gameplay-timeline.md) | active；v0.3 发布验收世界及当前 v0.4 诊断验收世界 |
+| `owned-world-001` | Spherewright 在本机从普通和平、1×、非沙盒新世界创建 | [存档日记 001](../gameplay-timeline.md) | active；v0.3 发布验收世界，继续用于 v0.4 诊断/建厂/扩产及跨星系准备（验收状态见 Roadmap） |
 
 ## 新档规则
 

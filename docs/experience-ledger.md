@@ -2287,18 +2287,19 @@
 
 ### EXP-182 — 隔离实机验证必须保存并恢复票据与逐档 Journal 的同一边界
 
-- 状态：`observed`
+- 状态：`validated`
 - 日期：2026-09-05
 - 适用范围：本机同一 DSP/BepInEx 安装上轮换发行包、测试 owned world 与长期 owned world 的黑盒实机验证，以及新签发的 planned/quarantine resume ticket。
 - 当前结论：隔离单元不是只有 Plugin 和 `runtime-handoff`，而是“运行二进制/配置 + descriptor + 两份恢复票据 + consumed tombstone + 按 owned-save hash 分开的 Journal + 其他按档时间窗”。测试前需备份这一整组，测试后需原子恢复并立即以精确 planet/minimum tick/Journal 水位重证长期档；不得枚举存档或依赖名称前缀。单个 active resume ticket 是一次性交接能力，不是多档 registry。产品侧的新票据同时绑定 Journal 的 identity/tracking boundary/minimum durable sequence，并在 load 前与 adoption 后双重 fail-closed，使测试脚本的遗漏不再默默创建空时间线。
-- 直接证据：v0.3.3 验证后，当前票据正确指向 planet `103`、约 279k tick 的早期测试副本；它没有误加载长期世界。明确恢复长期世界后，缺失的 Journal 被当成旧档首次挂接，生成 tick `18143541` 起、0-entry 文档；受保护备份中唯一 49-entry 文档与它的 journal ID、owned identity hash 和 game version 精确一致，原 tracking tick 为 `4428079`。保留空文档证据并恢复 49-entry 副本后，DACL 复读为 current-user-only；Luna Max 以 protected resume 在 tick `18145258+` 确认同一 planet `104` owned world、Journal `49/49` durable、0 pending/error 和 healthy writes。新 Core policy 已以精确/append-only/缺失/截断/断号/重建边界测试，262 项自动测试与完整 Release 构建 0 warning/0 error；新票据 live 复归待完成。
+- 直接证据：v0.3.3 验证后，当前票据正确指向 planet `103`、约 279k tick 的早期测试副本；它没有误加载长期世界。明确恢复长期世界后，缺失的 Journal 被当成旧档首次挂接，生成 tick `18143541` 起、0-entry 文档；受保护备份中唯一 49-entry 文档与它的 journal ID、owned identity hash 和 game version 精确一致，原 tracking tick 为 `4428079`。保留空文档证据并恢复 49-entry 副本后，DACL 复读为 current-user-only；Luna Max 以 protected resume 在 tick `18145258+` 确认同一 planet `104` owned world、Journal `49/49` durable、0 pending/error 和 healthy writes。新 Core policy 已以精确/append-only/缺失/截断/断号/重建边界测试，262 项自动测试与完整 Release 构建 0 warning/0 error。修复版 `7e44e48` 的旧票据兼容恢复、新票据 `49` 水位恢复、Journal 缺失与连续 `1..48` 截断的 prepare-only 负例、原件恢复后同票据复归全部实机通过；两次负例均未产生 plan/commit/action/load，token 未消费，最终 planet `104` tick `18291377` 为 owned/saved/healthy。
 - 限制或反例：旧票据没有 Journal checkpoint，为了不破坏既有 `Spherewright_M0_*`/v0.3 世界仍允许一次兼容恢复；恢复后的第一次健康保存才会签发带水位的新票据。checkpoint 只能防倒退/换档，不是 Journal 内容的完整备份；备份、保留周期和恢复演练仍必须存在。多档同时可恢复的 registry 不在 v0.4 范围。
 - 复验触发：每次隔离黑盒验证、Plugin/runtime 轮换、Journal schema/位置、票据格式、导入/新建首存、隔离恢复或发布门变化。
 - 关联：EXP-004、EXP-048、EXP-069、EXP-072、EXP-146、IFX-024、`GameplayJournalContinuityPolicy`、`OwnedWorldResumeTicketStore`。
-- 最近复验：2026-09-05（长期世界恢复、精确 49-entry Journal 身份匹配、current-user-only DACL 和受保护恢复后完整只读盘点；新票据 live 拒绝/恢复待紧接复验）。
+- 最近复验：2026-09-05（长期世界精确 `49/49` Journal、checkpoint-bearing 新票据正常恢复、缺失/sequence-48 截断双负例 fail-closed、原件恢复后同票据成功复归、current-user-only DACL、双 store tombstone 与敏感测试备份清理）。
 
 ## 修订记录
 
+- 2026-09-05：EXP-182 升级为 validated，IFX-024 升级为 fixed。修复版 `7e44e48` 先从旧票据兼容恢复长期 planet `104` 世界并自动升级票据；新票据的两份副本一致，绑定 `attached_existing_save`、tracking tick `4428079`、minimum durable sequence `49`，三处 DACL 均为 current-user-only。新票据正常保存/关闭/恢复通过；随后在受保护边界中分别移走 Journal、替换成连续 sequence `1..48`，有效 prepare 均以 Journal unavailable 或 missing/truncated/mismatch fail-closed，0 commit/action/load，token 不变。逐字节恢复 49-entry 原件后，同一票据按 minimum tick `18290246` 完成 terminal resume，fresh tick `18291377` 为 owned/saved/healthy、Journal `49/49`、无 blocker/checkpoint。旧 token 的 runtime/handoff tombstone、新票据重签均通过，临时 raw ticket/Journal 备份在精确核对目标后删除。下一步只重打 clean v0.4 工件，不打 tag/release。
 - 2026-09-05：新增 EXP-182/IFX-024。v0.3.3 隔离验证后的 active ticket 正确恢复了早期测试副本；正常保存/关闭后，只以归档中的精确世界身份证明重签短时票据，回到 planet `104` 且 tick 超过 `18143540`。首读发现 Journal 被重建为 0-entry 后停止所有游戏写入；DSP 停止后以 journal/owned/game-version 三重身份恢复唯一 49-entry 副本，并保留空文档证据。Luna Max 再次 protected resume 已确认 `49/49` durable、0 pending/error、healthy、无 blocker/checkpoint；随后只读盘点三厂、三网满供电和 Overseer 当前根因，没有执行生产/科技/移动/保存写入。代码开始把 Journal 身份/边界/minimum durable sequence 绑入新恢复票据，在 load 前和 adoption 后双重校验；当前 262 tests 和完整 Release build 0 warning/0 error，live 待紧接复归。
 - 2026-09-05：EXP-181 从 observed 升级为 validated。0.3.3 发行 Plugin 在本机完成新建和平/非沙盒/1×、导入和平/非沙盒/100×、导入和平/沙盒/1× 三档对照；三个空开局都按正常采集、手搓、科研奖励与施工无人机链建成首座电塔并保存。两个外部原档保持原修改时间，独立副本分别保存到 tick `77499/276208`；测试夹具只接受两项用户点名的精确档名，验收后已移出 BepInEx 加载路径，导入开关和计划时长恢复默认。复核 EXP-153/179/180：导入确认、开局绕障与双包分发边界继续成立；Harvest 接近阶段尚未复用 Move watchdog，大型出生舱附近必须先短距离切向绕行，不能等全局采集超时耗尽能量；该规则已写入包内及 MCP 直接资源的通用 playbook。
 - 2026-09-04：开始最终 v0.3.2 ZIP 的隔离黑盒蓝矩阵验收。先在原长期 owned world 上通过正常 save API 保存至 tick `18143540`、revision `2`，action terminal/completed/succeeded、write health healthy、protected resume 可用；下一步正常关闭，并把原 Plugin、descriptor 与 handoff 票据整体移出测试加载路径。测试 Agent 只允许读取解压发行包、公开 MCP discovery/resource 和它自己在隔离目录形成的日志，不读取本仓库 experience ledger 或既有自动化脚本。

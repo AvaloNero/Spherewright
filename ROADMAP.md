@@ -96,7 +96,7 @@
 
 ## 0.4.0 — Overseer
 
-状态：**release-candidate refresh in progress**。候选功能门已完成，2026-09-05 隔离验证恢复发现的 Journal 连续性缺口正在补保护与实机回归；完成前不提交 owner review。
+状态：**release-candidate refresh packaging in progress**。候选功能门与 2026-09-05 新增的 Journal 连续性实机回归均已完成；正在从包含修复及证据的 clean commit 重打工件，完成前不提交 owner review。
 
 ### 目标
 
@@ -118,7 +118,7 @@
 
 当前唯一的 live 覆盖缺口是真实 carrier 连续 600 game tick 完全静止后再恢复。当前程序集与实机对照表明：已出发运输船会由 `StationComponent.InternalTickRemote` 持续推进，站点断电不冻结它；暂停不推进 game tick，改需求/路线或拆塔会改变 qualifying route，而直接改 `stage/t/uPos/uSpeed/warpState` 违反项目边界。该分支保留 Core 自动测试和明确已知限制，不能伪造实机证据。clean Release 构建、223 项自动测试、manifest/ZIP 自检、包内安装说明复读、逐文件安装校验、安装版 Plugin/MCP、错绑 cursor/公共 JSON 脱敏、同档 exact-primary 恢复、完整世界状态审计和 Windows CI 均已通过；下一步只剩把最新候选 commit、工件哈希、上述证据和 Release notes 交给项目所有者审核。是否接受这一无法由普通玩法安全制造的 live 限制属于本次审核的一部分；审核前不创建 tag 或 Release。
 
-2026-09-05 的候选刷新另增一项发布前回归：每张新恢复票据必须绑定逐档 Journal 最小 durable sequence，并在载入前/采用后双重验证。需要在同一 `owned-world-001` 上证明新票据含 `49/49` 水位、正常恢复成功，以及受保护副本中删去/截断 Journal 时 prepare fail-closed 且不启动载入。完成该回归、重打 clean 工件并更新证据后，状态才回到 awaiting owner review。
+2026-09-05 的候选刷新另增一项发布前回归：每张新恢复票据必须绑定逐档 Journal 最小 durable sequence，并在载入前/采用后双重验证。该回归已在同一 `owned-world-001` 上完成：旧票据兼容恢复并自动升级；新票据精确记录 `attached_existing_save`、tracking tick `4428079` 和 minimum durable sequence `49`；正常保存/关闭后的 checkpoint-bearing 恢复通过。随后在 current-user-only 受保护副本中先移走 Journal、再放回连续但只到 sequence `48` 的截断件，两次有效 prepare 都 fail-closed、没有 plan/commit/action/loader，且同一 token 保持可用；逐字节恢复原 `49/49` 文档后，同一票据在 minimum tick `18290246` 上恢复成功，最终 fresh tick `18291377`、owned/saved/healthy、无 blocker/checkpoint。旧 token 在两份 store 中均有 durable tombstone，新票据重新签发，临时敏感备份已删除。当前只剩从最新 clean commit 重打并复验候选工件。
 
 ### 验收门
 

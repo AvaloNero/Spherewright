@@ -9,7 +9,7 @@
 - `v0.3.0` 是本路线图下第一个正式发布版本。之后每个 `0.x.0` 都必须形成独立、可安装、可验收的完整能力切片。
 - `0.x.y` 只用于缺陷修复、兼容性、诊断、文档和发行修正，不在补丁版本中引入新的主要玩法动作域。`v0.3.1` 回移用户确认的存档导入，`v0.3.2` 修正新建档命名并补齐 Thunderstore 工件，`v0.3.3` 则只移除沙盒状态和资源倍率的运行门禁，不开放任何沙盒工具或旁路写入。
 
-版本与 AGENTS 能力切片的大致映射为：`0.4 ≈ M1`、`0.5 ≈ M2`、`0.6 ≈ M3`、`0.7 ≈ M4`、`0.8 ≈ M5`。
+2026-09-05 按项目所有者要求，将原 `0.5.0 — Foundry` 的全部范围和验收门合并进尚未发布的 `0.4.0`，与 Overseer 一起实现和验收。`0.5.0` 不再单独承载 Foundry；`0.6–0.9` 保留原编号和范围，不自动前移。
 
 ## 开发与发行规则
 
@@ -94,15 +94,15 @@
 
 本机以发行 Plugin 完成三条 live 路径：新建和平/非沙盒/1× 世界、导入和平/非沙盒/100× 世界、导入和平/沙盒/1× 世界。三个世界都从空库存按正常机制采集、手搓磁线圈、选择电磁学、取得游戏奖励并由施工无人机建成首座电力感应塔，随后正常保存；两个外部原档的文件修改时间保持不变，改动只进入独立副本。该证据证明本机兼容性，不冒充独立的异机运行结果。
 
-## 0.4.0 — Overseer
+## 0.4.0 — Overseer & Foundry
 
-状态：**release candidate awaiting owner review**。候选功能门、Journal 连续性补充回归、clean 双包、安装态恢复和 Windows CI 均已完成；审核前不创建 tag 或 Release。
+状态：**in development**（2026-09-05 合并 Foundry）。Overseer 与 Journal 连续性已有自动测试、双包及本机实装证据；它们只证明已完成的诊断部分。合并版还需完成下面的建厂计划、逐步施工与重启续建验收，再生成新的完整候选供审核。
 
 ### 目标
 
-把多星球工厂状态压缩为外部 Agent 可直接诊断的生产、供电、物流和科研视图。
+把多星球工厂状态压缩为外部 Agent 可直接诊断的生产、供电、物流和科研视图，并把“目标物品与目标速率”编译为可检查、可恢复、逐实体执行的空地建厂计划。
 
-### 范围
+### Overseer 范围
 
 - 多星球生产、供电、物流与科研摘要。
 - 明确定义采样周期和时间窗口的实际速率、理论速率与利用率。
@@ -116,7 +116,7 @@
 
 四项明确验收门已有候选证据：受控物流配置阻塞、空载输入缺料与真实运输负载下的断电分别稳定得到 `logistics_blocked / confirmed`、`material_shortage / confirmed`、`insufficient_power / confirmed`；三者都通过正常配置恢复，并由真实补料、送达、网络 ratio 1、finding 清除与钛块 `12 min⁻¹` 核销。两轮活动运输分别在 tick `17572610/17579665` 普通保存、正常退出，再由 exact-primary 恢复并自动重存 `17572642/17579696`；新 session 的物流基线从恢复后的当前 game tick 重建，离线墙钟没有成熟成假 stall。最终 healthy 普通保存为 tick `17584412`，第七次十写审计保持同一和平、非沙盒、1× owned world、2254 built/0 prebuild、Journal `49/49` durable、三网满供电且 0 blocker/checkpoint/BepInEx error。
 
-当前唯一的 live 覆盖缺口是真实 carrier 连续 600 game tick 完全静止后再恢复。当前程序集与实机对照表明：已出发运输船会由 `StationComponent.InternalTickRemote` 持续推进，站点断电不冻结它；暂停不推进 game tick，改需求/路线或拆塔会改变 qualifying route，而直接改 `stage/t/uPos/uSpeed/warpState` 违反项目边界。该分支保留 Core 自动测试和明确已知限制，不能伪造实机证据。clean `8c49bcb` 的 Release 构建为 0 warning/0 error，262 项自动测试全通过；Windows Core CI run `33957178227` 成功。手动包为 234 files、233 manifest entries、53 tools、1 resource，SHA-256 `001323b108d76b0de4fdc9102312a8db2c8ba85d555392e7b8b572ad32542ee8`；Thunderstore 包为 12 entries，SHA-256 `c8e53d60b37940cca9fe229dbaecaf4f72f4c71c599e5a63d685ae2a7a5c33ed`。两包均为 `sourceDirty=false` 且绑定 commit `8c49bcba1226e152a653fb5cfded7face00db86b`。实际手动包安装后，4/4 Plugin 和 224/224 MCP 文件无缺失/哈希差异，MCP 无额外文件；3 个旧 PDB 不在 manifest 且不是运行程序集。安装态 protected resume 在 ticket minimum `18318499` 后完成，fresh tick `18319586` 为 owned/saved/healthy、Journal `49/49`，live MCP `0.4.0.0` 的 53 tools、playbook 和 tick `18334303` 的 3/3-factory `public_allowlist_v1` bundle 均通过。下一步只剩项目所有者审核；是否接受上述无法由普通玩法安全制造的 live 限制属于本次审核的一部分。
+Overseer 部分保留的 live 覆盖缺口是真实 carrier 连续 600 game tick 完全静止后再恢复。当前程序集与实机对照表明：已出发运输船会由 `StationComponent.InternalTickRemote` 持续推进，站点断电不冻结它；暂停不推进 game tick，改需求/路线或拆塔会改变 qualifying route，而直接改 `stage/t/uPos/uSpeed/warpState` 违反项目边界。该分支保留 Core 自动测试和明确已知限制，不能伪造实机证据。clean `8c49bcb` 的 Release 构建为 0 warning/0 error，262 项自动测试全通过；Windows Core CI run `33957178227` 成功。手动包为 234 files、233 manifest entries、53 tools、1 resource，SHA-256 `001323b108d76b0de4fdc9102312a8db2c8ba85d555392e7b8b572ad32542ee8`；Thunderstore 包为 12 entries，SHA-256 `c8e53d60b37940cca9fe229dbaecaf4f72f4c71c599e5a63d685ae2a7a5c33ed`。两包均为 `sourceDirty=false` 且绑定 commit `8c49bcba1226e152a653fb5cfded7face00db86b`。实际手动包安装后，4/4 Plugin 和 224/224 MCP 文件无缺失/哈希差异，MCP 无额外文件；3 个旧 PDB 不在 manifest 且不是运行程序集。安装态 protected resume 在 ticket minimum `18318499` 后完成，fresh tick `18319586` 为 owned/saved/healthy、Journal `49/49`，live MCP `0.4.0.0` 的 53 tools、playbook 和 tick `18334303` 的 3/3-factory `public_allowlist_v1` bundle 均通过。这些是合并前 Overseer 候选的历史证据；合并后的 Foundry 仍须独立完成下列验收，最终工件必须重新构建与验证。
 
 2026-09-05 的候选刷新另增一项发布前回归：每张新恢复票据必须绑定逐档 Journal 最小 durable sequence，并在载入前/采用后双重验证。该回归已在同一 `owned-world-001` 上完成：旧票据兼容恢复并自动升级；新票据精确记录 `attached_existing_save`、tracking tick `4428079` 和 minimum durable sequence `49`；正常保存/关闭后的 checkpoint-bearing 恢复通过。随后在 current-user-only 受保护副本中先移走 Journal、再放回连续但只到 sequence `48` 的截断件，两次有效 prepare 都 fail-closed、没有 plan/commit/action/loader，且同一 token 保持可用；逐字节恢复原 `49/49` 文档后，同一票据在 minimum tick `18290246` 上恢复成功，最终 fresh tick `18291377`、owned/saved/healthy、无 blocker/checkpoint。旧 token 在两份 store 中均有 durable tombstone，新票据重新签发，临时敏感备份已删除；最终 clean 包安装后的又一次受保护恢复保持同一边界。
 
@@ -127,26 +127,27 @@
 - 相关产线恢复到非零且稳定的实际产量，并以 healthy writes 普通保存收官。
 - 跨保存/恢复后窗口语义一致，不把离线、暂停或采样缺口误算为实际吞吐。
 
-## 0.5.0 — Foundry
-
-### 目标
-
-把“目标物品与目标速率”编译为可检查、可恢复、逐实体执行的空地建厂计划。
-
-### 范围
+### Foundry 范围（原 0.5.0，完整并入本版本）
 
 - 参数化生产线计划、候选选址、碰撞/地形/供电/物流检查和物料预算。
+- 复用运行时 recipe catalog 与依赖图；目标速率按实际设备速度计算，外部供给和副产物必须显式表示。
 - 计划输出为不可变动作图，但执行只编译成既有单动作原语的有序 `prepare/commit` 序列。
 - 每个实体独立 prepare、commit 和复读；不提供蓝图盖章、批量预建或一次调用写入多个实体的工具。
 - 跨重启进度绑定 owned save identity 并受保护持久化。重启后重新 inspect 与 prepare，不复用失效 planToken；已完成步骤按实际实体身份复读去重。
-- 明确区分计划生成、用户或外部 Agent 选择，以及逐步执行。
+- 明确区分计划生成、用户或外部 Agent 选择，以及逐步执行；人工操作造成现场改变时用 fresh 状态重新规划。
+- 普通 belt/sorter 产线可先用既有原语贯通；配送型计划只有在物流配送器 add-on、状态/配置、配送运输机守恒转移获得独立安全原语后才可执行（EXP-186），它不是所有 Foundry 计划的通用前置。
 
-### 验收门
+### Foundry 验收门（与 Overseer 同时满足后才发布 0.4.0）
 
 - 为至少一条三级生产链生成含设备、供电、物流和成本的完整计划。
 - 只使用正常库存、施工无人机和现有原语完成建造。
 - 中途正常保存并重启后继续，最终没有重复实体、重复扣料或无法解释的拓扑差异。
 - 计划失效、现场占用或资源变化时重新规划，而不是复用陈旧 token 或强行落地。
+- 发布前复跑 Overseer、owned save/import/resume、Journal 和原有动作语义回归；由 Luna Max 子 Agent 在同一长期存档验证建厂与续建，主会话负责接口设计和代码实现。
+
+## 0.5.0 — Merged into 0.4.0
+
+状态：**merged**（2026-09-05）。原 Foundry 内容已完整移入上面的 `0.4.0 — Overseer & Foundry`；不为相同内容安排第二次发布。该编号未来若要承载其他目标，需另行确定范围。
 
 ## 0.6.0 — Governor
 
@@ -159,8 +160,8 @@
 - 复用现有运行时配方依赖图完成确定性配方分解，不另起不一致的配方模型。
 - 计算设备数量、物流吞吐、供电预算、理论速率和实际速率。
 - 生成扩产、补电、物流增强和矿脉替换方案。
-- `0.5` 负责空地新建计划；`0.6` 负责存量产线分析和再规划，并复用 `0.5` 的规模计算 helper。
-- 方案由外部 Agent 选择，执行仍通过 `0.5` 计划或既有安全原语逐步完成，不内置自主扩产循环。
+- `0.4` 的 Foundry 负责空地新建计划；`0.6` 负责存量产线分析和再规划，并复用 Foundry 的规模计算 helper。
+- 方案由外部 Agent 选择，执行仍通过 `0.4` 的 Foundry 计划或既有安全原语逐步完成，不内置自主扩产循环。
 - 每个计划明确记录基线、目标速率、允许误差和稳态窗口。
 
 ### 验收门

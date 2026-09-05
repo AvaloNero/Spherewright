@@ -2314,7 +2314,7 @@
 - 限制或反例：当前只验证一项普通科技候选，不证明所有隐藏科技、无限升级、跨等级升级或互斥分支都可仅靠“已列前置完成”判定；最终 prepare 仍可能因状态变化、矩阵规则或原生队列限制拒绝。目录和科技语义随 DSP 版本变化后必须重验。
 - 复验触发：`1608` 完成后的下一次选择、升级多等级、隐藏/重复科技、catalog DTO 变化、`CanEnqueueTech` 路径变化或 DSP 版本变化。
 - 关联：EXP-037、EXP-048、EXP-063、EXP-073、EXP-146、EXP-156、`ResearchSelectionPolicy`。
-- 最近复验：2026-09-05（完整 314 条目录筛出 30 个前置完成候选，原生 prepare 再确认 `1608`，唯一选择动作、Journal sequence `50` 及 tick `18747873` 自然完成闭环）。
+- 最近复验：2026-09-05（`1608` 完成后再从完整目录选择 `4001`，Journal sequence `51` durable；既有蓝/红链自然完成到 tick `19048625`，普通保存 `19060582` 与 fresh healthy 状态闭环）。
 
 ### EXP-184 — 多条终端产线共享中间品时必须按并发满速总需求预算
 
@@ -2354,6 +2354,7 @@
 
 ## 修订记录
 
+- 2026-09-05：再次复验 EXP-037/080/146/183/185。完整 progression state 中正常选择 `4001 配送范围`，Journal sequence `51` 在 tick `18989824`（实际 `2026-09-05T20:21:27.8001916+08:00`、本局 `003d 15:54:57`）durable；临时 runner 未在 post-read 前保留选择 action ID/阶段 tick，因此保持 unavailable 且未重放。既有蓝/红矩阵链把研究自然完成到 tick `19048625`（本局 `003d 16:11:17`），fresh 为 `36000/36000`、unlocked、队列空。第 5 写普通保存 action `aad54910-edb2-490e-adc2-00c33c1b7a8c` 先完整保留 terminal receipt，再 fresh 核销：保存 tick `19060582`、revision `45`、owned/saved/healthy、Journal `51/51` durable、无 blocker/checkpoint；EXP-185 的新顺序在该保存动作上得到正例。
 - 2026-09-05：新增 EXP-186。recipe `123` 的两组普通带路线都在有限候选内 blocked 后，没有猜测使用配送物流；只读 live 审计确认 `2107` 不在 41 项 build catalog，现有实体/配置/fleet surface 也不支持 dispenser/`5003`。当前程序集则证明配送器使用独立 `dispenserPool`、storage add-on placement、三种 `SetDispenser*` 配置业务路径和独立 courier fleet。结论是 Foundry 前缺少一组专用安全原语，不是继续手工枚举带路即可解决；本轮仅研究和落盘，0 新游戏写。
 - 2026-09-05：再次复验 EXP-145。recipe `123` 的 processor 输出仓 `854 -> assembler 2255` 四条候选分别命中 `9/7/4/5` 个旧带点；进一步只读证明 processor `853` 空转的根因是仓 `849` 只有微晶元件、没有 PCB，附近空带没有 item `1301` 来源，唯一真实源仓 `26` 约 34.5 m 外。`26 -> 849` 的另四条候选各命中 8 个旧带点。八次均为 prepare-only、0 build commit，现有 PCB/processor 拓扑与库存未改；两组四候选预算耗尽后停止枚举。下一步不能靠玩家喂料冒充自动化，需要新几何策略、正常物流方案或后续 Foundry 规划能力。
 - 2026-09-05：新增 EXP-185，并复验 EXP-018/036/179。recipe `123` 准备批的十个 accepted writes完成施工区移动、construction-only 建材获取/手搓、Mk.I 制造台 `2255` 正常施工和有界切向落点；两次 `route_stalled` Move 均 terminal failed、不计 accepted 且未重放。fresh tick `18884224`、revision `34` 为 Walk/0、核心 `400 MJ`、healthy、Journal `50/50` durable、0 blocker/checkpoint/prebuild/active action；`2255` 满供电但 recipe `0`、无连接，故未提前报产线完成。临时 runner 没有保留成功 action ID/精确阶段 tick，公开 session 不能事后重建；这些字段如实标记 unavailable，不伪造、不重放。下一批起每项 terminal 后必须先追加最小审计记录。

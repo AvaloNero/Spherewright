@@ -139,7 +139,7 @@ Overseer 部分保留的 live 覆盖缺口是真实 carrier 连续 600 game tick
 
 ### Foundry 验收门（与 Overseer 同时满足后才发布 0.4.0）
 
-实现进度（2026-09-05）：第一块只读 Core 编译器与 `spherewright_get_foundry_plan` 已实现，复用运行时依赖图计算共享上游用量、实际设备速度下的台数和基础功率，并显式报告外供/副产物。当前仅为 `material_plan/executable=false` 草案；284 项无游戏 DLL 测试通过，完整 Release 构建零警告/零错误；源码 MCP 实际 stdio 握手为 54 tools / 1 resource，Foundry 标记只读并能从 playbook 发现。`f785c0b` 的 Windows Core CI run `33970883971` 成功，随后另补共享子图深度与极小速率的两项回归。新工具的本机安装复读、场地绑定、完整物流与电网成本、不可变动作图和受保护续建尚不计为完成。
+实现进度（2026-09-05）：第一块只读 Core 编译器与 `spherewright_get_foundry_plan` 已实现，复用运行时依赖图计算共享上游用量、实际设备速度下的台数和基础功率，并显式报告外供/副产物。当前仅为 `material_plan/executable=false` 草案；284 项无游戏 DLL 测试通过，完整 Release 构建零警告/零错误；源码 MCP 实际 stdio 握手为 54 tools / 1 resource，Foundry 标记只读并能从 playbook 发现。最终代码 `b9e74bd` 的 Windows Core CI run `33971193774` 成功。同批 Plugin 4/4 DLL 实装哈希匹配，同档 protected resume 后由 Luna Max 通过真实 MCP 调用验证 `1203 @ 30/min`：三级配方、4 熔炉+4 制造台、机器基础功率 2.52 MW、铁矿 120/min、铜矿 15/min；重复草案哈希稳定，零速率和错误 session 均拒绝。Journal `51/51` durable，最终 fresh tick `19393344`、saved tick `19369366`、healthy。场地绑定、完整物流与电网成本、不可变动作图和受保护续建仍未实现；本次普通恢复不冒充建厂中途续建，未声称上述新设备或实际产量已经建成。
 
 - 为至少一条三级生产链生成含设备、供电、物流和成本的完整计划。
 - 只使用正常库存、施工无人机和现有原语完成建造。

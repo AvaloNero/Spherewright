@@ -2359,12 +2359,16 @@
 - 适用范围：当前 DSP `0.10.34.28529` 的 assembler/smelter/refinery/matrix-lab 物料草案及无游戏 DLL 的编译测试；不外推为建厂实机验收。
 - 当前结论：同一上游物品的各下游需求先聚合，再按运行时配方批量和 prefab 速度取整设备数。原料或显式外供是供应需求，不是已经证明的自动供给；副产物必须保留去向需求。基础机器功率不含分拣器、物流与电网设施。草案哈希必须包含原始配方批量，不能只散列总用料和机器数。
 - 直接证据：本机程序集证明 speed 使用 10000 标度、配方执行耗时为 `TimeSpend*10000`；Core 测试覆盖共享铁输入、0.75× 设备、每周期多产物和批量加倍但需求/台数不变的哈希反例。新增第二种极小速率反例：周期数仍为正，但台数除法先下溢为零，必须拒绝而非生成零台设备。共享子图曾被较短分支访问时，递归调用栈深度不代表最终链深度，须另核验已解析 DAG 的实际层数。284 项测试和完整 Release 构建通过；实际源码 MCP 握手证明 54 tools、1 resource、新工具只读和 playbook 提示。
-- 限制或反例：当前工具 `spherewright_get_foundry_plan` 返回 `material_plan/executable=false`，不含现场绑定、物流/供电完整成本、不可变动作图或跨重启进度。Luna Max 对长期档的只读选址另证明：低密度候选地距可见铜输出约 68.6 m，铜矿 node 7 仅余约 1197；几何候选和满供电矿机不能证明长期稳定供给或无碰撞路线。
+- 限制或反例：当前工具 `spherewright_get_foundry_plan` 返回 `material_plan/executable=false`，不含现场绑定、物流/供电完整成本、不可变动作图或跨重启进度。Luna Max 对长期档的只读选址另证明：低密度候选地距可见铜输出约 68.6 m，铜矿 node 7 仅余约 1197；几何候选和满供电矿机不能证明长期稳定供给或无碰撞路线。真实工具返回的 8 台设备只是计划台数，不是已施工设备或实测产量；普通 protected resume 也不等于计划中途续建。
 - 复验触发：配方/生产设备/DSP 变化；新增增产、采矿或分馏机制；首次部署新字段；现场布局/动作图/恢复能力开放前。
 - 关联：`FoundryPlanCompiler`、`FoundryPlanCompilerTests`、`docs/research/game-api-foundry.md`、EXP-145/184/186。
-- 最近复验：2026-09-05（离线计算和程序集审计；新工具 live 仍待同档正常保存/重启部署）。
+- 最近复验：2026-09-05（284 tests、完整 Release 构建及 Windows CI；同批 `b9e74bd` DLL 部署后，Luna Max 实际源码 MCP 调用在 tick `19392231` 验证电动机 30/min 的六阶段、4 台 2302+4 台 2303、2.52 MW、铁/铜 120/15 min⁻¹。独立 build catalog 的速度/功率字段吻合，重复哈希稳定，零速率/错 session 均无副作用拒绝，Journal 保持 51/51 durable）。
 
 ## 修订记录
+
+- 2026-09-05：EXP-187 完成本机新工具 live 复验。长期档从 minimum tick `19369335` 正常 protected resume，内置自动重存到 `19369366`；唯一显式 resume action 的 terminal/succeeded 已观察，仅前缀 `e0b2a01d` 保留，完整 ID 不补造。新 MCP Host 通过 Foundry 正/负例后关闭 stdin 并正常退出，最终 tick `19393344`、revision 1、owned/saved/healthy、Walk/0、Journal 51/51 durable；本批 accepted count 为 7，自动重存属于同一 resume 流程而非第二个公开 accepted action。新增包内 playbook 规则要求先保留 action ID/终态再展示可选字段，避免再次出现 EXP-007 的证据丢失。
+
+- 2026-09-05：复验 EXP-007/072。Foundry 部署前唯一正常保存已由 helper 等到 terminal，展示却访问不存在的 `capturedAtGameTick` 后失败；fresh tick `19369335`、revision `46`、owned/saved/healthy、planned-resume 和 Journal `51/51` 唯一核销，未重放。此前缺 payload sessionId 的一次 commit 是无 action 的 STALE_SESSION 拒绝，不能算 accepted。正常退出且 DSP/descriptor 均为 0 后才安装 `b9e74bd`，4 个 Plugin DLL 与同批 Release 输出全部一致。MCP 的通用 -32603 本身不证明另一常驻进程抢占 Bridge；源码每请求新建/释放 pipe，不能凭一个存活 PID 杀掉不明归属的 Host。
 
 - 2026-09-05：新增 EXP-187；实现只读 Foundry 物料/规模编译和 MCP 映射，保留不可执行草案边界。复核 EXP-001/072：Core 测试之外单独完整 Release 构建，部署仍需正常退出后安装同批依赖；未用新能力直接写游戏。
 

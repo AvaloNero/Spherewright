@@ -139,6 +139,9 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("each direction **once**", contents.Text, StringComparison.Ordinal);
         Assert.Contains("movementState=Walk", contents.Text, StringComparison.Ordinal);
         Assert.Contains("A commit acceptance or host timeout is not completion", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("Retain `actionId` and its terminal result before formatting", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("spherewright_get_foundry_plan", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("material draft is not an approved site", contents.Text, StringComparison.Ordinal);
         Assert.Contains("prepare_harvest", contents.Text, StringComparison.Ordinal);
         Assert.Contains("Do not declare a production line complete", contents.Text, StringComparison.Ordinal);
         Assert.Contains("recovery_required", contents.Text, StringComparison.Ordinal);

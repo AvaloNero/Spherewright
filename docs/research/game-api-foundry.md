@@ -43,8 +43,20 @@ The material hash includes selected recipe types, times, input/output counts, ma
 
 - Offline: shared-input aggregation, 0.75× production, output batches, exact choices, cycles, locked inputs, unknown speeds, bounds/overflow/underflow, canonical hashes and read-only MCP mapping are covered by automated tests.
 - Full current-DSP Release compilation is checked separately from the no-game-DLL test suite.
-- Local live: the pre-existing runtime catalog confirms the long-running owned world's iron/copper → gear/coil → motor recipes `1/2/3/5/6/97` are unlocked. This observation does not validate the new compiler until its newly built Plugin is installed and queried.
-- Not yet claimed: native site feasibility, sufficient renewable supply, exact belt/sorter/storage/power cost, durable action graph, restart reconciliation, or completed Foundry construction. The current public draft explicitly returns `executable=false` and lists these remaining checks.
+- Local live: same-batch `b9e74bd` Plugin deployment matched all four DLL hashes after normal exit. Protected resume restored the same long-running owned world from minimum tick `19369335`, automatically saved `19369366`, and retained Journal `51/51` durable. A fresh source Release MCP Host advertised 54 tools/1 resource; its real `spherewright_get_foundry_plan` call at tick `19392231` succeeded. Target motor `1203 @ 30/min` returned depth 3, 8 machines, base working power `2520000 W`, external iron ore `120/min`, copper ore `15/min`, and no byproducts. Two equivalent calls had the same material hash. Rate zero and a wrong session were rejected as `INVALID_REQUEST` / `STALE_SESSION` without any gameplay action.
+- The live build catalog independently reported smelter `2302`: speed `10000`, work energy `6000/tick`; assembler `2303`: speed `7500`, work energy `4500/tick`. Both were unlocked/available grade 1. The plan therefore cost four of each, excluding logistics and power infrastructure. No machine was constructed in this check.
+- Not yet claimed: native site feasibility, sufficient ongoing automatic supply, exact belt/sorter/storage/power cost, durable action graph, restart reconciliation, or completed Foundry construction. The current public draft explicitly returns `executable=false` and lists these remaining checks. Normal owned resume is proven here, **not** resumable Foundry construction.
 - Cross-computer live validation of this new capability has not been performed.
+
+Local live stage readback (rates are items/game minute, not newly measured factory output):
+
+| Item | Recipe | Required rate | Base rate per machine | Machines | Installed capacity |
+|---|---|---:|---:|---:|---:|
+| Iron ingot 1101 | 1 | 90 | 60 | 2 | 120 |
+| Gear 1201 | 5 | 30 | 45 | 1 | 45 |
+| Magnet 1102 | 2 | 30 | 40 | 1 | 40 |
+| Copper ingot 1104 | 3 | 15 | 60 | 1 | 60 |
+| Magnetic coil 1202 | 6 | 30 | 90 | 1 | 90 |
+| Electric motor 1203 | 97 | 30 | 22.5 | 2 | 45 |
 
 Rejected alternatives: UI request-dependent `refProductSpeed` cache; hard-coded game recipes; assumed 1× machine speed; finite inventory as sustained supply; passing mutable runtime pools into Core; treating a material calculation as permission to build.

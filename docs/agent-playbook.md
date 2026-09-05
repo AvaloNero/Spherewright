@@ -17,6 +17,7 @@ Read this playbook before the first gameplay action in a session, especially aft
 4. After every `spherewright_commit_*`, poll every returned `actionId` with `spherewright_get_action_result` until `terminal=true`. A commit acceptance or host timeout is not completion. If a synchronous commit returns no `actionId`, use its documented terminal result and then fresh-read.
 5. If an outcome remains unknown or write health enters quarantine, stop all new writes. Reconcile only the retained exact action when the API offers a proof, otherwise use the protected owned-world restart path. Never repeat the original mutation speculatively.
 6. After a successful Move, fresh-read the player. Continue only after `movementState=Walk`, speed is at most about `0.1 m/s`, and core/fuel energy is adequate for the next leg.
+7. Retain `actionId` and its terminal result before formatting optional observations. Do not assume all DTOs have `capturedAtGameTick` or invent response fields. A reporting/script error after commit is not an action failure; reconcile fresh state without replay. For Save, verify the fresh session's `lastOwnedSaveGameTick`, `ownedSaveState`, `writeHealth`, and protected-resume availability.
 
 ## Energy and approach
 

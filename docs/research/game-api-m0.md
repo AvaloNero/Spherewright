@@ -439,6 +439,34 @@ For a solid resource miner without an explicit preferred pose, prepare now valid
 
 DSP anchors multiple sorters leaving the same building at the same `entity.pos`. In the earlier candidate, sorter `211` connected refinery `203` to storage `210`; the later legal sorter `213` connected the same refinery to storage `212` at the exact same pose. The installed positional resolver selected lower, older ID `211`, topology verification observed `203 -> 210` instead of `203 -> 212`, and the write subsystem quarantined. Entity `213` and the one-item construction decrement were both visible afterward, so retrying would have been unsafe. The corrected resolver snapshots pre-existing co-located sorter IDs immediately before `CreatePrebuilds` and excludes them during completion attribution. Core tests reproduce the `211`/`213` tie and prove selection of the new ID. After deployment through the strict same-world recovery path, old refined-oil sorter `164` and new hydrogen sorter `181` shared the source pose but were attributed separately and reached their intended destinations without quarantine.
 
+## Logistics distributor and delivery-courier gap after technology 1608
+
+Targeted Mono.Cecil/ILSpy inspection of the validated DSP `0.10.34.28529` `Assembly-CSharp.dll` (SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`) confirms that the post-`1608` distribution system is a distinct component family rather than a small logistics-station variant:
+
+```text
+public bool PrefabDesc.isDispenser
+public EAddonType PrefabDesc.addonType
+public int PrefabDesc.dispenserMaxCourierCount
+public long PrefabDesc.dispenserMaxEnergyAcc
+public int EntityData.dispenserId
+public DispenserComponent[] PlanetTransport.dispenserPool
+public int PlanetTransport.dispenserCursor
+public int PlanetTransport.NewDispenserComponent(int entityId, int pcId, PrefabDesc desc)
+public void PlanetTransport.ConnectToDispenser(int dispenserId, int storageId)
+public void PlanetTransport.SetDispenserFilter(int dispenserId, int filter)
+public void PlanetTransport.SetDispenserPlayerDeliveryMode(int dispenserId, EPlayerDeliveryMode mode)
+public void PlanetTransport.SetDispenserStorageDeliveryMode(int dispenserId, EStorageDeliveryMode mode)
+public void PlanetTransport.RefreshDispenserTraffic(int keyId)
+```
+
+`DispenserComponent` separately stores the bound `entityId/storageId/pcId`, energy, one exact item `filter`, player and storage delivery modes, idle/working courier counts, auto-replenish, orders, hold-up cargo and supply/demand pairs. `EStorageDeliveryMode` is `None/Supply/Demand`; item `5003` is the courier carried by this component, not a station drone (`5001`) or vessel (`5002`). The native `UIDispenserWindow` applies filter and mode changes through the three `PlanetTransport.SetDispenser*` methods above. Its courier-icon path has no corresponding transport setter and changes the player hand and `idleCourierCount`, so a public adapter would need an independent exact-conservation action and must not expose that field as an unchecked write.
+
+Placement is also special. `BuildTool_Click.DeterminePreviews` treats an add-on as multi-level coverage of an exact storage object: it binds `inputObjId=castObjectId`, uses connection slots `15 -> 14`, and derives the add-on pose from the storage pose plus `PrefabDesc.lapJoint`. `CheckBuildConditions` can return `NeedAddonStorage` when that target is missing or destroyed. The current Spherewright core-building path creates a ground-snapped preview without `castObjectId`, `multiLevelCovering` or `inputObjId`, so it cannot safely claim that generic `prepare_build` supports a logistics distributor even though the native click tool supports the item.
+
+The live MCP audit after technology `1608` closed the public-surface side of the gap. Runtime recipe `122` for item `2107` and recipe `123` for item `5003` are unlocked, but the 41-entry building catalog does not contain `2107`; the current catalog role selector has no `isDispenser` branch. Factory enumeration similarly has no `dispenserId` component kind or dispenser snapshot. Configuration exposes production, research, sorter filters and logistics-station storage/belt/charge only. Station fleet transfer explicitly accepts only `5001/5002`. No existing tool can therefore discover a distributor placement contract, read its modes/orders/fleet/energy, configure its exact filter/modes, or conservatively load/unload `5003`.
+
+The safe follow-up is a first-class dispenser primitive before Foundry attempts to compile distribution-based factory plans: add an identity-bound snapshot and independent configuration/fleet hashes; expose item `2107` in the catalog with an add-on role and legal target-storage requirements; prepare placement against one exact completed storage and its free add-on slot; repeat native validation at commit; let construction drones finish; then verify the dispenser/storage connection in both directions. Filter/mode configuration and courier transfer each remain separate prepare/commit actions with current session/revision hashes, item unlock/capacity checks, equal-and-opposite inventory proof and post-action traffic refresh. Until that surface exists and passes live validation, the Agent must treat local distribution as unavailable rather than guess IDs, directly mutate component fields or use it to bypass a dense belt-routing blocker.
+
 ## Recipe, storage, and power path
 
 The current signatures are:

@@ -443,9 +443,10 @@
 | EXP-183 | validated | 下一科技候选必须从完整 progression catalog 按前置条件筛选 |
 | EXP-184 | observed | 多条终端产线共享中间品时必须按并发满速总需求预算 |
 | EXP-185 | observed | 十写审计的逐项动作元数据必须在进入下一项前持久化 |
+| EXP-186 | validated | 物流配送器是独立 add-on 动作域，不能套用物流站或普通地面建筑原语 |
 
 ## 当前短期任务与关机续玩边界
 
 - DSP 当前在同一受保护 `owned-world-001` 的母星 planet `104` 运行；`1608 配送物流系统` 已于 tick `18747873` 完成，recipe `123` 的空载制造台 `2255` 已正常施工并保存到 tick `18901716`，但尚未设配方或接线。当前 fresh tick `18971233`、revision `42`、owned/saved/healthy、Journal `50/50` durable、0 pending/error、无 blocker/checkpoint；继续使用同一世界，不开新档。
 - `v0.3.3` 已由 clean release commit `f0cd111` 正式发布；0.3.x release 分支不混入 v0.4 Overseer，后续 0.4 发布仍以 owner 审核后的最新 clean `main` 为唯一来源。
-- 当前主线：v0.4 Overseer 功能门、IFX-024 补充回归、clean 双包、实装恢复、安装态 MCP/Overseer 和 Windows CI 均完成，候选等待 owner review；审核前不 tag/release。recipe `123` 的空载制造台已保存，但 processor 输出到终端、PCB 源到 processor 的两组各四条普通带候选都被全路径旧带重叠审计拒绝；当前在不拆旧链、不玩家投料和不无界搜路的边界下 blocked。下一游戏写前先决定新的正常物流/几何策略，或在等待 owner 审核时选择下一项科技；每项 terminal 后继续即时持久化最小动作审计记录。recipe `122` 仍缺电浆激发器及其上游证据，排在其后。高能石墨 `114 -> 716` 的有限安全路线同样 blocked。游戏写仍仅由 Luna Max 子 Agent 执行。真实 600-tick carrier stall 继续作为普通玩法无法安全制造的已知 live 覆盖限制。
+- 当前主线：v0.4 Overseer 功能门、IFX-024 补充回归、clean 双包、实装恢复、安装态 MCP/Overseer 和 Windows CI 均完成，候选等待 owner review；审核前不 tag/release。recipe `123` 的空载制造台已保存，但 processor 输出到终端、PCB 源到 processor 的两组各四条普通带候选都被全路径旧带重叠审计拒绝；当前在不拆旧链、不玩家投料和不无界搜路的边界下 blocked。现有 MCP 又经 live/程序集双审计确认缺少物流配送器 add-on placement、状态/配置和 `5003` courier transfer 原语；这是进入 Foundry 前应补的基础能力，不能在 v0.4 审核前偷偷扩展写入域。等待期间科技 `4001 配送范围` 已正常入队并只读推进。每项 terminal 后继续即时持久化最小动作审计记录。recipe `122` 仍缺电浆激发器及其上游证据，排在其后；高能石墨 `114 -> 716` 的有限安全路线同样 blocked。游戏写仍仅由 Luna Max 子 Agent 执行。真实 600-tick carrier stall 继续作为普通玩法无法安全制造的已知 live 覆盖限制。

@@ -2340,8 +2340,21 @@
 - 关联：EXP-001、EXP-007、EXP-037、EXP-146、`docs/agent-playbook.md`。
 - 最近复验：2026-09-05（recipe `123` 准备批十项 terminal/fresh 业务核销，但成功 action ID/阶段 tick unavailable，后续写冻结并落盘）。
 
+### EXP-186 — 物流配送器是独立 add-on 动作域，不能套用物流站或普通地面建筑原语
+
+- 状态：`validated`
+- 日期：2026-09-05
+- 适用范围：DSP `0.10.34.28529` / 当前 `Assembly-CSharp.dll`、科技 `1608` 解锁的物流配送器 `2107` 与配送运输机 `5003`，以及 Foundry 使用配送物流绕开密集带网之前的基础原语门。
+- 当前结论：配送器不是物流站，也不是可用当前 ground-snapped core preview 安全放置的普通建筑。它必须绑定一个精确 storage add-on 目标，并有独立的 filter、玩家/仓储配送模式、能量、pair/order 和 courier fleet 状态。Spherewright 在 catalog、实体读取、配置和 fleet transfer 四层全部缺少这组 surface 时，Agent 必须把配送物流标成 unavailable；不得猜 placement、把 `5003` 当 `5001/5002` 装站、直接改 `DispenserComponent` 字段，或借此宣称带路 blocker 已解决。该专用 observe/prepare/commit/readback 原语应成为 Foundry 编译配送型计划前的先决能力。
+- 直接证据：当前 live build catalog 有 41 个建筑但没有 `2107`；2255 个现有实体中也没有 `2107/5003`，现行 component kind/configure modes/fleet transfer 只覆盖普通 storage、station 与 `5001/5002`。当前程序集同时明确存在 `PrefabDesc.isDispenser`、`EntityData.dispenserId`、`PlanetTransport.dispenserPool/ConnectToDispenser/SetDispenserFilter/SetDispenserPlayerDeliveryMode/SetDispenserStorageDeliveryMode/RefreshDispenserTraffic`。原生 `BuildTool_Click` 的 add-on 分支把预览绑定到 `castObjectId`、槽 `15 -> 14` 和 storage `lapJoint`；Spherewright 当前 core preview 不带这些字段。正反证共同说明是 public primitive 缺失，不是 recipe 未解锁或物品 ID 猜错。
+- 限制或反例：本轮只完成运行时 surface 负例与程序集调用链研究，没有制造 `2107/5003`、没有新增代码或游戏写入，也没有证明配送范围、吞吐、自动补机或异常订单语义。未来实现仍需隔离 build、配置、courier transfer 三种写入，并分别完成自动测试和普通玩法 live 验收。
+- 复验触发：切换 AGENTS 到 Foundry、首次实现/发布 dispenser DTO、add-on build、filter/mode 配置或 courier transfer，首次 `2107/5003` live 施工，以及 DSP 版本变化。
+- 关联：EXP-037、EXP-070、EXP-145、EXP-168、EXP-184、ROADMAP `0.5.0`、`docs/research/game-api-m0.md`。
+- 最近复验：2026-09-05（live MCP 四层缺口审计 + 当前程序集 add-on/transport 精确签名，0 game write）。
+
 ## 修订记录
 
+- 2026-09-05：新增 EXP-186。recipe `123` 的两组普通带路线都在有限候选内 blocked 后，没有猜测使用配送物流；只读 live 审计确认 `2107` 不在 41 项 build catalog，现有实体/配置/fleet surface 也不支持 dispenser/`5003`。当前程序集则证明配送器使用独立 `dispenserPool`、storage add-on placement、三种 `SetDispenser*` 配置业务路径和独立 courier fleet。结论是 Foundry 前缺少一组专用安全原语，不是继续手工枚举带路即可解决；本轮仅研究和落盘，0 新游戏写。
 - 2026-09-05：再次复验 EXP-145。recipe `123` 的 processor 输出仓 `854 -> assembler 2255` 四条候选分别命中 `9/7/4/5` 个旧带点；进一步只读证明 processor `853` 空转的根因是仓 `849` 只有微晶元件、没有 PCB，附近空带没有 item `1301` 来源，唯一真实源仓 `26` 约 34.5 m 外。`26 -> 849` 的另四条候选各命中 8 个旧带点。八次均为 prepare-only、0 build commit，现有 PCB/processor 拓扑与库存未改；两组四候选预算耗尽后停止枚举。下一步不能靠玩家喂料冒充自动化，需要新几何策略、正常物流方案或后续 Foundry 规划能力。
 - 2026-09-05：新增 EXP-185，并复验 EXP-018/036/179。recipe `123` 准备批的十个 accepted writes完成施工区移动、construction-only 建材获取/手搓、Mk.I 制造台 `2255` 正常施工和有界切向落点；两次 `route_stalled` Move 均 terminal failed、不计 accepted 且未重放。fresh tick `18884224`、revision `34` 为 Walk/0、核心 `400 MJ`、healthy、Journal `50/50` durable、0 blocker/checkpoint/prebuild/active action；`2255` 满供电但 recipe `0`、无连接，故未提前报产线完成。临时 runner 没有保留成功 action ID/精确阶段 tick，公开 session 不能事后重建；这些字段如实标记 unavailable，不伪造、不重放。下一批起每项 terminal 后必须先追加最小审计记录。
 - 2026-09-05：新增 EXP-184。只读盘点确认 recipe `122/123` 都需要 `30 min⁻¹` 处理器才能在 Mk.I 终端满速，二者并行需要当前 `20 min⁻¹` 处理器线至少三条；`123` 另需 `30 min⁻¹` 动力引擎，仓内 4435 件只作为有限缓冲。当前自动仓还读到铁块 6000、电路板 400、微晶元件 116，但未见电浆激发器/处理器自动库存；因此下一施工候选优先 `123`，仍须先证明三种输入的自动端点与长期供给。本轮 0 prepare/commit，不把理论预算冒充量产。

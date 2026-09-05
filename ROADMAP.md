@@ -96,7 +96,7 @@
 
 ## 0.4.0 — Overseer
 
-状态：**release-candidate refresh packaging in progress**。候选功能门与 2026-09-05 新增的 Journal 连续性实机回归均已完成；正在从包含修复及证据的 clean commit 重打工件，完成前不提交 owner review。
+状态：**release candidate awaiting owner review**。候选功能门、Journal 连续性补充回归、clean 双包、安装态恢复和 Windows CI 均已完成；审核前不创建 tag 或 Release。
 
 ### 目标
 
@@ -116,9 +116,9 @@
 
 四项明确验收门已有候选证据：受控物流配置阻塞、空载输入缺料与真实运输负载下的断电分别稳定得到 `logistics_blocked / confirmed`、`material_shortage / confirmed`、`insufficient_power / confirmed`；三者都通过正常配置恢复，并由真实补料、送达、网络 ratio 1、finding 清除与钛块 `12 min⁻¹` 核销。两轮活动运输分别在 tick `17572610/17579665` 普通保存、正常退出，再由 exact-primary 恢复并自动重存 `17572642/17579696`；新 session 的物流基线从恢复后的当前 game tick 重建，离线墙钟没有成熟成假 stall。最终 healthy 普通保存为 tick `17584412`，第七次十写审计保持同一和平、非沙盒、1× owned world、2254 built/0 prebuild、Journal `49/49` durable、三网满供电且 0 blocker/checkpoint/BepInEx error。
 
-当前唯一的 live 覆盖缺口是真实 carrier 连续 600 game tick 完全静止后再恢复。当前程序集与实机对照表明：已出发运输船会由 `StationComponent.InternalTickRemote` 持续推进，站点断电不冻结它；暂停不推进 game tick，改需求/路线或拆塔会改变 qualifying route，而直接改 `stage/t/uPos/uSpeed/warpState` 违反项目边界。该分支保留 Core 自动测试和明确已知限制，不能伪造实机证据。clean Release 构建、223 项自动测试、manifest/ZIP 自检、包内安装说明复读、逐文件安装校验、安装版 Plugin/MCP、错绑 cursor/公共 JSON 脱敏、同档 exact-primary 恢复、完整世界状态审计和 Windows CI 均已通过；下一步只剩把最新候选 commit、工件哈希、上述证据和 Release notes 交给项目所有者审核。是否接受这一无法由普通玩法安全制造的 live 限制属于本次审核的一部分；审核前不创建 tag 或 Release。
+当前唯一的 live 覆盖缺口是真实 carrier 连续 600 game tick 完全静止后再恢复。当前程序集与实机对照表明：已出发运输船会由 `StationComponent.InternalTickRemote` 持续推进，站点断电不冻结它；暂停不推进 game tick，改需求/路线或拆塔会改变 qualifying route，而直接改 `stage/t/uPos/uSpeed/warpState` 违反项目边界。该分支保留 Core 自动测试和明确已知限制，不能伪造实机证据。clean `8c49bcb` 的 Release 构建为 0 warning/0 error，262 项自动测试全通过；Windows Core CI run `33957178227` 成功。手动包为 234 files、233 manifest entries、53 tools、1 resource，SHA-256 `001323b108d76b0de4fdc9102312a8db2c8ba85d555392e7b8b572ad32542ee8`；Thunderstore 包为 12 entries，SHA-256 `c8e53d60b37940cca9fe229dbaecaf4f72f4c71c599e5a63d685ae2a7a5c33ed`。两包均为 `sourceDirty=false` 且绑定 commit `8c49bcba1226e152a653fb5cfded7face00db86b`。实际手动包安装后，4/4 Plugin 和 224/224 MCP 文件无缺失/哈希差异，MCP 无额外文件；3 个旧 PDB 不在 manifest 且不是运行程序集。安装态 protected resume 在 ticket minimum `18318499` 后完成，fresh tick `18319586` 为 owned/saved/healthy、Journal `49/49`，live MCP `0.4.0.0` 的 53 tools、playbook 和 tick `18334303` 的 3/3-factory `public_allowlist_v1` bundle 均通过。下一步只剩项目所有者审核；是否接受上述无法由普通玩法安全制造的 live 限制属于本次审核的一部分。
 
-2026-09-05 的候选刷新另增一项发布前回归：每张新恢复票据必须绑定逐档 Journal 最小 durable sequence，并在载入前/采用后双重验证。该回归已在同一 `owned-world-001` 上完成：旧票据兼容恢复并自动升级；新票据精确记录 `attached_existing_save`、tracking tick `4428079` 和 minimum durable sequence `49`；正常保存/关闭后的 checkpoint-bearing 恢复通过。随后在 current-user-only 受保护副本中先移走 Journal、再放回连续但只到 sequence `48` 的截断件，两次有效 prepare 都 fail-closed、没有 plan/commit/action/loader，且同一 token 保持可用；逐字节恢复原 `49/49` 文档后，同一票据在 minimum tick `18290246` 上恢复成功，最终 fresh tick `18291377`、owned/saved/healthy、无 blocker/checkpoint。旧 token 在两份 store 中均有 durable tombstone，新票据重新签发，临时敏感备份已删除。当前只剩从最新 clean commit 重打并复验候选工件。
+2026-09-05 的候选刷新另增一项发布前回归：每张新恢复票据必须绑定逐档 Journal 最小 durable sequence，并在载入前/采用后双重验证。该回归已在同一 `owned-world-001` 上完成：旧票据兼容恢复并自动升级；新票据精确记录 `attached_existing_save`、tracking tick `4428079` 和 minimum durable sequence `49`；正常保存/关闭后的 checkpoint-bearing 恢复通过。随后在 current-user-only 受保护副本中先移走 Journal、再放回连续但只到 sequence `48` 的截断件，两次有效 prepare 都 fail-closed、没有 plan/commit/action/loader，且同一 token 保持可用；逐字节恢复原 `49/49` 文档后，同一票据在 minimum tick `18290246` 上恢复成功，最终 fresh tick `18291377`、owned/saved/healthy、无 blocker/checkpoint。旧 token 在两份 store 中均有 durable tombstone，新票据重新签发，临时敏感备份已删除；最终 clean 包安装后的又一次受保护恢复保持同一边界。
 
 ### 验收门
 

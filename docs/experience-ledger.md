@@ -2327,8 +2327,21 @@
 - 关联：EXP-015、EXP-037、EXP-154、EXP-155、EXP-158、EXP-160、EXP-183。
 - 最近复验：2026-09-05（`1608` 完成后的只读 runtime recipe、自动仓库存与可复用设备盘点；0 game write）。
 
+### EXP-185 — 十写审计的逐项动作元数据必须在进入下一项前持久化
+
+- 状态：`observed`
+- 日期：2026-09-05
+- 适用范围：使用 MCP 两阶段动作连续执行多个游戏写入、每十个 accepted write 的强制审计，以及没有 recent-action history 的当前公开 session surface。
+- 当前结论：每个动作到达 terminal 后，runner 必须在发起下一项前把 action ID、动作类型、prepare/commit/terminal tick、终态、fresh revision 和关键差量写入本地追加式审计记录；不能只在进程变量或滚动控制台中保留。fresh 世界状态可以证明实体、库存和位置终态，却不能重建已经遗失的 action ID 或精确阶段 tick。若元数据丢失但 terminal 当时已观察且 fresh 双边状态唯一核销，应明确把字段标为 unavailable、冻结后续写入并记录证据强度下降；不能补造 ID，也不能把已核销动作误标为 unknown 后重放。
+- 直接证据：recipe `123` 准备批的十个 accepted writes 均由临时 runner 当时轮询到 terminal/completed，fresh tick `18884224`、revision `34` 又核销 Walk/0、建材库存和唯一新制造台 `2255`。但是 runner 没有输出或持久化成功 action ID 与各阶段 tick，当前公开 session 也不提供 recent-action list，因此这些字段无法事后恢复。两次不计数的 `route_stalled` Move 则有明确失败终态且没有原目标重放。该批不存在 active action、prebuild、write blocker、checkpoint 或无法解释的实体/库存变化，所以不是 outcome unknown；审计仍因逐项 provenance 变弱而保持显式缺口。
+- 限制或反例：本条只定义 Agent/runner 的证据保留纪律，不要求 Plugin 无限保存动作历史，也不授权绕过现有 action polling、幂等或 exact-order abort。追加记录本身仍应脱敏，不得包含 plan token、绝对路径或真实存档身份；未来如产品提供有界 recent-action receipt，仍需按 session/owned identity 和保留窗口验证。
+- 复验触发：下一批 accepted writes、任何批处理脚本改动、审计记录格式变化、action receipt/recent-history 接口设计、runner 异常退出或出现无法回溯的成功动作。
+- 关联：EXP-001、EXP-007、EXP-037、EXP-146、`docs/agent-playbook.md`。
+- 最近复验：2026-09-05（recipe `123` 准备批十项 terminal/fresh 业务核销，但成功 action ID/阶段 tick unavailable，后续写冻结并落盘）。
+
 ## 修订记录
 
+- 2026-09-05：新增 EXP-185，并复验 EXP-018/036/179。recipe `123` 准备批的十个 accepted writes完成施工区移动、construction-only 建材获取/手搓、Mk.I 制造台 `2255` 正常施工和有界切向落点；两次 `route_stalled` Move 均 terminal failed、不计 accepted 且未重放。fresh tick `18884224`、revision `34` 为 Walk/0、核心 `400 MJ`、healthy、Journal `50/50` durable、0 blocker/checkpoint/prebuild/active action；`2255` 满供电但 recipe `0`、无连接，故未提前报产线完成。临时 runner 没有保留成功 action ID/精确阶段 tick，公开 session 不能事后重建；这些字段如实标记 unavailable，不伪造、不重放。下一批起每项 terminal 后必须先追加最小审计记录。
 - 2026-09-05：新增 EXP-184。只读盘点确认 recipe `122/123` 都需要 `30 min⁻¹` 处理器才能在 Mk.I 终端满速，二者并行需要当前 `20 min⁻¹` 处理器线至少三条；`123` 另需 `30 min⁻¹` 动力引擎，仓内 4435 件只作为有限缓冲。当前自动仓还读到铁块 6000、电路板 400、微晶元件 116，但未见电浆激发器/处理器自动库存；因此下一施工候选优先 `123`，仍须先证明三种输入的自动端点与长期供给。本轮 0 prepare/commit，不把理论预算冒充量产。
 - 2026-09-05：复验 EXP-037/080/146/183。`1608 配送物流系统` 由既有蓝/红矩阵自然完成，精确 unlock tick `18747873`（本局 `003d 14:47:44`），fresh tick `18748916` 观察到 `108000/108000`、completed/unlocked、研究队列为空。作为本安装 session 第 10 个 accepted write，普通保存 terminal/completed/succeeded 到 tick `18750214`；fresh tick `18750253`、revision `13`、owned/saved/healthy、Journal `50/50` durable、无 blocker/checkpoint。严格十写复核覆盖受保护恢复、唯一 sorter 配置修复、四次保存、一次移动、两次石墨守恒转运和一次科技选择，全部由 terminal/fresh 核销，无重放、unknown outcome 或未解释差量。最终只读 bundle tick `18753452` 为石墨/蓝/红/黄 `18/18/12/6 min⁻¹` 且三种矩阵 finding 0；钻石为 0 与输入仓 `716` 耗尽、`114 -> 716` 尚未自动连接的已知边界一致。recipe `122/123` 已只读确认产出物流配送器 `2107` / 配送运输机 `5003`，本轮未启用配方或施工；审计后 accepted-write 计数从 0 重新开始。
 - 2026-09-05：新增 EXP-183，并复验 EXP-146。`3401` 于 tick `18593844` 自然完成，普通保存 terminal/completed/succeeded 到 tick `18639872`；完整 314 条 progression catalog 避免了“40 条 unlocked 均完成所以无候选”的误判，筛出 30 个前置完成候选。原生 prepare 允许后唯一选择 `1608 配送物流系统`，动作 tick `18653067` 完成；Journal sequence `50` 在 tick `18653068`（实际 `2026-09-05T18:47:34.1336132+08:00`、本局 `003d 14:21:24`）durable。fresh queue `[1608]`、revision `12`、healthy、无 blocker/checkpoint；完整窗口蓝/红/黄 `24/12/6 min⁻¹`、finding 0。当前 accepted count 9，下一写后必须严格审计。

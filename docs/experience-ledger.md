@@ -1,6 +1,6 @@
 # Spherewright experience ledger
 
-更新时间：2026-09-05（Asia/Singapore）
+更新时间：2026-09-06（Asia/Singapore）
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
@@ -108,7 +108,8 @@
 - 限制或反例：若 prepare 在任何 commit 前明确失败且无 action ID，可按普通 prepare 失败处理。
 - 复验触发：客户端响应模型、ActionResult 字段或脚本 helper 变化。
 - 关联：`src/Spherewright.Contracts/Actions/ActionResultContracts.cs`、`docs/protocol.md`、`docs/safety-model.md`。
-- 最近复验：2026-09-03（harvest terminal 后才发生 `afterPlayerState` 展示字段错误；节点 -20、玩家 +20 的 fresh 状态及随后唯一守恒 refuel 共同核销，未重复采集）。
+- 直接证据：2026-09-06 部署前第 9 写保存再次因可选字段后处理而未保留完整 action ID；fresh 保存水位 `19716532`、revision `4`、healthy 与 Journal `52/52` 唯一核销，没有重放。只写 playbook 提醒还不够：本地恢复 runner 现改为逐响应先脱敏、WriteThrough/Flush 落到 current-user-only 目录，再解析业务/展示字段；提交意图和 UUID 在发送前落盘。离线 mock 故意读不存在字段，证明原响应仍持久、空数组/省略 nullable 字段可处理，0 live 调用。真实恢复证据待下一步骤，不能称所有客户端已产品化修复。
+- 最近复验：2026-09-06（保存 fresh 唯一核销；新恢复 runner 的响应先落盘、脱敏、ACL 与展示失败 mock 通过）。
 
 ### EXP-008 — 施工无人机会使玩家状态哈希短时变化
 
@@ -2359,12 +2360,26 @@
 - 适用范围：当前 DSP `0.10.34.28529` 的 assembler/smelter/refinery/matrix-lab 物料草案及无游戏 DLL 的编译测试；不外推为建厂实机验收。
 - 当前结论：同一上游物品的各下游需求先聚合，再按运行时配方批量和 prefab 速度取整设备数。原料或显式外供是供应需求，不是已经证明的自动供给；副产物必须保留去向需求。基础机器功率不含分拣器、物流与电网设施。草案哈希必须包含原始配方批量，不能只散列总用料和机器数。
 - 直接证据：本机程序集证明 speed 使用 10000 标度、配方执行耗时为 `TimeSpend*10000`；Core 测试覆盖共享铁输入、0.75× 设备、每周期多产物和批量加倍但需求/台数不变的哈希反例。新增第二种极小速率反例：周期数仍为正，但台数除法先下溢为零，必须拒绝而非生成零台设备。共享子图曾被较短分支访问时，递归调用栈深度不代表最终链深度，须另核验已解析 DAG 的实际层数。284 项测试和完整 Release 构建通过；实际源码 MCP 握手证明 54 tools、1 resource、新工具只读和 playbook 提示。
-- 限制或反例：当前工具 `spherewright_get_foundry_plan` 返回 `material_plan/executable=false`，不含现场绑定、物流/供电完整成本、不可变动作图或跨重启进度。Luna Max 对长期档的只读选址另证明：低密度候选地距可见铜输出约 68.6 m，铜矿 node 7 仅余约 1197；几何候选和满供电矿机不能证明长期稳定供给或无碰撞路线。真实工具返回的 8 台设备只是计划台数，不是已施工设备或实测产量；普通 protected resume 也不等于计划中途续建。
+- 限制或反例：未传 `site` 时工具仍返回 `material_plan/executable=false`；可选机器现场评估见 EXP-188，两相位均不含物流/供电完整成本、不可变动作图或跨重启进度。Luna Max 对长期档的只读选址另证明：低密度候选地距可见铜输出约 68.6 m，铜矿 node 7 仅余约 1197；几何候选和满供电矿机不能证明长期稳定供给或无碰撞路线。真实工具返回的 8 台设备只是计划台数，不是已施工设备或实测产量；普通 protected resume 也不等于计划中途续建。
 - 复验触发：配方/生产设备/DSP 变化；新增增产、采矿或分馏机制；首次部署新字段；现场布局/动作图/恢复能力开放前。
 - 关联：`FoundryPlanCompiler`、`FoundryPlanCompilerTests`、`docs/research/game-api-foundry.md`、EXP-145/184/186。
 - 最近复验：2026-09-05（284 tests、完整 Release 构建及 Windows CI；同批 `b9e74bd` DLL 部署后，Luna Max 实际源码 MCP 调用在 tick `19392231` 验证电动机 30/min 的六阶段、4 台 2302+4 台 2303、2.52 MW、铁/铜 120/15 min⁻¹。独立 build catalog 的速度/功率字段吻合，重复哈希稳定，零速率/错 session 均无副作用拒绝，Journal 保持 51/51 durable）。
 
+### EXP-188 — Foundry 场地预览必须区分碰撞体形状、吸附后净空与整份库存
+
+- 状态：`validated`
+- 日期：2026-09-06
+- 适用范围：当前 DSP `0.10.34.28529` 的只读 Foundry 机器布局候选；此状态覆盖当前程序集研究与离线回归，不代表完整产线或实机建造验收。
+- 当前结论：仅用实体中心密度或未吸附坐标不能证明可建。机器候选先在运行时球面基底上有界排布，再原生网格吸附，随后复核成对建造碰撞体包络和单台原生条件。Box、Capsule、Sphere 的 `ext/radius` 语义不同，必须分别包围完整形状。原生预览只复制真实库存；独立预览复用同一物品副本不等于整份计划库存足够，还须汇总全部机器成本。两个哈希均不构成写入或续建能力。
+- 直接证据：本机安装与编译引用的程序集 SHA-256 相同；ILSpy 复核 `PlanetAuxData.Snap`、`ColliderData.InitFromCollider` 与普通 click-build 检查路径。首稿在未部署时发现遗漏 Sphere/Capsule 独立 `radius`，已抽成 Core 形状 helper 并由 IFX-025 回归覆盖。317 项测试与完整 Release 构建通过，0 warning/error；新测试包含 32 台/64 m 限界、非有限/非切向输入、吸附后重合、整份库存缺口、未执行/失败 native 检查，以及 session/revision/位置/材料/库存哈希改变。
+- 限制或反例：包络球包含高度和中心偏移，故会保守拒绝部分实际可行的紧凑布局；`machine_previews_clear` 也不证明供电、传送带/分拣器端点、持续外供、吞吐或重启续建。当前公共 `site_preview` 仍 `executable=false`；新相位本机 live 尚待同批 DLL 部署，异机未验。本轮只读资源证据另表明铜 node 7 余量 1197 且实际采矿为 0（输出堵塞），不能由理论 30/min 宣称已发生精确耗尽倒计时。
+- 复验触发：DSP/collider/grid 变化；首次部署 site 参数；改变候选规模、布局、缓存/身份绑定；完整物流/电力/动作图和续建开放前。
+- 关联：EXP-007/037/070/184/187、IFX-025、`FoundrySitePlannerTests`、`docs/research/game-api-foundry.md`。
+- 最近复验：2026-09-06（317 offline tests、当前 DSP 完整 Release 构建、原生 collider/grid 路径研究；新相位尚未实机验收）。
+
 ## 修订记录
+
+- 2026-09-06：新增 EXP-188。复核 EXP-187 的物料边界不变；可选 `site` 仅补机器几何/native/库存评估，不补造物流预算或施工证据。部署前第二次复核发现旧独立 native helper 不含当前 structured build 的实体/预建筑 guard，已改为直接复用 `TryValidateClickBuild` 并记录 `occupiedObjectId`；旧路径不抽取、不改变既有正常调用。复核 EXP-007：科研 3402 的 action ID/阶段 tick 已保存，但下一普通保存仍因展示失败丢失这些字段；以唯一 fresh 水位核销而未重放。新本地 runner 的真实使用尚待恢复，不能由一个成功保存样本推断整个调用层问题已解决。复核 EXP-001：部署前显式重建完整 Release，未在 DSP 运行中替换程序集。该批仍属 0.4 开发，不是发布候选。
 
 - 2026-09-05：项目所有者进一步把原 0.6.0 Governor 的全部范围与验收门并入 0.4.0，整体目标确定为跨星系准备；原 0.7 Voyager → 0.5，原 0.8 Ascension → 0.6，原 0.9 RC → 0.7，1.0 晋升点不变。此决定替代本日早先“0.6–0.9 编号不变”的安排，历史条目不机械改号。复核 EXP-187：现有只读物料 helper 可供 Governor 复用，但不证明实际翻倍吞吐、十分钟稳态或准备完成；新建/扩产优先服务关键科技、翘曲器/燃料、运输与远征物资。当前授权仍限出发星系准备及既有正常原语，实际跨恒星控制留到 0.5；本轮仅改规范/路线，无新代码、游戏写入或实机验收。
 

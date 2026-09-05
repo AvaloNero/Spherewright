@@ -630,7 +630,8 @@ internal sealed partial class NormalGameActionCoordinator
         BuildStepPlan candidate,
         int requiredResourceNodeId,
         out BuildStepPlan accepted,
-        out string rejection)
+        out string rejection,
+        FoundryNativePreviewEvidence? evidence = null)
     {
         accepted = candidate;
         rejection = string.Empty;
@@ -650,6 +651,7 @@ internal sealed partial class NormalGameActionCoordinator
                 out var occupiedObjectId))
         {
             rejection = $"The exact build-collider volume overlaps existing factory object {occupiedObjectId}.";
+            if (evidence is not null) evidence.OccupiedObjectId = occupiedObjectId;
             return false;
         }
 
@@ -673,6 +675,11 @@ internal sealed partial class NormalGameActionCoordinator
             preview.paramCount = 0;
             tool.buildPreviews.Add(preview);
             var valid = tool.CheckBuildConditions();
+            if (evidence is not null)
+            {
+                evidence.NativeCheckPerformed = true;
+                evidence.Condition = preview.condition.ToString();
+            }
             if (!valid || preview.condition != EBuildCondition.Ok || preview.coverObjId != 0)
             {
                 rejection = $"DSP click-build validation returned {preview.condition}.";

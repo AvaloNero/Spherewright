@@ -2749,6 +2749,7 @@ internal sealed partial class GameStateReader
                 RecipeType = item.prefabDesc.assemblerRecipeType.ToString(),
                 SlotCount = item.prefabDesc.slotPoses?.Length ?? 0,
                 RoughRadius = item.prefabDesc.roughRadius,
+                PlacementRadius = CapturePlacementRadius(item.prefabDesc),
                 PowerConnectDistance = item.prefabDesc.powerConnectDistance,
                 PowerCoverRadius = item.prefabDesc.powerCoverRadius,
                 ProductionSpeedRaw = item.prefabDesc.isAssembler ? item.prefabDesc.assemblerSpeed

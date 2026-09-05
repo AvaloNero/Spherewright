@@ -1,13 +1,13 @@
 # 存档日记 001：从落地到当前的决策、科技与首次产出
 
-更新时间：2026-09-05（Asia/Singapore）
+更新时间：2026-09-06（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 Spherewright-owned 普通和平 1× 非沙盒世界已恢复到母星 planet `104`。v0.3.3 隔离验证遗留的 active ticket 先正确载入早期测试副本；关闭该副本后，长期档只通过已归档的精确 owned proof 和 header 恢复，未枚举或依赖存档名前缀。首读发现同档 Journal 被重建为 0-entry 后立即停止所有游戏写入；DSP 停止后保留证据并以 journal/owned/game-version 三重身份恢复唯一 49-entry 备份。修复版 `7e44e48` 已把新恢复票据绑定到该 Journal 的 tracking tick `4428079` 和 minimum durable sequence `49`：正常恢复通过，缺失与连续 sequence `1..48` 截断两种负例都在 prepare 阶段 fail-closed、没有启动加载，恢复原件后同一票据于 tick `18291377` 成功复归。clean `8c49bcb` 的实际候选包安装后又一次恢复到 tick `18319586`，安装态 MCP 的 3/3-factory bundle 到 tick `18334303`。Luna Max 随后只改正蓝矩阵输入 sorter `573` 的过滤值，再把已有自动高能石墨从源仓经玩家守恒转运到钻石线输入仓；最终 bundle tick `18489233` 证明蓝/红/黄矩阵分别 `12/6/12 min⁻¹`、全部 finding 为 0。`3401` 于 tick `18593844` 自然完成并保存到 `18639872`；完整目录审计后正常选择 `1608 配送物流系统`，Journal sequence `50` durable。`1608` 于 tick `18747873` 自然完成，普通保存到 `18750214` 后完成一组严格十写审计。下一组十写已为 recipe `123` 备料并正常施工满供电制造台 `2255`；又在 tick `18901716` 普通保存该施工边界。processor 输出到终端、PCB 源到 processor 的两组各四条带路均因全路径旧带重叠而 prepare-only 丢弃，0 build commit；制造台 `2255` 仍未设置配方或连接。等待路线决策期间正常选择 `4001 配送范围`，Journal sequence `51` durable；该科技于 tick `19048625` 自然完成，并由普通保存 action `aad54910-edb2-490e-adc2-00c33c1b7a8c` 持久化到 tick `19060582`。此前 fresh tick `19063874`、revision `45`、本批 accepted count 为 `5`。Foundry 开发部署前，Luna Max 仅普通保存到 tick `19369335`、revision `46`，fresh owned/saved/healthy、Journal `51/51` durable、0 pending/error、无 blocker，protected planned-resume 已签发；accepted count 增至 `6`。终态展示读取不存在字段导致 action ID 未保留，以唯一 tick/revision/票据推进核销，未重放。随后正常关闭 DSP（进程/descriptor 均为 0），主会话才安装同批 `b9e74bd` 开发 DLL，4/4 哈希匹配；随后只通过当前 protected ticket 恢复同档，自动重存到 `19369366`。源码 MCP 54 tools 的真实只读 Foundry 调用及负例通过，最终 fresh tick `19393344`、revision `1`、owned/saved/healthy、Walk/0、Journal `51/51` durable、0 blocker；本批 accepted count 为 `7`（自动重存归入 resume），游戏保持运行。此处不能靠玩家投料、把空带当物料源或无界枚举冒充自动化。自动连接 `114 -> 716` 的有界候选也仍 blocked。v0.4 已按项目所有者最新要求完整合并 Foundry 与 Governor，以出发星系的工业准备为整体目标，仍为开发中；实际跨星系、戴森系统与 RC 分别改到 0.5、0.6、0.7，1.0 晋升点不变，未 tag/release；真实 carrier 连续 600 tick 完全静止仍是普通游戏接口无法安全制造的明确 live 覆盖限制。
+当前截面：同一 `owned-world-001` 已普通保存到 tick `19716532`、revision `4`，随后正常关闭 DSP，为 Foundry site preview 开发版部署做准备。关机前最后 fresh tick `19731355` 为 owned/saved/healthy，Journal `52/52` durable、无 pending/error/blocker/checkpoint；后续只能从主菜单走当前 exact-primary protected resume，不开新档或枚举其他存档。本批第 8 个 accepted write 已选择 `3402 运输船引擎 L2`，精确 Journal 事件见下表；本轮没有证明该升级完成。第 9 写保存的终态虽已观察，客户端展示又未保留 action ID，故只以唯一 fresh 保存水位/revision/票据核销且未重放。新本地 runner 已改为持久化脱敏响应后才解析，离线故意缺字段测试通过；真实恢复及第 10 写审计待部署。0.4 已合并 Overseer、Foundry 和 Governor，仍在开发；物料草案已有 live，新增机器场地相位目前仅完成 317 项测试与完整构建，不能当作完整物流/电网、施工续建或扩产门已完成。既有 recipe `123` 制造台 `2255` 尚未配置接线，`114 -> 716` 的自动石墨连接仍是有界旧厂路线缺口。
 
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 共有 `51` 条，已经持久化到 sequence `51`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `187` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护 Journal 共有 `52` 条，已经持久化到 sequence `52`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `188` 条决策/经验，完整保留了每条的状态、证据和复验条件。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -122,6 +122,8 @@
 | save `19369335` / `003d 17:40:22`; deployment `b9e74bd` | 2026-09-05 | 按用户要求把 Foundry 合并到 v0.4 开发后，Luna Max 只读核对电动机的已解锁配方 `1/2/3/5/6/97` 和原料/空地候选，不把几何估计当作原生可建证明。新只读编译器上线前，首次 save commit 缺少 payload sessionId 被 `STALE_SESSION` 拒绝、无 action；修正契约后的唯一 commit 由 helper 轮询终态，后处理却误读不存在字段，故未保留 action ID。fresh revision `45 -> 46`、保存 tick `19369335`、owned/saved/healthy、有效 planned-resume 及 Journal `51/51` 唯一核销，未重放，accepted count `5 -> 6`。随后仅一次正常关窗，DSP 进程和 descriptor 均归零；主会话才安装 4/4 哈希一致的同批开发 DLL。没有生产、移动、研究或建造写入。 | R/M/D |
 | resume save `19369366`; Foundry query `19392231`; fresh `19393344` | 2026-09-05 | Luna Max 从 Steam 启动并只恢复同一 exact-primary：预加载时一次 `BRIDGE_NOT_READY` 没有加载副作用，ready 后原票据可继续 prepare/commit，唯一 resume terminal/succeeded、非重放。仅保留 action 前缀 `e0b2a01d`，不猜补完整 ID。新鲜源码 Release MCP 实际 tools/list=54、Foundry 只读，真实调用电动机 `1203 @ 30/min` 返回三级依赖、4 熔炉+4 制造台、机器基础功率 2.52 MW、铁矿/铜矿外供 120/15 min⁻¹；重复哈希一致，rate0 和错误 session 分别拒绝为 INVALID_REQUEST/STALE_SESSION。结果始终 `material_plan/executable=false`，这些机器/产量没有施工验证。独立目录 speed/power 字段吻合；最终同档 healthy、Walk/0、Journal `51/51` durable，无生产/移动/科技/建造写入；短命 MCP Host 正常退出，DSP 保持运行。accepted count `6 -> 7`，内置自动重存不另算公开 action。 | R/M/D |
 | 路线调整；未读取本局 tick，未执行游戏动作 | 2026-09-05 | 项目所有者在 Foundry 合并决定后，进一步将原 `0.6.0 Governor` 的完整范围和验收门并入 `0.4.0`，整体目标改为出发星系的跨星系准备；不是删去扩产门或把物料草案当作建厂完成。后续 Voyager、Ascension、Release Candidate 分别改为 `0.5.0/0.6.0/0.7.0`，`1.0.0` 仍从合格 RC 同批工件晋升。当前优先以真实准备需求贯通建厂、按档续建和吞吐翻倍，再核销科技/升级、翘曲器/燃料供应、运输与备料；实际跨恒星飞行和曲速调度不提前开放。同步 Roadmap、AGENTS、README、架构、经验修订和日记索引，保留旧日记中的当时编号与游戏证据；本条只是决策记录，不新增 Journal 首次事件、live 验收或 accepted write。 | D |
+| read-only `19634511–19658150` | 2026-09-05–06 | 为电机 `1203 @ 30/min` 新厂复读 8 台设备、2.52 MW、铁/铜矿需求 `120/15 min⁻¹`。母星铜 node `7` 余 1197，实际矿机因输出满而为 0，不能用理论速率冒充正在耗尽的倒计时。新几何候选 30 m 内无实体中心，但距铁/铜输出约 40.3/81.6 m；这只证明有界选址依据，不证明原生可建或物流。0 游戏写入。 | R/D |
+| research `19690754/19690758`; save `19716532`; fresh `19731355` | 2026-09-06 | 第 8 写选择升级 `3402`，action `bb168186-996d-4df2-ae03-7188ac042878` terminal/completed/succeeded，action start/completion tick `19690754`，Journal sequence `52` 在 `19690758` durable。第 9 写普通保存成功后客户端展示又访问可选字段失败，完整 action ID/幂等键/阶段 tick 未保留，不补造、不重放；唯一 fresh 保存水位 `19716532`、revision `4`、healthy、有效 resume ticket 和 Journal `52/52` 核销结果。正常关窗后 DSP/descriptor 均为 0。主会话复核新 runner 的响应先落盘顺序、可选字段和 ACL，离线模拟证明展示失败后响应仍 durable；实际恢复验证待部署，第 10 写之后先严格审计。 | J/R/D |
 
 ## 科技树与升级
 
@@ -180,6 +182,7 @@
 | 49 | 升级 | 3401 运输船引擎 | 2026-09-03 14:11:00.9597999 +08:00 | 12956512 / `002d 11:59:01` | 18593844 / `003d 14:04:57` |
 | 50 | 科技 | 1608 配送物流系统 | 2026-09-05 18:47:34.1336132 +08:00 | 18653068 / `003d 14:21:24` | 18747873 / `003d 14:47:44` |
 | 51 | 科技 | 4001 配送范围 | 2026-09-05 20:21:27.8001916 +08:00 | 18989824 / `003d 15:54:57` | 19048625 / `003d 16:11:17` |
+| 52 | 升级 | 3402 运输船引擎 L2 | 2026-09-06 00:03:05.8040146 +08:00 | 19690758 / `003d 19:09:39` | 尚无完成证据 |
 
 ## 第一次手搓与第一次流水线产出
 
@@ -450,9 +453,10 @@
 | EXP-185 | observed | 十写审计的逐项动作元数据必须在进入下一项前持久化 |
 | EXP-186 | validated | 物流配送器是独立 add-on 动作域，不能套用物流站或普通地面建筑原语 |
 | EXP-187 | validated | Foundry 规模计算绑定速度、批量、共享深度和显式供给；物料草案不授予建造能力 |
+| EXP-188 | validated | 机器场地评估绑定完整形状、吸附后净空、已有占位和整份库存；离线与 live 分开 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前在同一受保护 `owned-world-001` 的母星 planet `104` 运行；`1608 配送物流系统` 与 `4001 配送范围` 已分别于 tick `18747873/19048625` 自然完成。recipe `123` 的空载制造台 `2255` 已正常施工并保存，但尚未设配方或接线。Foundry 开发 DLL 实装后正常恢复并自动保存到 tick `19369366`；最后 fresh tick `19393344`、revision `1`、owned/saved/healthy、Walk/0、Journal `51/51` durable、0 pending/error、无 blocker。继续同一世界，不开新档；这次没有 Foundry 施工写入。
+- DSP 当前正常关闭，保存边界 `19716532`、minimum Journal sequence `52`、planet `104`；同档下次只走 protected resume。关机前 fresh `19731355`、revision `4`、owned/saved/healthy。`1608/4001` 已自然完成，`3402` 已选入但尚无完成证据；制造台 `2255` 仍未接线。accepted count 为 `9`，下一恢复为第 `10` 写，审计完成前不再提交其他游戏动作。
 - `v0.3.3` 已由 clean release commit `f0cd111` 正式发布；0.3.x release 分支不混入 v0.4 Overseer，后续 0.4 发布仍以 owner 审核后的最新 clean `main` 为唯一来源。
-- 当前主线：2026-09-05 项目所有者先将原 0.5.0 Foundry、再将原 0.6.0 Governor 的全部范围和验收门合并到 0.4.0，以“为跨星系扩张做准备”作为整体目标。Overseer 的既有功能、Journal 回归及 clean 双包作为阶段证据保留，已完成只读物料/机器规模草案及本机 MCP 正负例；最早未完成项仍是场地/物流/供电完整计划、不可变动作图、逐步执行和按档续建。随后要证明存量产线吞吐翻倍并稳定十分钟游戏时间，以及关键科技/升级、翘曲器与燃料自动补充、运输能力和远征备料达到声明目标。4001 已完成并保存，最近一批 accepted count 为 7；本次改路线图没有新增游戏动作或读回，游戏实操仍由 Luna Max 执行。recipe `123` 的密集旧带候选和石墨 `114 -> 716` 保持已知局部路线阻塞，不能据此推断所有普通带方案不可行。配送原语缺口只约束配送型计划；先通过现有 belt/sorter 原语贯通服务准备目标的三级链。合并版所有门完成后重新打包交 owner 审核；实际跨星系 Voyager 在 0.5.0，戴森系统 Ascension 在 0.6.0，RC 在 0.7.0，1.0.0 晋升点不变。
+- 当前主线：2026-09-05 项目所有者先将原 0.5.0 Foundry、再将原 0.6.0 Governor 的全部范围和验收门合并到 0.4.0，以“为跨星系扩张做准备”作为整体目标。Overseer 的既有功能、Journal 回归及 clean 双包作为阶段证据保留，已完成只读物料/机器规模草案及本机 MCP 正负例；最早未完成项仍是场地/物流/供电完整计划、不可变动作图、逐步执行和按档续建。随后要证明存量产线吞吐翻倍并稳定十分钟游戏时间，以及关键科技/升级、翘曲器与燃料自动补充、运输能力和远征备料达到声明目标。4001 已完成并保存，3402 已正常选择；目前 accepted count 为 9。新增场地评估尚待同批部署实测，游戏实操继续由 Luna Max 执行。recipe `123` 的密集旧带候选和石墨 `114 -> 716` 保持已知局部路线阻塞，不能据此推断所有普通带方案不可行。配送原语缺口只约束配送型计划；先通过现有 belt/sorter 原语贯通服务准备目标的三级链。合并版所有门完成后重新打包交 owner 审核；实际跨星系 Voyager 在 0.5.0，戴森系统 Ascension 在 0.6.0，RC 在 0.7.0，1.0.0 晋升点不变。

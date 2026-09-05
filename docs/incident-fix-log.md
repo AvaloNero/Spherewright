@@ -1,6 +1,6 @@
 # Spherewright 首次问题与代码修复记录
 
-更新时间：2026-09-05（Asia/Singapore）
+更新时间：2026-09-06（Asia/Singapore）
 
 本文件专门记录项目第一次遇到的可复用工程问题：现场症状、根因、代码或协议
 修复、验证证据和仍有限制。它不是逐局流水账，也不是当前规则的唯一来源。
@@ -304,3 +304,12 @@
 - 修复：新签发的健康/隔离恢复票据必须先获取已落盘的 Journal checkpoint，绑定不可逆身份、tracking mode/起点/历史覆盖标志和 minimum durable sequence。prepare 和 commit 在载入前检查保护文件；世界采用后 Journal 挂接再检查一次，通过前不消费票据、不自动保存、不开放普通写入。缺失、重建、截断、断号或身份不匹配会使载入前 fail-closed；极小 TOCTOU 窗口内的变化则在采用后把当前世界降为 restricted，保留原票据以便精确修复重试。旧 version-1 票据保持兼容，下一次健康保存自动升级。
 - 恢复与验证：先正常保存并关闭早期测试副本，未对其执行生产/科技/移动写入。只使用明确归属的受保护备份重签短时票据，header 复读后回到 planet `104` 且 tick 不低于 `18143540`。唯一 49-entry 备份的 `journalId`/owned hash/game version 与当前空文档全部相同；DSP 停止后保留空文档证据并恢复该备份，三个精确目标的 DACL 均复读为关闭继承、无外部 allow。Luna Max 再次 protected resume 后于 tick `18145258+` 确认 owned/saved/healthy、Journal `49/49` durable、0 pending/error、无 blocker/checkpoint。修复版 `7e44e48` 随后以旧票据兼容恢复并自动签发 checkpoint-bearing 新票据；它绑定 tracking tick `4428079` 与 minimum sequence `49`。正常保存/关闭后的新票据恢复通过；移走 Journal 和保留连续 sequence `1..48` 的两次负例均在 prepare 返回不可重试拒绝，没有 commit/action/load，token 保持不变。恢复逐字节一致的 `49/49` 文件后，同一票据在 minimum tick `18290246` 上成功复归，fresh tick `18291377` 为 owned/saved/healthy、无 blocker/checkpoint。旧 token 两处 tombstone、新票据重签及临时敏感备份删除均复验通过。
 - 关联：EXP-048、EXP-069、EXP-072、EXP-146、EXP-182、`GameplayJournalContinuityPolicy`、`OwnedWorldResumeTicketStore`；状态：`fixed`。
+
+## IFX-025 — 场地预览首稿把所有碰撞体的 ext 当作完整半尺寸
+
+- 首见：2026-09-06，Foundry site preview 的部署前程序集审查；首稿未部署、未引发游戏施工。
+- 症状：仅用 `|pos|+|ext|` 包围所有建造碰撞体，会漏掉球体半径和胶囊两端半球；旋转胶囊的 ext 还可能含负分量，不能当作非法 Box 尺寸。
+- 根因：`ColliderData.InitFromCollider` 对 Box、Capsule、Sphere 使用不同编码，形状不能只由一组 ext 数值统一解释。
+- 修复：以明确 shape 分派 Core helper：Box 用中心偏移加 ext 模长；Capsule 再加独立 radius；Sphere 用中心偏移加 radius。未知形状、非有限值或不合法 Box 半尺寸拒绝，合并主/附加碰撞体最大包络；仍在原生网格吸附后检查计划间净空。
+- 验证：Box、Sphere、带负分量的旋转 Capsule 及非法 shape/dimension/radius 回归通过，完整 317 项测试和当前 DSP Release 构建零警告/零错误。此证明是代码/程序集级，不伪称球形或胶囊建筑已实机施工。
+- 关联：EXP-188、`FoundrySitePlanner.ColliderBoundingRadius`、`FoundrySitePlannerTests`；状态：`fixed`。

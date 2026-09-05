@@ -11,6 +11,8 @@ public sealed class GetFoundryPlanRequest
     public List<int> ExternalSupplyItemIds { get; set; } = new List<int>();
 
     public List<FoundryRecipeChoice> RecipeChoices { get; set; } = new List<FoundryRecipeChoice>();
+
+    public FoundrySiteRequest? Site { get; set; }
 }
 
 public sealed class FoundryRecipeChoice
@@ -61,6 +63,8 @@ public sealed class FoundryPlanSnapshot
     public List<FoundryMaterialCost> MachineCost { get; set; } = new List<FoundryMaterialCost>();
 
     public List<string> RemainingChecks { get; set; } = new List<string>();
+
+    public FoundrySiteSnapshot? Site { get; set; }
 }
 
 public sealed class FoundryStage

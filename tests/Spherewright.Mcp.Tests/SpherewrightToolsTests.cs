@@ -115,6 +115,27 @@ public sealed class SpherewrightToolsTests
         Assert.Equal(20.5m, request.TargetRatePerMinute);
         Assert.Equal(1101, Assert.Single(request.ExternalSupplyItemIds));
         Assert.Equal(2303, Assert.Single(request.RecipeChoices).BuildingItemId);
+        Assert.Null(request.Site);
+    }
+
+    [Fact]
+    public async Task FoundryPlan_MapsOptionalBoundedSiteAndRemainsDiscoverableReadOnly()
+    {
+        var client = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.GetFoundryPlanAsync(client, "session", 104, 1203, 30,
+            site: new FoundrySiteRequest { Origin = new Vector3Snapshot { Y = 200 }, YawDegrees = 90, Columns = 2 });
+        Assert.False(result.IsError);
+        var request = Assert.IsType<GetFoundryPlanRequest>(client.LastFoundryRequest);
+        Assert.Equal(200, request.Site!.Origin.Y); Assert.Equal(90, request.Site.YawDegrees); Assert.Equal(2, request.Site.Columns);
+        Assert.Equal(12, request.Site.RowSpacing);
+        var services = new ServiceCollection();
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tool = provider.GetServices<McpServerTool>().Single(t => t.ProtocolTool.Name == "spherewright_get_foundry_plan").ProtocolTool;
+        Assert.True(tool.Annotations!.ReadOnlyHint); Assert.False(tool.Annotations.DestructiveHint);
+        Assert.True(tool.InputSchema.GetProperty("properties").TryGetProperty("site", out _));
+        Assert.Contains("native grid snapping", tool.Description, StringComparison.Ordinal);
+        Assert.Contains("not permission to build", tool.Description, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -142,6 +163,9 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("Retain `actionId` and its terminal result before formatting", contents.Text, StringComparison.Ordinal);
         Assert.Contains("spherewright_get_foundry_plan", contents.Text, StringComparison.Ordinal);
         Assert.Contains("material draft is not an approved site", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("machine_previews_clear", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("up to 32 machines", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("Do not use `assessmentHash` as a state hash or commit token", contents.Text, StringComparison.Ordinal);
         Assert.Contains("prepare_harvest", contents.Text, StringComparison.Ordinal);
         Assert.Contains("Do not declare a production line complete", contents.Text, StringComparison.Ordinal);
         Assert.Contains("recovery_required", contents.Text, StringComparison.Ordinal);

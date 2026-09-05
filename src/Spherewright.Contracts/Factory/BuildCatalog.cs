@@ -43,6 +43,8 @@ public sealed class BuildCatalogItem
 
     public float RoughRadius { get; set; }
 
+    public float? PlacementRadius { get; set; }
+
     public float PowerConnectDistance { get; set; }
 
     public float PowerCoverRadius { get; set; }

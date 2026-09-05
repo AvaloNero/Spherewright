@@ -30,7 +30,7 @@ public static class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns the authenticated local Spherewright bridge, plugin, protocol, game-version, and write-health status. Read the advertised opening-movement Agent playbook resource before the first gameplay action, including after new-world creation. This tool never reads save contents or changes the game.")]
+    [Description("Returns the authenticated local Spherewright bridge, plugin, protocol, game-version, and write-health status. Read the advertised opening and core-operation Agent playbook before the first gameplay action, including after new-world creation. This tool never reads save contents or changes the game.")]
     public static async Task<CallToolResult> GetStatusAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Cancellation token supplied by the MCP host.")] CancellationToken cancellationToken)
@@ -42,7 +42,7 @@ public static class SpherewrightTools
             Status = result.Value,
             Error = result.Error,
             AgentPlaybookResourceUri = AgentPlaybookResources.OpeningMovementUri,
-            RecommendedFirstStep = "Read the opening-movement Agent playbook MCP resource before the first gameplay action.",
+            RecommendedFirstStep = "Read the opening and core-operation Agent playbook MCP resource before the first gameplay action.",
         };
         var text = result.Success
             ? "Spherewright bridge is connected."

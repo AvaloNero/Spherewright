@@ -68,8 +68,11 @@ try {
     $packagedPlaybook = Get-Content -LiteralPath $packagedPlaybookPath -Raw
     if ($packagedPlaybook -notmatch 'do not submit the same target again' `
         -or $packagedPlaybook -notmatch 'four targets' `
-        -or $packagedPlaybook -notmatch 'each direction \*\*once\*\*') {
-        throw 'The packaged Agent playbook is missing required bounded-recovery rules.'
+        -or $packagedPlaybook -notmatch 'each direction \*\*once\*\*' `
+        -or $packagedPlaybook -notmatch 'host timeout is not completion' `
+        -or $packagedPlaybook -notmatch 'Do not declare a production line complete' `
+        -or $packagedPlaybook -notmatch 'recovery_required') {
+        throw 'The packaged Agent playbook is missing required core-operation rules.'
     }
     $startInfo = [Diagnostics.ProcessStartInfo]::new()
     $startInfo.FileName = $executable
@@ -161,8 +164,11 @@ try {
     $resourceText = [string]@($resourceReadResponse.result.contents)[0].text
     if ($resourceText -notmatch 'do not submit the same target again' `
         -or $resourceText -notmatch 'about \*\*5 m\*\*' `
-        -or $resourceText -notmatch 'four targets') {
-        throw 'The packaged MCP returned an incomplete opening-movement Agent playbook.'
+        -or $resourceText -notmatch 'four targets' `
+        -or $resourceText -notmatch 'prepare_harvest' `
+        -or $resourceText -notmatch 'Do not declare a production line complete' `
+        -or $resourceText -notmatch 'recovery_required') {
+        throw 'The packaged MCP returned an incomplete core-operation Agent playbook.'
     }
 
     [pscustomobject]@{

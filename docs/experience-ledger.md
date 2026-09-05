@@ -2254,12 +2254,12 @@
 - 状态：`validated`
 - 日期：2026-09-04
 - 适用范围：当前 DSP `0.10.34.28529`、新档跳过序章后的着陆舱附近移动，以及所有由 180/600-tick 看门狗终止的普通地表 Move。
-- 当前结论：`prepare_move` 只验证 owned session、当前星球、fresh player hash、有限球面目标和容差，不预判沿途碰撞；因此外部 Agent 在首次动作前必须取得一份与二进制同版本的操作规则。每个 commit 返回的 `actionId` 都要轮询到 terminal；`position_stalled/route_stalled` 后禁止重放同一目标。单一可识别障碍只做一次约 5 m 局部切向背离；多障碍或无法可靠识别着陆舱时最多做四个正交约 4 m 候选、每向一次，成功即停。成功后 fresh 复读 `Walk`、速度约 `<=0.1 m/s` 与能量；原业务 prepare 已通过时直接执行业务，不继续撞设备/资源中心。
+- 当前结论：`prepare_move` 只验证 owned session、当前星球、fresh player hash、有限球面目标和容差，不预判沿途碰撞；因此外部 Agent 在首次动作前必须取得一份与二进制同版本的操作规则。每个 commit 返回的 `actionId` 都要轮询到 terminal，Host 超时不等于动作失败，不得换新幂等键重放不确定写入。`position_stalled/route_stalled` 后禁止重放同一目标。单一可识别障碍只做一次约 5 m 局部切向背离；多障碍或无法可靠识别着陆舱时最多做四个正交约 4 m 候选、每向一次，成功即停。成功后 fresh 复读 `Walk`、速度约 `<=0.1 m/s` 与能量。Move 和 Harvest prepare 都不证明自动接近路径无障碍；着陆舱或设备位于直线路径上时，必须先短距离切向绕至无遮挡一侧，再提交原业务。
 - 直接证据：既有 EXP-057/061/076 已在电塔、仓、液罐、制造台、带和矿机夹缝形成多组实机正反样本，180-tick 看门狗多次在核心耗尽前终止并仅清理精确 owned `OrderNode`。2026-09-04 的候选二进制新档实测又完成完整闭环：新世界在 tick 38 成为 `Spherewright_New_*` owned、和平、非沙盒、1×；全量 18,595 个 vegetation 的 186 页里，最近节点是距玩家 1.439 m 的飞行舱 `protoId=9999`，同时 factory entity 为 0。朝最近铁矿的第一个正交 4 m Move 在实际移动约 2.7 m 后被舱体边缘挡住，于第 181 tick 以 terminal `position_stalled` 结束，返回 `doNotRetrySameTarget=true` 和完整有界恢复字段；该目标未重放。第二个正交 4 m 目标一次成功，终点误差 0.207 m，fresh 状态为 `Walk`、速度 0、能量约 99.67%。最近铁矿此时距 12.445 m 且 `prepare_harvest` 已通过，因此没有继续撞矿脉中心；首次正常采集 terminal/completed/succeeded，矿量 `-1`、背包铁矿 `+1`，fresh 为 `Walk`/0、能量约 98.99%。最终普通保存 terminal/completed/succeeded，tick 22222、revision 7、write health healthy。全程只走 Bridge 的 prepare/commit/poll/fresh，没有键鼠、传送、位置写入或失败目标重复提交。线上 v0.3.1 ZIP SHA-256 `b05eabb20928e98850f6792ea001149fd2e30c92082994e6d9c43254e611cdcf` 的 235 个 ZIP entry 中没有 playbook/experience/ledger 文件。当前实现新增 MCP direct resource `spherewright://agent/playbooks/opening-movement-v1`、结构化失败字段和约 2.6 KB 的发行文件；dirty 0.4.0 预演包的真实 stdio `resources/list`/`resources/read` 已通过，且不包含完整账本。
-- 限制或反例：这仍不是全局寻路；四向全失败必须重新观察并停止扩张，不能无限尝试。飞行舱在当前版本可由 vegetation resource 明确认出，但 factory entity API 看不到它，且未来版本仍不能假设名称本地化文本稳定；水面 Drift、悬崖、飞行和断能另走各自状态机。
+- 限制或反例：这仍不是全局寻路；四向全失败必须重新观察并停止扩张，不能无限尝试。飞行舱在当前版本可由 vegetation resource 明确认出，但 factory entity API 看不到它，且未来版本仍不能假设名称本地化文本稳定。Harvest 内部自动接近尚未复用 Move 的 180/600-tick 位移/路线看门狗；当前 playbook 只能预防已知障碍路径，不能提前取消已提交的未知卡死 Harvest。水面 Drift、悬崖、飞行和断能另走各自状态机。
 - 复验触发：每个新档首次 Move、任一 structured stall、DSP 的 landing capsule 表示变化、watchdog 阈值/订单归属变化、MCP Resource 或发行包内容变化。
 - 关联：EXP-007、EXP-009、EXP-035、EXP-036、EXP-039、EXP-057、EXP-061、EXP-076、IFX-003、`docs/agent-playbook.md`。
-- 最近复验：2026-09-04（默认 180/600-tick、恢复 advice、MCP Resource 注册/内容、新世界工具提示和发行包 stdio/resource smoke 共 246 项自动测试及完整 Release build 通过；候选二进制 live 新档完成“着陆舱可见→首方向第 181 tick 结构化 stall→不同正交方向脱困→业务 prepare 通过即采集→矿量/背包守恒读回→正常保存”闭环）。
+- 最近复验：2026-09-05（0.3.3 三档 live 对照中再次复现着陆舱旁 Harvest 自动接近长时卡住与耗能；使用局部切向 waypoint 绕至无遮挡一侧后，三档均完成正常采集和首建筑。同一 MCP Resource 已扩展加入会话入口、Host 超时/幂等、能量、Harvest 路径、产线验收、保存与飞行恢复规则，并增加包内/MCP 内容回归断言）。
 
 ### EXP-180 — GitHub 手动包与 Thunderstore 包同版本同源码，但安装布局必须分开
 
@@ -2275,18 +2275,19 @@
 
 ### EXP-181 — 存档模式证据不应与动作授权混为同一门禁
 
-- 状态：`observed`
+- 状态：`validated`
 - 日期：2026-09-05
 - 适用范围：`v0.3.3` 和后续版本的 owned peaceful world，包括导入、普通写入、planned restart 和 flight-checkpoint adoption。
 - 当前结论：沙盒状态和资源倍率应持续在 session DTO 中如实报告，但不应决定是否可以调用 Spherewright 已有的有界普通动作。真正的安全边界是工具面和不变量：仍禁止沙盒工具、物品/能量/科技注入、瞬建、瞬移和缓冲直写。当前战斗域未实现，因此可读且确认和平模式仍是门禁。
-- 直接证据：旧实现在 `GameSessionTracker` 的全局 write blockers、导入采用、计划重启采用、飞行检查点采用及 handoff 脚本中重复拒绝 sandbox/non-1×，导致同一存档可能在某个阶段可见、恢复阶段却失去所有权。`GameplayModePolicy` 现将五项模式输入集中为“描述符存在 + 和平”唯一授权条件，6 组 sandbox/倍率组合正样本和 2 组缺失/战斗反样本均通过；`v0.3.3` 回移共 158 项测试通过（`120 + 15 + 23`），main 共 254 项通过（`209 + 19 + 26`），两条线的完整 Release solution 构建均为 0 warning / 0 error。
-- 限制或反例：当前只有离线策略与编译证据；沙盒存档、沙盒工具已开和非 1× 存档尚需在异机验证导入、普通动作、保存和恢复；未经证明前不宣称其与基准档具有相同实机兼容性。
+- 直接证据：旧实现在 `GameSessionTracker` 的全局 write blockers、导入采用、计划重启采用、飞行检查点采用及 handoff 脚本中重复拒绝 sandbox/non-1×，导致同一存档可能在某个阶段可见、恢复阶段却失去所有权。`GameplayModePolicy` 现将五项模式输入集中为“描述符存在 + 和平”唯一授权条件，6 组 sandbox/倍率组合正样本和 2 组缺失/战斗反样本均通过；`v0.3.3` 回移共 158 项测试通过（`120 + 15 + 23`），main 共 254 项通过（`209 + 19 + 26`），两条线的完整 Release solution 构建均为 0 warning / 0 error。2026-09-05 又安装 0.3.3 发行 Plugin 做三条 live 对照：Spherewright 新建档报告和平/非沙盒/1×，首座电塔实体 `1` 于 tick `70433` 建成并保存至 `76520`；外部 100× 档经预检后用户单独确认，另存副本于 tick `57667`，session 明确报告和平/非沙盒/`100.0` 且 blockers 为空，100× 矿脉采集表现为节点余量不减但背包按请求增加，电塔实体 `1` 于 tick `76828` 建成并保存至 `77499`；外部沙盒档同样另存副本于 tick `263790`，明确报告和平/沙盒 enabled/`1.0` 且 blockers 为空，电塔实体 `1` 于 tick `275621` 建成并保存至 `276208`。两份外部原档的文件修改时间仍为导入前一天，只有新副本在本次动作后更新。所有采集、手搓、科技选择、施工与保存 action 均 terminal/completed/succeeded，未调用沙盒工具或直接写资源。
+- 限制或反例：本次证明的是当前机器、当前 DSP/BepInEx 与发行 Plugin 的兼容性，不是独立异机证明；沙盒档仍不能作为“全程未使用玩家手动沙盒工具”的基准证据。100× 下矿脉余量不减是游戏模式语义，完成采集应以请求绑定和背包产出共同证明，不能继续硬要求节点差量为负。导入计划仍必须在预检后的用户消息中单独确认；本机将默认 60 秒暂时延长只为跨消息验收，测试结束后已恢复默认。
 - 复验触发：异机首次安装，沙盒或非 1× 档的首次导入/动作/保存/恢复，DSP 版本变化，任何新动作依赖 sandbox flag 或 resource multiplier，以及后续发布门复核。
 - 关联：EXP-153、EXP-180、`GameplayModePolicy`、`GameSessionTracker`、`UserSaveImportCoordinator`、`OwnedWorldResumeCoordinator`、`FlightCheckpointReloadCoordinator`。
-- 最近复验：2026-09-05（源码门禁全面检索、两条线的新策略用例/全量回归与完整 Release 构建通过；等待异机实机证据）。
+- 最近复验：2026-09-05（发行 Plugin 三档 live 对照：新建 1×、导入 100×、导入沙盒 1× 均完成正常开局链、实体读回与正常保存；异机仍不宣称）。
 
 ## 修订记录
 
+- 2026-09-05：EXP-181 从 observed 升级为 validated。0.3.3 发行 Plugin 在本机完成新建和平/非沙盒/1×、导入和平/非沙盒/100×、导入和平/沙盒/1× 三档对照；三个空开局都按正常采集、手搓、科研奖励与施工无人机链建成首座电塔并保存。两个外部原档保持原修改时间，独立副本分别保存到 tick `77499/276208`；测试夹具只接受两项用户点名的精确档名，验收后已移出 BepInEx 加载路径，导入开关和计划时长恢复默认。复核 EXP-153/179/180：导入确认、开局绕障与双包分发边界继续成立；Harvest 接近阶段尚未复用 Move watchdog，大型出生舱附近必须先短距离切向绕行，不能等全局采集超时耗尽能量；该规则已写入包内及 MCP 直接资源的通用 playbook。
 - 2026-09-04：EXP-179 升级为 validated，IFX-003 升级为 fixed。隔离候选插件使用独立 descriptor 与 handoff 目录创建和平、非沙盒、1× 新档；飞行舱在 vegetation resource 中为 `protoId=9999`、距出生点 1.439 m，factory entity 为空。第一个正交 4 m Move 于 181 tick 返回结构化 `position_stalled` 且未重放，第二个正交目标完成；fresh `Walk`/0/充足能量后，在 12.445 m 处直接通过 harvest prepare 并完成首次铁矿采集，矿量 `-1`、背包 `+1`。最终保存 tick `22222`、revision `7`、healthy。整个验收无键鼠、无传送、无位置写入，所有 committed action 均轮询至 terminal。随后正常关闭候选进程，逐字节恢复原配置、原 Plugin 和原 handoff 目录；原 protected resume 也以 terminal/completed/succeeded 返回长期 owned planet 104，fresh tick `18081842`、revision `1`、和平/非沙盒/1×、healthy，证明隔离验收没有消费或替换长期档的恢复链。
 - 2026-09-04：复验 EXP-001/069/072/125/152/153/154/156/166/169/176–178。第七次审计后的第 3 个 accepted 写是最终候选安装前普通保存 `3a05b5ca-9fd7-4702-b429-b590e73791b4`，固化 tick `17665205`；第 4 个为安装修正版包后的 exact-primary 恢复 `a231843e-9ebc-4992-8bd0-4052022a6c7d`，自动重存 tick `17665255`。安装态 Plugin `0.4.0` 拒绝错误 token，MCP `0.4.0.0` / 53 tools；三页 planet `104/102/103` 在 tick `17674814` 共享唯一 snapshot，错 item/limit cursor 均为 `STALE_CURSOR`，公开 JSON 无禁止字段或 Windows 路径，且没有 confirmed power/logistics finding。严格只读审计到 tick `17681699`：同一 owned 和平/非沙盒/1× world、healthy、0 blocker/checkpoint，玩家 Walk/0、核心满、空手搓、3/3 施工机 idle，本地 2254 built/0 prebuild，Journal `49/49` durable、0 pending/error；三颗已建 factory 的有效电网 minimum ratio 均为 1，0 underpowered station，BepInEx 0 error。当前钛块 600-tick 窗口为 0，唯一基础设施提示是远端矿脉耗尽；这是自然资源/满载状态，不是电力或物流恢复回退。当前 accepted 写计数 4，未触发十写审计。
 - 2026-09-04：新增 EXP-178/IFX-023。第七次审计后第 1 个 accepted 写是普通保存动作 `a6ac2996-7673-49b2-b323-c2e5c7656276`，固化 tick `17635167`；DSP 正常退出后，clean commit `f43c8ce` 的首个 v0.4.0 预演包生成成功，manifest 232 entries、ZIP SHA-256 `b586a79452c50b94282e08f4ea09adc6766abbe08a7b0386ef6a0a2a493392a3`，独立包测为 `0.4.0.0` / 53 tools。包内 4 个 Plugin 运行 DLL 和 224 个 MCP 文件安装后逐文件 mismatch 0；旧开发目录的 3 个 PDB 因宿主删除策略拒绝而保留，但不在 package manifest、也不参与运行程序集哈希。第 2 个 accepted 写为 exact-primary 恢复 `adaabff9-3b8f-4d91-97da-c02d7407af57`，自动重存 tick `17635198`；安装版 Plugin 拒绝错误 token、报告 healthy，安装版 MCP live 在 tick `17640449` 返回 ready/600-tick/三星球完整页，并在 tick `17647128` 三页共享 snapshot/tick、错 item/limit cursor 均 `STALE_CURSOR`、无禁止字段或绝对路径。最终复读发现包内 `INSTALL.md` 仍写死 v0.3.0，因此该工件只保留为预演证据，不能交付审核；源码已改为通用版本表述，必须提交后重打。当前写计数 2，未触发十写审计。

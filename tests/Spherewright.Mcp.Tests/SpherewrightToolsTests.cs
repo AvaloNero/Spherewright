@@ -123,6 +123,10 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("four targets", contents.Text, StringComparison.Ordinal);
         Assert.Contains("each direction **once**", contents.Text, StringComparison.Ordinal);
         Assert.Contains("movementState=Walk", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("A commit acceptance or host timeout is not completion", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("prepare_harvest", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("Do not declare a production line complete", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("recovery_required", contents.Text, StringComparison.Ordinal);
     }
 
     [Fact]

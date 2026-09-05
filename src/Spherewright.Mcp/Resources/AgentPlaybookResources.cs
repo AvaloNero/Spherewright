@@ -15,9 +15,9 @@ public static class AgentPlaybookResources
     [McpServerResource(
         UriTemplate = OpeningMovementUri,
         Name = "spherewright-agent-opening-movement",
-        Title = "Spherewright opening movement and bounded recovery",
+        Title = "Spherewright opening and core operation playbook",
         MimeType = "text/markdown")]
-    [Description("Required opening-session guidance for commit polling, landing-capsule escape, bounded movement-stall recovery, and post-move verification.")]
+    [Description("Required opening-session guidance for ownership, commit outcomes, energy, harvesting, bounded movement recovery, production-line proof, saves, and flight recovery.")]
     public static TextResourceContents GetOpeningMovementPlaybook()
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(EmbeddedResourceName)

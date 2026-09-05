@@ -66,9 +66,9 @@
 
 ## 0.3.1 — Authorized Save Import
 
-状态：**prerelease validation build；自动测试与安装包验证完成，跨电脑 DSP 实机验证待项目所有者执行**。
+状态：**released**（2026-09-04 发布，2026-09-05 从 prerelease 提升为正式 Release；tag `v0.3.1`，commit `33a733f`）。
 
-这是从不可变 `v0.3.0` 基线制作的最小回移，不包含 v0.4 Overseer 功能。
+这是项目所有者明确要求并批准发布的窄范围补丁例外。`v0.3.0` tag 和 Release 保持不可变；`v0.3.1` 从该 tag 的 commit `a52ff44` 最小回移，只包含授权导入能力及必要测试/文档，没有混入未完成的 v0.4 Overseer 功能。自包含包为 `sourceDirty=false`、232 个 manifest entry，安装版 MCP 报告 `0.3.1.0` / 50 tools；完整构建 0 warning / 0 error、127 项回移测试通过，ZIP SHA-256 为 `b05eabb20928e98850f6792ea001149fd2e30c92082994e6d9c43254e611cdcf`。v0.3.3 的本机发行 Plugin 又以相同两阶段边界完成两个外部和平档的“受限载入 → 对话确认 → 独立副本 → 普通动作 → 正常保存”，项目所有者据此把该历史版本提升为正式 Release；这不补造一项独立的 v0.3.1 异机运行声明。
 
 ### 范围与验收门
 
@@ -77,21 +77,21 @@
 - commit 绑定当前进程/session/revision/精确 `GameData` 和短时单次 plan；服务端生成高熵 owned 名称并调用 DSP 正常保存 API 另存副本，不接受存档名或路径，不枚举、不主动载入、不覆盖、不改名、不删除原档。
 - 切换世界、revision 变化、计划过期或保存尝试都会使计划不可复用；保存成功和 header tick 复读均成立后才能认领，失败或结果不可证明时保持 unowned 并 fail closed。
 - 导入后沿用 owned world 的全部模式、写入、恢复、隔离和脱敏边界；Journal 从导入点开始并明确历史覆盖不完整，不补造旧世界已经发生的首次事件。
-- 离线验收覆盖对话确认声明、双边界确认、计划时限/单次消费、session/对象绑定、计划过期、幂等、失败不认领和 DTO 脱敏；跨电脑实机需验证原档 header 不变、新副本可保存恢复、重新进入原档仍受限。
-
-## 0.3.3 — Gameplay Mode Compatibility
-
-状态：**异机实机验证候选**。
-
-这是从不可变 `v0.3.2` tag 制作的窄范围兼容性补丁。新建档仍默认为和平、非沙盒、1×；对已有或导入的和平存档，沙盒状态与资源倍率仍在 session 中结构化报告，但不再阻止普通动作、导入、计划重启恢复或飞行检查点恢复。Spherewright 仍不调用沙盒工具，不注入物品、能量、科技或设备缓冲。
-
-发布前需在另一台电脑上验证包安装、MCP 握手，以及至少一个沙盒或非 1× 的和平档的导入、普通动作、保存与恢复。
+- Core/Contracts/MCP 自动测试覆盖对话确认声明、双边界确认、计划时限/单次消费、session/对象绑定、计划过期、幂等、失败不认领和 DTO 脱敏；完整构建与当前 DSP 实机已证明原档不变、新副本可保存，未宣称独立异机验证。
 
 ## 0.3.2 — New World Naming and Opening Recovery
 
-状态：**GitHub prerelease published; Thunderstore cross-computer validation pending**（2026-09-04，tag/Release `v0.3.2`，commit `da11e44`）。
+状态：**released**（2026-09-04 发布，2026-09-05 从 prerelease 提升为正式 Release；tag `v0.3.2`，commit `da11e44`）。
 
-这是不扩展玩法动作域的修复版：区分 Agent 新档和用户授权导入副本的命名，保持旧 `Spherewright_M0_*` 精确恢复兼容，并把落地基座/局部障碍的有界移动恢复整理为包内文档和 MCP 资源。项目所有者已另行授权以 Team `Arcueid_77` 发布同版本 Thunderstore 包；GitHub 手动安装包与 Thunderstore 包必须来自同一 tag，后者的首次运行验收在另一台电脑完成。
+这是不扩展玩法动作域的修复版：区分 Agent 新档和用户授权导入副本的命名，保持旧 `Spherewright_M0_*` 精确恢复兼容，并把落地基座/局部障碍的有界移动恢复整理为包内文档和 MCP 资源。项目所有者已另行授权以 Team `Arcueid_77` 生成同版本 Thunderstore 包；GitHub 手动安装包与 Thunderstore 包来自同一 tag。两次相互隔离的发行包黑盒新档验收都完成自动蓝矩阵并正常保存，[对比记录](./docs/v0.3.2-sol-vs-luna-black-box.md)保留两种外部 Agent 的路径、耗时和 API 等价成本。项目所有者于 2026-09-05 将 GitHub 条目标记为正式 Release。
+
+## 0.3.3 — Gameplay Mode Compatibility
+
+状态：**released**（2026-09-05，tag/Release `v0.3.3`）。
+
+这是从不可变 `v0.3.2` tag 制作的窄范围兼容性补丁。新建档仍默认为和平、非沙盒、1×；对已有或导入的和平存档，沙盒状态与资源倍率仍在 session 中结构化报告，但不再阻止普通动作、导入、计划重启恢复或飞行检查点恢复。Spherewright 仍不调用沙盒工具，不注入物品、能量、科技或设备缓冲。
+
+本机以发行 Plugin 完成三条 live 路径：新建和平/非沙盒/1× 世界、导入和平/非沙盒/100× 世界、导入和平/沙盒/1× 世界。三个世界都从空库存按正常机制采集、手搓磁线圈、选择电磁学、取得游戏奖励并由施工无人机建成首座电力感应塔，随后正常保存；两个外部原档的文件修改时间保持不变，改动只进入独立副本。该证据证明本机兼容性，不冒充独立的异机运行结果。
 
 ## 0.4.0 — Overseer
 

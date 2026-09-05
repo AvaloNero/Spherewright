@@ -133,7 +133,7 @@ try {
         name = $PackageName
         version_number = $Version
         website_url = 'https://github.com/AvaloNero/Spherewright'
-        description = 'MCP bridge that lets an external AI agent observe and operate Icarus through normal Dyson Sphere Program mechanics.'
+        description = 'MCP bridge for AI agents to observe and operate Icarus through normal DSP mechanics. / 让 AI 智能体通过 MCP 按正常机制观察并操作伊卡洛斯。'
         dependencies = @('xiaoye97-BepInEx-5.4.17')
     }
     $thunderstoreManifestJson = $thunderstoreManifest | ConvertTo-Json -Depth 4

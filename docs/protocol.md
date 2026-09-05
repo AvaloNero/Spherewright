@@ -8,7 +8,7 @@ The first message on every Pipe connection must be an authenticated `handshake` 
 
 ## Current public MCP surface
 
-The MCP server also exposes the direct text resource `spherewright://agent/playbooks/opening-movement-v1`. It is available without a live Bridge and tells the Agent to poll every returned action to terminal, never replay a stalled target, use a single-obstacle 5 m tangent escape or at most four one-shot orthogonal 4 m probes, and fresh-read `Walk`/speed/energy after success. The `spherewright_get_status` payload and the session-state, Move, and new-world tool descriptions point clients to this resource before their first gameplay action.
+The MCP server also exposes the direct text resource `spherewright://agent/playbooks/opening-movement-v1`. It is available without a live Bridge and gives the Agent the compact core operating rules for session ownership, idempotent terminal polling, energy and harvest approach, production-line proof, saving, flight recovery, and bounded movement-stall escape. The `spherewright_get_status` payload and the session-state, Move, and new-world tool descriptions point clients to this resource before their first gameplay action.
 
 ```text
 spherewright_get_status

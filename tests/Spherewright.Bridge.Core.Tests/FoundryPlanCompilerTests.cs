@@ -160,13 +160,34 @@ public sealed class FoundryPlanCompilerTests
         Assert.NotEqual(first.PlanHash, second.PlanHash);
     }
 
-    [Fact]
-    public void TinyRateCannotCreateZeroMachinesOrEraseAnInputByDecimalUnderflow()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(100)]
+    public void TinyRateCannotCreateZeroMachinesOrEraseAnInputByDecimalUnderflow(int batch)
     {
         var (request, catalog, machines) = Chain();
         request.TargetRatePerMinute = 0.0000000000000000000000000001m;
-        catalog.Recipes[2].Outputs[0].Count = 100;
+        catalog.Recipes[2].Outputs[0].Count = batch;
         Assert.Equal("budget_underflow", Assert.Throws<FoundryPlanningException>(() =>
+            FoundryPlanCompiler.Compile(request, catalog, machines)).Reason);
+    }
+
+    [Fact]
+    public void PreviouslyVisitedSharedSubtreeCannotBypassSixteenLevelDepthLimit()
+    {
+        var (request, catalog, machines) = Chain();
+        catalog.Items = Enumerable.Range(1, 20).Select(id => new ItemCatalogEntry
+            { ItemId = id, Name = "item " + id, Unlocked = true }).ToList();
+        // Visit 1 -> 2 -> 3 -> 4 first (four levels), then a second
+        // fourteen-level path which reaches already visited item 1.
+        catalog.Recipes = new List<RecipeCatalogEntry>();
+        for (var id = 1; id < 4; id++) catalog.Recipes.Add(Recipe(id, id, 60, "Assemble", (id + 1, 1)));
+        catalog.Recipes.Add(Recipe(4, 4, 60, "Assemble"));
+        for (var id = 5; id < 18; id++) catalog.Recipes.Add(Recipe(id, id, 60, "Assemble", (id + 1, 1)));
+        catalog.Recipes.Add(Recipe(18, 18, 60, "Assemble", (1, 1)));
+        catalog.Recipes.Add(Recipe(20, 20, 60, "Assemble", (1, 1), (5, 1)));
+        request.TargetItemId = 20;
+        Assert.Equal("depth_limit", Assert.Throws<FoundryPlanningException>(() =>
             FoundryPlanCompiler.Compile(request, catalog, machines)).Reason);
     }
 

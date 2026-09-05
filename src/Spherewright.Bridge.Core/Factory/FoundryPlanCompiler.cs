@@ -103,6 +103,10 @@ public static class FoundryPlanCompiler
             selected.Add(itemId, compatible[0]);
             foreach (var input in compatible[0].Recipe.Inputs.OrderBy(x => x.ItemId)) Visit(input.ItemId, level + 1);
             depth[itemId] = 1 + compatible[0].Recipe.Inputs.Select(x => depth[x.ItemId]).DefaultIfEmpty(0).Max();
+            // A previously visited shared subtree can extend the current path
+            // beyond the recursion-call depth; validate the resolved DAG too.
+            if (depth[itemId] > MaximumDepth)
+                throw Reject("depth_limit", "The selected chain exceeds 16 recipe levels.");
             visiting.Remove(itemId);
             visited.Add(itemId);
             order.Add(itemId);
@@ -142,6 +146,8 @@ public static class FoundryPlanCompiler
                 var rate = checked(3600m * building.ProductionSpeedRaw!.Value * amount / (recipe.TimeSpend * 10000m));
                 var countDecimal = decimal.Ceiling(checked(demand[itemId] * recipe.TimeSpend * 10000m)
                     / (3600m * building.ProductionSpeedRaw.Value * amount));
+                if (countDecimal < 1m)
+                    throw Reject("budget_underflow", "The requested rate is too small to size a positive production stage safely.");
                 if (countDecimal > MaximumMachines || plan.MachineCount + countDecimal > MaximumMachines)
                     throw Reject("machine_limit", "The requested rate requires more than 256 production machines.");
                 var count = (int)countDecimal;

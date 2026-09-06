@@ -2,12 +2,12 @@
 
 更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 运行1018-test/83a191a安装态，protected exact-primary恢复后最近落盘24568281。主会话方案下763已正常改为按需取料，并一次守恒转移20油到既有2268；四个新动作terminal全部成功，累计accepted6保留。腾格曾送入水2，但随后被混料回占，三只入仓分拣器持氢；24706271–24706870原生600tick统计1117/1118/6003产消均0，未恢复持续供水。主会话继续设计容量/过滤修复，Luna暂不重复写。1036-test源码已增加保持既有持货的过滤窗口，仍未部署/live。完整带路证明仍Core-only；运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。9月5日旧0.4 ZIP不是本轮完成包。
+当前截面：同一 `owned-world-001` 运行1066-test/ca7b64e，最近自动重存24828018。761的set-bans30和2218的持氢换filter1114已实机terminal成功，库存/端点保持。fresh24860193+为owned/healthy、J55/55、Walk0/400MJ、23页2280built/独立0prebuild、三网ratio1；本轮十写已由主会话原始核销并落盘，计数10→0。761仍油357/塑料1055，无水；水格预约和持续供水仍未完成。下一段主会话方案保持761禁入，限定入口/三类入仓过滤，有限守恒移出40油并移入既有氢1以保留残货落点，再锁格和预约水，十写审计前不重新开放入料。完整带路证明仍Core-only；运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。9月5日旧0.4 ZIP不是本轮完成包。
 
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留219条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
+- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留221条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -16,6 +16,14 @@
 - 本文使用四种证据：`J` = 持久化运行时 Journal；`R` = 当前存档运行态；`M` = 产线读回、普通保存与 Git 里程碑；`D` = 经验账本。首次问题及代码修复另见 [incident-fix-log.md](./incident-fix-log.md)，现行规则与复验证据见 [experience-ledger.md](./experience-ledger.md)，版本门见 [ROADMAP.md](../ROADMAP.md)。
 
 ## 从落地到当前的主时间线
+
+2026-09-07 / 持货过滤和禁入容量首次实机、十写核销：#9 `d272230b-0a2b-465e-8bb3-e994b60d4bfd` 在24849780 completed/succeeded，761的bans0→30，30条非空buffer的油357/塑料1055及5条连接逐项相同。#10 `cbeb1410-4637-4510-9ac9-83985f6d6d32` 在24855565 completed/succeeded，2218 filter0→1114，持氢1/inc0/Inserting和784:1→2218→2215:4保持，玩家前后hash一致；原始两份terminal的itemDeltas均为空数组（本地摘要曾把后一项误显示null，以raw为准）。完整审计24860193/rev5同档104/和平/非沙盒/1×/healthy、无blocker/checkpoint；J24860209为55/55 durable无pending/error，玩家24860206 Walk0/400MJ/3idle/手搓空，24860217同snapshot23页2280唯一built，独立24860864 prebuild0，三网ratio1。12个关键对象复读，前三份持氢没有被过滤变更消除。当前原始窗口十个action均唯一completed/succeeded，保存/恢复及前四业务动作证据沿前条保留，无重放、unknown或未解释增量；本条和EXP-220/221落盘后计数10→0，后续继续fresh prepare。
+
+本窗十项索引：save `38bd91d5-c585-439f-8a2a-390f54269f0e` /24568249；resume `e2eb85a4-a760-4a5b-8f3c-f1d2019de98c` /重存24568281；configure `eb5d4284-6e01-4bee-b06e-5aba7ce025f0` /24649518；Move `a0964721-a79f-44b7-8ea6-757256d9202a` /24657692；取油 `fe4832bf-37c9-4083-becb-fe91c94bdf28` /24659717；存油 `054181ab-a35c-4a1e-a4d6-3a4572a7da03` /24661228；save `9f8e4dc9-8b43-4396-b14f-330aed8095e9` /24827987；resume `f331b862-a4eb-476e-a26f-3c42dc604584` /重存24828018；以上#9/#10。恢复的重存tick不是动作起止tick。
+
+2026-09-07 / 1066-test冷部署与同档恢复：#7普通保存 `9f8e4dc9-8b43-4396-b14f-330aed8095e9` 在24827987 completed/succeeded，主会话逐原始响应复核：24833309/rev8 healthy/owned，24833334同snapshot23页2280唯一built，独立24834015空prebuild页，J55/55、Walk0/400MJ/3idle和三网满服务。正常关窗并确认进程退出后安装ca7b64e同批四DLL，4/4源/部署哈希相同；按EXP-002只经Steam启动一次。#8恢复 `f331b862-a4eb-476e-a26f-3c42dc604584` 原始terminal/completed/succeeded，自动重存24828018；动作自身起止tick为null，不能拿保存tick代替。fresh24830745/rev1保持同档104、和平/非沙盒/1×、healthy、无blocker/checkpoint，J24830763为55/55无pending/error，玩家Walk0/400MJ、空手搓/3idle，独立24830773 prebuild0。10个关键对象复读保持既有库存/连接；没有建造或业务配置。accepted7→8不因重启归零。1066项Debug/Release与完整Release零警告错误、64 tools/1 resource、30340字符指南及Windows CI34053887675成功均属源码证据，尚未完成新配置实机或最终包。
+
+后续有界计划（未执行）：先只对761执行set-bans30，保留库存/端点，禁用自动输入；再把持氢的2218设置filter1114，证明持货仍是同一氢且目标未变。到第10个accepted立即冻结并原始审计，不能直接继续腾格。恢复还需要限定其它混带入口、保全既有残留货物、为水持久留格和独立非零生产窗口；这两步本身不是供水恢复或配平。
 
 2026-09-07 / 容量修复产品化：主会话在已推送bf0b51b持货保全过滤之后，实现普通2101仓的原生容量限制、锁现有、空/同物品过滤及清过滤，1066项Debug/Release与完整Release通过；仍等待同档冷部署，不冒充实机供水恢复。Luna只读24797350证实2218仍把784的氢送入2215，24797372的2280仍只接水到2268（7个非空栈）；规划还要处理每个准入类型与去向，不能只做末端锁格。accepted仍6，后续普通保存及审计单独核销。
 

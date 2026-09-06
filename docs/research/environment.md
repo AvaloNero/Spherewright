@@ -2,6 +2,8 @@
 
 Audit date: 2026-09-07 (Asia/Singapore)
 
+Current development deployment: `ca7b64edd6958ed27b356bda5e5c49fcd71db2a4`, 1066 Debug/Release tests (30 Contracts / 987 Core / 49 MCP), full Release build with zero warnings/errors, and successful Windows Core CI `34053887675`. Source stdio metadata verified 64 tools / 1 resource and an exact30340-character playbook. After audited normal save24827987 and orderly process exit, all four installed files matched their Release sources: Plugin `0C4920FD53254EB8B17DED7D1E9FB38CDC93C1D0125E42DD0EC01D360C815101`, Contracts `54556E8788223C36C12CFE0D053BB3779C9DC4D10D166F60671369F4B659B39D`, Core `CA53009CBE8B6C1586B361EDBAB1BA3D22D3E5FCCF34C7E5F55BB28DF0C17B07`, Newtonsoft.Json `F0C07AF0E84D4DD4DA4BD7823BA4535BC0481B3BF623ED40B659B68147A6BB75`. Steam was launched once through its normal app route. Exact-primary action `f331b862-a4eb-476e-a26f-3c42dc604584` completed successfully and automatically resaved24828018; its action start/end game ticks were null. Fresh24830745+ retained owned planet104/healthy/peaceful/non-sandbox/1×, Journal55/55 durable, Walk0/400MJ/3idle, no prebuilds, and full service on three networks. Held-cargo filters and warehouse settings are installed but not yet live-accepted here. This is not a new ZIP or final0.4 validation; older deployment records below retain their historical scope.
+
 | Item | Evidence |
 |---|---|
 | OS | Windows 10 build 26200, win-x64 |

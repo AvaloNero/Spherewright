@@ -457,7 +457,8 @@
 - 第一切片：按UIInserterWindow真实三字段路径开放普通2011/2012单向Inserting持货过滤，完整native struct/sign、背包及归一化端点hash立即保全。既有货物仍投原目的端，不清货、不换目标、不重置运动；后续仓格容量动作另行实现。
 - 离线验证：1036项Debug/Release和完整Release零警告错误通过；没有新的游戏写入/部署/恢复成功声明。接受写计数6保持，单次修复的4终态与后续600tick零产窗口见日记/EXP-219；修改过滤本身不等于清堵。
 - 第二切片：单仓storage-capacity复用原生SetBans/SetFilter/类型切换，私下绑定包含空格的完整顺序、storage组件/链与entity端点。最多100格，明确四类UI操作，既有库存不增减/搬移；超限、无效/无变化、过滤未解锁或stale均拒绝。新增25 Core/2 Contracts/3 MCP后1066项Debug/Release与完整Release通过，仍待冷部署及真正稳定供水，不能忽略2218持续带入氢的上游问题。
-- 状态：`cargo_and_storage_capacity_offline_verified_live_pending`。关联EXP-219/220/221。
+- 首次本机正例：同批1066安装及同档恢复后，761在24849780完成bans0→30并保持全部库存/5端点，2218在24855565换成油过滤且保留既有氢1/原目的端和玩家库存。原始terminal及全23页2280built/独立0prebuild/健康状态已主会话核对并十写落盘；实际预约、残货处理、保存保留和持续供水仍未完成。
+- 状态：`held_filter_and_storage_bans_locally_verified_recovery_pending`。关联EXP-219/220/221。
 
 ## IFX-041 — 多次接线拒绝时缺少端口几何，并把共享带误称为纯水带
 

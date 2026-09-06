@@ -2770,11 +2770,11 @@
 - 适用范围：当前DSP DLL、普通2011/2012单向Inserting持货分拣器；原空载子集保留。
 - 当前结论：当前原生UI仅改filter/sign，既有持货仍送到原目的端。产品可以开放这个有限窗口，但必须绑定fresh配置和held cargo并即时核对完整native struct，仅允许过滤及对应sign变化；不能直接改持货、进度、目的地或借此声称堵塞恢复。
 - 直接证据：UIInserterWindow两个过滤handler和InserterComponent字段/值类型已从同一SHA DLL复核。源码新增完整inserter/sign副本比较、背包/手中物品和端点证明；端点hash包含蓝图filter，比较时只归一化这次授权过滤，否则正常改过滤会误报未知结果。
-- 验证：17项Core回归及1项MCP说明回归后，Debug/Release1036项（28 Contracts/962 Core/46 MCP）通过，完整Release零警告错误。仍未冷部署/实机，仓格锁定后续另行实现，工具数量不变。
+- 验证：17项Core回归及1项MCP说明回归后，Debug/Release1036项（28 Contracts/962 Core/46 MCP）通过，完整Release零警告错误。后续1066同批安装首次live：2218在24855565完成filter0→1114，氢1/inc0/Inserting和784:1→2218→2215:4完整保持，玩家before/after hash相同；terminal原始itemDeltas为空数组，不能以本地摘要的null替代。该正例只覆盖2011/持氢，2012及其它阶段仍按已声明限制。
 - 限制或反例：高级/双向、非Inserting持货、无效item/count/stack/inc不开放；不假设未投递货物符合新过滤。当前现场三根入仓分拣器持氢，仓无可用格，即使新过滤成功也不会消失这些氢。必须另证明容量和持续出入。
 - 复验触发：原生UI赋值、struct字段、hash编码、目标拓扑、冷部署/恢复或持货过滤实机。
 - 关联：EXP-065/217/219、IFX-042、SorterFilterPolicy、包内playbook。
-- 最近复验：2026-09-07（同DLL证据及离线回归；实机待验）。
+- 最近复验：2026-09-07（同DLL、离线回归及2218持氢换过滤本机正例；不代表堵塞已恢复）。
 
 ### EXP-221 — 满仓修复需要持久容量预留，不能把公开buffer位置当作格索引
 
@@ -2784,13 +2784,17 @@
 - 当前结论：复用SetBans与仓储UI锁现有/过滤空或同物品/清过滤，比重复腾格更接近可验证的容量计划；bans是禁用尾部格数量，不是可用格。清过滤不清库存；空格预约itemId但count仍0不算物品注入。输入禁用不等于所有库存流动停止，已有持货仍需真实去处。
 - 直接证据：同SHA DLL的UIStorageWindow/UIStorageGrid/StorageComponent及PlanetFactory.InsertInto已经核对，普通sorter插入使用useBan:true，原生按需取货默认false。公开buffers不含空格且没有格索引，所以新动作私下捕获最多100格的严格顺序、数量/inc、过滤/stackSize，另绑定storageID/链与entity位姿/端点。
 - 实现：在既有configure-building增加storage-capacity模式和四个明确操作，不新增执行器或自主循环。Core不可变投影，提交前重算且复核过滤解锁，原生UI路径后即刻证明完整预期格、库存、实体/拓扑与玩家保持；旧MCP请求默认不变，新MCP无操作/配置回显不暴露token。
-- 验证：25 Core/2 Contracts/3 MCP新回归，Debug/Release1066项（30/987/49）与完整Release零警告错误通过。仓储操作和EXP-220持货配置尚未冷部署或live；没有新的ZIP或版本完成声明。
+- 验证：25 Core/2 Contracts/3 MCP新回归，Debug/Release1066项（30/987/49）与完整Release零警告错误通过。ca7b64e四DLL已同批冷部署、哈希一致，普通save24827987后经Steam启动并protected resume/重存24828018。761在24849780完成bans0→30，油357/塑料1055的30条buffer与5条端点逐项保持，首次set-bans本机正例成立；锁格/空格预约/清过滤及持久供水仍待。没有新的ZIP或版本完成声明。
 - 限制或反例：不支持堆叠仓、任意格写入、未知存储族、物品清空/排序；bans/过滤不能消除上游混带头阻塞，不能将库存反复搬走当作需求。24797350的2218无过滤持氢，自784进入2215；2280仍只取水到已有混仓2268，后续还须核全实际输入边与过量物料去向。
 - 复验触发：原生SetFilter/SetBans、空格表示、顺序哈希、stack-size/解锁、manual操作、冷部署/恢复和持续产率。
 - 关联：EXP-219/220、IFX-042、StorageConfigurationPolicy、包内playbook与协议。
-- 最近复验：2026-09-07（DLL与1066离线回归；冷部署/实际恢复待验）。
+- 最近复验：2026-09-07（DLL与1066离线回归、同批冷部署/恢复、761禁入配置本机正例；预约及实际供水恢复待验）。
 
 ## 修订记录
+
+- 2026-09-07：EXP-220持氢过滤与EXP-221禁入容量两项原始terminal及双边库存/连接均通过；第10项后冻结并核销本窗十个唯一accepted。fresh24860193/rev5 owned/healthy/和平/非沙盒/1×，J55/55、Walk0/400MJ/3idle、三网ratio1；24860217同snapshot23页2280built和独立24860864空prebuild，12个关键对象保留。无unknown/重放或未解释库存变化；主会话原始审计并更新日记后10→0。下一有限段仍保持761禁入，先限定源与入仓类型，再将40油完整留在玩家、既有氢1守恒移到761，为原持氢分拣器预留合法投递格，锁已有/预约空格水；不手工加水、不增仓，不在审计前解除禁入，也不把有限移仓当生产或需求。
+
+- 2026-09-07：复验EXP-001/002/007/219–221，主会话原始核销#7保存24827987、23页2280built/独立0prebuild与完整健康状态；正常关闭、4/4同批哈希安装后仅Steam一次启动，#8 exact-primary恢复terminal成功并自动重存24828018。fresh24830745+ owned/healthy、J55/55、Walk0/400MJ/3idle、三网ratio1，10个关键实体库存/连接保留；动作起止tick为null不补造。计数8保留，先限定下一两步为761禁用自动输入和2218持货过滤，再严格十写审计。源码CI34053887675成功不等于新配置或供水live通过。
 
 - 2026-09-07：EXP-221把单仓原生容量/预约做成有界配置，1066项Debug/Release、完整Release通过；bf0b51b持货过滤切片已推送且Windows CI34052701050成功。现场仍1018安装态，计数6不因离线实现重置，旧暂时腾格反例仍保留。
 

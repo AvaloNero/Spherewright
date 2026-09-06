@@ -505,3 +505,11 @@
 - 验证：1201项Debug/Release、完整Release零警告错误、源码MCP64 tools/1 resource/33408字符指南一致通过；55项Core与Contracts/MCP各1新增回归。尚未冷部署或取得新适配实机正例。
 - 安装态复验：0c59dab的1201同批DLL已冷部署，protected resume及J55/55连续性通过；753→2219、2246→761、2277→761、753→2232仍被原生接点准备拒绝，没有commit。不能把安装成功或这些负例当作接线修复正例；尚须更明确的失败阶段证据来指导有界选址。
 - 状态：`bounded_native_attachment_offline_verified_live_positive_pending`；关联EXP-226。持续供水、模块复制、Governor和最终包门未减少。
+
+## IFX-047 — 接线失败未区分几何捕获、候选搜索与原生检查阶段
+
+- 首见：2026-09-07，1201冷部署后主会话四个有界接线预检仍拒绝，没有commit。
+- 根因：普通prepare把最后一个精确槽的TooSkew和通用fallback失败串联输出，未报告几何是否取得、是否存在有效投影、最接近角度或候选校验是否执行；恢复说明一律建议移近或换位置，易诱导无效重试。
+- 修复：复用原候选和纯角度公式，补充固定捕获reason、实际阶段计数、最小有效偏差及明确unknown。最后精确槽结果单独标注；candidateChecks不声称原生放置检查次数。只对明确OutOfReach建议移近，暂时buffer busy只允许等待后一次fresh prepare；不更改原生阈值、计划/状态hash、材料/施工或commit语义。
+- 验证：1217项Debug/Release（32/1131/54）、完整Release零警告错误，源码MCP64 tools/1 resource及同批指南/stdout通过；当前1201安装态不热替换，新阶段live尚待。单元测试不作为供水恢复或偏移施工成功证明。
+- 状态：`rejection_stage_diagnostics_fixed_offline_live_pending`；关联EXP-227。

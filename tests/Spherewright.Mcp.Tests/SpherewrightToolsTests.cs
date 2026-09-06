@@ -25,6 +25,21 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void AttachmentFailureStagesAreDiscoverableAndDoNotEncourageBlindPairRetries()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareBuildAsync))!;
+        var description = (System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!;
+        Assert.Contains("geometry_unavailable is not an angle verdict", description.Description);
+        Assert.Contains("bestFacingDegrees", description.Description);
+        Assert.Contains("Do not repeat an unchanged pair", description.Description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("candidate_validation_rejected", guide);
+        Assert.Contains("not a native placement-check count", guide);
+        Assert.Contains("bestFacingDegrees=unknown", guide);
+    }
+
+    [Fact]
     public void BoundedSingleBeltAttachmentIsDiscoverableWithoutWeakeningNativePlacementRules()
     {
         var services = new ServiceCollection();

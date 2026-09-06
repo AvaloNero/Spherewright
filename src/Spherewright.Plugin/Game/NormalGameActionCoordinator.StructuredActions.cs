@@ -97,7 +97,7 @@ internal sealed partial class NormalGameActionCoordinator
                 preparation.ErrorCode,
                 preparation.Rejection,
                 true,
-                "Inspect the bound state, move into construction range or choose another candidate, then prepare again."));
+                preparation.Recovery ?? "Inspect the bound state, move into construction range or choose another candidate, then prepare again."));
         }
 
         if (preparation.Steps.Count == 0)
@@ -443,7 +443,9 @@ internal sealed partial class NormalGameActionCoordinator
             result.DestinationEndpointHash = BuildEndpointHash(destination);
             return result;
         }
-        return BuildPreparation.Failed(BridgeErrorCodes.BuildConnectionInvalid, last + " " + offsetRejection);
+        return BuildPreparation.Failed(BridgeErrorCodes.BuildConnectionInvalid,
+            "Exact-slot candidates rejected; last exact-slot result: " + last + " " + offsetRejection,
+            InserterAttachmentSearchReport.Recovery);
     }
 
     private BuildPreparation TryPrepareBeltBuild(
@@ -3173,6 +3175,7 @@ internal sealed partial class NormalGameActionCoordinator
         public bool Success { get; private set; }
         public string ErrorCode { get; private set; } = BridgeErrorCodes.BuildLocationInvalid;
         public string Rejection { get; private set; } = string.Empty;
+        public string? Recovery { get; private set; }
         public string Kind { get; private set; } = string.Empty;
         public List<BuildStepPlan> Steps { get; } = new List<BuildStepPlan>();
         public int ResourceNodeId { get; set; }
@@ -3190,10 +3193,11 @@ internal sealed partial class NormalGameActionCoordinator
             return result;
         }
 
-        public static BuildPreparation Failed(string code, string rejection) => new BuildPreparation
+        public static BuildPreparation Failed(string code, string rejection, string? recovery = null) => new BuildPreparation
         {
             ErrorCode = code,
             Rejection = rejection,
+            Recovery = recovery,
         };
     }
 

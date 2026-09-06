@@ -9,6 +9,12 @@
 
 ## Bounded blueprint data and native upgrades (2026-09-06)
 
+### Single-belt rejection-stage diagnostics (2026-09-07;1217 source/offline)
+
+No DSP call or permitted geometry is added. The current Assembly-CSharp SHA above remains unchanged. Four1201 live rejections could not identify whether the native attachment fallback obtained geometry or reached interpolation/validation. The adapter now labels the last exact-slot result separately, reports a specific unavailable/unsupported capture reason, and counts actual seed/projection/facing/tilt/candidate-validation stages. The best finite facing deviation reuses the existing pure formula and unchanged11/14-degree decisions; an unmeasured value remains unknown. Candidate-validation count does not assert that native CheckBuildConditions ran, because earlier guards may reject. Recovery distinguishes explicit OutOfReach, unsupported geometry and a transient busy buffer; it never recommends an unbounded endpoint sweep, relaxed angles or a whole unproven route.
+
+15 Core tests plus1 MCP discovery/playbook test bring Debug/Release to1217 (32/1131/54); full Release zero warnings/errors and actual source MCP64 tools/1 resource/exact34268-character guide with clean stdout pass. An initial missing Xunit import was corrected; test output from the failed-build attempt was discarded and both configurations rebuilt/retested. Installed1201 is not hot-replaced; the new stage messages are not yet live evidence. Construction, supply and version gates remain open (EXP-227/IFX-047).
+
 ### Bounded native single-belt inserter attachment (2026-09-07;1201 source/offline)
 
 Installation follow-up:1201 cohort0c59dab is now cold-installed with four source-equal hashes and successful protected resume ee4c272a, resave25258871/J55/55. Windows CI34061648108 passed. Fresh prepares for753→2219,2246→761,2277→761 and753→2232 all rejected without commit. These bounded negative results do not distinguish every internal geometry rejection and do not prove a working offset attachment; no angle relaxation or new belt construction followed. The offline evidence below retains its original scope.

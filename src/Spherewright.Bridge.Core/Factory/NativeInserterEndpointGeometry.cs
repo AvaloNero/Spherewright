@@ -9,12 +9,20 @@ public static class NativeInserterEndpointGeometry
     public static bool AcceptsStraightPair(Vector3Snapshot direction, Vector3Snapshot sourceOutward,
         Vector3Snapshot destinationOutward, bool touchesBelt)
     {
-        if (!Valid(direction) || !Valid(sourceOutward) || !Valid(destinationOutward)) return false;
         var limit = touchesBelt ? 11d : 14d;
+        return TryGetStraightPairDeviation(direction, sourceOutward, destinationOutward, out var deviation) && deviation < limit;
+    }
+
+    public static bool TryGetStraightPairDeviation(Vector3Snapshot direction, Vector3Snapshot sourceOutward,
+        Vector3Snapshot destinationOutward, out double deviation)
+    {
+        deviation = 0;
+        if (!Valid(direction) || !Valid(sourceOutward) || !Valid(destinationOutward)) return false;
         var sourceAngle = Angle(direction, sourceOutward);
         var destinationAngle = 180d - Angle(direction, destinationOutward);
         var oppositionError = 180d - Angle(sourceOutward, destinationOutward);
-        return Math.Max(sourceAngle, Math.Max(destinationAngle, oppositionError)) < limit;
+        deviation = Math.Max(sourceAngle, Math.Max(destinationAngle, oppositionError));
+        return true;
     }
 
     private static double Angle(Vector3Snapshot a, Vector3Snapshot b) =>

@@ -41,6 +41,14 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
             cancellationToken).ConfigureAwait(false);
     }
 
+    public Task<BridgeCallResult<BlueprintInspection>> InspectBlueprintAsync(
+        string sessionId, InspectBlueprintRequest request, CancellationToken cancellationToken) =>
+        CallAsync<InspectBlueprintRequest, BlueprintInspection>(BridgeMethods.InspectBlueprint, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<BlueprintInspection>> ExportBlueprintAsync(
+        string sessionId, ExportBlueprintRequest request, CancellationToken cancellationToken) =>
+        CallAsync<ExportBlueprintRequest, BlueprintInspection>(BridgeMethods.ExportBlueprint, sessionId, request, cancellationToken);
+
     public Task<BridgeCallResult<FoundryPlanSnapshot>> GetFoundryPlanAsync(
         string sessionId, GetFoundryPlanRequest request, CancellationToken cancellationToken) =>
         CallAsync<GetFoundryPlanRequest, FoundryPlanSnapshot>(BridgeMethods.GetFoundryPlan, sessionId, request, cancellationToken);
@@ -240,6 +248,14 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
         CommitNormalActionRequest request,
         CancellationToken cancellationToken) =>
         CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitBuild, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareUpgradeAsync(
+        string sessionId, PrepareUpgradeRequest request, CancellationToken cancellationToken) =>
+        CallAsync<PrepareUpgradeRequest, PreparedNormalAction>(BridgeMethods.PrepareUpgrade, sessionId, request, cancellationToken);
+
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitUpgradeAsync(
+        string sessionId, CommitNormalActionRequest request, CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitUpgrade, sessionId, request, cancellationToken);
 
     public Task<BridgeCallResult<PreparedNormalAction>> PrepareDismantleAsync(
         string sessionId,

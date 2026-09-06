@@ -40,6 +40,10 @@ public static class BridgeMethods
     public const string CommitBuild = "commit_build";
     public const string PrepareDismantle = "prepare_dismantle";
     public const string CommitDismantle = "commit_dismantle";
+    public const string PrepareUpgrade = "prepare_upgrade";
+    public const string CommitUpgrade = "commit_upgrade";
+    public const string InspectBlueprint = "inspect_blueprint";
+    public const string ExportBlueprint = "export_blueprint";
     public const string PrepareConfigureBuilding = "prepare_configure_building";
     public const string CommitConfigureBuilding = "commit_configure_building";
     public const string PrepareTransfer = "prepare_transfer";

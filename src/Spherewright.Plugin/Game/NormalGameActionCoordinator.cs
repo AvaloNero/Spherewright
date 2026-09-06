@@ -705,6 +705,9 @@ internal sealed partial class NormalGameActionCoordinator
             case NormalActionKinds.Dismantle:
                 ExecuteDismantleOnMainThread(action);
                 break;
+            case NormalActionKinds.Upgrade:
+                ExecuteUpgradeOnMainThread(action);
+                break;
             case NormalActionKinds.Transfer:
                 ExecuteStorageTransferOnMainThread(action);
                 break;
@@ -1105,6 +1108,8 @@ internal sealed partial class NormalGameActionCoordinator
                 return RevalidateStructuredBuildOnMainThread(plan);
             case NormalActionKinds.Dismantle:
                 return RevalidateDismantlePlanOnMainThread(plan);
+            case NormalActionKinds.Upgrade:
+                return RevalidateUpgradeOnMainThread(plan);
             case NormalActionKinds.Transfer:
                 return RevalidateStorageTransferOnMainThread(plan);
             case NormalActionKinds.LogisticsStationFleetTransfer:
@@ -1388,6 +1393,7 @@ internal sealed partial class NormalGameActionCoordinator
             RequestedCount = action.RequestedCount,
             BeforeTargetAmount = action.BeforeTargetAmount,
             AfterTargetAmount = action.AfterTargetAmount,
+            UpgradeReadback = action.UpgradeReadback,
             ReconciledFromOutcomeUnknown = action.ReconciledFromOutcomeUnknown,
             ReconciledAtGameTick = action.ReconciledAtGameTick,
             FlightCheckpointId = action.FlightCheckpointId,
@@ -2088,6 +2094,7 @@ internal sealed partial class NormalGameActionCoordinator
         public int? RequestedCount { get; set; }
         public int? BeforeTargetAmount { get; set; }
         public int? AfterTargetAmount { get; set; }
+        public UpgradeReadback? UpgradeReadback { get; set; }
         public string? Message { get; set; }
         public string? OriginalOutcomeMessage { get; set; }
         public bool ReconciledFromOutcomeUnknown { get; set; }

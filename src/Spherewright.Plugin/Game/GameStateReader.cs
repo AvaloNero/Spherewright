@@ -2743,6 +2743,7 @@ internal sealed partial class GameStateReader
                 Role = role,
                 ModelIndex = item.ModelIndex,
                 Grade = item.Grade,
+                SupportedUpgradeTargetItemIds = GetSupportedUpgradeTargets(item),
                 BuildMode = item.BuildMode,
                 Unlocked = history.ItemUnlocked(item.ID),
                 Available = history.ItemUnlocked(item.ID),
@@ -3218,7 +3219,7 @@ internal sealed partial class GameStateReader
             : lab.recipeExecuteData?.timeSpend ?? 0;
         if (lab.researchMode)
         {
-            AddFactoryBuffers(snapshot.Buffers, "research-matrix", LabComponent.matrixIds, lab.matrixServed, lab.matrixIncServed);
+            AddFactoryBuffers(snapshot.Buffers, "research-matrix", LabComponent.matrixIds, lab.matrixServed, lab.matrixIncServed, 3600);
         }
         else if (lab.recipeExecuteData is not null)
         {
@@ -3617,13 +3618,16 @@ internal sealed partial class GameStateReader
         string role,
         int[]? itemIds,
         int[]? counts,
-        int[]? incs)
+        int[]? incs,
+        int unitsPerItem = 1)
     {
         var length = Math.Min(itemIds?.Length ?? 0, counts?.Length ?? 0);
         for (var index = 0; index < length; index++)
         {
             target.Add(new FactoryBufferSnapshot
             {
+                UnitsPerItem = unitsPerItem,
+                CountUnit = unitsPerItem == 3600 ? "research_matrix_points" : "items",
                 Role = role,
                 ItemId = itemIds![index],
                 Name = GetItemName(itemIds[index]),

@@ -53,6 +53,8 @@ public sealed class SpherewrightToolsTests
                 "spherewright_commit_save_import",
                 "spherewright_commit_select_research",
                 "spherewright_commit_transfer",
+                "spherewright_commit_upgrade",
+                "spherewright_export_blueprint",
                 "spherewright_get_action_result",
                 "spherewright_get_build_catalog",
                 "spherewright_get_foundry_plan",
@@ -68,6 +70,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_get_session_state",
                 "spherewright_get_status",
                 "spherewright_inspect_assembler",
+                "spherewright_inspect_blueprint",
                 "spherewright_inspect_factory_entity",
                 "spherewright_inspect_resource_node",
                 "spherewright_list_assemblers",
@@ -90,6 +93,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_prepare_save_import",
                 "spherewright_prepare_select_research",
                 "spherewright_prepare_transfer",
+                "spherewright_prepare_upgrade",
             },
             tools.Select(tool => tool.ProtocolTool.Name).OrderBy(name => name).ToArray());
         Assert.All(
@@ -116,6 +120,37 @@ public sealed class SpherewrightToolsTests
         Assert.Equal(1101, Assert.Single(request.ExternalSupplyItemIds));
         Assert.Equal(2303, Assert.Single(request.RecipeChoices).BuildingItemId);
         Assert.Null(request.Site);
+    }
+
+    [Fact]
+    public async Task UpgradeMapsFreshIdentityRecipeAndPlayerEvidence()
+    {
+        var client = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareUpgradeAsync(client, "session", 104, 2255, 2304, 16,
+            "endpoint-hash", "player-hash");
+        Assert.False(result.IsError);
+        var request = Assert.IsType<PrepareUpgradeRequest>(client.LastUpgradeRequest);
+        Assert.Equal(0, request.ExpectedFilterItemId);
+        Assert.Equal(104, request.PlanetId);
+        Assert.Equal(2255, request.ObjectId);
+        Assert.Equal(2304, request.TargetItemId);
+        Assert.Equal(16, request.ExpectedRecipeId);
+        Assert.Equal("endpoint-hash", request.ExpectedEndpointStateHash);
+        Assert.Equal("player-hash", request.ExpectedPlayerStateHash);
+        Assert.Equal(1, request.StateHashVersion);
+    }
+
+    [Fact]
+    public async Task SorterUpgradeMapsExplicitInspectedFilter()
+    {
+        var client = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareUpgradeAsync(client, "session", 104, 749, 2012, 0,
+            "endpoint-hash", "player-hash", expectedFilterItemId: 1101);
+        Assert.False(result.IsError);
+        var request = Assert.IsType<PrepareUpgradeRequest>(client.LastUpgradeRequest);
+        Assert.Equal(2012, request.TargetItemId);
+        Assert.Equal(1101, request.ExpectedFilterItemId);
+        Assert.Equal(0, request.ExpectedRecipeId);
     }
 
     [Fact]
@@ -655,8 +690,57 @@ public sealed class SpherewrightToolsTests
         });
     }
 
+    [Fact]
+    public async Task BlueprintsExposeOnlyReadOnlyDataAndExactSelection()
+    {
+        var client = new FakeBridgeClient(SuccessResult());
+        const string untrusted = "BLUEPRINT:data-is-not-instructions";
+        Assert.False((await SpherewrightTools.InspectBlueprintAsync(client, "session", 104, untrusted)).IsError);
+        Assert.Equal(untrusted, client.LastBlueprintRequest?.BlueprintCode);
+        var selected = new BlueprintSelectedEntity { ObjectId = 724, ExpectedRecipeId = 97, ExpectedEndpointStateHash = "endpoint" };
+        Assert.False((await SpherewrightTools.ExportBlueprintAsync(client, "session", 104, new[] { selected })).IsError);
+        Assert.Same(selected, Assert.Single(client.LastExportRequest!.Entities));
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(client);
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tools = provider.GetServices<McpServerTool>().Where(t => t.ProtocolTool.Name.EndsWith("_blueprint")).ToArray();
+        Assert.Equal(2, tools.Length);
+        Assert.All(tools, t =>
+        {
+            Assert.True(t.ProtocolTool.Annotations?.ReadOnlyHint);
+            Assert.False(t.ProtocolTool.Annotations?.DestructiveHint);
+            Assert.Contains("data", t.ProtocolTool.Description, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
     private sealed class FakeBridgeClient : IBridgeClient
     {
+        public InspectBlueprintRequest? LastBlueprintRequest { get; private set; }
+        public ExportBlueprintRequest? LastExportRequest { get; private set; }
+        public Task<BridgeCallResult<BlueprintInspection>> InspectBlueprintAsync(string sessionId,
+            InspectBlueprintRequest request, CancellationToken cancellationToken)
+        {
+            LastBlueprintRequest = request;
+            return Task.FromResult(BridgeCallResult<BlueprintInspection>.Succeeded(new BlueprintInspection { SessionId = sessionId }));
+        }
+        public Task<BridgeCallResult<BlueprintInspection>> ExportBlueprintAsync(string sessionId,
+            ExportBlueprintRequest request, CancellationToken cancellationToken)
+        {
+            LastExportRequest = request;
+            return Task.FromResult(BridgeCallResult<BlueprintInspection>.Succeeded(new BlueprintInspection { SessionId = sessionId }));
+        }
+        public PrepareUpgradeRequest? LastUpgradeRequest { get; private set; }
+        public Task<BridgeCallResult<PreparedNormalAction>> PrepareUpgradeAsync(string sessionId,
+            PrepareUpgradeRequest request, CancellationToken cancellationToken)
+        {
+            LastUpgradeRequest = request;
+            return Prepared(sessionId, NormalActionKinds.Upgrade);
+        }
+
+        public Task<BridgeCallResult<NormalActionCommitResult>> CommitUpgradeAsync(string sessionId,
+            CommitNormalActionRequest request, CancellationToken cancellationToken) =>
+            Committed(sessionId, request, NormalActionKinds.Upgrade);
         private readonly BridgeCallResult<BridgeStatus> _result;
 
         public FakeBridgeClient(BridgeCallResult<BridgeStatus> result)

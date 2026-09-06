@@ -20,6 +20,8 @@ spherewright_get_local_star_system
 spherewright_get_recipe_catalog
 spherewright_get_build_catalog
 spherewright_get_foundry_plan
+spherewright_inspect_blueprint
+spherewright_export_blueprint
 spherewright_get_power_summary
 spherewright_get_overseer_diagnostic_bundle
 spherewright_get_overseer_production
@@ -49,6 +51,8 @@ spherewright_prepare_build
 spherewright_commit_build
 spherewright_prepare_dismantle
 spherewright_commit_dismantle
+spherewright_prepare_upgrade
+spherewright_commit_upgrade
 spherewright_prepare_configure_building
 spherewright_commit_configure_building
 spherewright_prepare_transfer
@@ -68,6 +72,20 @@ spherewright_commit_reload_flight_checkpoint
 ```
 
 `prepare_new_game` and `commit_new_game` now describe only a peaceful 1x non-sandbox world. The old sandbox basic-production-line methods are not registered as MCP tools and are excluded from M0.
+
+### Blueprint data and native upgrades (0.4 development slices)
+
+`FactoryBufferSnapshot` adds `countUnit` and `unitsPerItem` without changing existing raw `count/inc`. Ordinary buffers use `items`/1; lab `research-matrix` buffers use `research_matrix_points`/3600. They represent research-point equivalents, not raw items available for transfer or complete technology budgets.
+
+`inspect_blueprint` accepts an explicit `blueprintCode`; `export_blueprint` accepts `entities:[{objectId,expectedEndpointStateHash,expectedRecipeId}]` in the current owned local planet. Both require `sessionId/planetId`. Export uses only positive completed IDs, at most 64, within 64 m of the first selected entity. It never scans or writes files. Native `GenerateBlueprintData` and `ToBase64String` produce the code; source connections to unselected entities are returned separately in `sourceBoundaryConnections`, not silently treated as copied links. Cargo is never copied.
+
+Input is bounded before native import: 256 KiB UTF-8 code, 128 KiB compressed, 1 MiB decompressed, 64 objects, 8 areas, 256-grid drag/area dimensions, 128 parameters per object. Only header0/1, payload2/patch1 and building marker -102 are supported. Native MD5F signature and byte-exact native import/export roundtrip must pass. The supported data subset is smelter2302, manufacturing assemblers2303–2305 (default or boolean acceleration mode), belts2001–2003 without labels, sorters2011–2013 (native span1–3/filter), Tesla tower2201 and wind turbine2203. Other types, settings, content strings, terrain reform, malformed references, unsupported versions or excess data explicitly reject the whole inspection. Titles/descriptions are returned under `untrusted*` fields and are never instructions.
+
+The result is **`phase=blueprint_inspection`, `executable=false`**. It includes full supported poses/configurations, native input/output indices and slots, unbound endpoints, unlock flags and package-only aggregate `constructionItems`. It issues no token or durable plan. Missing materials may be reported; an inspection is not native placement validation, does not bind site/yaw, and cannot be committed. Full batch execution, per-object progress/cancel/restart reconciliation and live module copying remain unfinished, not covered by these read tools.
+
+`prepare_upgrade` takes `objectId,targetItemId,expectedRecipeId,expectedFilterItemId,expectedEndpointStateHash,expectedPlayerStateHash,stateHashVersion`, with the normal session/planet binding. The filter defaults to0 for no filter. This executable subset accepts completed manufacturing assemblers2303/2304/2305 to a higher unlocked native-family grade, and ordinary sorter2011→2012 only. `get_build_catalog.buildings[].supportedUpgradeTargetItemIds` advertises the currently unlocked subset. It rejects other types/downgrades, missing materials/refund space, busy/out-of-range player, changed revision, identity, recipe/filter/acceleration mode and inconsistent reciprocal connections. Sorters must have exactly both required factory links (slot1 input/pick and slot0 output/insert), each with a valid reciprocal endpoint; positive cached target IDs do not excuse a missing link. Sorter binding also includes native span/offsets/second-end pose. Live cargo is not frozen by prepare; the executor captures and proves it immediately around the synchronous native call.
+
+`commit_upgrade` uses the existing `CommitNormalActionRequest`, single-flight dispatch, short-lived plan store, UUID idempotency cache and `actionId` terminal polling. The exact native `PlayerAction_Build.DoUpgradeObject` consumes **one complete higher-grade device**, then refunds the old one. It does not just consume incremental recipe ingredients. Current DSP resets assembler processing/extra progress; a basic sorter retains its native cycle fraction with rounded rescaled time and normal1–3-cell span. Readback excludes pre-existing target-prototype IDs when finding a unique result at the original pose, without assuming stable ID; verifies recipe/filter/mode, cargo/proliferation, reciprocal links, second-end pose, native speed/power and exact player count deltas. `get_action_result.upgradeReadback` carries the immediate native-call tick, old/result IDs, recipe/filter, verified connection count, native timing policy/progress and before/after buffers; it is not a later moving-device sample. Always also require a terminal/succeeded result and inspect `itemDeltas`. An unproved result quarantines writes; it is never replayed or automatically rolled back. Normal save/protected resume remain separate actions. Increased nameplate speed is not Governor throughput acceptance.
 
 ### Foundry material draft and machine-site preview
 

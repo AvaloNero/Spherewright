@@ -146,6 +146,11 @@ public sealed class FactoryConnectionSnapshot
 
 public sealed class FactoryBufferSnapshot
 {
+    // Count/Inc retain their existing native values. Research buffers use 3600 points per item.
+    public string CountUnit { get; set; } = "items";
+
+    public int UnitsPerItem { get; set; } = 1;
+
     public string Role { get; set; } = string.Empty;
 
     public int ItemId { get; set; }

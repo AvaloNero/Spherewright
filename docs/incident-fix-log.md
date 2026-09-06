@@ -313,3 +313,30 @@
 - 修复：以明确 shape 分派 Core helper：Box 用中心偏移加 ext 模长；Capsule 再加独立 radius；Sphere 用中心偏移加 radius。未知形状、非有限值或不合法 Box 半尺寸拒绝，合并主/附加碰撞体最大包络；仍在原生网格吸附后检查计划间净空。
 - 验证：Box、Sphere、带负分量的旋转 Capsule 及非法 shape/dimension/radius 回归通过，完整 317 项测试和当前 DSP Release 构建零警告/零错误。此证明是代码/程序集级，不伪称球形或胶囊建筑已实机施工。
 - 关联：EXP-188、`FoundrySitePlanner.ColliderBoundingRadius`、`FoundrySitePlannerTests`；状态：`fixed`。
+
+## IFX-026 — 科研 buffer 缺少单位导致把研究点当成矩阵库存
+
+- 首见：2026-09-06，原地升级候选备料/科研只读检查。
+- 症状：两个研究站蓝 buffer 各36000被解释为数万个蓝糖，进而推断1202研究供料充足。
+- 根因：公共 `FactoryBufferSnapshot.count` 同时承载普通件数和原生 `matrixServed`，没有单位字段；当前 DLL 每矩阵插入3600点，自动进料上限36000实际约十个矩阵等价点。
+- 修复：保留原始count/inc以兼容既有读数，新增 `countUnit=research_matrix_points` / `unitsPerItem=3600`，普通 buffer为items/1。包内 playbook要求先看单位，不把部分研究点当可转移库存或完成科技预算。撤销本次错误的“研究材料已充足”结论，未更改游戏研究字段。
+- 验证：当前DLL `PlanetFactory` 插入与 `LabComponent` 自动供料阈值交叉证明；契约序列化测试覆盖36000→10等价矩阵而不改变raw count。同批Plugin实机读到84/679研究buffer均points/3600，76/256成品为items/1；真实MCP playbook包含单位规则。初始366项、后续379项测试通过，不冒充科技完成。
+- 关联：EXP-191、`GameStateReader.CaptureLab`、`FactoryBufferSnapshot`；状态：`fixed`。
+
+## IFX-027 — 扩充升级白名单不能改变蓝图对象类型判定
+
+- 首见：2026-09-06，基本分拣器升级的部署前交叉审查；含该错误的新增代码未部署。
+- 症状：蓝图读取复用了 `BuildingUpgradePolicy.SupportsItem` 来判断制造设备；把2011/2012纳入升级支持后，会误把基本分拣器当作制造台，拒绝合法2–3格跨度并允许不合适的配方字段。
+- 根因：可升级对象集合与蓝图二进制形状/参数集合是不同策略，不能互相当类型分类器。
+- 修复：蓝图独立明确制造设备2302–2305与分拣器2011–2013；升级仅提供自己的family/pair许可。出口读回另显式比较选择时的过滤器值，不只核对item/recipe。
+- 验证：新增三种基本分拣器×三种跨度的9项合法编码回归，以及错误跨度/制造配方4项拒绝回归；完整Release构建零警告错误。该修复防止部署后回退，不声称实机发生过该错误。
+- 关联：EXP-189、`BoundedBlueprintReaderTests`、`GameStateReader.Blueprints`；状态：`fixed`。
+
+## IFX-028 — 升级只验证已有边，漏检分拣器缺少必需端点
+
+- 首见：2026-09-06，本机分拣器27的原生升级实测。
+- 症状：升级返回成功且即时证明铜块1件、扣料/返还和原有连接保持，但 `verifiedConnectionCount=1`。fresh27仍缓存pick10/insert26，工厂只有27:1↔10:1；仓26没有指回27的边。不能把这一样本写成完整双端验收。
+- 根因：预检与读回遍历 `Connections` 并验证每个已存在的边，却没有先要求分拣器必需的输入和输出均存在；检查空/不完整集合会真空通过。原生cached target引用、携货和factory连接池不是同一个证据源。
+- 修复：Core先要求恰好slot1输入/pick、slot0输出/insert两条完整正实体连接，Plugin再逐端反向核对；该守卫复用于prepare、commit重验及同步readback。缺端点、重复/额外槽、错误方向/对象、自连接和未解析虚拟slot均拒绝。没有直接修复游戏线路，也没有撤销已证明的27升级。
+- 验证：11项新回归、Debug/Release共404测试、完整Release零警告错误。修复版实际对一端23在prepare返回BUILD_CONNECTION_INVALID、无commit；两端749升级于22207214成功，filter1101/verifiedConnectionCount2/扣新1返旧1均明确，同步cargo空。保存22213308、正常退出、protected resume后两端与过滤/供电保持，最终保存22221235/J54/54/healthy。旧27的即时铜1守恒仍为独立历史样本，不伪装成最终版带货双端样本。
+- 关联：EXP-028、EXP-190、EXP-193、`BuildingUpgradePolicy.HasCompleteInserterConnections`；状态：`fixed`。

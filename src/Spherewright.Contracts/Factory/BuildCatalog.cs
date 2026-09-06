@@ -31,6 +31,8 @@ public sealed class BuildCatalogItem
 
     public int Grade { get; set; }
 
+    public List<int> SupportedUpgradeTargetItemIds { get; set; } = new List<int>();
+
     public int BuildMode { get; set; }
 
     public bool Unlocked { get; set; }

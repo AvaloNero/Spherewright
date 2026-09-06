@@ -343,27 +343,27 @@
 
 ### EXP-027 — 新分拣器验收必须证明端点既有连接未被覆盖
 
-- 状态：`invalidated`
+- 状态：`superseded`
 - 日期：2026-08-31
 - 适用范围：当前普通分拣器 prepare/commit/completion、带既有分拣器连接的储仓端点。
-- 当前结论：本条把 `FactoryEntitySnapshot.connections` 的缺省误判成运行链断开，已被物料流反证。不得据此修改端点选择或重启游戏；由 EXP-028 替代。
+- 当前结论：当时“缺边就意味着运行物流立即停止”的推断被物料流反证；但随后外推为“无需端点检查”也过宽。历史运行态由EXP-028保留，当前施工/升级的双端持久拓扑要求由EXP-193及既有slot守卫替代；不凭缺边自动重启或改写线路。
 - 直接证据：动作 `b613e28d-b904-4155-8507-d4452ddfbdb2` 后，储仓 `163` 的公开连接槽显示新 `184`，旧分拣器 `164` 显示 `connections=[]`，一度被误判为静默断线。但后续连续只读采样中，`164` 从 `Picking` 变为 `Sending`、实际携带 1 个精炼油，`pickTarget=141`、`insertTarget=163` 保持；仓库存量从 78 增至 96，再在 10 秒内从 96 增至 97，同时新增热电仍在耗油。
-- 限制或反例：保留该条用于阻止把展示层连接列表错误升级为安全缺陷。
-- 复验触发：无；如出现真实物料不流动，应按 EXP-028 的证据顺序重新诊断。
+- 限制或反例：运行期间仍有物料流不证明factory连接池完整，也不证明保存恢复后完整；两者必须分别核验。
+- 复验触发：新施工/升级、连接槽覆盖、保存恢复或实际物料流异常。
 - 关联：EXP-012、EXP-028、`src/Spherewright.Plugin/Game/GameStateReader.cs`。
-- 最近复验：2026-08-31（被连续运行态流量反证，已 invalidated）。
+- 最近复验：2026-09-06（27携货/缓存目标与缺失的26端再次并存，撤销不必检查连接池的外推；EXP-193）。
 
 ### EXP-028 — 分拣器运行拓扑以目标字段和物料流为准
 
 - 状态：`validated`
 - 日期：2026-08-31
 - 适用范围：当前普通分拣器 DTO、共享建筑端点姿态和 `FactoryEntitySnapshot.connections` 展示。
-- 当前结论：多个分拣器共享建筑侧姿态/槽位时，公开 `connections` 列表不保证列出每个仍可运行的分拣器关系；不能仅凭某个旧分拣器 `connections=[]` 判定断线。诊断顺序应是 `pickTargetObjectId/insertTargetObjectId`、阶段/携货变化、上下游库存差量，最后才把连接列表作为辅助拓扑信息。
+- 当前结论：旧分拣器可能在factory缺边时仍保留缓存目标并实际搬货，故不能只凭 `connections=[]` 宣称当前物料流立即中断。诊断应分别报告运行目标/物料流和factory有向连接，不互相替代。新施工、原地升级或保存恢复的安全验收仍必须完整验证双端factory连接，不能因为历史上有流量就跳过；见EXP-193。
 - 直接证据：新 `163 -> 184 -> 183` 建成后，旧 `141 -> 164 -> 163` 的 `connections` 为空，但 `164` 的目标字段保持 `141/163`，连续采样出现 `Picking -> Sending` 和携货 `0 -> 1`；仓库在新增热电持续取油时仍由 78 增至 96，再由 96 增至 97，证明旧输入链仍运行。
-- 限制或反例：belt path 的逐段方向仍由连接字段直接验收；本条只约束分拣器共享建筑端点的公开表示，不能推广到任意组件。
+- 限制或反例：本条仅证明历史样本存在运行物料流，不证明缺边无害、端点未被覆盖、可继续升级或重启后保持；belt逐段方向仍由连接字段验收。
 - 复验触发：分拣器目标 DTO、连接读取实现、共享端点行为或 DSP 版本变化。
 - 关联：EXP-012、EXP-020、EXP-027、`src/Spherewright.Plugin/Game/GameStateReader.cs`。
-- 最近复验：2026-08-31。
+- 最近复验：2026-09-06（27即时铜块守恒但factory仅一边；旧结论限定为运行观察，不能作完整拓扑门）。
 
 ### EXP-029 — 储液罐的公开工厂快照此前未采集流体缓冲
 
@@ -2336,6 +2336,7 @@
 - 适用范围：使用 MCP 两阶段动作连续执行多个游戏写入、每十个 accepted write 的强制审计，以及没有 recent-action history 的当前公开 session surface。
 - 当前结论：每个动作到达 terminal 后，runner 必须在发起下一项前把 action ID、动作类型、prepare/commit/terminal tick、终态、fresh revision 和关键差量写入本地追加式审计记录；不能只在进程变量或滚动控制台中保留。fresh 世界状态可以证明实体、库存和位置终态，却不能重建已经遗失的 action ID 或精确阶段 tick。若元数据丢失但 terminal 当时已观察且 fresh 双边状态唯一核销，应明确把字段标为 unavailable、冻结后续写入并记录证据强度下降；不能补造 ID，也不能把已核销动作误标为 unknown 后重放。
 - 直接证据：recipe `123` 准备批的十个 accepted writes 均由临时 runner 当时轮询到 terminal/completed，fresh tick `18884224`、revision `34` 又核销 Walk/0、建材库存和唯一新制造台 `2255`。但是 runner 没有输出或持久化成功 action ID 与各阶段 tick，当前公开 session 也不提供 recent-action list，因此这些字段无法事后恢复。两次不计数的 `route_stalled` Move 则有明确失败终态且没有原目标重放。该批不存在 active action、prebuild、write blocker、checkpoint 或无法解释的实体/库存变化，所以不是 outcome unknown；审计仍因逐项 provenance 变弱而保持显式缺口。
+- 2026-09-06 口径纠正：`NormalGameActionCoordinator.ToCommitResult` 在入账时置 `accepted=true`，后续 `terminal failed` 不会撤销这次接受。因此此前把卡路失败 Move 排除在十写之外是错误计数，不是接口语义；以后统计所有不同的 accepted action（包括失败），排除 prepare/commit 明确未接受和幂等回放。此前 recipe-123 准备窗口实际包含 10 项成功及 2 项失败，下一窗口也有两项已接受的失败 Move；恢复后的完整审计须覆盖它们，不可只复核成功动作。
 - 限制或反例：本条只定义 Agent/runner 的证据保留纪律，不要求 Plugin 无限保存动作历史，也不授权绕过现有 action polling、幂等或 exact-order abort。追加记录本身仍应脱敏，不得包含 plan token、绝对路径或真实存档身份；未来如产品提供有界 recent-action receipt，仍需按 session/owned identity 和保留窗口验证。
 - 复验触发：下一批 accepted writes、任何批处理脚本改动、审计记录格式变化、action receipt/recent-history 接口设计、runner 异常退出或出现无法回溯的成功动作。
 - 关联：EXP-001、EXP-007、EXP-037、EXP-146、`docs/agent-playbook.md`。
@@ -2372,12 +2373,81 @@
 - 适用范围：当前 DSP `0.10.34.28529` 的只读 Foundry 机器布局候选；此状态覆盖当前程序集研究与离线回归，不代表完整产线或实机建造验收。
 - 当前结论：仅用实体中心密度或未吸附坐标不能证明可建。机器候选先在运行时球面基底上有界排布，再原生网格吸附，随后复核成对建造碰撞体包络和单台原生条件。Box、Capsule、Sphere 的 `ext/radius` 语义不同，必须分别包围完整形状。原生预览只复制真实库存；独立预览复用同一物品副本不等于整份计划库存足够，还须汇总全部机器成本。两个哈希均不构成写入或续建能力。
 - 直接证据：本机安装与编译引用的程序集 SHA-256 相同；ILSpy 复核 `PlanetAuxData.Snap`、`ColliderData.InitFromCollider` 与普通 click-build 检查路径。首稿在未部署时发现遗漏 Sphere/Capsule 独立 `radius`，已抽成 Core 形状 helper 并由 IFX-025 回归覆盖。317 项测试与完整 Release 构建通过，0 warning/error；新测试包含 32 台/64 m 限界、非有限/非切向输入、吸附后重合、整份库存缺口、未执行/失败 native 检查，以及 session/revision/位置/材料/库存哈希改变。
-- 限制或反例：包络球包含高度和中心偏移，故会保守拒绝部分实际可行的紧凑布局；`machine_previews_clear` 也不证明供电、传送带/分拣器端点、持续外供、吞吐或重启续建。当前公共 `site_preview` 仍 `executable=false`；新相位本机 live 尚待同批 DLL 部署，异机未验。本轮只读资源证据另表明铜 node 7 余量 1197 且实际采矿为 0（输出堵塞），不能由理论 30/min 宣称已发生精确耗尽倒计时。
+- 限制或反例：包络球包含高度和中心偏移，故会保守拒绝部分实际可行的紧凑布局；`machine_previews_clear` 也不证明供电、传送带/分拣器端点、持续外供、吞吐或重启续建。当前公共 `site_preview` 仍 `executable=false`；本机已验实体占位/缺料负例，native Ok正例与异机未验。铜 node7余1197是历史快照，后续fresh已为878；不能由任一旧库存/理论速率宣称当前精确耗尽倒计时。
 - 复验触发：DSP/collider/grid 变化；首次部署 site 参数；改变候选规模、布局、缓存/身份绑定；完整物流/电力/动作图和续建开放前。
 - 关联：EXP-007/037/070/184/187、IFX-025、`FoundrySitePlannerTests`、`docs/research/game-api-foundry.md`。
-- 最近复验：2026-09-06（317 offline tests、当前 DSP 完整 Release 构建、原生 collider/grid 路径研究；新相位尚未实机验收）。
+- 最近复验：2026-09-06（同批部署后19785959/19785969正确拒绝1491占位，native未执行；19790031实际native单熔炉预检NotEnoughItem、整图缺1。原317项离线基线有效，尚未实机建造）。
+
+### EXP-189 — 外部蓝图先有界解压，再原生校验；导出边界连接不能悄悄消失
+
+- 状态：`validated`
+- 日期：2026-09-06
+- 适用范围：当前 DSP2/patch1/-102 蓝图数据及 0.4 第一个只读解析/导出切片。
+- 当前结论：原生解码本身不是安全限流器。必须先限制编码/压缩/解压大小、对象/区域/参数和引用，再经当前 DLL 的 MD5F 与字节往返验证。标题/说明仅为不可信数据。明确选区导出时，原生不编码未选中实体的连接，必须单列源边界；不能宣称复制了外部连接、货物或持续供给。
+- 直接证据：`BlueprintData.ContentFromBase64String` 无界 GZip copy，Import 允许1048576对象；当前实现预限256KiB/128KiB/1MiB、64对象/8区域，拒绝未知类型/版本/设置、content和reform。离线覆盖解压炸弹、逐字节截断、坏引用、自连接、非有限位置和未授权类型；两项 MCP 明示只读且 `executable=false`。
+- 限制或反例：尚无蓝图施工/逐对象进度、取消、部分成功及重启续建入口，不把导出/复读或单元测试写成模块复制成功。当前列表之外的类型不能静默剥离后执行。
+- 复验触发：首次实机导出/导入、增加类型/配置、接入 native paste、输入上限或 DSP 版本变化。
+- 关联：`BoundedBlueprintReaderTests`、`docs/research/game-api-foundry.md`。
+- 修订：加入sorter升级时的部署前审查发现升级白名单与蓝图assembler分类耦合（IFX-027），已拆开，并补三等级×三跨度/错误配方13项回归；导出逐对象显式核对filter。不能把“可升级”集合当作蓝图二进制类型判定。
+- 最近复验：2026-09-06（同批Plugin真实导出724+741/744/749/742并重新inspect，5对象/1区域、signaturetrue、哈希一致、recipe97及filter1101不变，4条源边界单列；签名篡改/重复选择/stale均拒绝。最终749升级并保存恢复后，再次往返含1×2303/3×2011/1×2012的新蓝图，原生模型/过滤及新code自身hash一致，2012/2303缺料明确。真实MCP58 tools/1 resource；仅数据闭环，不是施工）。
+
+### EXP-190 — 原地升级消耗完整新设备，再返还旧设备；进度重置不等于货物丢失
+
+- 状态：`validated`
+- 日期：2026-09-06
+- 适用范围：当前 DSP 原生 `DoUpgradeObject`；基本分拣器2011→2012有本机正例/恢复，制造台2303/2304/2305同族高阶仅DLL/离线及科技锁定负例，不宣称制造台实机升级通过。
+- 当前结论：不能仅预算“配方里除旧设备外的原料”，原生调用需要完整高阶设备，旧设备是在成功后返还。必须独立核对目标已解锁同族高阶、材料和返还空间；不假定实体ID不变。制造台原生升级重置当前/额外加工进度，但配方、货物/增产点和连接应原样保留，逐项读回不符则隔离，不新键重放。
+- 直接证据：DLL普通UI升级路径及完整业务调用；Core覆盖锁定、缺料、满包、不同族/降级、配置绑定、动态库存、替代ID和错误货物/连接/位置/成本。现场候选724 recipe97缺铁、当前0/min，Mk.II科技1202未解锁；正常排队1202不会把这些条件改写成已满足。
+- 限制或反例：生产速度牌面变化不证明实际吞吐增长，缺料零基线不能用于Governor。制造台成功升级仍未live，belt及高阶堆叠sorter未开放。基本分拣器保留周期比例、按span重算stt/time，不沿用制造台“进度归零”。首次27样本证明原有单边及非零铜块守恒，不是完整双端验收；修复后749正例证明filter1101/两边及保存恢复，同步cargo为空，两样本不能合并成一次“最终版带货过滤器”动作。
+- 复验触发：第一次真实升级/恢复、增开设备族、原生升级返回或材料语义变化。
+- 关联：`BuildingUpgradePolicyTests`、`NormalGameActionCoordinator.Upgrade`、EXP-184/189。
+- 最近复验：2026-09-06（27在22170196证明铜1/inc0及原生扣料返还、同键幂等；IFX-028后749在22207214同步成功，2012 1→0/2011 7→8、filter1101、两条reciprocal、stt600000→300000；保存22213308、正常关闭、protected resume/重存22213339后749配置/双端/供电保持，最后保存22221235/J54/54/healthy。404测试与完整Release通过）。
+
+### EXP-191 — 科研站原生 matrixServed 不是矩阵个数
+
+- 状态：`validated`
+- 日期：2026-09-06
+- 适用范围：当前 DSP `research-matrix` buffer读取；不改变历史 raw count 的数值。
+- 当前结论：`matrixServed` 以3600点/矩阵计，36000只相当于10个矩阵的研究点，不是36000个物品。普通设备 buffer 为items/1；科研 buffer 必须明确 `countUnit` 和 `unitsPerItem`。部分已消耗点数不能向上取整当成可转移库存，更不能据此证明600蓝+300红已备齐。
+- 直接证据：本次 Luna 只读报告曾把研究站两个36000描述成充足蓝矩阵，主会话复核 `PlanetFactory` 的 `matrixServed += 3600*itemCount` 与 Lab阈值36000后撤销该推断；已新增字段及序列化回归，原 raw count/inc 保留。没有因此执行注入或强制研究。
+- 限制或反例：这不是运输库存，也不保证 queued tech马上开始；实际研究仍由前序科技和持续供给约束。
+- 复验触发：科研 buffer读回、Governor研究预算、DSP原生倍率或 public DTO变化。
+- 关联：IFX-026、`FactoryBufferSnapshot`、`ProtocolContractTests`。
+- 最近复验：2026-09-06（新DLL实机84/679的6001/6002均points/3600；84为36000/37040，679为36000/38560；76/256成品buffers为items/1。MCP真实playbook包含单位规则，科技仍queued而非已完成）。
+
+### EXP-192 — 原生蓝图 CreatePrebuilds 不是原子事务或整图预算守卫
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：当前 DLL `BuildTool_BlueprintPaste.CreatePrebuilds` 后续有限执行适配研究。
+- 当前结论：不能在预览后无条件调用原生paste并把返回等同于整图成功；需要显式排除旧对象覆盖/改配置，校验整图预算并逐对象保存证据，区分未提交、待施工与结果未知。
+- 直接证据：当前方法接受Ok和NotEnoughItem两种preview，缺料时仍建itemRequired1的prebuild；包含cover upgrade/config/reconstruct路径，且受bpgpuiModelId等预览生命周期条件约束。仅凭方法名猜参数或伪造模型标志不可接受。追加DLL复读：InitBuildPreviewByBPData原生分配预览标志，RefreshBuildPreview会按目标slot调整sorter双端；它们不证明地形/碰撞可建。Prestage另检查history.blueprintLimit、非气态星及回归线条件；建筑本身解锁不能替代蓝图科技门。UI/GPUI初始化和reform数据准备分支必须在隔离适配前逐项排除或证明生命周期。
+- 限制或反例：本条只来自只读DLL研究，尚无实际调用、游戏失败或可执行蓝图入口；不抄原生实现绕开材料/科技/地形与施工无人机。
+- 复验触发：实现有限paste、单帧预算、取消、逐对象恢复或DSP版本变化。
+- 关联：EXP-189、`docs/research/game-api-foundry.md`、Foundry验收门。
+- 最近复验：2026-09-06（精确方法的分支与调用方；未执行游戏写）。
+
+### EXP-193 — 缓存分拣器目标与携货不能代替完整双端 factory 拓扑
+
+- 状态：`validated`
+- 日期：2026-09-06
+- 适用范围：普通sorter施工/升级的端点门及历史共享端点设备的诊断。
+- 当前结论：先证明必需输入/输出两边存在，再验证每条反向连接；只遍历现有列表会漏过缺边。正pick/insert缓存、携货及单边守恒都不是完整持久拓扑。缺边不自动等于当前已停止搬运；诊断与写入前置条件分开。
+- 直接证据：升级action `ef9e6118-8f33-496a-93af-493b684ef4de` 在tick22170196保留铜1104×1/inc0、27身份及一条边，2012 -1/2011 +1、严格同键回放无再扣料。fresh22180857–22180876：27:1↔10:1成立，cached insert26仍存在，但26七条factory边均不含27。不是本次升级新造的拓扑证据；不能推测缺边发生时间或自动拆改原线。
+- 限制或反例：本条不能否定EXP-028历史实际物料流；没有擅自修复27/23的旧线路。升级后是否提高吞吐仍需独立非零产量窗口，749当时缺铁且cargo空，不能冒充Governor验收。
+- 复验触发：IFX-028部署、任一新sorter升级、部分连接或保存恢复、DSP连接池实现变化。
+- 关联：EXP-027/028/067/190、IFX-028、`BuildingUpgradePolicy.HasCompleteInserterConnections`。
+- 最近复验：2026-09-06（修复版对一端23的合法fresh prepare返回BUILD_CONNECTION_INVALID、无commit；749两端完整升级通过，随后普通保存/关闭/恢复，fresh22224323–32仍双端reciprocal、filter1101、network1/serve1。11项新增回归，404测试与完整Release通过）。
 
 ## 修订记录
+
+- 2026-09-06：IFX-028最终部署4/4匹配（Plugin3FB233…/Core7199C2…），窗口#5–9分别为protected resume、749单实体升级、保存/正常关闭、protected resume、最终保存，完整action表见当档日记；未提供resume action tick不补造。修复版23一端负例无commit；749消耗2012 1→0/返2011 7→8、双端及filter1101保留，同步cargo空明确披露。恢复后新选区蓝图含3×2011/1×2012/1×2303，5对象/1区域、native signature及code往返hash一致、4条源边界，证明IFX-027白名单解耦未因实际升级回退。MCP58 tools/1 resource与必需双端playbook通过。最终保存22221235，fresh session22224301 revision2/owned/healthy/no blockers、player22224313 Walk/0/3idle/2011=8/2012=0、Journal22224316 54/54/no pending/error、749及723/724在22224323–32双向正确、power22224335 required=served49804。EXP-189/190/193获得限定范围live证据，EXP-027/028缩窄，存档日记索引按账本同步过期状态且不另维护易过时汇总。当前窗口9项accepted，无额外commit；下一项后必须严格十写审计。没有运行模块复制、Governor产量翻倍、新包/异机声明或push/tag/release。
+
+- 2026-09-06：新窗口#1保存22139771后正常关窗部署393-test cohort；#2 protected resume `d8eaab78-3a8a-4839-be0a-646d051320d9` 自动重存22139802、Journal54/54；#3首次27携货升级及同键幂等回放成功，完整ID/守恒见EXP-193和当档日记。复核时发现 `verifiedConnectionCount=1`，主动撤销“两端完整”的外推，追加IFX-028/EXP-193并收窄EXP-027/028；没有重新升级27、改线、注入或回滚。fresh显式蓝图导出/inspect仍为5对象/1区域、签名及hash一致、filter1101保持、4条源边界，MCP58 tools/1 resource及expectedFilterItemId均可发现。下一步仅正常保存/退出后部署完整连接守卫；不把尚未进行的保存恢复写成通过。
+
+- 2026-09-06：第一组十写（四项bootstrap、选择1202、保存、受保护恢复、齿轮/电机/高速分拣器手搓）全部唯一terminal/completed/succeeded，完整ID与阶段tick见当档日记；第10项后无新commit。#3另从受保护receipt精确核对4ba6acb9-f177-485a-87ed-65b6f18ed880，19802415→19802535，未混用历史Move ID。完整factory快照23页（22×100+55）证明2255 built：assembler36/belt1873/inserter200/lab6/miner10/generator33/node39/station3/storage54/tank1，cursor耗尽；初次仅100条分页不足，补齐后才完成审计。分页后再fresh：session22130461为同档104、和平/非沙盒/1×、owned/healthy/revision7、blockers空、resume可用，Journal22130465为54/54 durable且无pending/error，player22130471 Walk/0、400MJ、forge0、2011=6/2012=2、铁17/线圈3，power22130475三网ratio1、required=served49654。drone在22122562为3/3idle、无build/repair目标，prebuild0；以上逐DTO时间明确，不拼成同tick。#54首次手搓电机确切为20050302，实际2026-09-06T02:33:03.7374201+08:00，原生forge来源。未见unknown、重复扣料、串料或无解释正增量；未把缺铁的724零产量当非零基线。复验EXP-001/007/008/014/018/037/048/073/188–192，补齐并落盘后计数归0，下一写仅正常保存与正常退出以部署基本sorter升级新DLL；当前最后主档仍19983241，不能冒充最新进度已保存。
+
+- 2026-09-06：完成部署/恢复后的完整窗口审计，修正口径为 10 项成功+2 项已接受的失败 Move。`f3a2d50` 的 317 项 Debug/Release 测试、完整 Release 及 Windows CI run `33978735240` 均通过，正常关机后 4/4 DLL 安装哈希匹配。受保护恢复 action `11c4503f-843c-456f-a50a-d5244bda293c` terminal/completed/succeeded，自动重存 `19716563`；返回的 start/completion tick 省略，真实响应已先落盘，不补造 tick。唯一早期 `BRIDGE_NOT_READY` 是无 commit 的 prepare 拒绝。fresh `19746161+` 为同档 planet104、peaceful/non-sandbox/1×、healthy/saved、无 blocker/checkpoint、Journal52/52 durable、Walk/0、核心400MJ、2255 built/0 prebuild，三网 served=request、ratio1。旧失败 ID 在新进程返回 ACTION_NOT_FOUND，保持此前明确 terminal failed 的历史记录，不猜补/重放。电机实际0且缺铁、黄矩阵实际0，不能沿用更早“三色无故障”结论；铜 node7 已由1197降至878，旧资源快照必须失效。该完整审计落盘后重新从0统计所有不同 accepted actions。正常动作本地 hook 另以离线 mock 证明 commit 意图先落盘、失败终态也保留、敏感字段脱敏；后续真实使用仍需逐项读回。
 
 - 2026-09-06：新增 EXP-188。复核 EXP-187 的物料边界不变；可选 `site` 仅补机器几何/native/库存评估，不补造物流预算或施工证据。部署前第二次复核发现旧独立 native helper 不含当前 structured build 的实体/预建筑 guard，已改为直接复用 `TryValidateClickBuild` 并记录 `occupiedObjectId`；旧路径不抽取、不改变既有正常调用。复核 EXP-007：科研 3402 的 action ID/阶段 tick 已保存，但下一普通保存仍因展示失败丢失这些字段；以唯一 fresh 水位核销而未重放。新本地 runner 的真实使用尚待恢复，不能由一个成功保存样本推断整个调用层问题已解决。复核 EXP-001：部署前显式重建完整 Release，未在 DSP 运行中替换程序集。该批仍属 0.4 开发，不是发布候选。
 

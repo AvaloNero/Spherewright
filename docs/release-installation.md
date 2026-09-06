@@ -9,6 +9,10 @@ Spherewright is distributed in two layouts with the same gameplay and MCP capabi
 - `Spherewright-<version>-win-x64.zip` is the complete manual installer package. It installs the Plugin into DSP and keeps the self-contained MCP server under `%LOCALAPPDATA%\Spherewright`.
 - `Spherewright-<version>-thunderstore.zip` is the Mod Manager package published as `Arcueid_77-Spherewright`. It lets Thunderstore Mod Manager or r2modman install and update BepInEx plus the Plugin, and keeps a single-file MCP executable alongside the Plugin.
 
+## Unreleased 0.4 development capabilities
+
+The source development MCP now exposes bounded blueprint inspection/export as **non-executable data** and a native single-building upgrade prepare/commit pair (manufacturing assemblers and Mk.I→Mk.II sorters only). Released 0.3.x packages do not gain these tools from documentation. Read the packaged Agent playbook and actual `tools/list`; unsupported blueprint types/settings reject rather than being silently removed. Full native blueprint construction/resumption, belt upgrades and advanced stacking sorter upgrades are not yet available. Do not replace DLLs while DSP is running; future release packages must include the updated playbook and matching Plugin/Contracts/Core/MCP files.
+
 ## Prerequisites
 
 - Install Dyson Sphere Program and BepInEx 5.

@@ -2,12 +2,12 @@
 
 更新时间：2026-09-06（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 已普通保存到 tick `19716532`、revision `4`，随后正常关闭 DSP，为 Foundry site preview 开发版部署做准备。关机前最后 fresh tick `19731355` 为 owned/saved/healthy，Journal `52/52` durable、无 pending/error/blocker/checkpoint；后续只能从主菜单走当前 exact-primary protected resume，不开新档或枚举其他存档。本批第 8 个 accepted write 已选择 `3402 运输船引擎 L2`，精确 Journal 事件见下表；本轮没有证明该升级完成。第 9 写保存的终态虽已观察，客户端展示又未保留 action ID，故只以唯一 fresh 保存水位/revision/票据核销且未重放。新本地 runner 已改为持久化脱敏响应后才解析，离线故意缺字段测试通过；真实恢复及第 10 写审计待部署。0.4 已合并 Overseer、Foundry 和 Governor，仍在开发；物料草案已有 live，新增机器场地相位目前仅完成 317 项测试与完整构建，不能当作完整物流/电网、施工续建或扩产门已完成。既有 recipe `123` 制造台 `2255` 尚未配置接线，`114 -> 716` 的自动石墨连接仍是有界旧厂路线缺口。
+当前截面：同一 `owned-world-001` 最后正常保存22221235，游戏保持运行。fresh22224301–22224335为owned/healthy、Journal54/54 durable、Walk/0、3施工机idle、三网满供电，背包2011=8/2012=0。修复版先拒绝一端分拣器23，再实机升级749为2012，filter1101/两条reciprocal/原生扣料返还均验证，保存、正常退出与protected resume后仍保持。首次27升级的铜块1件与幂等证据保留，但其原有单边没有擅自修复；IFX-028防止再把缺边设备当完整候选。升级后的5对象蓝图数据再次往返成功，仍 `executable=false`；真实MCP58 tools/1 resource、404项Debug/Release测试与完整Release零警告错误。本窗口累计9项accepted，下一项完成后须严格十写审计。蓝图施工/部分成功/取消/逐对象续建、Governor十分钟两倍吞吐和此前产线缺口仍未完成。
 
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 共有 `52` 条，已经持久化到 sequence `52`，`persistencePending=false`，`persistenceError=null`；仓库中的经验账本当前共有 `188` 条决策/经验，完整保留了每条的状态、证据和复验条件。
+- 记录仍在。本局受保护 Journal 最新为 `54/54` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留193条结论及各自状态、证据和复验条件。科技1202选择与首次手搓电机均已从Journal按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -16,6 +16,8 @@
 - 本文使用四种证据：`J` = 持久化运行时 Journal；`R` = 当前存档运行态；`M` = 产线读回、普通保存与 Git 里程碑；`D` = 经验账本。首次问题及代码修复另见 [incident-fix-log.md](./incident-fix-log.md)，现行规则与复验证据见 [experience-ledger.md](./experience-ledger.md)，版本门见 [ROADMAP.md](../ROADMAP.md)。
 
 ## 从落地到当前的主时间线
+
+计数订正（2026-09-06）：下列 9 月 5 日两批施工准备记录把失败 Move 排除在 accepted 计数之外，这是客户端审计错误；terminal failed 仍是已接受动作。历史表保留当时编号，但 recipe-123 准备窗口为 10 成功+2 失败，后一窗口到本次恢复为 10 成功+2 失败；恢复后审计覆盖整个窗口。以后每十项统计所有不同 accepted action，明确未接受与幂等回放不计。
 
 | 本局时间 / tick | 实际时间 | 事件与决策 | 证据 |
 |---|---|---|---|
@@ -125,7 +127,48 @@
 | read-only `19634511–19658150` | 2026-09-05–06 | 为电机 `1203 @ 30/min` 新厂复读 8 台设备、2.52 MW、铁/铜矿需求 `120/15 min⁻¹`。母星铜 node `7` 余 1197，实际矿机因输出满而为 0，不能用理论速率冒充正在耗尽的倒计时。新几何候选 30 m 内无实体中心，但距铁/铜输出约 40.3/81.6 m；这只证明有界选址依据，不证明原生可建或物流。0 游戏写入。 | R/D |
 | research `19690754/19690758`; save `19716532`; fresh `19731355` | 2026-09-06 | 第 8 写选择升级 `3402`，action `bb168186-996d-4df2-ae03-7188ac042878` terminal/completed/succeeded，action start/completion tick `19690754`，Journal sequence `52` 在 `19690758` durable。第 9 写普通保存成功后客户端展示又访问可选字段失败，完整 action ID/幂等键/阶段 tick 未保留，不补造、不重放；唯一 fresh 保存水位 `19716532`、revision `4`、healthy、有效 resume ticket 和 Journal `52/52` 核销结果。正常关窗后 DSP/descriptor 均为 0。主会话复核新 runner 的响应先落盘顺序、可选字段和 ACL，离线模拟证明展示失败后响应仍 durable；实际恢复验证待部署，第 10 写之后先严格审计。 | J/R/D |
 
+### 2026-09-06：有限复用与升级的第一组十写
+
+此前 `f3a2d50` 恢复和完整审计后计数从0开始。下列十项均由持久化 action receipt证明terminal/completed/succeeded，无幂等重放；prepare负例和读取不计数，返回省略的tick不补造。
+
+| # | 普通动作 | 终态 tick | action ID | 守恒或边界 |
+|---:|---|---:|---|---|
+| 1 | 取3电路板 | 19798493 | `4cef8eea-7202-4948-9181-553f9c7db0e7` | 玩家1→4，源仓400→397 |
+| 2 | 取2铜块 | 19801410 | `6adca4ab-b897-41a6-8d72-03f2436ba2e2` | 玩家0→2，源仓2400→2398 |
+| 3 | recipe6×2手搓线圈4 | 19802535 | `4ba6acb9-f177-485a-87ed-65b6f18ed880` | start19802415；磁铁23→19，铜2→0，线圈0→4 |
+| 4 | 取2石材 | 19804299 | `f0c65a44-9a9d-4b57-9ef2-951014e1853d` | 玩家0→2，源仓2844→2842 |
+| 5 | 选择科技1202 | 19941848 | `b69e21f4-6f76-4e03-be1f-77e40d80feec` | 排在3402之后，不直接完成研究；Journal53稍后记录 |
+| 6 | 普通保存、正常关窗 | 19983210 | `77ad47da-c1b5-4e43-a7db-dcfa5c10081b` | saved/healthy、Journal53/53，退出后部署4/4匹配DLL |
+| 7 | exact-primary同档恢复 | 未提供动作tick | `5c66b788-9fb2-4cfe-9a22-fb7cdf5d0202` | 自动重存19983241，owned/healthy、Journal53/53；两次BRIDGE_NOT_READY未commit |
+| 8 | recipe5×1齿轮 | 20048127 | `d72950f2-39b9-4733-8190-6adce40a9c61` | start20048067，铁20→19、齿轮0→1 |
+| 9 | recipe97×1电机 | 20050302 | `64965724-ed0e-449d-bc8d-1fd4d25d5660` | start20050181，铁19→17、齿轮1→0、线圈4→3、电机0→1 |
+| 10 | recipe88×1高速分拣器2 | 20052499 | `b88bc366-02d2-4b92-bbfa-6528117c94d9` | start20052438，电机1→0、普通分拣器8→6、高速分拣器0→2；随后冻结审计 |
+
+同一批只读验证完成5对象显式蓝图导出/重新解析，recipe97与filter1101保留、4条源边界明确单列；成本缺1制造台，不声称可施工。签名/重复选区/stale负例及真实MCP58 tools/1 resource通过。制造台724→2304因科技锁定未commit，改为正常备料验证已解锁的基本分拣器升级；未补铁恢复电机产线，因此不能称新流水线或Governor非零基线已完成。研究站36000是3600点/矩阵的原生研究点，新DTO已经明确单位（IFX-026/EXP-191）。部署前另修复升级白名单误作蓝图类型判定的耦合（IFX-027），13项回归把总测试增至392；该错误代码未部署。
+
+### 2026-09-06：携货升级、连接门修正与再次正常部署准备
+
+新窗口承接上一组严格十写审计，以下均terminal/completed/succeeded；同键回放不重复计数，错误filter prepare没有action。
+
+| # | 动作 | 终态 tick | action ID | 证据 |
+|---:|---|---:|---|---|
+| 1 | 普通保存/正常退出 | 22139771 | `14debecf-81f4-461e-b09c-81057307cbb1` | Journal54/54，退出后4/4匹配部署393-test cohort |
+| 2 | protected resume | 未提供动作tick | `d8eaab78-3a8a-4839-be0a-646d051320d9` | 自动重存22139802，fresh22142867 owned/healthy，Journal54/54 |
+| 3 | 27普通→高速分拣器 | 22170196 | `ef9e6118-8f33-496a-93af-493b684ef4de` | 同tick瞬时铜1104×1/inc0保持，2012 2→1、2011 6→7；同键回放同action/no extra debit |
+| 4 | 普通保存/正常退出 | 22192567 | `2966ac62-286a-4860-84a5-cf8288ec9a15` | fresh22192586 Journal54/54、healthy/resume可用，CloseMainWindow后进程/descriptor归零 |
+| 5 | 修复版protected resume | 未提供动作tick | `62bec45b-556e-4bc2-b6fb-6b99c8aaaa22` | 自动重存22192599，54/54；27仍携铜1、749仍2011/filter1101 |
+| 6 | 双端749普通→高速分拣器 | 22207214 | `8f7af8d5-e3f3-44ea-bac1-2924b5485676` | 2011 7→8、2012 1→0；filter1101、两条reciprocal保留；同步buffers均空 |
+| 7 | 普通保存/正常退出 | 22213308 | `85f7e700-c6cf-489b-a8c4-4c77c581d597` | 54/54、healthy，CloseMainWindow后进程/descriptor归零 |
+| 8 | 升级后protected resume | 未提供动作tick | `61e28558-e8e5-45e7-b766-278bb6eaa23f` | 自动重存22213339；首次preload未ready只拒prepare，无commit/action |
+| 9 | 最终普通保存 | 22221235 | `de8963be-58f4-47a7-aba2-12b24701ace1` | fresh22224301–35 healthy/J54/54、749过滤/双端/满供电；游戏保持运行 |
+
+#3回读 `verifiedConnectionCount=1`，只能证明27:1↔10:1与原有cached pick10/insert26保持。fresh22180857–22180876的仓26七条连接没有27，不能称双端完整或猜断边时间；暂停后续升级并修复预检真空通过漏洞（IFX-028/EXP-193），没有拆改原线、重放升级或回滚存档。旧EXP-027/028现行结论也收窄为“运行物料流与持久拓扑分开验证”。备用749在22187146–22187170确有749:1↔723:3、749:0↔724:8两条，filter1101，随后才由修复版升级。修复版对一端23的正确fresh prepare返回BUILD_CONNECTION_INVALID、0commit；#6同步verifiedConnectionCount=2，周期600000→300000，buffers空不能冒充非零携货样本。#8恢复后双方反向槽均保持，749 network1/serve1；#9后最终三网总required=served49804。
+
+同部署批次只读蓝图5对象/1区域、签名/往返hash一致、filter1101和4条源边界保持；升级后再export/inspect得到1×2303/recipe97、3×2011、1×2012/filter1101，模型与新code自身hash均一致。预算为2011需3/包8、2012需1/缺1、2303需1/缺1，不声称可施工。MCP真实58 tools/1 resource，升级schema包含expectedFilterItemId，描述/playbook明确必需双端，Host已正常退出。没有蓝图施工或新增产物流水线。
+
 ## 科技树与升级
+
+历史恢复审计（2026-09-06，`f3a2d50` 部署窗口）：同批4 DLL安装一致后，只走exact-primary恢复action `11c4503f-843c-456f-a50a-d5244bda293c`，terminal/completed/succeeded；action tick字段省略，首个fresh tick19716573、自动保存19716563。到19746161+仍owned/saved/healthy、Journal52/52、Walk/0、400MJ、2255 built/0 prebuild、三网满供电。当时3402在队列，2255 recipe0，600-tick蓝/红24/12、黄0、电机0 min⁻¹，铜node7余878；这些历史状态不代表最新升级部署后的科研/矿量快照。原计划准备熔炉用于site正例，后来新增有限复用/升级授权，当前优先级见本文末尾。
 
 ### 日记挂接前：已完成科技/升级
 
@@ -183,6 +226,7 @@
 | 50 | 科技 | 1608 配送物流系统 | 2026-09-05 18:47:34.1336132 +08:00 | 18653068 / `003d 14:21:24` | 18747873 / `003d 14:47:44` |
 | 51 | 科技 | 4001 配送范围 | 2026-09-05 20:21:27.8001916 +08:00 | 18989824 / `003d 15:54:57` | 19048625 / `003d 16:11:17` |
 | 52 | 升级 | 3402 运输船引擎 L2 | 2026-09-06 00:03:05.8040146 +08:00 | 19690758 / `003d 19:09:39` | 尚无完成证据 |
+| 53 | 科技 | 1202 高速制造 | 2026-09-06 01:49:15.7821055 +08:00 | 19941851 / `003d 20:19:24` | queued，尚无解锁证据 |
 
 ## 第一次手搓与第一次流水线产出
 
@@ -195,6 +239,7 @@
 | 5 | 2309 化工厂 | 1 | 2026-09-01 05:55:20.9818785 +08:00 | 5176512 | `000d 23:57:55` | mecha forge feature counter |
 | 13 | 2306 抽水站 | 1 | 2026-09-01 13:12:59.3055037 +08:00 | 6241068 | `001d 04:53:37` | mecha forge feature counter |
 | 24 | 2012 高速分拣器 | 2 | 2026-09-01 19:12:00.3596429 +08:00 | 7464363 | `001d 10:33:26` | mecha forge feature counter |
+| 54 | 1203 电动机 | 1 | 2026-09-06 02:33:03.7374201 +08:00 | 20050302 | `003d 20:49:31` | mecha-forge-feature-counter |
 
 ### 日记覆盖期内：第一次流水线产出
 
@@ -262,7 +307,7 @@
 
 ## 完整决策/经验索引
 
-当前共 `163` 条：`validated=110`、`observed=50`、`invalidated=2`、`superseded=1`。`observed` 表示已有样本但仍需复验；`invalidated` 和 `superseded` 不能继续作为现行规则。每条的适用范围、当前结论、直接证据与复验触发在 [experience-ledger.md](./experience-ledger.md) 中完整保存。
+下表是经验账本的同步索引，不另维护一套独立结论。`observed` 表示已有样本但仍需复验；`invalidated` 和 `superseded` 不能继续作为现行规则。每条的适用范围、当前结论、直接证据与复验触发在 [experience-ledger.md](./experience-ledger.md) 中完整保存；状态须连同其限定范围阅读，不能把历史验证当作任意现场的通行证。
 
 | ID | 状态 | 决策/经验 |
 |---|---|---|
@@ -271,7 +316,7 @@
 | EXP-003 | validated | 运行时描述文件使用 `bridge-*.json` |
 | EXP-004 | validated | 跨进程恢复票据需要可见且受保护的固定交接目录 |
 | EXP-005 | validated | 只有严格绑定的 LastExit 恢复才能延续同一 owned world |
-| EXP-006 | observed | 主菜单 demo 状态没有暴露仍可用的恢复票据 |
+| EXP-006 | validated | 主菜单 demo 状态没有暴露仍可用的恢复票据 |
 | EXP-007 | validated | 客户端包装失败不代表游戏动作未执行 |
 | EXP-008 | validated | 施工无人机会使玩家状态哈希短时变化 |
 | EXP-009 | validated | 移动 action 终态不等于物理速度已经归零 |
@@ -291,10 +336,10 @@
 | EXP-023 | validated | 无线输电必须用独立于燃料的核心能量与电网差量验收 |
 | EXP-024 | validated | 建筑有电不代表相邻分拣器处于电塔覆盖范围 |
 | EXP-025 | validated | 精炼链启动后必须重新按整网峰值校核容量 |
-| EXP-026 | observed | 建造完成后的首次单体查询仍应允许一次只读重读 |
-| EXP-027 | invalidated | 新分拣器验收必须证明端点既有连接未被覆盖 |
+| EXP-026 | validated | 建造完成后的首次单体查询仍应允许一次只读重读 |
+| EXP-027 | superseded | 新分拣器验收必须证明端点既有连接未被覆盖 |
 | EXP-028 | validated | 分拣器运行拓扑以目标字段和物料流为准 |
-| EXP-029 | observed | 储液罐的公开工厂快照此前未采集流体缓冲 |
+| EXP-029 | validated | 储液罐的公开工厂快照此前未采集流体缓冲 |
 | EXP-030 | validated | 当前仓库使用本地 SDK，程序集字段研究优先 Mono.Cecil |
 | EXP-031 | observed | 范围内 harvest 会通过正常玩家动作接近资源点 |
 | EXP-032 | validated | 从活跃货带末端接续路径会把端点货物回收到玩家 |
@@ -338,14 +383,14 @@
 | EXP-070 | validated | 传送带分拣器附着方位是虚拟 slot，完工反查必须扫描实际连接槽 |
 | EXP-071 | superseded | LastExit 未刷新时只能回到票据绑定的最新健康主档，不能伪造关闭证据 |
 | EXP-072 | validated | Plugin 引用的新 Core 类型要求同批部署所有 Spherewright 程序集 |
-| EXP-073 | observed | 上游修复不能以首个局部流量为终点，必须逐层复读到最终消费者 |
+| EXP-073 | validated | 上游修复不能以首个局部流量为终点，必须逐层复读到最终消费者 |
 | EXP-074 | validated | 混合备料仓必须在空载时先完成全部出口过滤，再按物料逐项装仓 |
 | EXP-075 | validated | 抽水站由原生水面校验放置，并从专用泵口先接带再接仓 |
 | EXP-076 | observed | 移动被基座提前终止时，若业务目标已在操作范围内就不要继续撞目标 |
 | EXP-077 | observed | 紧凑产线施工验收还要包含玩家撤离空间，原生放置合法不等于不会夹脚 |
 | EXP-078 | validated | 混合副产物仓无法安全直出时，用空纯源中转仓恢复长带并追到最终科研增长 |
 | EXP-079 | validated | 锁定科技的黄矩阵线先空载过滤预建，解锁后以输入下降、输出增长、日记和保存验收 |
-| EXP-080 | observed | 活跃仓并发补货会掩盖 transfer 的源端净差量 |
+| EXP-080 | validated | 活跃仓并发补货会掩盖 transfer 的源端净差量 |
 | EXP-081 | observed | 正常保存重启清理进程状态，但不会把玩家移出已保存的碰撞夹缝 |
 | EXP-082 | validated | 星际飞行失败只能重载同一绑定检查点，失败分类必须结构化 |
 | EXP-083 | observed | 新主档时间线一旦覆盖飞行 checkpoint，旧回档能力必须立即失效 |
@@ -398,7 +443,7 @@
 | EXP-130 | observed | 单个矿点锚定的最优姿态不等于整簇矿脉的最优姿态 |
 | EXP-131 | observed | 普通矿机原生出料先接传送带，不能假设可直接接分拣器 |
 | EXP-132 | observed | 未取得动作终态时，单次 fresh 实体扫描仍可能处于预建筑收尾中 |
-| EXP-133 | observed | 既有带占位无法绕开时，可用独立带段和受电分拣器做显式拓扑桥 |
+| EXP-133 | validated | 既有带占位无法绕开时，可用独立带段和受电分拣器做显式拓扑桥 |
 | EXP-134 | observed | 十写审计不能假定较早动作结果仍由运行时保留 |
 | EXP-135 | observed | 为范围型业务移动时，可在交互半径内优化短弧的非带实体净空 |
 | EXP-136 | validated | 科研剩余矩阵数必须按科技的 pointsPerHash 换算 |
@@ -408,7 +453,7 @@
 | EXP-140 | observed | ILS 接入既有小电网后应立即降到本机型原生最低充电档 |
 | EXP-141 | observed | 星际直线航向必须避开中间天体的原生 1000 m 捕获层 |
 | EXP-142 | validated | 电网连通与建筑受电是两个独立条件 |
-| EXP-143 | observed | 带路交叉时在重叠点前用受电分拣器显式汇流 |
+| EXP-143 | validated | 带路交叉时在重叠点前用受电分拣器显式汇流 |
 | EXP-144 | validated | 跨星取货必须用货槽订单与源库存下降共同验收 |
 | EXP-145 | validated | 密集旧厂区长带必须做全路径占位排除并分段提交 |
 | EXP-146 | validated | 运行时 Journal、逐档日记和工程事故簿必须分层 |
@@ -433,7 +478,7 @@
 | EXP-165 | validated | 跨星生产者只能从精确供应塔的真实输入带继续证明 |
 | EXP-166 | validated | 无 continuation 的完整首屏不占分页快照容量 |
 | EXP-167 | observed | 混合输入带的满槽物料会造成头部阻塞；起送阈值沿用 EXP-144 |
-| EXP-168 | validated | 人工读档交接必须在无副作用预检后由用户另行对话确认 |
+| EXP-168 | observed | 人工读档交接必须在无副作用预检后由用户另行对话确认 |
 | EXP-169 | validated | 跨域诊断只在同一主线程 tick 经完整身份匹配后合并 |
 | EXP-170 | validated | 受控物流故障用正常路由配置制造并以真实送达/产量恢复 |
 | EXP-171 | validated | 受控缺料用空载输入过滤制造并以真实补料/速率恢复 |
@@ -454,9 +499,14 @@
 | EXP-186 | validated | 物流配送器是独立 add-on 动作域，不能套用物流站或普通地面建筑原语 |
 | EXP-187 | validated | Foundry 规模计算绑定速度、批量、共享深度和显式供给；物料草案不授予建造能力 |
 | EXP-188 | validated | 机器场地评估绑定完整形状、吸附后净空、已有占位和整份库存；离线与 live 分开 |
+| EXP-189 | validated | 蓝图先限制解压/对象，再原生校验；选区外连接显式单列，数据不冒充施工 |
+| EXP-190 | validated | 原生升级先消耗完整新设备，再返还旧设备；进度重置与货物/连接守恒分开核验 |
+| EXP-191 | validated | 科研matrixServed是3600点/矩阵，不是原始物品库存 |
+| EXP-192 | observed | 原生蓝图paste会处理缺料与cover对象，不能当作原子整图事务 |
+| EXP-193 | validated | 缓存目标/携货不能代替必需双端factory连接；升级前先检查完整性 |
 
 ## 当前短期任务与关机续玩边界
 
-- DSP 当前正常关闭，保存边界 `19716532`、minimum Journal sequence `52`、planet `104`；同档下次只走 protected resume。关机前 fresh `19731355`、revision `4`、owned/saved/healthy。`1608/4001` 已自然完成，`3402` 已选入但尚无完成证据；制造台 `2255` 仍未接线。accepted count 为 `9`，下一恢复为第 `10` 写，审计完成前不再提交其他游戏动作。
+- 最后主档保存22221235、planet104；只走当前protected resume，不加载旧checkpoint/其他存档。fresh22224301–22224335为revision2/healthy、Journal54/54、749已升级/双端完整。当前窗口9个accepted均成功，下一accepted完成后先冻结并完整审计；幂等回放和未接受prepare不重复计数，failed accepted仍计数。游戏保持运行，下一业务动作先fresh read。
 - `v0.3.3` 已由 clean release commit `f0cd111` 正式发布；0.3.x release 分支不混入 v0.4 Overseer，后续 0.4 发布仍以 owner 审核后的最新 clean `main` 为唯一来源。
-- 当前主线：2026-09-05 项目所有者先将原 0.5.0 Foundry、再将原 0.6.0 Governor 的全部范围和验收门合并到 0.4.0，以“为跨星系扩张做准备”作为整体目标。Overseer 的既有功能、Journal 回归及 clean 双包作为阶段证据保留，已完成只读物料/机器规模草案及本机 MCP 正负例；最早未完成项仍是场地/物流/供电完整计划、不可变动作图、逐步执行和按档续建。随后要证明存量产线吞吐翻倍并稳定十分钟游戏时间，以及关键科技/升级、翘曲器与燃料自动补充、运输能力和远征备料达到声明目标。4001 已完成并保存，3402 已正常选择；目前 accepted count 为 9。新增场地评估尚待同批部署实测，游戏实操继续由 Luna Max 执行。recipe `123` 的密集旧带候选和石墨 `114 -> 716` 保持已知局部路线阻塞，不能据此推断所有普通带方案不可行。配送原语缺口只约束配送型计划；先通过现有 belt/sorter 原语贯通服务准备目标的三级链。合并版所有门完成后重新打包交 owner 审核；实际跨星系 Voyager 在 0.5.0，戴森系统 Ascension 在 0.6.0，RC 在 0.7.0，1.0.0 晋升点不变。
+- 当前主线：0.4合并Overseer/Foundry/Governor，主会话实现接口、Luna Max实操。蓝图数据复读和基本sorter升级/保存恢复首切片已验证；最早未完成项是整图原生场地/外部端点绑定、有限施工的逐对象进度/取消/持久化续建，然后完成运行模块复制。制造台正例、belt/高阶sorter升级及Governor扩产仍未验。Governor必须先获得稳定非零实际基线，提前声明2倍目标/误差/十分钟窗口；724此前0/min不能作基线。0.5才实际跨星系；本批只做本地验收后commit，不push/tag/release。

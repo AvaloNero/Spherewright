@@ -14,6 +14,14 @@ namespace Spherewright.Mcp.BridgeClient;
 
 public interface IBridgeClient
 {
+    Task<BridgeCallResult<BlueprintInspection>> InspectBlueprintAsync(
+        string sessionId, InspectBlueprintRequest request, CancellationToken cancellationToken);
+    Task<BridgeCallResult<BlueprintInspection>> ExportBlueprintAsync(
+        string sessionId, ExportBlueprintRequest request, CancellationToken cancellationToken);
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareUpgradeAsync(
+        string sessionId, PrepareUpgradeRequest request, CancellationToken cancellationToken);
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitUpgradeAsync(
+        string sessionId, CommitNormalActionRequest request, CancellationToken cancellationToken);
     Task<BridgeCallResult<FoundryPlanSnapshot>> GetFoundryPlanAsync(
         string sessionId, GetFoundryPlanRequest request, CancellationToken cancellationToken);
 

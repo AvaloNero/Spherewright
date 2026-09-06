@@ -22,6 +22,46 @@ public sealed class ProtocolContractTests
     };
 
     [Fact]
+    public void UpgradeResultCarriesImmediateCargoAndTimingNotLaterPollState()
+    {
+        Assert.Null(new ActionResultSnapshot().UpgradeReadback);
+        var snapshot = new ActionResultSnapshot
+        {
+            Terminal = true, Succeeded = true, ActionKind = NormalActionKinds.Upgrade,
+            UpgradeReadback = new UpgradeReadback
+            {
+                CapturedAtGameTick = 500, SourceObjectId = 7, ResultObjectId = 17, SourceItemId = 2011,
+                TargetItemId = 2012, FilterItemId = 1101, VerifiedConnectionCount = 2,
+                NativeTimingPolicy = "basic_sorter_cycle_fraction_retained",
+                ProgressBefore = 123456, ProgressAfter = 61728,
+                BuffersBefore = new List<FactoryBufferSnapshot> { new FactoryBufferSnapshot { ItemId = 1101, Count = 1, Inc = 2 } },
+                BuffersAfter = new List<FactoryBufferSnapshot> { new FactoryBufferSnapshot { ItemId = 1101, Count = 1, Inc = 2 } },
+            },
+        };
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(snapshot, JsonOptions));
+        var proof = json.RootElement.GetProperty("upgradeReadback");
+        Assert.Equal(500, proof.GetProperty("capturedAtGameTick").GetInt64());
+        Assert.Equal(17, proof.GetProperty("resultObjectId").GetInt32());
+        Assert.Equal(1101, proof.GetProperty("filterItemId").GetInt32());
+        Assert.Equal(1, proof.GetProperty("buffersBefore")[0].GetProperty("count").GetInt32());
+        Assert.Equal(2, proof.GetProperty("buffersAfter")[0].GetProperty("inc").GetInt32());
+    }
+
+    [Fact]
+    public void ResearchMatrixBufferDeclaresNativePointScaleWithoutChangingRawCount()
+    {
+        Assert.Equal(1, new FactoryBufferSnapshot().UnitsPerItem);
+        Assert.Equal("items", new FactoryBufferSnapshot().CountUnit);
+        var research = new FactoryBufferSnapshot
+        { Role = "research-matrix", Count = 36000, Inc = 72000, UnitsPerItem = 3600, CountUnit = "research_matrix_points" };
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(research, JsonOptions));
+        Assert.Equal(36000, json.RootElement.GetProperty("count").GetInt32());
+        Assert.Equal(3600, json.RootElement.GetProperty("unitsPerItem").GetInt32());
+        Assert.Equal("research_matrix_points", json.RootElement.GetProperty("countUnit").GetString());
+        Assert.Equal(10, research.Count / research.UnitsPerItem);
+    }
+
+    [Fact]
     public void ProgressionSelection_UsesDedicatedStableHashContract()
     {
         var snapshot = new ProgressionStateSnapshot

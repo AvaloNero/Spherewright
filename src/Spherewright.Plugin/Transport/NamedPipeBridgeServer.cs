@@ -310,6 +310,30 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             cancellationToken).ConfigureAwait(false);
                         break;
                     }
+                case BridgeMethods.InspectBlueprint:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<InspectBlueprintRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+                        await DispatchAndWriteAsync(pipe, header.RequestId, header.SessionId,
+                            () => _gameStateReader.InspectBlueprintOnMainThread(header.SessionId, request.Payload), cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                case BridgeMethods.ExportBlueprint:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<ExportBlueprintRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+                        await DispatchAndWriteAsync(pipe, header.RequestId, header.SessionId,
+                            () => _gameStateReader.ExportBlueprintOnMainThread(header.SessionId, request.Payload), cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
                 case BridgeMethods.ListResourceNodes:
                     {
                         var request = PluginJson.Deserialize<BridgeRequestEnvelope<ListResourceNodesRequest>>(requestJson);
@@ -605,6 +629,22 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             cancellationToken).ConfigureAwait(false);
                         break;
                     }
+                case BridgeMethods.PrepareUpgrade:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<PrepareUpgradeRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+                        await DispatchAndWriteAsync(pipe, header.RequestId, header.SessionId,
+                            () => _normalActionCoordinator.PrepareUpgradeOnMainThread(header.SessionId, request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                case BridgeMethods.CommitUpgrade:
+                    await DispatchNormalCommitAsync(pipe, header, requestJson, NormalActionKinds.Upgrade, cancellationToken).ConfigureAwait(false);
+                    break;
                 case BridgeMethods.CommitDismantle:
                     await DispatchNormalCommitAsync(pipe, header, requestJson, NormalActionKinds.Dismantle, cancellationToken).ConfigureAwait(false);
                     break;

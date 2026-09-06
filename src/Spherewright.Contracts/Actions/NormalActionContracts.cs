@@ -12,6 +12,7 @@ public static class NormalActionKinds
     public const string SelectResearch = "select-research";
     public const string Build = "build";
     public const string Dismantle = "dismantle";
+    public const string Upgrade = "upgrade";
     public const string Transfer = "transfer";
     public const string LogisticsStationFleetTransfer = "logistics-station-fleet-transfer";
     public const string ConfigureBuilding = "configure-building";

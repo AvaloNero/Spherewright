@@ -2,7 +2,7 @@
 
 更新时间：2026-09-06（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 最近已归档的完整审计为736安装态正常保存23992209后的一写提前审计：owned/healthy/J55/55、2267built/0prebuild、Walk0/400MJ/3idle；随后正常关闭并冷部署767同批DLL，4/4哈希匹配，新会话恢复与现场复验另行记录。115缺端及719/720背向端点已通过正常拆除和无人机重建修复，包含1件金刚石返还；此前真实三窗金刚石0/min且715输出满，仍不是配平。新Governor全模块成本比较源码已通过806项Debug/Release、完整Release零警告错误和64工具/1资源的同批指南握手，但没有安装到正在验证的767游戏。尚无blueprint commit/两倍十分钟验收；完整Foundry/Governor、准备清单和最终包仍未完成。artifacts中的两个0.4.0 ZIP是9月5日旧构建，不是本轮完成包。
+当前截面：同一 `owned-world-001` 已在767安装态完成 protected resume，并复验115/719/720修复连接和邻居配置保留；主档重存23992240。最新一写完整审计为24112905–24113594：owned/healthy、无blocker/checkpoint、J55/55、2267built/0prebuild、Walk0/400MJ/3idle。四个有限模块选址均因占位、满负载供电预算或原生跨纬线条件拒绝，没有blueprint commit。774黄糖消费者确实存在，但1112/1118/6003在诊断窗内实际产消均0，仍须恢复真实供给。源码bf655e6已推送，807项Release和CI通过；其观察指南及此前806项全模块成本比较未热装到767游戏。完整Foundry/Governor、两倍十分钟、准备清单和最终包仍未完成。artifacts中的两个0.4.0 ZIP是9月5日旧构建，不是本轮完成包。
 
 ## 结论与证据边界
 
@@ -16,6 +16,10 @@
 - 本文使用四种证据：`J` = 持久化运行时 Journal；`R` = 当前存档运行态；`M` = 产线读回、普通保存与 Git 里程碑；`D` = 经验账本。首次问题及代码修复另见 [incident-fix-log.md](./incident-fix-log.md)，现行规则与复验证据见 [experience-ledger.md](./experience-ledger.md)，版本门见 [ROADMAP.md](../ROADMAP.md)。
 
 ## 从落地到当前的主时间线
+
+2026-09-06 / 767恢复后一写完整审计（原始审计记录23:40:26，Asia/Singapore）：本窗仅 protected resume `5381b28d-07a1-4869-8c39-081b16d8e7c2` 被接受，原始run-complete明确terminal/completed/succeeded，主档自动重存23992240≥minimum23992209；动作自身起止tick仍为空，不以保存tick代替。fresh session24112905/revision1为同档owned104、和平/非沙盒/1×、healthy、blockers0、checkpoint不可用、protected resume可用；玩家24112920为Walk0、400/400MJ、3idle/0施工目标/手搓空。Journal24112923为55/55 durable、pending=false/error=null。工厂同一24113018快照23页共2267实体，无截断；24113594的prebuild页为0。三网24112929的需求=供应=72756/tick、容量191000/tick、consumerRatio均1；这只是当前供电，不能替代全基础负载预算。115、719、720及对应配方/仓设置在恢复后已复读保留，玩家仍有2011×4、2101×2、2302×1和此前回收金刚石×1。本窗无新建/拆除/转移/保存/关机、没有未知动作重放或物品人工注入；主会话复核原始响应并将本条与账本落盘后，计数1→0。下一动作必须fresh read，不复用此审计的hash。
+
+同窗有限蓝图负例：显式[715,716,717,719,720]复制意图为1112@30/min、外供1109@30/min，完整预算2011×2/2101×2/2302×1，库存/科技足够。24024301原点候选被106/113/256占位；24099652与24101663的新候选分别被360/370、648/1127占位；24105415第四候选全部为BlueprintAreaCrossTropic。四者均executable=false、顶层nativeCheckPerformed/nativeCheckPassed=false；逐对象Ok不是整图放置通过。两路sorter理论分配均30/min，按span2/80tick与span3/120tick分别额定45/30每分钟。接网2的候选在已有满负载45600/tick、新增6600/tick、容量30000/tick下仍缺22200/tick，其余候选无覆盖；不能用瞬时ratio1或删掉供电意图绕过。没有提交这四个候选，也没有把这些负例算作模块复制、持续产出或十分钟扩产。
 
 2026-09-06 / 767恢复与诊断纠正（尚未完成本窗完整审计）：唯一accepted protected resume `5381b28d-07a1-4869-8c39-081b16d8e7c2` 的精确run-complete为terminal/completed/succeeded，fresh主档重存23992240≥minimum23992209；该动作记录未给出精确起止game tick，不能把保存tick重标成动作完成tick。fresh24009795/revision1为同档owned104/saved/healthy/0blocker，J55/55、Walk0/400MJ/3idle，115、719、720修复双端和邻居配方/仓设置保留。随后Agent以assembler列表缺recipe27及若干belt空buffers提出不足以成立的新消费端建议，主会话在写入前纠正：lab与assembler分开，belt字段未读货物。原始bundle24076211（600tick窗24075612–24076211）明确774/matrix_lab产6003且三个目标1112/1118/6003实际产消均0；715输出100/100，6003目标路径经1118/767、1117/760、水752（输出50/50）。这不是已定位全部末端或唯一根因，仍须物理物流诊断。EXP-214/IFX-039、三项MCP观察描述和指南同期落盘，807项Release及源码MCP64tools/1resource/25250字符一致通过。51eb5e4已推送且CI34042013510成功；计数保持1，未新建、未清仓、未热换767。
 

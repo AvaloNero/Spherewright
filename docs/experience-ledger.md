@@ -2643,7 +2643,7 @@
 - 限制或反例：有向流分配不是belt/sorter实际带宽或公平分流证明，空仓不是持续输入/输出保障；三级链现场复制、保存中途续建、真实产率仍待验收，不把材料草案改个phase当完成。完工对象在现网已计负载，续建只预算余项，避免二次计费。
 - 复验触发：布局来源、配方多产物/设备类型、过滤/仓储配置、预算、持久化、原生电网和实机施工变化。
 - 关联：FoundryConstructionCompiler、BlueprintBuildState、game-api-foundry.md、包内playbook。
-- 最近复验：2026-09-06（源码/离线通过，未部署/未声明新三级链成功）。
+- 最近复验：2026-09-06（源码/离线通过，已随767同批冷部署；未声明新三级链成功）。
 
 ### EXP-211 — 缺端分拣器可正常回收，错配的存在边不能直接拆
 
@@ -2666,12 +2666,30 @@
 - 适用范围：Foundry显式有限布局的满电单件理论输送预算，不是实测吞吐。
 - 当前结论：从当前DLL读取beltSpeed/inserterSTT/inserterGrade，带按10cell货物长度计速；普通2011/2012按原生span与四阶段量化往返周期计速。路径流量必须经过每个内部/边界带和sorter容量边；共享流不能各自独占全部能力。未知值、非法span及高级堆叠不作免费容量，明确阻断组合计划，普通蓝图独立白名单不变。
 - 直接证据：CargoPath.Update、PlanetFactory预建筑参数和InserterComponent四阶段调用链已用当前DLL核对；新增26项纯预算测试、3项组合流量回归、2项持久化损坏测试。完整Release零警告错误，Release767项通过；MCP说明及包内playbook已同步源码。
-- 限制或反例：满电、单件、无反压的理论数值不是源料充足、分流公平、连续工作或实测产量。部分路由失败时allocatedRate不是全部目标需求，必须同时检查CanPrepare/InternalFlowsRouted；2013不在本预算已证明子集。当前运行的736构建不含此项，不能冒充已实装或最终ZIP。
+- 限制或反例：满电、单件、无反压的理论数值不是源料充足、分流公平、连续工作或实测产量。部分路由失败时allocatedRate不是全部目标需求，必须同时检查CanPrepare/InternalFlowsRouted；2013不在本预算已证明子集。767已同批冷部署，安装哈希一致不等于新预算live或最终ZIP。
 - 复验触发：原生cargo长度/速度、sorter周期/等级/堆叠/参数、现场路由/负载、续建或目标速率变化。
 - 关联：EXP-210、FoundryTransportPlanner、FoundryConstructionCompiler、game-api-foundry.md、包内playbook。
-- 最近复验：2026-09-06（源码/离线，当前767 Release通过；对应实机仍待冷部署）。
+- 最近复验：2026-09-06（767 Release通过，23992209正常保存退出后4/4DLL冷部署匹配；对应新预算实机另行核验）。
+
+### EXP-213 — Governor 增建比较应复用完整施工预算，且增量基于实测基线
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：当前只读 Governor 的显式并联布局比较；不是额外自主规划器或执行权限。
+- 当前结论：只有三段独立稳定非零基线成立且目标更高，才按目标减基线调用已有 Foundry 布局/物料/电网/输送预算。精确代码、位置/方向、玩家绑定现场、session/planet/tick/revision和完整施工图必须一致。成本区分机器、完整升级设备、选区对象和明确模块内全部对象；未规划的外部接线/供料/消纳/额外发电不能免费计入。
+- 直接证据：39项新Core回归覆盖七对象全建材、增量计算、缺料/占位/科技/未执行native/电力/运输阻断、捕获/意图/图变化和输入界限。Release806项及完整Release零警告错误通过；新增MCP可选参数和包内指南契约同步。
+- 限制或反例：当前安装767没有本可选比较；本条只有源码/离线证据。预测产能不等于实际增益，read始终不可执行/未配平。专用补电/物流/换矿方案、自动边界供给和两倍十分钟仍待验，不以模块对象全计价冒充整个工厂全部成本。
+- 复验触发：基线/规模、原生布局/功率/输送、构造图哈希、部分施工/恢复或公开协议改变。
+- 关联：EXP-198/204/206/208/210/212、GovernorPlanCompiler.ParallelConstruction、FoundryConstructionCompiler、包内playbook。
+- 最近复验：2026-09-06（806 Debug/Release离线，实际源码MCP64tools/1resource/24476字符指南一致、exit0/额外stdout0；未冷部署/未宣称新产线）。
 
 ## 修订记录
+
+- 2026-09-06：新增EXP-213，将Governor明确增建布局接到同一Foundry完整预算与有限施工协议，39项新增Core回归后Release806通过。方案指纹升级governor-proposal-v2并绑定可选完整布局；不改变普通游戏写入、旧owned恢复或有限施工权限。767冷部署/旧档恢复与此源码切片分开记录，不提交原第十项打包/CI，不打tag或发布。
+
+- 2026-09-06：在23992209正常保存、一写完整审计与22120正常退出后，30f125d/767测试cohort冷部署4/4哈希匹配，DLL指纹见game-api-foundry.md；无热替换、新档或版本发布。此刻只证明安装一致，protected resume及新增输送预算正例仍待实机，EXP-212不提升为live validated。
+
+- 2026-09-06：736安装态最后仅一项accepted普通保存53fb3ee6成功23992209，fresh23994407及完整23页审计owned104/和平/非沙盒/1×/revision16/healthy/blockers0/resume可用，J55/55无pending/error，Walk0/400MJ/3idle/无手搓，2267built/0prebuild、三网67299/67299。正常关闭22120后进程和descriptor均0，无强杀或新档；本条与日记落盘后1写归零。30f125d本机重新通过Release767项/完整Release零警告错误，源码实际MCP64tools/1resource/23382字符指南一致、exit0/额外stdout0，Windows Core CI34040441477成功。分阶段证据不冒充最终ZIP或实机模块验收。
 
 - 2026-09-06：九个功能切片的独立暂存快照均完成锁定还原、完整Release构建（0warning/0error）及Contracts/Core/MCP测试，依次为428、495、535、572、609、626、634、746、767项；第九个快照另通过Debug767项（21Contracts/710Core/36MCP）。第1–8提交为04fe546、a1b2881、52c1bca、cdc1d8c、a707f90、de66fcd、6ca4d3a、88a1d9e，按用户授权逐项推送；第九项把普通sorter回收和最后已核验文档归并，不包含打包/CI改动。上述数字是独立提交树的测试集合，不等于历史安装cohort编号；游戏仍为736安装态，不能声称已用767实机验证，未打tag或发布。
 

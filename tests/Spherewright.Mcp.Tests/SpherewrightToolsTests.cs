@@ -28,14 +28,16 @@ public sealed class SpherewrightToolsTests
     {
         var client = new FakeBridgeClient(SuccessResult());
         var source = new BlueprintSelectedEntity { ObjectId = 715, ExpectedRecipeId = 60, ExpectedEndpointStateHash = "fresh" };
+        var layout = new FoundryBlueprintRequest { BlueprintCode = "explicit-layout" };
         var result = await SpherewrightTools.GetGovernorPlanAsync(client, "session", 104, 1112, 60, new[] { source }, .1m, 36000,
-            validationBaselineProposalHash: "retained-pre-execution-proposal");
+            validationBaselineProposalHash: "retained-pre-execution-proposal", parallelExpansionBlueprint: layout);
         Assert.False(result.IsError); Assert.Equal("session", client.LastSessionId);
         Assert.Same(source, Assert.Single(client.LastGovernorRequest!.SourceEntities));
         Assert.Equal(36000, client.LastGovernorRequest.ValidationGameTicks);
         Assert.Equal(.1m, client.LastGovernorRequest.ToleranceFraction);
         Assert.Equal(60, client.LastGovernorRequest.TargetRatePerMinute);
         Assert.Equal("retained-pre-execution-proposal", client.LastGovernorRequest.ValidationBaselineProposalHash);
+        Assert.Same(layout, client.LastGovernorRequest.ParallelExpansionBlueprint);
         var services = new ServiceCollection(); services.AddSingleton<IBridgeClient>(client);
         services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
         using var provider = services.BuildServiceProvider();
@@ -45,6 +47,10 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("consumption", tool.Description);
         Assert.Contains("sourceEntities", tool.InputSchema.ToString());
         Assert.Contains("validationBaselineProposalHash", tool.InputSchema.ToString());
+        Assert.Contains("parallelExpansionBlueprint", tool.InputSchema.ToString());
+        Assert.Contains("parallelExpansionBlueprint", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
+        Assert.Contains("target minus measured baseline", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
+        Assert.Contains("costScope", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
         Assert.Contains("validationBaselineProposalHash", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
     }
 

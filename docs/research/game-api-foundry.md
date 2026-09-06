@@ -9,7 +9,15 @@
 
 ## Bounded blueprint data and native upgrades (2026-09-06)
 
-### Native transport budget (2026-09-06; source/offline, not installed)
+### Governor explicit parallel-construction comparison (2026-09-06; source/offline, not installed)
+
+The optional `parallelExpansionBlueprint` adapter reuses `GetFoundryPlanOnMainThread`, not a new DSP API. That existing main-thread path supplies bounded native blueprint parsing/site inspection and current power evidence. Core compiles only the positive increment from a measured ready three-window baseline, verifies same session/planet/tick/revision plus exact code/site/player assessment and the unchanged full Foundry graph, and exposes all explicit module-object costs with external-infrastructure exclusions. The returned intent and construction hash use the existing finite build protocol; there is no parallel approval store, executable read or actual-throughput credit. Cold deployment of this new comparison and its local-live positive example remain pending. The separately installed767 cohort below does not contain it.
+
+Thirty-nine new Core regressions cover measured delta versus instantaneous starvation/full target, warm/zero/unstable baseline, all seven synthetic module objects, native/power/transport/material blockers, changed capture/intent/code/position/orientation/graph, bounded malformed requests and fingerprint scope. They reuse the existing finite `BlueprintBuildState` binding; these synthetic DTO tests do not simulate native DSP execution. Release806 tests (21Contracts/749Core/36MCP) and complete Release0 warnings/errors passed; the MCP contract and packaged playbook explain discovery, cost scope and fresh prepare/observation boundaries.
+
+### Native transport budget (2026-09-06; offline and cold deployment, live acceptance pending)
+
+767 cold deployment from source30f125d: after ordinary save23992209, complete one-write audit and normal exit of process22120, process/descriptor counts were0. All four newly installed files matched the tested Release output: Plugin `B3C556ECBBE4FB745D8CFC5027C68BA7131ED15DF0BBF2511C43D9B4EFC33536`, Contracts `D67C74A4DFC36904F014943ACD73D411F6575E37697912F48C5A5B6395C04EAE`, Core `5BEFB9C0BB682A88C65A7423A20B1DD13173A4DF954238EEC06B1F76175348E8`, Newtonsoft unchanged. Actual source MCP reports64 tools/1resource and23382 matching playbook characters, with normal stdin-close exit0 and no extra stdout. This supersedes the installed736 statement below only for deployment, not native module/throughput acceptance. No ZIP or release was produced; protected resume is the next live step.
 
 The same current DLL proves `PrefabDesc.beltSpeed`, `inserterSTT`, `inserterGrade`. `PlanetFactory` passes belt speed to `CargoTraffic.NewBeltComponent`; `CargoPath.kCargoLength=10`, and `CargoPath.Update()` advances each chunk by its speed cells per game tick. Rated single-item flow is therefore speed×60/10 cargo per second, with no stacked-item bonus. Capacity is bounded by the native120 cargo/s maximum. Startup/end effects, merges and downstream backpressure can reduce actual throughput; it is not a guaranteed rate.
 

@@ -5,7 +5,7 @@ using Spherewright.Contracts.Progression;
 
 namespace Spherewright.Bridge.Core.Factory;
 
-public static class GovernorPlanCompiler
+public static partial class GovernorPlanCompiler
 {
     public static void ValidateRequest(GetGovernorPlanRequest request)
     {
@@ -20,6 +20,19 @@ public static class GovernorPlanCompiler
         if (request.ValidationBaselineProposalHash is not null
             && (string.IsNullOrWhiteSpace(request.ValidationBaselineProposalHash) || request.ValidationBaselineProposalHash.Length > 128))
             throw new FoundryPlanningException("governor_validation_hash_invalid", "Use one exact bounded proposal hash, never supplied baseline history.");
+        if (request.ParallelExpansionBlueprint is { } blueprint
+            && (blueprint.Site is null || string.IsNullOrWhiteSpace(blueprint.BlueprintCode)
+                || blueprint.BlueprintCode.Length > BoundedBlueprintReader.MaximumCodeBytes
+                || System.Text.Encoding.UTF8.GetByteCount(blueprint.BlueprintCode) > BoundedBlueprintReader.MaximumCodeBytes
+                || blueprint.BoundaryPorts is null || blueprint.BoundaryPorts.Count > 33
+                || blueprint.BoundaryPorts.Any(p => p is null)))
+            throw new FoundryPlanningException("governor_parallel_layout_invalid", "Use one explicit bounded blueprint/site/port layout; file paths and claimed historical rates are not accepted.");
+        if (request.ParallelExpansionBlueprint is { } layout)
+        {
+            try { BlueprintSitePolicy.ValidateRequest(layout.Site); }
+            catch (BlueprintReadException)
+            { throw new FoundryPlanningException("governor_parallel_layout_invalid", "Use the existing bounded native site contract with a fresh player hash."); }
+        }
     }
 
     public static GovernorPlanSnapshot Compile(GetGovernorPlanRequest request, RecipeCatalogSnapshot recipes,
@@ -114,7 +127,18 @@ public static class GovernorPlanCompiler
         return result;
     }
 
-    public static string Fingerprint(GovernorPlanSnapshot result) => CanonicalStateHash.Combine("governor-proposal-v1",
+    public static string Fingerprint(GovernorPlanSnapshot result)
+    {
+        var core = FingerprintCore(result);
+        return result.ParallelExpansion is null ? core : CanonicalStateHash.Combine("governor-parallel-proposal-v1", core,
+            result.ParallelExpansion.RateBasis, FoundryConstructionCompiler.IntentHash(result.ParallelExpansion.Intent),
+            result.ParallelExpansion.Plan.PlanHash,
+            FoundryConstructionCompiler.Fingerprint(result.ParallelExpansion.Plan.Construction!),
+            result.ParallelExpansion.Plan.BlueprintSite!.AssessmentHash,
+            result.ParallelExpansion.Plan.BlueprintSite.Power?.AssessmentHash);
+    }
+
+    private static string FingerprintCore(GovernorPlanSnapshot result) => CanonicalStateHash.Combine("governor-proposal-v2",
         result.SessionId, result.PlanetId, result.Revision, result.CapturedAtGameTick, result.SourceStateHash,
         result.FullTargetScale.PlanHash, result.TargetRatePerMinute, result.ToleranceFraction, result.ValidationGameTicks,
         result.Baseline.State, result.Baseline.StartGameTick, result.Baseline.EndGameTick, result.Baseline.ProductionPerMinute,
@@ -128,7 +152,7 @@ public static class GovernorPlanCompiler
             "item", s.ItemId, s.ActualProductionPerMinute, s.ActualConsumptionPerMinute, s.SelectedBufferItemCount,
             s.SelectedBufferItemDelta, s.InventoryObservationStartGameTick)).ToArray()),
         CanonicalStateHash.Combine("alternatives", result.Alternatives.Select(a => (object)CanonicalStateHash.Combine(
-            "option", a.Kind, a.Status, a.TheoreticalTargetCapacityGainPerMinute, a.AdditionalMachineWorkPowerWatts,
+            "option", a.Kind, a.Status, a.CostScope, a.TheoreticalTargetCapacityGainPerMinute, a.AdditionalMachineWorkPowerWatts,
             CanonicalStateHash.Combine("consume", a.Consume.Select(c => (object)CanonicalStateHash.Combine("item", c.ItemId, c.Count)).ToArray()),
             CanonicalStateHash.Combine("refund", a.Refund.Select(c => (object)CanonicalStateHash.Combine("item", c.ItemId, c.Count)).ToArray()),
             CanonicalStateHash.Combine("upgrade", a.Upgrades.Select(c => (object)CanonicalStateHash.Combine("entity", c.ObjectId, c.CurrentItemId, c.TargetItemId, c.RecipeId)).ToArray()),
@@ -137,7 +161,7 @@ public static class GovernorPlanCompiler
     private static GovernorAlternative CopyAlternative(BlueprintInspection? copy, IReadOnlyList<FactoryEntitySnapshot> source,
         IReadOnlyList<BuildCatalogItem> buildings, RecipeCatalogSnapshot recipes, int target)
     {
-        var option = new GovernorAlternative { Kind = "copy_selected_module", Status = copy is null ? "unsupported_selection" : "requires_native_site_and_remaining_supply",
+        var option = new GovernorAlternative { Kind = "copy_selected_module", CostScope = "selected_module_objects", Status = copy is null ? "unsupported_selection" : "requires_native_site_and_remaining_supply",
             Conditions = new List<string> { "No cargo, external supply or boundary connections are copied. Actual throughput gain remains unknown; closed internal sorter ends and material/technology/site checks are mandatory." } };
         if (copy is null) return option;
         try { BlueprintSitePolicy.BuildConnections(copy, buildings.ToDictionary(b => b.ItemId, b => b.SlotCount)); }
@@ -158,7 +182,7 @@ public static class GovernorPlanCompiler
     private static GovernorAlternative UpgradeAlternative(IReadOnlyList<FactoryEntitySnapshot> source,
         IReadOnlyList<BuildCatalogItem> buildings, RecipeCatalogSnapshot recipes, int target)
     {
-        var option = new GovernorAlternative { Kind = "upgrade_in_place", TheoreticalTargetCapacityGainPerMinute = 0,
+        var option = new GovernorAlternative { Kind = "upgrade_in_place", CostScope = "whole_upgrade_devices", TheoreticalTargetCapacityGainPerMinute = 0,
             AdditionalMachineWorkPowerWatts = 0, Conditions = new List<string> {
                 "Only currently advertised native upgrade families are candidates. Each requires fresh exact endpoint/configuration proof, one complete target device and refund space.",
                 "Sorter speed has no direct item-production capacity credit. Repair missing reciprocal links separately, never via upgrade." } };

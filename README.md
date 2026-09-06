@@ -16,7 +16,7 @@ Spherewright 是《戴森球计划》的 MCP 控制桥。它让外部 AI 智能�
 
 main 已增加只读 `spherewright_get_foundry_plan`：从目标产量计算多级配方、共享原料需求、设备数量和基础功率，明确外供与副产物。可选 `site` 为最多 32 台机器生成球面网格候选，返回吸附后净空、原生建造条件和整份机器库存缺口；不提供写 token。现场另有独立的原生电网覆盖/满基础负载预算，计入既有设备、充电塔和新接通负载；这是当次容量证据，不证明燃料持续供应。两种结果均不可执行，完整物流/电力施工计划和三级链验收仍在开发。有限蓝图另走独立的准备/提交/逐对象进度/取消/恢复接口，预览不冒充该执行能力。
 
-源码另有只读 `spherewright_get_governor_plan`，复用 Foundry 和 Overseer，对明确选定的存量设备比较升级、增建和复制模块，分别列出实际产消、目标需求、库存变化及供给缺口。三个独立非零窗口形成候选基线，须在施工前锁定目标/误差/时长，后续只累计有效游戏时间窗口的并集；重启不能复活未持久声明。目标链告警与尚未归因的全星球告警分开保留。它不签发施工权限、不内置自主扩产，也不把预测容量或缺料时“产出=消耗”当作配平。完整供电/物流扩建、换源方案和两倍产量十分钟实测仍是未完成门。
+源码另有只读 `spherewright_get_governor_plan`，复用 Foundry 和 Overseer，对明确选定的存量设备比较升级、增建和复制模块，分别列出实际产消、目标需求、库存变化及供给缺口。可选 `parallelExpansionBlueprint` 在实测非零基线成立后，按“目标减基线”复用完整 Foundry 建材、原生场地、供电和输送预算；明确区分模块内全部对象与未规划的外部基础设施成本。三个独立非零窗口形成候选基线，须在施工前锁定目标/误差/时长，后续只累计有效游戏时间窗口的并集；重启不能复活未持久声明。目标链告警与尚未归因的全星球告警分开保留。它不签发施工权限、不内置自主扩产，也不把预测容量或缺料时“产出=消耗”当作配平。专用供电/物流扩建、换源方案和两倍产量十分钟实测仍是未完成门。
 
 ### 支持范围
 
@@ -114,6 +114,8 @@ Spherewright is a control layer, not an autonomous planner. The external Agent d
 Unreleased v0.4 development also includes bounded native blueprint inspection/export/site assessment and a separate prepare/commit executor with per-object material receipts, cancellation and fresh restart reconciliation. Data/site reads remain `executable=false`; live module-copy, partial-build/restart and sustained-output acceptance are still pending. The read-only `spherewright_get_governor_plan` reuses Foundry and Overseer to compare supported upgrades, added machines and module copies, while separating measured production/consumption, target demand, selected-buffer changes and supply shortfalls. It neither executes an expansion nor certifies balance. Full infrastructure plans and predeclared 2× output sustained for ten game minutes remain release gates. These tools are not present in released v0.3.x packages.
 
 Development site previews also expose an independent advisory native-coverage/full-base-load power assessment, including existing peak loads and newly energized consumers; it is not sustainable fuel proof or permission to build. Governor can retain a pre-execution declaration in the current session and measure the union of valid game-tick windows afterward. It keeps target-chain findings separate from unattributed planet warnings and never turns an inventory observation interval into a production window. Neither helper's offline tests replace the outstanding local acceptance gates.
+
+An optional Governor `parallelExpansionBlueprint` reuses the existing full Foundry budget for the additional rate (target minus measured nonzero baseline), including every explicit module object, native site, full-base-load power and rated transport. Cost scopes disclose unplanned external infrastructure rather than treating it as free. The returned intent/construction hash goes through the existing fresh finite-build protocol; the comparison remains read-only, and post-expansion observation retains the original locked declaration without resubmitting the layout. This new comparison is source/offline evidence, not completed live expansion or a new package.
 
 ## Architecture
 

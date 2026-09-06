@@ -2,12 +2,12 @@
 
 更新时间：2026-09-06（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 的736安装态又完成5写提前审计，正常保存23827812、owned/healthy/J55/55、2267built/0prebuild、Walk0/400MJ/3idle。115缺端及719/720背向端点分别通过正常拆除和无人机重建修复；本批还证明719携带的1件金刚石正常返还。两根新sorter的蓝图几何错误已消失，但所选候选地点仍占位，未执行完整native放置检查。三个独立600tick窗口金刚石均0/min、715输出100/100堵塞，不能把几何修复称作配平。源码767项Release及完整Release零警告错误通过，新增物料/输送规则续建守卫尚未部署。尚无blueprint commit/两倍十分钟验收；完整Foundry/Governor、准备清单和最终包仍未完成。artifacts中的两个0.4.0 ZIP是9月5日旧构建，不是本轮完成包。
+当前截面：同一 `owned-world-001` 最近已归档的完整审计为736安装态正常保存23992209后的一写提前审计：owned/healthy/J55/55、2267built/0prebuild、Walk0/400MJ/3idle；随后正常关闭并冷部署767同批DLL，4/4哈希匹配，新会话恢复与现场复验另行记录。115缺端及719/720背向端点已通过正常拆除和无人机重建修复，包含1件金刚石返还；此前真实三窗金刚石0/min且715输出满，仍不是配平。新Governor全模块成本比较源码已通过806项Debug/Release、完整Release零警告错误和64工具/1资源的同批指南握手，但没有安装到正在验证的767游戏。尚无blueprint commit/两倍十分钟验收；完整Foundry/Governor、准备清单和最终包仍未完成。artifacts中的两个0.4.0 ZIP是9月5日旧构建，不是本轮完成包。
 
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留212条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
+- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留213条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -16,6 +16,12 @@
 - 本文使用四种证据：`J` = 持久化运行时 Journal；`R` = 当前存档运行态；`M` = 产线读回、普通保存与 Git 里程碑；`D` = 经验账本。首次问题及代码修复另见 [incident-fix-log.md](./incident-fix-log.md)，现行规则与复验证据见 [experience-ledger.md](./experience-ledger.md)，版本门见 [ROADMAP.md](../ROADMAP.md)。
 
 ## 从落地到当前的主时间线
+
+2026-09-06 / Governor源码增建比较：可选显式布局在实测非零基线后，以目标减基线复用Foundry完整模块建材/场地/功率/输送预算，不按瞬时缺料率夸大新增规模。39项Core新回归，Debug/Release806项、完整Release零警告错误；实际源码MCP为0.4.0.0、64tools/1resource、24476字符指南一致、正常退出且额外stdout为0。当前游戏仍是767，未把该离线比较记为实机扩产；EXP-213记录判断和复验边界。
+
+2026-09-06 / 767冷部署：以下一写保存/完整审计和正常关闭后，30f125d同批开发DLL已安装并4/4哈希匹配，游戏仍关闭；精确哈希记录在game-api-foundry.md。只允许从同一主档23992209走protected resume，不能用原session/hash。这不是最终ZIP或新模块实机完成。
+
+2026-09-06 / 736最终一写提前审计：save `53fb3ee6-cbc4-493a-9165-f16f98140980` 于23992209明确terminal/completed/succeeded。fresh23994407为同档owned104/和平/非沙盒/1×/revision16/healthy/blockers0/resume可用，J55/55无pending/error，Walk0/400MJ/3idle/手搓空，23页2267built/0prebuild；三网需求=供应67299、容量191000。本窗唯一accepted已核销；本条及账本落盘后归零。随后身份复核的进程22120正常CloseMainWindow返回true并退出，进程及descriptor均0，未强杀、未恢复其他档；最新接续点仅为同一主档23992209。源码30f125d重新完成767项Release/完整构建零警告错误，真实MCP64tools/1resource、23382字符指南逐字匹配、退出0/额外stdout0；该提交Windows Core CI34040441477成功。正常保存和关闭不算建厂中途续建，最终包仍未生成。
 
 2026-09-06 / 736五写提前审计（本地审计记录时间22:10:21，Asia/Singapore）：
 

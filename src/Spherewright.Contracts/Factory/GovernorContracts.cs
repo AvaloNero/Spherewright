@@ -15,6 +15,8 @@ public sealed class GetGovernorPlanRequest
     // Optional exact pre-execution ready proposal previously returned in this session.
     // The server retains its baseline/target; callers cannot supply measured history.
     public string? ValidationBaselineProposalHash { get; set; }
+    // Explicit additional-chain layout; never a caller-supplied measured baseline.
+    public FoundryBlueprintRequest? ParallelExpansionBlueprint { get; set; }
 }
 
 public sealed class GovernorBaselineSnapshot
@@ -62,6 +64,14 @@ public sealed class GovernorPlanSnapshot
     public List<string> RemainingChecks { get; set; } = new List<string>();
     public FoundryPlanSnapshot FullTargetScale { get; set; } = new FoundryPlanSnapshot();
     public GovernorThroughputValidationSnapshot? ThroughputValidation { get; set; }
+    public GovernorParallelExpansion? ParallelExpansion { get; set; }
+}
+
+public sealed class GovernorParallelExpansion
+{
+    public string RateBasis { get; set; } = "target_minus_measured_nonzero_baseline_v1";
+    public FoundryConstructionIntent Intent { get; set; } = new FoundryConstructionIntent();
+    public FoundryPlanSnapshot Plan { get; set; } = new FoundryPlanSnapshot();
 }
 
 public sealed class GovernorThroughputValidationSnapshot
@@ -117,6 +127,7 @@ public sealed class GovernorAlternative
 {
     public string Kind { get; set; } = string.Empty;
     public string Status { get; set; } = "requires_fresh_native_preparation";
+    public string CostScope { get; set; } = "machines_only";
     public decimal? TheoreticalTargetCapacityGainPerMinute { get; set; }
     public decimal? ActualTargetGainPerMinute { get; set; } // Always unknown before execution/measurement.
     public long? AdditionalMachineWorkPowerWatts { get; set; }

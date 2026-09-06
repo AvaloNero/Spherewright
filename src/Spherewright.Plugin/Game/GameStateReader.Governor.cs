@@ -82,6 +82,18 @@ internal sealed partial class GameStateReader
                         result.Blockers.Add("selected_reciprocal_connection_unproven:" + entity.ObjectId + ":" + edge.Slot);
                 }
             }
+            if (request.ParallelExpansionBlueprint is not null)
+            {
+                var parallelRequest = GovernorPlanCompiler.CreateParallelConstructionRequest(request, result);
+                if (parallelRequest is null)
+                    result.RemainingChecks.Add("The explicit parallel layout is not assessed until a stable nonzero baseline leaves a positive target-rate increment. Do not use the current starved rate instead.");
+                else
+                {
+                    var parallel = GetFoundryPlanOnMainThread(sessionId, parallelRequest);
+                    if (!parallel.Success || parallel.Value is null) return GameCallResult<GovernorPlanSnapshot>.Failed(parallel.Error!);
+                    GovernorPlanCompiler.AttachParallelConstruction(request, result, parallel.Value, recipes.Value!, buildings.Value.Buildings);
+                }
+            }
             result.ProposalHash = GovernorPlanCompiler.Fingerprint(result); // Includes final live reciprocal blockers.
             var healthyWrites = _sessions.CaptureOnMainThread().WriteHealth == WriteHealthStates.Healthy;
             if (request.ValidationBaselineProposalHash is string baselineHash)

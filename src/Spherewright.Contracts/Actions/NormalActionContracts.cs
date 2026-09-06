@@ -141,6 +141,9 @@ public sealed class PrepareBuildRequest
 
     public int BuildingItemId { get; set; }
 
+    /// <summary>Native initial filter for ordinary2011/2012 sorters; zero is unfiltered.</summary>
+    public int InitialSorterFilterItemId { get; set; }
+
     public float PreferredDistance { get; set; } = 12f;
 
     public Vector3Snapshot? PreferredPosition { get; set; }
@@ -347,6 +350,9 @@ public sealed class PreparedNormalAction
     public float? PlannedYaw { get; set; }
 
     public string? BuildKind { get; set; }
+
+    /// <summary>Null for non-sorter builds; zero explicitly means unfiltered.</summary>
+    public int? PlannedSorterFilterItemId { get; set; }
 
     public int? TargetObjectId { get; set; }
 

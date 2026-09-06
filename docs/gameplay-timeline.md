@@ -2,7 +2,7 @@
 
 更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 在767安装态正常保存24320012；最新十写完整审计见下文，owned/healthy、J55/55、2280built，明确prebuild空页24399620，无blocker/checkpoint。水旁路仍未恢复：两座新仓765/2268均保留，2268在输入sorter2280配置前已混入塑料/油/氢，至760的输出未建。业务施工冻结，主会话补初始过滤接口；不清仓、不建第三仓或重复消费者。源码9f03fe4已推送，955项Debug/Release和完整Release通过，完整带路证明仍是Core-only，未开放belt升级；游戏未热装。运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。artifacts中的两个0.4.0 ZIP是9月5日旧构建，不是本轮完成包。
+当前截面：同一 `owned-world-001` 在767安装态正常保存24320012；最新十写完整审计见下文，owned/healthy、J55/55、2280built，明确prebuild空页24399620，无blocker/checkpoint。水旁路仍未恢复：两座新仓765/2268均保留，2268在输入sorter2280配置前已混入塑料/油/氢，至760的输出未建。业务施工冻结，初始过滤接口及新旧组件回显防护已完成源码/离线验证；不清仓、不建第三仓或重复消费者。991项Debug/Release和完整Release通过；游戏仍为767，未热装。完整带路证明仍是Core-only，未开放belt升级。运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。artifacts中的两个0.4.0 ZIP是9月5日旧构建，不是本轮完成包。
 
 ## 结论与证据边界
 
@@ -16,6 +16,8 @@
 - 本文使用四种证据：`J` = 持久化运行时 Journal；`R` = 当前存档运行态；`M` = 产线读回、普通保存与 Git 里程碑；`D` = 经验账本。首次问题及代码修复另见 [incident-fix-log.md](./incident-fix-log.md)，现行规则与复验证据见 [experience-ledger.md](./experience-ledger.md)，版本门见 [ROADMAP.md](../ROADMAP.md)。
 
 ## 从落地到当前的主时间线
+
+2026-09-07 / 991-test初始过滤源码切片：普通2011/2012建造新增 `initialSorterFilterItemId`，原生prebuild和无人机路径使过滤在第一次取货前生效，并核对计划指纹、资格、预建筑、完工sign与双端。新MCP对漏回显/不匹配的旧Plugin拒绝公开未确认计划，不改变默认0调用；新增36项回归后991项Debug/Release通过，完整Release零警告错误。公共工具仍64个，MCP资源与精简指南同步。EXP-217/IFX-040仍标记实机待验；这不是水路恢复、冷部署或包验收结果，不改变已审核计数。
 
 2026-09-07 / 767供水修复十写审计（主会话已逐份核对原始terminal，全部completed/succeeded）：
 

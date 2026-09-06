@@ -195,6 +195,14 @@ Flight-checkpoint reload is a narrower repeatable recovery path. It accepts only
 
 The public surface contains no composite red-matrix or legacy sandbox operation. Missing future methods return no simulated data and must not be substituted with historical sandbox code.
 
+### Initial sorter filter during normal construction (0.4 development slice)
+
+`spherewright_prepare_build` accepts optional `initialSorterFilterItemId` (default0). A nonzero value is supported only for native ordinary2011/2012 sorters and must be an existing unlocked bounded item ID. Non-sorters, unsupported grades, negative/oversized/unknown IDs and locked filters reject before a plan; zero retains unfiltered legacy construction. The prepared DTO returns `plannedSorterFilterItemId` (null for other build kinds,0 for explicitly unfiltered).
+
+MCP must receive that exact nonzero filter echo before exposing a construction token. A missing or different echo (for example a new MCP with an old Plugin) returns `BRIDGE_NOT_READY` without the unconfirmed plan/capability. Direct Bridge clients must enforce the same echo check. Default0 calls retain legacy response compatibility; this guard never commits or retries a build.
+
+The field participates in the exact build-step fingerprint and equivalence checks. Both preparation and commit recheck eligibility, native conditions and endpoints. `BuildPreview.filterId` flows through the normal `BuildTool_Inserter.CreatePrebuilds` path to the drone-built entity, not a later live-component assignment. The prebuild filter is reread immediately after native creation; completion checks the exact native filter/sign and original reciprocal endpoint proof. No new tool, stock mutation, automatic configuration action, token recovery or idempotency exception is introduced. Inspect the resulting entity after terminal; a filtered input does not clean existing mixed stock or prove sustained flow. Code/offline status and matching-build live evidence are tracked separately in IFX-040 and the save diary.
+
 ## Request rules
 
 Every save/player/factory request carries the active `sessionId`; planet-bound requests also carry `planetId`. Save import is the narrow exception that accepts only an unowned session's restricted ID/revision and exposes no world content before confirmation. A mutable prepare binds the current complete target/resource state and returns an opaque short-lived plan. Commit carries the plan token and a UUID idempotency key. Factory observations expose both `stateHash` for complete mutable device state and `endpointStateHash` for build connections. Build source/destination requests use `endpointStateHash`, which binds identity, pose, and existing connections without becoming stale solely because a miner, belt, or assembler advances normal production.

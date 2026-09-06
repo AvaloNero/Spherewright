@@ -32,6 +32,8 @@ main 已增加只读 `spherewright_get_foundry_plan`：从目标产量计算多�
 
 ### 0.4 开发中的蓝图与升级
 
+普通2011/2012分拣器建造可指定 `initialSorterFilterItemId`，让过滤随原生预建筑在第一次取货前生效；预检返回计划过滤，建成后核对过滤标记及两端连接。默认0仍为无过滤，事后配置不能消除已经进仓的混料。该修复目前为0.4源码/离线验证，安装与实机验收状态见[IFX-040](./docs/incident-fix-log.md#ifx-040--普通建造缺少初始过滤事后配置前已发生混料)，不包含在已发布0.3.3中。
+
 新增的显式蓝图布局可与Foundry物料意图组合为含全部建材、内部流向和逐对象步骤的有限计划，并复用原来的施工/取消/续建入口。输送预算使用原生带速与普通2011/2012分拣器的跨格往返时间约束流量；未知速率和高级堆叠分拣器阻止此组合计划通过，但不缩减普通蓝图的独立支持范围。它不是任意自动布局，也不把满电单件理论预算当作公平分流或实测吞吐。普通2011/2012分拣器另有受控正常拆除，允许缺端修复但拒绝错配的存在边，核对货物count/inc及其他连接。空载和携1件金刚石的2011拆除、分别重建及普通保存已在本机验证；2012拆除、非零inc货物、修复后恢复、新输送预算和完整模块施工仍待同批实机验收。
 
 蓝图支持普通未堆叠仓储箱2101，完整保留禁用格数、默认/过滤模式和逐格过滤；**不复制库存**。实体详情区分仓储格子与建筑连接口，设置变化会使旧选择哈希失效。该仓储施工扩展仍待本机复制验收，不代表已发布包具有该能力。
@@ -118,6 +120,8 @@ Unreleased v0.4 development also includes bounded native blueprint inspection/ex
 Development site previews also expose an independent advisory native-coverage/full-base-load power assessment, including existing peak loads and newly energized consumers; it is not sustainable fuel proof or permission to build. Governor can retain a pre-execution declaration in the current session and measure the union of valid game-tick windows afterward. It keeps target-chain findings separate from unattributed planet warnings and never turns an inventory observation interval into a production window. Neither helper's offline tests replace the outstanding local acceptance gates.
 
 An optional Governor `parallelExpansionBlueprint` reuses the existing full Foundry budget for the additional rate (target minus measured nonzero baseline), including every explicit module object, native site, full-base-load power and rated transport. Cost scopes disclose unplanned external infrastructure rather than treating it as free. The returned intent/construction hash goes through the existing fresh finite-build protocol; the comparison remains read-only, and post-expansion observation retains the original locked declaration without resubmitting the layout. This new comparison is source/offline evidence, not completed live expansion or a new package.
+
+Unreleased 0.4 ordinary sorter construction also accepts `initialSorterFilterItemId`, installed through the native prebuild before the first pickup. A nonzero request requires an exact filter echo before MCP exposes its plan; a mixed/older Plugin cannot silently produce an unfiltered build. Default0 remains unfiltered. Offline tests pass; matching-build deployment and live acceptance remain pending in [IFX-040](./docs/incident-fix-log.md#ifx-040--普通建造缺少初始过滤事后配置前已发生混料). This does not clean existing stock or guarantee delivery through a mixed belt.
 
 ## Architecture
 

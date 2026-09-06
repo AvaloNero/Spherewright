@@ -444,6 +444,8 @@
 
 - 首见：2026-09-07，767安装态供水旁路。本局早期已有空源先过滤经验，此次将其产品化缺口单独登记。
 - 症状：2280在24306579建成后默认无过滤，24307575仓2268已有水13/塑料8/油4；至24313451才独立配置filter1000，之后仓仍混有水19/塑料106/油13/氢34。没有清仓或注入，760仍未恢复。
-- 根因：当前`PrepareBuildRequest`和MCP建造签名都没有初始过滤参数；只有事后`prepare_configure_building`且须等待空载。活跃混料源在这段间隔内照常输送，过去“空源先过滤”经验没有被此次执行遵守。另建两座仓反映端到端布局预检不足，不是原生建造扣料错误。
-- 修复方向：复用原生BuildPreview.filterId→PrebuildData.filterId→正常施工NewInserterComponent路径，保留科技/材料/几何/双端/幂等门；prepare与commit绑定过滤，预建筑和完工均复读。不得用建成后直接改货物、暂停游戏或自动拆仓弥补。
-- 当前状态：`open`，代码开发中，尚未构建验收或部署；本条不是live修复通过。原始十写已核销，业务施工继续冻结。关联EXP-065/074/217与存档日记001。
+- 根因：事发767安装态的`PrepareBuildRequest`和MCP建造签名都没有初始过滤参数；只有事后`prepare_configure_building`且须等待空载。活跃混料源在这段间隔内照常输送，过去“空源先过滤”经验没有被此次执行遵守。另建两座仓反映端到端布局预检不足，不是原生建造扣料错误。
+- 已实现：新增普通2011/2012建造参数 `initialSorterFilterItemId`（默认0），仅接受有界、存在且解锁的过滤物品。复用原生 BuildPreview.filterId→PrebuildData.filterId→正常施工 NewInserterComponent 路径，保留科技/材料/几何/双端/幂等门；prepare 与 commit 的精确计划指纹绑定过滤，原生预建筑和完工 filter/sign 均复读。没有建成后改货物、暂停游戏或自动拆仓。
+- 兼容防护：新 MCP 对非零过滤必须收到完全相同的 `plannedSorterFilterItemId`，旧/混装 Plugin 无回显或回显不同时返回 `BRIDGE_NOT_READY`，不暴露旧 plan/token。默认0保持旧请求/响应兼容；直接 Bridge 调用方也须执行该回显检查。包内指南同步要求先过滤、端到端布局和复用已建对象，并保留混带头部堵塞的限制。
+- 离线验证：新增25 Core、4 Contracts、7 MCP回归；Debug/Release 共991项（27/920/44）通过，完整Release零警告/错误。真实源码MCP握手保持64 tools/1 resource，资源正文与指南一致，退出及stdout检查通过；不是发行ZIP或跨电脑验收。
+- 当前状态：`implemented_offline_live_pending`；尚未冷部署或取得初始过滤建造实机结果，旧混仓和供水仍未修复。原始十写已核销，业务施工继续冻结至同批安装及fresh复读。关联EXP-065/074/217与存档日记001。

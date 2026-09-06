@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol.Server;
 using Spherewright.Bridge.Core.Safety;
@@ -318,6 +319,10 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("site.power", contents.Text, StringComparison.Ordinal);
         Assert.Contains("targetChainFindings", contents.Text, StringComparison.Ordinal);
         Assert.Contains("separate inventory observation interval", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("initialSorterFilterItemId", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("Later configuration cannot undo contamination", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("head-of-line blocking", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("reuse the already built objects", contents.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -339,6 +344,64 @@ public sealed class SpherewrightToolsTests
 
         Assert.Contains(AgentPlaybookResources.OpeningMovementUri, commitNewGame.ProtocolTool.Description, StringComparison.Ordinal);
         Assert.Equal(AgentPlaybookResources.OpeningMovementUri, playbookDescriptor.Uri);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1000)]
+    public async Task BuildMapsInitialSorterFilterAndPreservesEndpointAndPlayerBindings(int filter)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "owned-session", 104, 2011, "fresh-player",
+            sourceObjectId: 10, expectedSourceStateHash: "fresh-source", destinationObjectId: 20,
+            expectedDestinationStateHash: "fresh-destination", initialSorterFilterItemId: filter);
+        Assert.False(result.IsError);
+        var request = Assert.IsType<PrepareBuildRequest>(bridge.LastBuildRequest);
+        Assert.Equal(filter, request.InitialSorterFilterItemId);
+        Assert.Equal("fresh-player", request.ExpectedPlayerStateHash);
+        Assert.Equal("fresh-source", request.ExpectedSourceStateHash);
+        Assert.Equal("fresh-destination", request.ExpectedDestinationStateHash);
+        Assert.Equal(10, request.SourceObjectId);
+        Assert.Equal(20, request.DestinationObjectId);
+    }
+
+    [Fact]
+    public void InitialSorterFilterIsDiscoverableWithContaminationWarning()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tool = Assert.Single(provider.GetServices<McpServerTool>(),
+            value => value.ProtocolTool.Name == "spherewright_prepare_build").ProtocolTool;
+        Assert.True(tool.InputSchema.GetProperty("properties").TryGetProperty("initialSorterFilterItemId", out _));
+        Assert.Contains("before the first pickup", tool.Description);
+        Assert.Contains("later configuration cannot undo contamination", tool.Description);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(1115)]
+    public async Task OldOrMismatchedPluginCannotExposeAnUnfilteredConstructionToken(int? echo)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult()) { OmitBuildFilterEcho = !echo.HasValue, BuildFilterEcho = echo };
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2011, "player",
+            initialSorterFilterItemId: 1000);
+        Assert.True(result.IsError);
+        var content = result.StructuredContent!.Value;
+        Assert.False(content.GetProperty("success").GetBoolean());
+        Assert.Equal(BridgeErrorCodes.BridgeNotReady, content.GetProperty("error").GetProperty("code").GetString());
+        Assert.Equal(JsonValueKind.Null, content.GetProperty("result").ValueKind);
+    }
+
+    [Fact]
+    public async Task LegacyUnfilteredBuildDoesNotRequireTheNewResponseField()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult()) { OmitBuildFilterEcho = true };
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2011, "player");
+        Assert.False(result.IsError);
+        Assert.Equal(0, bridge.LastBuildRequest!.InitialSorterFilterItemId);
     }
 
     [Fact]
@@ -953,6 +1016,10 @@ public sealed class SpherewrightToolsTests
 
         public PrepareConfigureBuildingRequest? LastConfigureRequest { get; private set; }
 
+        public PrepareBuildRequest? LastBuildRequest { get; private set; }
+        public bool OmitBuildFilterEcho { get; set; }
+        public int? BuildFilterEcho { get; set; }
+
         public PrepareDismantleRequest? LastDismantleRequest { get; private set; }
 
         public PrepareLogisticsStationFleetTransferRequest? LastFleetTransferRequest { get; private set; }
@@ -1199,7 +1266,16 @@ public sealed class SpherewrightToolsTests
         public Task<BridgeCallResult<PreparedNormalAction>> PrepareBuildAsync(
             string sessionId,
             PrepareBuildRequest request,
-            CancellationToken cancellationToken) => Prepared(sessionId, NormalActionKinds.Build);
+            CancellationToken cancellationToken)
+        {
+            LastBuildRequest = request;
+            LastSessionId = sessionId;
+            return Task.FromResult(BridgeCallResult<PreparedNormalAction>.Succeeded(new PreparedNormalAction
+            {
+                Prepared = true, ActionKind = NormalActionKinds.Build, PlanToken = "plan",
+                PlannedSorterFilterItemId = OmitBuildFilterEcho ? null : BuildFilterEcho ?? request.InitialSorterFilterItemId,
+            }));
+        }
 
         public Task<BridgeCallResult<NormalActionCommitResult>> CommitBuildAsync(
             string sessionId,

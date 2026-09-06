@@ -38,6 +38,10 @@ internal sealed partial class NormalGameActionCoordinator
             return InvalidPlan("The requested runtime item is not a placeable building.");
         }
 
+        var filterError = ValidateInitialSorterFilter(item, request.InitialSorterFilterItemId);
+        if (filterError is not null)
+            return GameCallResult<PreparedNormalAction>.Failed(filterError);
+
         var player = GameMain.mainPlayer;
         var factory = GameMain.localPlanet?.factory;
         if (player?.package is null || factory is null || player.controller?.actionBuild is null)
@@ -138,6 +142,8 @@ internal sealed partial class NormalGameActionCoordinator
         if (prepared.Success && prepared.Value is not null)
         {
             prepared.Value.BuildKind = preparation.Kind;
+            prepared.Value.PlannedSorterFilterItemId = preparation.Kind == NormalBuildKinds.Inserter
+                ? preparation.Steps[0].FilterItemId : (int?)null;
             prepared.Value.SourceObjectId = preparation.SourceObjectId > 0 ? preparation.SourceObjectId : (int?)null;
             prepared.Value.DestinationObjectId = preparation.DestinationObjectId > 0
                 ? preparation.DestinationObjectId
@@ -403,6 +409,7 @@ internal sealed partial class NormalGameActionCoordinator
                     sourcePoint.Slot,
                     destinationPoint.ObjectId,
                     destinationPoint.Slot);
+                step.FilterItemId = request.InitialSorterFilterItemId;
                 if (TryValidateInserterBuild(factory, player, item, step, out var accepted, out last))
                 {
                     var result = BuildPreparation.Succeeded(NormalBuildKinds.Inserter, new[] { accepted });
@@ -941,6 +948,12 @@ internal sealed partial class NormalGameActionCoordinator
     {
         accepted = candidate;
         rejection = string.Empty;
+        var filterError = ValidateInitialSorterFilter(item, candidate.FilterItemId);
+        if (filterError is not null)
+        {
+            rejection = filterError.Message;
+            return false;
+        }
         // Vanilla DeterminePreviews rejects TooSkew BEFORE CheckBuildConditions.
         // We enumerate only exact explicit slots, not its belt offset-search branches.
         if (candidate.InputObjectId <= 0 || candidate.InputObjectId >= factory.entityCursor
@@ -986,7 +999,8 @@ internal sealed partial class NormalGameActionCoordinator
             var preview = CreatePreview(candidate, item);
             tool.buildPreviews.Add(preview);
             var valid = tool.CheckBuildConditions();
-            if (!valid || preview.condition != EBuildCondition.Ok || preview.coverObjId != 0)
+            if (!valid || preview.condition != EBuildCondition.Ok || preview.coverObjId != 0
+                || preview.filterId != candidate.FilterItemId)
             {
                 rejection = $"DSP inserter validation returned {preview.condition}.";
                 return false;
@@ -1164,6 +1178,10 @@ internal sealed partial class NormalGameActionCoordinator
             throw new InvalidOperationException("The normal build UI acquired preview state during commit.");
         }
 
+        foreach (var step in action.Plan.BuildSteps)
+            if (ValidateInitialSorterFilter(item, step.FilterItemId) is not null)
+                throw new InvalidOperationException("The prepared initial sorter filter is no longer supported or unlocked.");
+
         List<BuildPreview> previews;
         Action create;
         Action cleanup;
@@ -1288,6 +1306,16 @@ internal sealed partial class NormalGameActionCoordinator
                 if (preview.objId >= 0)
                 {
                     throw new InvalidOperationException("DSP did not return an ordinary prebuild object ID for every step.");
+                }
+
+                if (action.Plan.BuildKind == NormalBuildKinds.Inserter)
+                {
+                    var prebuildId = -preview.objId;
+                    if (prebuildId <= 0 || prebuildId >= factory.prebuildCursor || prebuildId >= factory.prebuildPool.Length
+                        || factory.prebuildPool[prebuildId].id != prebuildId
+                        || factory.prebuildPool[prebuildId].protoId != item.ID
+                        || factory.prebuildPool[prebuildId].filterId != action.Plan.BuildSteps[0].FilterItemId)
+                        throw new InvalidOperationException("Native sorter prebuild identity or initial filter readback failed; do not replay construction.");
                 }
 
                 action.PrebuildIds.Add(-preview.objId);
@@ -1431,6 +1459,11 @@ internal sealed partial class NormalGameActionCoordinator
             }
 
             var step = plan.BuildSteps[0];
+            if (!IsSorterFilterApplied(entityIds[0], step.FilterItemId))
+            {
+                rejection = "The built sorter did not retain its exact prepared initial filter and native sign.";
+                return false;
+            }
             if (!ObjectConnectionMatches(
                     factory,
                     plan.SourceObjectId,
@@ -2501,9 +2534,17 @@ internal sealed partial class NormalGameActionCoordinator
         ref var sign = ref factory.entitySignPool[entityId];
         return inserter.id == entity.inserterId
                && inserter.entityId == entityId
-               && inserter.filter == filterItemId
-               && sign.iconId0 == (uint)filterItemId
-               && sign.iconType == (filterItemId > 0 ? 1u : 0u);
+               && SorterBuildFilterPolicy.MatchesReadback(filterItemId, inserter.filter, sign.iconId0, sign.iconType);
+    }
+
+    private static BridgeError? ValidateInitialSorterFilter(ItemProto item, int filterItemId)
+    {
+        var existingInRange = filterItemId > 0 && filterItemId <= short.MaxValue && LDB.items.Select(filterItemId) is not null;
+        var code = SorterBuildFilterPolicy.Validate(item.ID, item.prefabDesc.isInserter, filterItemId,
+            existingInRange, existingInRange && GameMain.history.ItemUnlocked(filterItemId));
+        return code is null ? null : BridgeError.Create(code,
+            "A nonzero initialSorterFilterItemId requires an existing unlocked item and an ordinary2011/2012 sorter; zero means unfiltered.",
+            false, "Inspect the runtime catalog and exact endpoints, then prepare with a supported initial filter before connecting a mixed source.");
     }
 
     private static bool IsLogisticsStationStorageConfigurationApplied(
@@ -2908,6 +2949,7 @@ internal sealed partial class NormalGameActionCoordinator
             lrot = step.Rotation,
             lrot2 = step.Rotation2,
             tilt = step.Tilt,
+            filterId = step.FilterItemId,
             inputObjId = step.InputObjectId,
             outputObjId = step.OutputObjectId,
             inputFromSlot = step.InputFromSlot,
@@ -3078,6 +3120,7 @@ internal sealed partial class NormalGameActionCoordinator
     private sealed class BuildStepPlan
     {
         public int ItemId { get; private set; }
+        public int FilterItemId { get; set; }
         public Vector3 Position { get; private set; }
         public Quaternion Rotation { get; private set; }
         public Vector3 Position2 { get; private set; }
@@ -3147,6 +3190,7 @@ internal sealed partial class NormalGameActionCoordinator
             var result = new BuildStepPlan
             {
                 ItemId = template.ItemId,
+                FilterItemId = preview.desc.isInserter ? preview.filterId : 0,
                 Position = preview.lpos,
                 Rotation = preview.lrot,
                 Position2 = preview.lpos2,
@@ -3176,6 +3220,7 @@ internal sealed partial class NormalGameActionCoordinator
         public bool EquivalentTo(BuildStepPlan other)
         {
             return ItemId == other.ItemId
+                   && FilterItemId == other.FilterItemId
                    && Vector3.Distance(Position, other.Position) <= 0.01f
                    && Vector3.Distance(Position2, other.Position2) <= 0.01f
                    && Quaternion.Angle(Rotation, other.Rotation) <= 0.1f
@@ -3198,6 +3243,7 @@ internal sealed partial class NormalGameActionCoordinator
         public void AppendFingerprint(ICollection<object?> fields)
         {
             fields.Add(ItemId);
+            fields.Add(FilterItemId);
             fields.Add(Position.x);
             fields.Add(Position.y);
             fields.Add(Position.z);

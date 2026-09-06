@@ -5,6 +5,7 @@ using ModelContextProtocol.Server;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Diagnostics;
+using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Journals;
 using Spherewright.Contracts.Resources;
@@ -476,7 +477,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Uses DSP's normal click/path/inserter validators for an unlocked building already in inventory. Inserter candidates additionally require facing straight native slots; TooSkew, bent or offset-only candidates are rejected, never repaired by moving existing buildings. Bound endpoints use endpointStateHash so normal cargo flow does not invalidate unchanged topology. Prepare creates no prebuild and consumes nothing.")]
+    [Description("Uses DSP's normal click/path/inserter validators for an unlocked building already in inventory. For ordinary2011/2012 sorters, set initialSorterFilterItemId to an unlocked item BEFORE connecting a mixed source: native construction installs the filter before the first pickup, with plannedSorterFilterItemId and final sign/filter readback. Zero means unfiltered; later configuration cannot undo contamination. Inserter candidates require facing straight native slots; TooSkew, bent or offset-only candidates are rejected, never repaired by moving existing buildings. Bound endpoints use endpointStateHash so normal cargo flow does not invalidate unchanged topology. Prepare creates no prebuild and consumes nothing.")]
     public static async Task<CallToolResult> PrepareBuildAsync(
         IBridgeClient bridgeClient,
         string sessionId,
@@ -499,6 +500,7 @@ public static partial class SpherewrightTools
         float? pathEndZ = null,
         float pathLength = 6f,
         int stateHashVersion = 1,
+        int initialSorterFilterItemId = 0,
         CancellationToken cancellationToken = default)
     {
         var result = await bridgeClient.PrepareBuildAsync(
@@ -507,6 +509,7 @@ public static partial class SpherewrightTools
             {
                 PlanetId = planetId,
                 BuildingItemId = buildingItemId,
+                InitialSorterFilterItemId = initialSorterFilterItemId,
                 PreferredDistance = preferredDistance,
                 PreferredPosition = CreateOptionalVector(preferredPositionX, preferredPositionY, preferredPositionZ),
                 PreferredYaw = preferredYaw,
@@ -522,6 +525,14 @@ public static partial class SpherewrightTools
                 StateHashVersion = stateHashVersion,
             },
             cancellationToken).ConfigureAwait(false);
+        // Mixed-cohort installs must not silently turn a requested filter into a
+        // legacy unfiltered plan. Do not expose that plan's commit capability.
+        if (initialSorterFilterItemId > 0 && result.Success
+            && result.Value?.PlannedSorterFilterItemId != initialSorterFilterItemId)
+            result = BridgeCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
+                BridgeErrorCodes.BridgeNotReady,
+                "The installed Plugin did not confirm the requested initial sorter filter; no construction token is exposed.",
+                false, "Install matching Plugin/MCP files after a normal save and shutdown, then fresh-read and prepare again. Do not commit the unconfirmed plan."));
         return ToToolResult(result, "One owned-item construction plan prepared through DSP's build validator; no prebuild exists yet.");
     }
 
@@ -532,7 +543,7 @@ public static partial class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Consumes one owned building item through BuildTool_Click.CreatePrebuilds and returns a pollable action. Spherewright never calls BuildFinally; normal construction drones must finish it.")]
+    [Description("Consumes the prepared owned-item budget through the corresponding native click/path/inserter CreatePrebuilds and returns a pollable action. A prepared initial sorter filter is checked on the prebuild and completed entity. Spherewright never calls BuildFinally; normal construction drones must finish every step. Poll actionId to terminal before continuing.")]
     public static async Task<CallToolResult> CommitBuildAsync(
         IBridgeClient bridgeClient,
         string sessionId,

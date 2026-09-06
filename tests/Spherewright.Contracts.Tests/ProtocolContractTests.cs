@@ -22,6 +22,27 @@ public sealed class ProtocolContractTests
     };
 
     [Fact]
+    public void OldBuildRequestStillMeansUnfilteredAndNewFilterRoundTrips()
+    {
+        var old = JsonSerializer.Deserialize<PrepareBuildRequest>("{\"buildingItemId\":2011}", JsonOptions)!;
+        Assert.Equal(0, old.InitialSorterFilterItemId);
+        old.InitialSorterFilterItemId = 1000;
+        var copy = JsonSerializer.Deserialize<PrepareBuildRequest>(JsonSerializer.Serialize(old, JsonOptions), JsonOptions)!;
+        Assert.Equal(1000, copy.InitialSorterFilterItemId);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(1000)]
+    public void PreparedBuildDisclosesFilterWithoutConfusingAbsentAndUnfiltered(int? filter)
+    {
+        var prepared = new PreparedNormalAction { PlannedSorterFilterItemId = filter };
+        var copy = JsonSerializer.Deserialize<PreparedNormalAction>(JsonSerializer.Serialize(prepared, JsonOptions), JsonOptions)!;
+        Assert.Equal(filter, copy.PlannedSorterFilterItemId);
+    }
+
+    [Fact]
     public void BeltCargoUnavailableDoesNotSerializeAsObservedZero()
     {
         var snapshot = new FactoryEntitySnapshot { BeltCargo = new BeltCargoSnapshot { ReasonCode = "cargo_path_unavailable" } };

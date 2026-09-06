@@ -183,6 +183,8 @@ Overseer 部分保留的 live 覆盖缺口是真实 carrier 连续 600 game tick
 
 ### Governor 验收门
 
+2026-09-07 / 1144安装态复验：同批冷部署和protected resume成功、自动重存25092923；761容量/预约设置跨保存恢复一致。775 set-bans30在25142861的即时DTO与2280错误哈希域的非重试拒绝均有本机原始证据。15m Move成功，accepted7保留；外侧水带仅原生放置prepare通过，端点连接及持续供水/钛晶石/黄糖仍未证明。下面较早段落的“待冷部署”保留当时截面，不覆盖本次有限正例，也不缩减运行模块/三级链/2×十分钟/准备清单/最终双包门。
+
 2026-09-07 / 1144-test调用诊断：MCP参数与指南明确sorter-filter采用根configurationStateHash，storage-capacity仍采用完整stateHash。可确证的错误域不再误报可重试现场变化；未知来源不匹配仍要求fresh read。1144项Debug/Release、完整Release零警告错误与源码MCP64 tools/1 resource/32678字符指南通过；1066运行态的新诊断和1132即时证据仍待冷部署/live。此修复不改变写入语义，也不抵扣下列生产/扩产/整包验收门。
 
 2026-09-07 / 1132-test即时证据：仓配置成功动作保留同tick前后设置/库存，避免把解禁后的正常held货投递误判成动作失败。1132项Debug/Release、完整Release零警告错误及源码MCP64 tools/1 resource通过；新字段未安装/live。游戏三个配置动作已终态核销，但清理阶段遗漏分段观察，只实际开放3073tick、暂收74件，不计6000tick或稳定供水通过；原扩产/准备/打包门不变。

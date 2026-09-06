@@ -9,6 +9,10 @@
 
 ## Bounded blueprint data and native upgrades (2026-09-06)
 
+### Follow-up local live evidence (2026-09-07;1144 installed)
+
+The cohort4faf169 is now cold-installed with four matching hashes after normal save25092892, orderly exit and one Steam launch. Exact-primary resume52d30c80 succeeded and resaved25092923;761 reservation/capacity configuration matched its saved state. A wrong-domain prepare for2280 returned non-retryable INVALID_REQUEST without a commit. Successful775 set-bans30 at25142861 retained the new synchronous DTO: bans0→30, equal before/after30×diamond100/inc0,3 verified connections; external player hash and links were unchanged. These are bounded local positives for the two previously offline slices below, not proof of every storage operation, cross-computer behavior or sustained water/yellow output. The later20-segment outer-water native placement prepare had no commit and did not prove its two inserter endpoints.
+
 ### Configuration hash-domain diagnosis (2026-09-07;1144 source/offline)
 
 No DSP call is added or changed. The existing sorter-filter prepare still binds the root configuration hash, including held cargo, while storage-capacity uses the full snapshot hash. A pure guard now rejects a positively identified current-full-hash request as non-retryable INVALID_REQUEST before the old equality check. An unmatched older hash remains STALE_STATE with neutral recovery wording because its domain cannot be inferred. Missing configuration evidence cannot compare equal to an empty request. The native write path, canonical hashes, idempotency and commit revalidation are unchanged. Eleven Core cases and one MCP schema/playbook case bring Debug/Release to1144; full Release and actual source MCP64 tools/1 resource with the exact32678-character guide pass. Installed1066 behavior motivated this change; the new diagnostic is not live-verified yet (EXP-225/IFX-045).

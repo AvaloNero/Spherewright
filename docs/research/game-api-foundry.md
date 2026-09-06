@@ -21,6 +21,8 @@ Pagination, device buffers and all existing action/endpoint/configuration hash e
 
 Offline validation:70 new Core cases (including1000 deterministic valid local-window comparisons),2 contract cases and updated MCP/playbook coverage checks. Debug/Release879 tests passed (23Contracts/819Core/37MCP); complete current-DSP Release build0 warnings/errors. Real source stdio MCP metadata returned0.4.0.0,64tools/1resource,26107-character exact embedded guide, exit0 and no extra stdout. This is not installed Plugin/local-live or cross-computer validation, and no ZIP was generated for it.
 
+Committed source `a7eb939` independently passed locked restore, the full Release build and879 tests from the exact staged snapshot, excluding local packaging/CI changes. Its pushed Windows Core CI run `34044633226` also succeeded. This does not change the live767 installation or the pending native cargo observation checks.
+
 ### Governor explicit parallel-construction comparison (2026-09-06; source/offline, not installed)
 
 Observation coverage audit (IFX-039): `TryCaptureFactoryEntity` invokes the separate assembler/lab/miner/storage/station/tank/inserter readers, but no belt cargo reader. Empty belt buffers therefore do not establish an empty `CargoPath`. `CaptureLab` uses actual lab recipe/data and keeps research matrix points separate; absence in `list_assemblers` cannot prove no matrix consumer. MCP descriptions and the embedded guide now disclose these existing native-read boundaries, without introducing a new gameplay call.

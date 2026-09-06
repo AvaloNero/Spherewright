@@ -125,6 +125,8 @@ An optional Governor `parallelExpansionBlueprint` reuses the existing full Found
 
 Unreleased 0.4 ordinary sorter construction also accepts `initialSorterFilterItemId`, installed through the native prebuild before the first pickup. A nonzero request requires an exact filter echo before MCP exposes its plan; a mixed/older Plugin cannot silently produce an unfiltered build. Default0 remains unfiltered. Offline tests pass; matching-build deployment and live acceptance remain pending in [IFX-040](./docs/incident-fix-log.md#ifx-040--普通建造缺少初始过滤事后配置前已发生混料). This does not clean existing stock or guarantee delivery through a mixed belt.
 
+Unreleased 0.4 also adds cargo-preserving filter changes for ordinary inserting sorters and explicit single-warehouse `storage-capacity` configuration: native automation limits, existing-item reservations, empty/same-item filters and clearing reservations. No stock is deleted or moved, held cargo still goes to the same destination, and a successful configuration does not imply a recovered production line. The new slice has 1,066 passing offline tests and a clean full Release build; installation/live recovery remain pending. See the [configuration protocol](./docs/protocol.md#warehouse-capacity-and-reservation-configuration-04-development-slice).
+
 ## Architecture
 
 ```text

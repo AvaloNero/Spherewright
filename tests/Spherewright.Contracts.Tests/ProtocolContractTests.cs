@@ -17,6 +17,29 @@ namespace Spherewright.Contracts.Tests;
 public sealed class ProtocolContractTests
 {
     [Fact]
+    public void StorageCapacityFieldsAreOptionalAndRoundTripExplicitUiIntent()
+    {
+        var old = JsonSerializer.Deserialize<PrepareConfigureBuildingRequest>("{}", JsonOptions)!;
+        Assert.Equal("", old.StorageOperation); Assert.Equal(-1, old.StorageBannedGridCount);
+        Assert.Equal(BuildingConfigurationModes.Production, old.Mode);
+        old.Mode = BuildingConfigurationModes.StorageCapacity;
+        old.StorageOperation = StorageConfigurationOperations.SetBans; old.StorageBannedGridCount = 30;
+        var copy = JsonSerializer.Deserialize<PrepareConfigureBuildingRequest>(JsonSerializer.Serialize(old, JsonOptions), JsonOptions)!;
+        Assert.Equal(StorageConfigurationOperations.SetBans, copy.StorageOperation); Assert.Equal(30, copy.StorageBannedGridCount);
+    }
+
+    [Fact]
+    public void StorageConfigurationEchoIsOptionalForOldPlansAndCarriesNoInventory()
+    {
+        var old = JsonSerializer.Deserialize<PreparedNormalAction>("{}", JsonOptions)!;
+        Assert.Null(old.PlannedStorageConfiguration); Assert.Null(old.PlannedStorageOperation);
+        old.PlannedStorageOperation = StorageConfigurationOperations.FilterEmptyOrMatching;
+        old.PlannedStorageConfiguration = new StorageConfigurationSnapshot { GridCount = 2, Mode = "filtered", GridFilterItemIds = new List<int> { 1114, 1000 } };
+        var copy = JsonSerializer.Deserialize<PreparedNormalAction>(JsonSerializer.Serialize(old, JsonOptions), JsonOptions)!;
+        Assert.Equal(new[] { 1114, 1000 }, copy.PlannedStorageConfiguration!.GridFilterItemIds);
+    }
+
+    [Fact]
     public void OptionalSorterGeometryDistinguishesOldDtoAndUnknownVirtualOccupancy()
     {
         var old = JsonSerializer.Deserialize<FactoryEntitySnapshot>("{}", JsonOptions)!;

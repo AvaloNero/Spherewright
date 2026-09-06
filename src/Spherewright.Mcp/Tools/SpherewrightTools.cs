@@ -395,12 +395,12 @@ public static partial class SpherewrightTools
 
     [McpServerTool(
         Name = "spherewright_prepare_configure_building",
-        Title = "Prepare an idle device configuration",
+        Title = "Prepare a device configuration",
         ReadOnly = false,
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Re-reads one exact built device and prepares a production recipe, matrix-research mode, sorter item filter, logistics-station storage slot, station output-belt selector, or logistics-station maximum charge setting without changing it. Sorter mode uses configurationStateHash including carried cargo: cargo-free sorters and ordinary2011/2012 unidirectional sorters in Inserting are supported. Existing cargo is preserved and still goes to the SAME destination; a new filter only governs future pickups and cannot clear a jam. Station modes bind their separate configuration hash and never clear, replace, or fill station inventory.")]
+    [Description("Re-reads one exact built device for a production recipe, matrix-research mode, sorter filter, storage-capacity, station storage slot/output selector/charge setting without changing it. Storage-capacity requires an unstacked2101 warehouse and fresh full stateHash: storageOperation is set-bans (storageBannedGridCount is DISABLED final grids, 0 restores all), lock-occupied, filter-empty-or-matching (filterItemId), or clear-filters. Non-ban operations use storageBannedGridCount=-1. These native UI operations preserve all inventory and do not clear occupied grids or prove throughput; inspect plannedStorageConfiguration. Public buffers omit empty grids, so their offsets are NOT grid indices. Sorter mode uses configurationStateHash including carried cargo: cargo-free sorters and ordinary2011/2012 unidirectional sorters in Inserting are supported. Existing cargo is preserved and still goes to the SAME destination; a new filter only governs future pickups and cannot clear a jam. Station modes bind their separate configuration hash and never clear, replace, or fill station inventory.")]
     public static async Task<CallToolResult> PrepareConfigureBuildingAsync(
         IBridgeClient bridgeClient,
         string sessionId,
@@ -421,6 +421,8 @@ public static partial class SpherewrightTools
         long stationMaximumChargePowerWatts = 0,
         string expectedStationConfigurationStateHash = "",
         int stateHashVersion = 1,
+        string storageOperation = "",
+        int storageBannedGridCount = -1,
         CancellationToken cancellationToken = default)
     {
         var result = await bridgeClient.PrepareConfigureBuildingAsync(
@@ -433,6 +435,8 @@ public static partial class SpherewrightTools
                 Mode = mode,
                 TechId = techId,
                 FilterItemId = filterItemId,
+                StorageOperation = storageOperation,
+                StorageBannedGridCount = storageBannedGridCount,
                 StationStorageIndex = stationStorageIndex,
                 StationBeltSlotIndex = stationBeltSlotIndex,
                 StationBeltStorageIndex = stationBeltStorageIndex,
@@ -446,17 +450,24 @@ public static partial class SpherewrightTools
                 StateHashVersion = stateHashVersion,
             },
             cancellationToken).ConfigureAwait(false);
+        if (mode == BuildingConfigurationModes.StorageCapacity && result.Success
+            && (result.Value?.PlannedStorageOperation != storageOperation
+                || result.Value?.PlannedStorageConfiguration is null))
+            result = BridgeCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
+                BridgeErrorCodes.BridgeNotReady,
+                "The Plugin did not confirm the storage UI operation and expected configuration; no token is exposed.",
+                false, "Install a matching Plugin/MCP cohort, then fresh-read and prepare again."));
         return ToToolResult(result, "Device configuration plan prepared; device and station inventory state are unchanged.");
     }
 
     [McpServerTool(
         Name = "spherewright_commit_configure_building",
-        Title = "Commit an idle device configuration",
+        Title = "Commit a device configuration",
         ReadOnly = false,
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Applies the prepared recipe, matrix-research mode, cargo-preserving sorter filter, logistics-station storage slot, station output-belt selector, or maximum charge setting once through the current-version UI/business path, then rereads the exact device and proves the requested configuration. Sorter cargo, destination, timing and topology remain unchanged by the filter assignment. Station inventory is never directly written.")]
+    [Description("Applies the prepared recipe, matrix-research mode, cargo-preserving sorter filter, single-warehouse storage-capacity operation, station storage slot, station output-belt selector, or maximum charge setting once through the current-version UI/business path. Warehouse operations prove every ordered grid's item/count/inc, filters/bans, identity, topology and player inventory; no items are moved or deleted. Sorter cargo, destination, timing and topology remain unchanged by the filter assignment. Station inventory is never directly written. Poll the returned action to terminal and fresh-read delivery separately.")]
     public static async Task<CallToolResult> CommitConfigureBuildingAsync(
         IBridgeClient bridgeClient,
         string sessionId,

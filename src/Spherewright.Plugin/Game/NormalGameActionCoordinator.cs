@@ -752,6 +752,11 @@ internal sealed partial class NormalGameActionCoordinator
                 ExecuteSaveOnMainThread(action);
                 break;
             case NormalActionKinds.ConfigureBuilding:
+                if (plan.ConfigureMode == BuildingConfigurationModes.StorageCapacity)
+                {
+                    ExecuteStorageConfigurationOnMainThread(action);
+                    break;
+                }
                 ApplyBuildingConfigurationOnMainThread(plan);
                 action.TargetObjectId = plan.EntityId;
                 action.TargetItemId = plan.ConfigureMode == BuildingConfigurationModes.SorterFilter
@@ -1158,6 +1163,8 @@ internal sealed partial class NormalGameActionCoordinator
             case NormalActionKinds.Save:
                 return RevalidateSaveOnMainThread(plan);
             case NormalActionKinds.ConfigureBuilding:
+                if (plan.ConfigureMode == BuildingConfigurationModes.StorageCapacity)
+                    return RevalidateStorageConfigurationOnMainThread(plan);
                 var configureSnapshot = _reader.InspectFactoryEntityOnMainThread(
                     plan.SessionId,
                     new InspectFactoryEntityRequest { PlanetId = plan.PlanetId, ObjectId = plan.EntityId });

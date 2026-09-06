@@ -623,6 +623,44 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public async Task WarehouseOperationMapsNativeDisabledGridCountAndFreshHash()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareConfigureBuildingAsync(bridge, "session-storage", 104, 761, 0,
+            "fresh-storage", mode: BuildingConfigurationModes.StorageCapacity,
+            storageOperation: StorageConfigurationOperations.SetBans, storageBannedGridCount: 30);
+        Assert.False(result.IsError);
+        Assert.Equal(BuildingConfigurationModes.StorageCapacity, bridge.LastConfigureRequest!.Mode);
+        Assert.Equal("fresh-storage", bridge.LastConfigureRequest.ExpectedFactoryStateHash);
+        Assert.Equal(StorageConfigurationOperations.SetBans, bridge.LastConfigureRequest.StorageOperation);
+        Assert.Equal(30, bridge.LastConfigureRequest.StorageBannedGridCount);
+    }
+
+    [Fact]
+    public async Task WarehouseWithoutConfirmedEchoNeverExposesToken()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult()) { OmitStorageEcho = true };
+        var result = await SpherewrightTools.PrepareConfigureBuildingAsync(bridge, "session-storage", 104, 761, 0,
+            "fresh-storage", mode: BuildingConfigurationModes.StorageCapacity,
+            storageOperation: StorageConfigurationOperations.FilterEmptyOrMatching, filterItemId: 1000);
+        Assert.True(result.IsError);
+        var content = result.StructuredContent!.Value;
+        Assert.Equal(BridgeErrorCodes.BridgeNotReady, content.GetProperty("error").GetProperty("code").GetString());
+        Assert.Equal(JsonValueKind.Null, content.GetProperty("result").ValueKind);
+        Assert.Equal(-1, bridge.LastConfigureRequest!.StorageBannedGridCount);
+        Assert.Equal(1000, bridge.LastConfigureRequest.FilterItemId);
+    }
+
+    [Fact]
+    public void WarehouseDescriptionDisclosesNativeCapacityMeaningAndNonGridBufferOffsets()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareConfigureBuildingAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)method.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).Single()).Description;
+        Assert.Contains("DISABLED final grids", description); Assert.Contains("NOT grid indices", description);
+        Assert.Contains("do not clear occupied grids", description); Assert.Contains("lock-occupied", description);
+    }
+
+    [Fact]
     public void SorterFilterDescriptionDisclosesRetainedCargoAndUnchangedDestination()
     {
         var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareConfigureBuildingAsync))!;
@@ -1044,6 +1082,7 @@ public sealed class SpherewrightToolsTests
         public ListResourceNodesRequest? LastResourceListRequest { get; private set; }
 
         public PrepareConfigureBuildingRequest? LastConfigureRequest { get; private set; }
+        public bool OmitStorageEcho { get; set; }
 
         public PrepareBuildRequest? LastBuildRequest { get; private set; }
         public bool OmitBuildFilterEcho { get; set; }
@@ -1326,13 +1365,20 @@ public sealed class SpherewrightToolsTests
             CommitNormalActionRequest request,
             CancellationToken cancellationToken) => Committed(sessionId, request, NormalActionKinds.Dismantle);
 
-        public Task<BridgeCallResult<PreparedNormalAction>> PrepareConfigureBuildingAsync(
+        public async Task<BridgeCallResult<PreparedNormalAction>> PrepareConfigureBuildingAsync(
             string sessionId,
             PrepareConfigureBuildingRequest request,
             CancellationToken cancellationToken)
         {
             LastConfigureRequest = request;
-            return Prepared(sessionId, NormalActionKinds.ConfigureBuilding);
+            var result = await Prepared(sessionId, NormalActionKinds.ConfigureBuilding);
+            if (request.Mode == BuildingConfigurationModes.StorageCapacity && !OmitStorageEcho && result.Value is not null)
+            {
+                result.Value.PlannedStorageOperation = request.StorageOperation;
+                result.Value.PlannedStorageConfiguration = new StorageConfigurationSnapshot
+                    { GridCount = 30, BannedGridCount = request.StorageBannedGridCount, Mode = "default", GridFilterItemIds = Enumerable.Repeat(0, 30).ToList() };
+            }
+            return result;
         }
 
         public Task<BridgeCallResult<NormalActionCommitResult>> CommitConfigureBuildingAsync(

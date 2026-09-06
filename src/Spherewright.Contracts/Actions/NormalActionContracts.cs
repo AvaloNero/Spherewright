@@ -55,9 +55,18 @@ public static class BuildingConfigurationModes
     public const string Production = "production";
     public const string Research = "research";
     public const string SorterFilter = "sorter-filter";
+    public const string StorageCapacity = "storage-capacity";
     public const string LogisticsStationStorage = "logistics-station-storage";
     public const string LogisticsStationBelt = "logistics-station-belt";
     public const string LogisticsStationCharge = "logistics-station-charge";
+}
+
+public static class StorageConfigurationOperations
+{
+    public const string SetBans = "set-bans";
+    public const string LockOccupied = "lock-occupied";
+    public const string FilterEmptyOrMatching = "filter-empty-or-matching";
+    public const string ClearFilters = "clear-filters";
 }
 
 public static class LogisticsStorageLogics
@@ -184,6 +193,10 @@ public sealed class PrepareConfigureBuildingRequest
     public int TechId { get; set; }
 
     public int FilterItemId { get; set; }
+
+    public string StorageOperation { get; set; } = string.Empty;
+
+    public int StorageBannedGridCount { get; set; } = -1;
 
     public int StationStorageIndex { get; set; } = -1;
 
@@ -320,6 +333,10 @@ public sealed class CommitNormalActionRequest
 
 public sealed class PreparedNormalAction
 {
+    public string? PlannedStorageOperation { get; set; }
+
+    public StorageConfigurationSnapshot? PlannedStorageConfiguration { get; set; }
+
     public BlueprintBuildProgress? BlueprintBuild { get; set; }
     public bool Prepared { get; set; }
 

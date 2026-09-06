@@ -1786,6 +1786,11 @@ internal sealed partial class NormalGameActionCoordinator
             return GameCallResult<PreparedNormalAction>.Failed(common.Error);
         }
 
+        if (request.Mode == BuildingConfigurationModes.StorageCapacity)
+            return PrepareStorageConfigurationOnMainThread(requestedSessionId, request, common.Session!);
+        if (!string.IsNullOrEmpty(request.StorageOperation) || request.StorageBannedGridCount != -1)
+            return InvalidPlan("Storage operation parameters require storage-capacity mode.");
+
         if (request.Mode != BuildingConfigurationModes.Production
             && request.Mode != BuildingConfigurationModes.Research
             && request.Mode != BuildingConfigurationModes.SorterFilter

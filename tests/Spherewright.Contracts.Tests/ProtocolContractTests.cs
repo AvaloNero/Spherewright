@@ -17,6 +17,28 @@ namespace Spherewright.Contracts.Tests;
 public sealed class ProtocolContractTests
 {
     [Fact]
+    public void StorageReadbackIsOptionalForOldActionsAndRoundTripsItsInstantBoundary()
+    {
+        var action = JsonSerializer.Deserialize<ActionResultSnapshot>("{}", JsonOptions)!;
+        Assert.Null(action.StorageConfigurationReadback);
+        action.StorageConfigurationReadback = new StorageConfigurationReadback
+        {
+            CapturedAtGameTick = 100, EntityId = 761, Operation = StorageConfigurationOperations.SetBans,
+            ConfigurationBefore = new StorageConfigurationSnapshot { GridCount = 30, BannedGridCount = 30 },
+            ConfigurationAfter = new StorageConfigurationSnapshot { GridCount = 30, BannedGridCount = 0 },
+            BuffersBefore = new List<FactoryBufferSnapshot> { new() { ItemId = 1120, Count = 1, Inc = 2 } },
+            BuffersAfter = new List<FactoryBufferSnapshot> { new() { ItemId = 1120, Count = 1, Inc = 2 } },
+            VerifiedConnectionCount = 5,
+        };
+        var copy = JsonSerializer.Deserialize<ActionResultSnapshot>(JsonSerializer.Serialize(action, JsonOptions), JsonOptions)!;
+        var proof = copy.StorageConfigurationReadback!;
+        Assert.Equal(100, proof.CapturedAtGameTick); Assert.Equal(761, proof.EntityId);
+        Assert.Equal("synchronous_native_configuration_boundary", proof.EvidenceScope);
+        Assert.Equal(30, proof.ConfigurationBefore.BannedGridCount); Assert.Equal(0, proof.ConfigurationAfter.BannedGridCount);
+        Assert.Equal(1, Assert.Single(proof.BuffersAfter).Count); Assert.Equal(2, proof.BuffersAfter[0].Inc);
+    }
+
+    [Fact]
     public void StorageCapacityFieldsAreOptionalAndRoundTripExplicitUiIntent()
     {
         var old = JsonSerializer.Deserialize<PrepareConfigureBuildingRequest>("{}", JsonOptions)!;

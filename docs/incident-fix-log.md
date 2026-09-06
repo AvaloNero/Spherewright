@@ -476,3 +476,12 @@
 - 产品修复：保留owned访问门在前，对读取的0/缺失和Int32.MinValue返回带正确字段/恢复建议的`INVALID_REQUEST`；合法正负ID继续原来的native存在性检查。MCP参数说明和内嵌playbook明确逐方法schema、第一页不足以证明不存在、多次本地字段错误应交主会话处理。
 - 验证：9 Core/1 MCP新增回归；Debug/Release1115项（30 Contracts/1035 Core/50 MCP）、完整Release零警告错误通过。真实源码MCP64 tools/1 resource、31150字符指南一致、退出0/stdout纯净。当前游戏仍1066；新错误码分支尚未冷部署/live，不冒充存档或游戏数据修复。
 - 状态：`request_validation_offline_verified_caller_corrected`；关联EXP-223。
+
+## IFX-044 — 成功解禁后正常投递，被跨tick库存相等断言误判为失败
+
+- 首见：2026-09-07，1066安装态761的set-bans0在25011091成功，稍后库存氢1→4、原三只held氢正常入仓，Luna的外部断言却要求库存不变。
+- 根因：Plugin已在原生配置调用内证明逐格保全，但公开terminal没有固定该瞬间的结构化配置/库存；调用者把后续fresh inspect当成同一时刻。已接受动作本身没有失败。
+- 处置：主会话逐raw核对terminal、设置/连接/玩家和三只原持货去向后交回Luna继续，不重放、不把本地异常变成隔离或换档。
+- 产品修复：可选storageConfigurationReadback记录即时tick、操作、前后设置和独立非空buffer；只在现有native不变量全部通过后生成，Core再次验证实际格投影。不新增写入口，不改state hash/幂等/unknown；指南和MCP描述明确跨tick差异须另核物流。
+- 验证：1132项Debug/Release（31 Contracts/1050 Core/51 MCP）、完整Release零警告错误、源码MCP64 tools/1 resource/32057字符指南一致/stdout纯净；新增字段未冷部署/live。旧set-bans动作的真实投递证据不冒充新字段实机通过。
+- 状态：`instant_readback_offline_verified_live_pending`；关联EXP-224。

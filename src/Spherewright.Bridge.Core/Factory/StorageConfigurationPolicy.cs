@@ -91,6 +91,34 @@ public static class StorageConfigurationPolicy
         GridCount = state.Grids.Count, BannedGridCount = state.Bans, Mode = state.Mode,
         GridFilterItemIds = state.Grids.Select(grid => grid.Filter).ToList(),
     };
+
+    // This verifies the pure ordered-grid projection; the Plugin must additionally prove
+    // native identity, unchanged connections and player invariants BEFORE exposing this evidence.
+    public static StorageConfigurationReadback CreateReadback(int entityId, long gameTick,
+        StorageUiState before, StorageUiState actualAfter, string operation,
+        int filterItemId, int bannedGridCount, IReadOnlyDictionary<int, int> stackSizes,
+        int verifiedConnectionCount)
+    {
+        if (entityId <= 0 || gameTick < 0 || verifiedConnectionCount < 0 || verifiedConnectionCount > 16)
+            throw new ArgumentException("storage_readback_identity_invalid");
+        var expected = Project(before, operation, filterItemId, bannedGridCount, stackSizes);
+        Validate(actualAfter, stackSizes);
+        if (Fingerprint(actualAfter) != Fingerprint(expected))
+            throw new ArgumentException("storage_readback_projection_mismatch");
+        return new StorageConfigurationReadback
+        {
+            CapturedAtGameTick = gameTick, EntityId = entityId, Operation = operation,
+            ConfigurationBefore = ToSnapshot(before), ConfigurationAfter = ToSnapshot(actualAfter),
+            BuffersBefore = ReadbackBuffers(before), BuffersAfter = ReadbackBuffers(actualAfter),
+            VerifiedConnectionCount = verifiedConnectionCount,
+        };
+    }
+
+    private static List<FactoryBufferSnapshot> ReadbackBuffers(StorageUiState state) => state.Grids
+        .Where(grid => grid.Count > 0).Select(grid => new FactoryBufferSnapshot
+        {
+            Role = "storage", ItemId = grid.ItemId, Count = grid.Count, Inc = grid.Inc,
+        }).ToList();
 }
 
 public sealed class StorageUiState

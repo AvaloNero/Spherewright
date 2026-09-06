@@ -79,7 +79,7 @@ internal sealed partial class NormalGameActionCoordinator
         var plan = action.Plan;
         if (RevalidateStorageConfigurationOnMainThread(plan) is not null
             || !TryCaptureConfigurableStorage(plan.EntityId, plan.ConfigureFilterItemId,
-                out var storage, out var before, out _) || plan.StorageExpectedAfter is null)
+                out var storage, out var before, out var stackSizes) || plan.StorageExpectedAfter is null)
             throw new InvalidOperationException("Storage configuration lost its exact pre-write proof.");
         var factory = GameMain.localPlanet!.factory;
         var entityBefore = factory.entityPool[plan.EntityId];
@@ -126,6 +126,14 @@ internal sealed partial class NormalGameActionCoordinator
             || !readback.Success || readback.Value is null || readback.Value.EndpointStateHash != expectedEndpoint)
             throw new InvalidOperationException("Storage UI configuration could not prove exact ordered inventory, filters, identity, topology and player preservation.");
         action.TargetObjectId = plan.EntityId;
+        // Retain the immediate boundary. Fresh inspection after terminal can already
+        // include normal inserter delivery, notably the held cargo released by unbanning.
+        action.StorageConfigurationReadback = StorageConfigurationPolicy.CreateReadback(
+            plan.EntityId, GameMain.gameTick, before!, after!, plan.StorageOperation,
+            plan.ConfigureFilterItemId, plan.StorageBannedGridCount, stackSizes!, readback.Value.Connections.Count);
+        foreach (var buffer in action.StorageConfigurationReadback.BuffersBefore
+                     .Concat(action.StorageConfigurationReadback.BuffersAfter))
+            buffer.Name = LDB.items.Select(buffer.ItemId)?.name ?? string.Empty;
         Complete(action, "Native warehouse capacity/filter configuration applied once; ordered item/count/inc, identity, topology and player inventory were preserved. Delivery and throughput require separate observation.");
         action.AfterStateHash = CanonicalStateHash.Combine(BuildingConfigurationModes.StorageCapacity,
             readback.Value.StateHash, StorageConfigurationPolicy.Fingerprint(after!));

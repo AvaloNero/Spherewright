@@ -674,6 +674,35 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public async Task WarehouseInstantReadbackSurvivesMcpAndWarnsAgainstCrossTickEquality()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            ActionResult = new ActionResultSnapshot
+            {
+                ActionId = "storage-config", Terminal = true, Succeeded = true,
+                StorageConfigurationReadback = new StorageConfigurationReadback
+                {
+                    EntityId = 761, CapturedAtGameTick = 100, Operation = StorageConfigurationOperations.SetBans,
+                    BuffersBefore = new List<FactoryBufferSnapshot> { new() { ItemId = 1120, Count = 1 } },
+                    BuffersAfter = new List<FactoryBufferSnapshot> { new() { ItemId = 1120, Count = 1 } },
+                },
+            },
+        };
+        var result = await SpherewrightTools.GetActionResultAsync(bridge, "storage-config", CancellationToken.None);
+        var proof = result.StructuredContent!.Value.GetProperty("result").GetProperty("storageConfigurationReadback");
+        Assert.Equal(100, proof.GetProperty("capturedAtGameTick").GetInt64());
+        Assert.Equal(1, proof.GetProperty("buffersAfter")[0].GetProperty("count").GetInt32());
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.CommitConfigureBuildingAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)method.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).Single()).Description;
+        Assert.Contains("storageConfigurationReadback", description);
+        Assert.Contains("do not require cross-tick equality", description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("synchronous native configuration boundary", guide);
+        Assert.Contains("do not require cross-tick stock equality", guide);
+    }
+
+    [Fact]
     public void SorterFilterDescriptionDisclosesRetainedCargoAndUnchangedDestination()
     {
         var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareConfigureBuildingAsync))!;

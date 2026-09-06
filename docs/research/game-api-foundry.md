@@ -9,6 +9,12 @@
 
 ## Bounded blueprint data and native upgrades (2026-09-06)
 
+### Warehouse configuration instant readback (2026-09-07;1132 source/offline)
+
+The current DLL SHA was rechecked unchanged. No new DSP method is introduced: the already-proved SetBans/SetFilter/UI-mode path and immediate ordered-grid/entity/link/player checks remain unchanged. The successful action now retains a DTO from that synchronous boundary, before ordinary inserter delivery can run in later ticks. Core rechecks actual versus planned native-grid projection and copies separate before/after configuration and nonempty buffer lists; empty reserved metadata is never counted as stock. Identity, topology and player checks are still performed by the Plugin, not claimed by the pure helper.15 new Core tests and one each Contracts/MCP case bring Debug/Release to1132, with full Release zero warnings/errors; source stdio64 tools/1 resource and exact32057-character guide pass. This evidence field is not installed or live-verified yet.
+
+The motivating1066 live action is set-bans0 on761 at25011091: the native call preserved stock, then all three old held hydrogen units arrived before a later25011102 inspect (1→4). Requiring equality between pre-action and later gameplay snapshots caused a caller-side false alarm. There was no failed native action or replay. Retain terminal and the new instant readback when available, then reconcile later flow separately; do not fill missing old-version evidence or treat a temporarily collected surplus as sustainable demand.
+
 ### Detail-only native sorter endpoint geometry (2026-09-07; source/offline, live pending)
 
 The current DLL hash above was reread unchanged. The existing ordinary build adapter already reads `ItemProto.prefabDesc.slotPoses`, transforms each `Pose` by the selected `EntityData.pos/rot`, and uses the transformed forward vector for facing checks. Belt candidates use `Quaternion.AngleAxis(entity.tilt, entity.rot * Vector3.forward) * entity.rot` with four local quarter-turn orientations. The new detail observation copies those same poses; it does not run UI input, move objects or widen the straight-slot subset. `PlanetFactory.ReadObjectConn(int,int,out bool,out int,out int)` indexes the native connection pool with a fixed16 stride and has no local slot/array bounds check. The new reader bounds the slot count to16 and validates `(long)entityId*16+slotCount <= entityConnPool.Length` before these additional native reads.

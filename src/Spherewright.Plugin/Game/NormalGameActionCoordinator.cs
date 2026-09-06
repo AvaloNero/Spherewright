@@ -1441,6 +1441,7 @@ internal sealed partial class NormalGameActionCoordinator
             AfterTargetAmount = action.AfterTargetAmount,
             UpgradeReadback = action.UpgradeReadback,
             ResearchQueueReadback = action.ResearchQueueReadback,
+            StorageConfigurationReadback = action.StorageConfigurationReadback,
             BlueprintBuildId = action.BlueprintBuild?.BuildId,
             BlueprintBuildPhase = action.BlueprintBuild?.Phase,
             BlueprintObjects = action.BlueprintBuild is null ? null : CloneBlueprintObjects(action.BlueprintBuild.Objects),
@@ -2168,6 +2169,7 @@ internal sealed partial class NormalGameActionCoordinator
         public int? AfterTargetAmount { get; set; }
         public UpgradeReadback? UpgradeReadback { get; set; }
         public ResearchQueueReadback? ResearchQueueReadback { get; set; }
+        public StorageConfigurationReadback? StorageConfigurationReadback { get; set; }
         public Spherewright.Bridge.Core.Factory.BlueprintBuildState? BlueprintBuild { get; set; }
         public long LastBlueprintPollTick { get; set; }
         public string? Message { get; set; }

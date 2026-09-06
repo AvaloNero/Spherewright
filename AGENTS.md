@@ -110,6 +110,7 @@ DSP native gameplay systems
 - 导入是显式时间边界：逐档 Journal 从导入时开始，标记历史覆盖不完整；不得根据导入时已有的物品、科技、升级或设备补造此前的“首次”事件。
 - 正常保存只允许当前 owned identity，并调用 DSP 正常保存 API。
 - 健康的计划重启只载入 ticket-bound exact primary；只有隔离恢复可以采用已经在读取 header 时满足最低 tick 的受限 LastExit 路径。
+- 本机 Steam 版冷部署/重启前先复核 EXP-001/002：普通保存并核销终态，正常关闭已确认的 DSP 进程，同批程序集安装及哈希复核，再通过已确认的 Steam `-applaunch 1366540` 启动一次。不得直接启动游戏 EXE；等待真实游戏进程、当前 descriptor 和菜单 ready 后才 fresh prepare protected resume。启动失败不是恢复失败，不消费票据、不重复启动并发实例，也不据此换档。
 - 恢复票据必须一次性、可过期，并有 durable consumed tombstone；恢复后重新生成 session，旧 cursor、plan 和 capability 全失效。
 - 新签发的恢复票据还必须绑定该 owned save 当前已落盘 Journal 的身份、跟踪边界和最小 durable sequence。prepare/commit 在载入前检查，世界采用后再检查一次；Journal 缺失、被重建或序列倒退时不消费票据、不自动保存且不开放游戏写入。旧票据仅为兼容可无此水位，下一次健康保存必须升级为新语义。
 - 星际飞行前单独保存绑定该次飞行的 checkpoint。失败时可反复读取同一 checkpoint；飞行成功后立即撤销 reload capability，并在覆盖主档保存成功后 retire checkpoint，绝不能让旧 checkpoint 回滚后续进度。

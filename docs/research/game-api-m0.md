@@ -6,6 +6,12 @@ Assembly evidence:
 - `Assembly-CSharp.dll` SHA-256: `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`.
 - Inspection tool: ILSpy command line 9.1.0.7988, used only for targeted type/signature inspection. Decompiled game source is not stored in this repository.
 
+## 2026-09-07 existing storage-to-assembler demand selection
+
+Targeted reinspection of the same current DLL confirms the existing native path, not a new Spherewright write primitive: `FactorySystem.SetInserterInsertTarget` sets `careNeeds` for an assembler destination; `InserterComponent.InternalUpdate` obtains that destination's six-item `needs` array and calls `PlanetFactory.PickFrom(uint ioTargetTypedId, int offset, int filter, int[] needs, out byte stack, out byte inc)`. For storage this reaches `StorageComponent.TakeTailItems(ref int itemId, ref int count, int[] needs, out int inc, bool useBan=false)`. With filter0 it searches backwards for any item matching current needs, rather than picking an unrelated item. A filtered sorter additionally restricts the item. No `careNeeds`, component buffer or cargo field is assigned by Spherewright.
+
+This distinction is specific to the real destination: storage-to-belt/storage must not be assumed to inherit a downstream recipe. Existing `sorter-filter` prepare/commit still requires an empty-handed assignment window and exact fresh configuration evidence. `StorageComponent.TakeItem(int,int,out int)`, already used by normal transfer, searches forward; removing13 oil from a later partial stack cannot be assumed to free that grid if an earlier20 stack exists. In the observed thirty-occupied-grid input store, one exactly20-item transfer can free the first oil grid; a second normal transfer must retain all20 in an existing store. This is a bounded deadlock-repair hypothesis, not artificial production/demand, a generally balanced design, or proven sustained live output. EXP-219 records its pending experiment and stop condition.
+
 ## 2026-08-30 ordinary-new-world scope revision
 
 The initial milestone targeted the first red matrix under ordinary gameplay and excluded all sandbox/item-injection/instant-build evidence from completion. Targeted inspection of the same assembly confirmed:

@@ -340,3 +340,22 @@
 - 修复：Core先要求恰好slot1输入/pick、slot0输出/insert两条完整正实体连接，Plugin再逐端反向核对；该守卫复用于prepare、commit重验及同步readback。缺端点、重复/额外槽、错误方向/对象、自连接和未解析虚拟slot均拒绝。没有直接修复游戏线路，也没有撤销已证明的27升级。
 - 验证：11项新回归、Debug/Release共404测试、完整Release零警告错误。修复版实际对一端23在prepare返回BUILD_CONNECTION_INVALID、无commit；两端749升级于22207214成功，filter1101/verifiedConnectionCount2/扣新1返旧1均明确，同步cargo空。保存22213308、正常退出、protected resume后两端与过滤/供电保持，最终保存22221235/J54/54/healthy。旧27的即时铜1守恒仍为独立历史样本，不伪装成最终版带货双端样本。
 - 关联：EXP-028、EXP-190、EXP-193、`BuildingUpgradePolicy.HasCompleteInserterConnections`；状态：`fixed`。
+
+## IFX-030 — 有限蓝图预览把分拣器碰撞体过度拉长
+
+- 首见：2026-09-06，458-test开发Plugin的五对象负例预览后复核当前DLL。
+- 症状：预览报告对象2/3内部碰撞；对象2同时有独立的native `ErrorInserterData`。两种错误不能合并归因为一项，也没有进行施工。
+- 根因：适配器用`span/2 + abs(ext.z) + 1`估计分拣器纵向半尺寸，额外延伸且忽略prefab collider旋转。原生采用`max(.1,span/2+ext.z-.5+.35×带端数量)`，并按两端是否为带调整中心，使用两端朝向up的平均框架与collider quaternion。
+- 修复：新增纯Core几何helper并让Plugin遵循当前DLL实际公式；不放宽已存在实体/预建筑守卫，不把任何native错误强制设为Ok。795的slot/端点几何仍需独立复核。
+- 验证：九项公式/非法维度回归、完整Release零警告错误、487项总测试通过。修复尚未冷部署，尚无正例模块施工；不能声称live原生几何错误已修复。
+- 关联：EXP-197、`NativeInserterColliderGeometry`、`NormalGameActionCoordinator.BlueprintSite`；状态：`fixed_offline_live_pending`。
+
+## IFX-035 — 普通分拣器绕过了原生候选角度选择
+
+- 首见：2026-09-06，554-test五对象金刚石模块导出成功，但两处site对719/720均报ErrorInserterData，没有blueprint commit。
+- 根因：普通建造枚举空闲slot后直接调用CheckBuildConditions；当前原生UI在此前DeterminePreviews中先检查两端面向和相对角度、必要时给TooSkew，后续条件方法不重建这一步。工作中的历史sorter不能因此当作合法蓝图姿态。旧对象具体失败是否同时涉及Refresh位移限制仍待实读，不把推断写成确认。
+- 修复：新增无DLL的保守精确直线端点策略（两设备<14度，带端<11度），进入native preview前验证当前实体池身份；拒绝未实现偏移/弯曲子集。site结果增加两端facing dot只读诊断，保留全部原生失败。无既有对象拆除/改位置/改连接，也不直接修整导出的代码。
+- 验证：15个几何回归及582 Release测试通过；最终身份守卫/文档更新后的全回归与冷部署待复验。历史719/720诊断和正常合法新分拣器施工仍是独立live门。
+- 关联：EXP-205、NativeInserterEndpointGeometry；状态：`fixed_offline_live_pending`。
+
+582-test follow-up：同姿态只读预检的两个output dot为-0.174369559/-0.18947494，input为0.9832634/0.982118845，证实旧输出槽背离另一端；另有965占位。全条件保持拒绝、0蓝图commit。原生合法新sorter施工尚待，不能把诊断成功当成修复实机通过。

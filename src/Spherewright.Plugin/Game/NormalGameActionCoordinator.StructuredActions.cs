@@ -1,5 +1,6 @@
 using Spherewright.Bridge.Core.Safety;
 using Spherewright.Bridge.Core.Logistics;
+using Spherewright.Bridge.Core.Factory;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
@@ -940,6 +941,26 @@ internal sealed partial class NormalGameActionCoordinator
     {
         accepted = candidate;
         rejection = string.Empty;
+        // Vanilla DeterminePreviews rejects TooSkew BEFORE CheckBuildConditions.
+        // We enumerate only exact explicit slots, not its belt offset-search branches.
+        if (candidate.InputObjectId <= 0 || candidate.InputObjectId >= factory.entityCursor
+            || candidate.InputObjectId >= factory.entityPool.Length
+            || candidate.OutputObjectId <= 0 || candidate.OutputObjectId >= factory.entityCursor
+            || candidate.OutputObjectId >= factory.entityPool.Length
+            || factory.entityPool[candidate.InputObjectId].id != candidate.InputObjectId
+            || factory.entityPool[candidate.OutputObjectId].id != candidate.OutputObjectId)
+        {
+            rejection = "The bound inserter endpoints no longer identify completed local entities.";
+            return false;
+        }
+        if (!NativeInserterEndpointGeometry.AcceptsStraightPair(
+                Snapshot(candidate.Position2 - candidate.Position), Snapshot(candidate.Rotation * Vector3.forward),
+                Snapshot(candidate.Rotation2 * Vector3.back),
+                factory.entityPool[candidate.InputObjectId].beltId > 0 || factory.entityPool[candidate.OutputObjectId].beltId > 0))
+        {
+            rejection = "Native inserter endpoint selection requires facing straight slots (TooSkew); offset/bent candidates are not supported by this bounded adapter.";
+            return false;
+        }
         if (!BuildUiIsIdle(player))
         {
             rejection = "The player's normal build UI owns preview state.";

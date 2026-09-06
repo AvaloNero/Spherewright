@@ -2439,6 +2439,30 @@
 - 关联：EXP-027/028/067/190、IFX-028、`BuildingUpgradePolicy.HasCompleteInserterConnections`。
 - 最近复验：2026-09-06（修复版对一端23的合法fresh prepare返回BUILD_CONNECTION_INVALID、无commit；749两端完整升级通过，随后普通保存/关闭/恢复，fresh22224323–32仍双端reciprocal、filter1101、network1/serve1。11项新增回归，404测试与完整Release通过）。
 
+### EXP-197 — 蓝图分拣器碰撞体必须复用实际端点公式，不能混淆原生几何错误
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：当前DSP0.10.34.28529有限蓝图native几何；程序集与离线证据。
+- 当前结论：分拣器half-length、带端中心偏移、两端朝向和prefab collider旋转均遵循当前DLL公式；任意padding可能让相邻正常插入器假冲突。独立native ErrorInserterData仍须按slot/姿态核对，不能通过缩小自有碰撞体掩盖。
+- 直接证据：五对象预览object2/3 overlap触发复核；DLL证明half-length=max(.1,span/2+ext.z-.5+.35×带端数)，而首稿多加1并忽略q。九项Core几何回归通过，原生错误守卫保留；源795几何问题尚未核销。
+- 限制或反例：尚未冷部署本修复或证明正例模块；无证据表明这是一切ErrorInserterData的共同根因。
+- 复验触发：分拣器类型、native几何、星球网格或预览适配变化。
+- 关联：EXP-194、IFX-030、`NativeInserterColliderGeometry`。
+- 最近复验：2026-09-06（完整Release487项/零警告错误；live待验证）。
+
+### EXP-205 — 分拣器原生放置条件不包含此前候选端点的角度筛选
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：当前DLL普通分拣器双端候选和有限蓝图种子选择。
+- 当前结论：只调用CheckBuildConditions不足以复用完整原生放置规则；DeterminePreviews已提前筛选端点朝向并可设TooSkew。当前精确槽适配器补保守直线子集，两设备最大角误差须小于14度，带端小于11度；偏移/弯曲搜索不在子集内，不能通过改条件或移动已有对象强行通过。
+- 直接证据：554-test金刚石五对象导出保留recipe60、两仓设置及全部内部连接；23348926/23348937两处预检均对719/720返回ErrorInserterData，均未commit。当前DLL的DeterminePreviews角度选择及BlueprintUtils.Refresh端点面向/位移检查已逐段核实。新Core纯几何策略覆盖15个朝向/阈值/相对夹角/非法向量回归，Plugin在池索引前重验实体身份，并公开只读端点facing dot诊断。
+- 限制或反例：582-test同姿态实读确认index3/4 output dot分别为-0.174369559/-0.18947494，确有输出槽背离另一端；input分别0.9832634/0.982118845。另有965占位，所以这不是全部现场阻断。旧正常货物流动不能证明蓝图姿态合法。无自动拆除/修复/位置写入，尚无合法新分拣器施工live正例。
+- 复验触发：DLL原生UI、sorter/belt姿态、候选生成、slot语义、蓝图转换或重启续建变化。
+- 关联：EXP-195/203、IFX-035、NativeInserterEndpointGeometry、game-api-foundry.md。
+- 最近复验：2026-09-06（582 Debug/Release和完整Release全过，4/4冷部署并同档恢复；负output dot诊断实读通过，未改原生条件或旧对象，修正后施工待live）。
+
 ## 修订记录
 
 - 2026-09-06：IFX-028最终部署4/4匹配（Plugin3FB233…/Core7199C2…），窗口#5–9分别为protected resume、749单实体升级、保存/正常关闭、protected resume、最终保存，完整action表见当档日记；未提供resume action tick不补造。修复版23一端负例无commit；749消耗2012 1→0/返2011 7→8、双端及filter1101保留，同步cargo空明确披露。恢复后新选区蓝图含3×2011/1×2012/1×2303，5对象/1区域、native signature及code往返hash一致、4条源边界，证明IFX-027白名单解耦未因实际升级回退。MCP58 tools/1 resource与必需双端playbook通过。最终保存22221235，fresh session22224301 revision2/owned/healthy/no blockers、player22224313 Walk/0/3idle/2011=8/2012=0、Journal22224316 54/54/no pending/error、749及723/724在22224323–32双向正确、power22224335 required=served49804。EXP-189/190/193获得限定范围live证据，EXP-027/028缩窄，存档日记索引按账本同步过期状态且不另维护易过时汇总。当前窗口9项accepted，无额外commit；下一项后必须严格十写审计。没有运行模块复制、Governor产量翻倍、新包/异机声明或push/tag/release。

@@ -2,9 +2,13 @@
 
 更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 运行1144-test/4faf169，第8写正常保存25258840；accepted=8保留，提前完整审计healthy/J55/55/Walk0/400MJ/2280built/0prebuild、三网ratio1。仓配置即时证据及错误哈希域诊断已有本机正例；新的1201-test单belt微调接点适配完成离线回归和完整构建，等待冷部署。775已限制自动输入但仍存3000金刚石，不是送达修复。15m短移成功，20段外侧水带只有放置prepare，没有commit或两端接线证明。761预约设置跨保存恢复保持，持续水/钛晶石/黄糖供给仍未恢复。运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成；9月5日旧0.4 ZIP不是本轮完成包。
+当前截面：同一 `owned-world-001` 已冷部署1201-test/0c59dab，第9写 protected resume 成功、自动重存25258871。accepted=9保留；fresh healthy/J55/55/Walk0/400MJ/0prebuild、三网ratio1，29个关键对象身份/姿态/连接/仓设置与保存前一致。四个有界接线prepare仍被拒绝，无build commit或偏移接线实机正例。775已限制自动输入但仍存3000金刚石；761预约设置保持，持续水/钛晶石/黄糖供给仍未恢复。运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成；9月5日旧0.4 ZIP不是本轮完成包。
 
 ## 结论与证据边界
+
+2026-09-07 / 1201同批冷部署与第9写：正常关闭已保存的1144进程，四个DLL与0c59dab Release逐一哈希相等，Steam只启动一次。首次resume prepare因菜单尚未就绪返回BRIDGE_NOT_READY，无accepted/action；随后fresh prepare同一票据，`ee4c272a-699b-4d05-9c37-11906002ebd5` completed/succeeded/terminal，起止tick为null，自动重存25258871。主会话核raw：25261779/rev1 owned104/healthy/和平/非沙盒/1×/0blocker/checkpoint，25261795 Walk0/400MJ/空手搓/无施工，25261800 Journal55/55 durable、无pending/error，独立0prebuild和三网ratio1。29个关键详情的身份/位置/旋转/连接及完整仓设置与第8写后相等；没有把详情列表当成新的全厂分页审计。
+
+额外763/764/776/777输入检查表明，763为无过滤、764为油1114，776为钛晶石1118、777为金刚石1112；760只有两条入边并不证明缺少某一专用水分拣器，水是否送达仍要依实际物流验证。主会话在新安装态fresh prepare753→2219、2246→761以及两个明确弯道候选2277→761、753→2232，四者均BUILD_CONNECTION_INVALID/TooSkew，无commit、无扣料，不再扩散同类候选。1201安装/恢复和负例已验证，新微调接点的成功施工尚未证明；不能将它宣传为已解决本现场几何。accepted8→9不归零，下一写仍从10计。
 
 2026-09-07 / 新接点适配离线与重启前八写审计：主会话按当前DLL实现有界单belt接点微调，1201项Debug/Release、完整Release零警告错误、源码MCP64 tools/1 resource/33408字符指南通过，新适配尚未安装/live（EXP-226/IFX-046）。Luna仅执行#8普通save `a952a0b4-1db4-4889-a782-1665bf3ad617`，25258840同步成功并签发下次protected resume。主会话核全部8个唯一action均terminal/completed/succeeded；25262011/rev6 healthy/owned104/和平/非沙盒/1×/0blocker/checkpoint，25262025 Walk0/400MJ/3idle/空手搓，25262030 Journal55/55 durable、无pending/error。25262041同snapshot23页2280唯一built全部身份/位置/旋转/连接与前次一致，独立25262693 prebuild0，三网ratio1；29指定详情通过，761预约与重启后保持、775/2268仍bans30。水源753仍600、760水0、769钛晶石16、775金刚石3000、774黄糖0；没有因等待或配置产生虚假供应完成。accepted8冻结，后续恢复从9计，不因提前审计清零。
 

@@ -503,4 +503,5 @@
 - 根因：旧普通分拣器prepare没有复用DeterminePreviews的单belt插值分支，只有实体中心四向姿态；不能以持续修改业务路线掩盖这一适配限制。另发现private build fingerprint遗漏了InputOffset/OutputOffset，当前旧子集都为0，但开放偏移前必须补齐。
 - 修复：在原执行器内增加一个明确belt与2101仓/assembler/lab的有界几何候选，最多64区间；不调用含UI/输入副作用的完整方法，不扫描邻带。保留11/24.1度和原生全预检，静态几何及offset参与绑定，提交前重查，原生预建筑/实体双位姿、offset、身份、过滤和双边连接核验。
 - 验证：1201项Debug/Release、完整Release零警告错误、源码MCP64 tools/1 resource/33408字符指南一致通过；55项Core与Contracts/MCP各1新增回归。尚未冷部署或取得新适配实机正例。
-- 状态：`bounded_native_attachment_offline_verified_live_pending`；关联EXP-226。持续供水、模块复制、Governor和最终包门未减少。
+- 安装态复验：0c59dab的1201同批DLL已冷部署，protected resume及J55/55连续性通过；753→2219、2246→761、2277→761、753→2232仍被原生接点准备拒绝，没有commit。不能把安装成功或这些负例当作接线修复正例；尚须更明确的失败阶段证据来指导有界选址。
+- 状态：`bounded_native_attachment_offline_verified_live_positive_pending`；关联EXP-226。持续供水、模块复制、Governor和最终包门未减少。

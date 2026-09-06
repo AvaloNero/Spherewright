@@ -476,7 +476,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Uses DSP's click-build validator to find one clear near-player site for an unlocked building already in inventory. Bound source and destination objects use endpointStateHash so ordinary production progress cannot make their unchanged physical topology stale. Prepare creates no prebuild and consumes nothing.")]
+    [Description("Uses DSP's normal click/path/inserter validators for an unlocked building already in inventory. Inserter candidates additionally require facing straight native slots; TooSkew, bent or offset-only candidates are rejected, never repaired by moving existing buildings. Bound endpoints use endpointStateHash so normal cargo flow does not invalidate unchanged topology. Prepare creates no prebuild and consumes nothing.")]
     public static async Task<CallToolResult> PrepareBuildAsync(
         IBridgeClient bridgeClient,
         string sessionId,

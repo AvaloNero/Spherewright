@@ -335,6 +335,36 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             () => _gameStateReader.InspectBlueprintOnMainThread(header.SessionId, request.Payload), cancellationToken).ConfigureAwait(false);
                         break;
                     }
+                case BridgeMethods.GetBlueprintBuilds:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<BlueprintBuildRequest>>(requestJson);
+                        if (request?.Payload is null) { await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false); break; }
+                        await DispatchAndWriteAsync(pipe, header.RequestId, header.SessionId,
+                            () => _normalActionCoordinator.GetBlueprintBuildsOnMainThread(header.SessionId, request.Payload), cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                case BridgeMethods.PrepareBlueprintBuild:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<PrepareBlueprintBuildRequest>>(requestJson);
+                        if (request?.Payload is null) { await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false); break; }
+                        await DispatchAndWriteAsync(pipe, header.RequestId, header.SessionId,
+                            () => _normalActionCoordinator.PrepareBlueprintBuildOnMainThread(header.SessionId, request.Payload), cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                case BridgeMethods.CommitBlueprintBuild:
+                    await DispatchNormalCommitAsync(pipe, header, requestJson, NormalActionKinds.BlueprintBuild, cancellationToken).ConfigureAwait(false);
+                    break;
+                case BridgeMethods.PrepareCancelBlueprint:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<PrepareCancelBlueprintRequest>>(requestJson);
+                        if (request?.Payload is null) { await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false); break; }
+                        await DispatchAndWriteAsync(pipe, header.RequestId, header.SessionId,
+                            () => _normalActionCoordinator.PrepareCancelBlueprintOnMainThread(header.SessionId, request.Payload), cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+                case BridgeMethods.CommitCancelBlueprint:
+                    await DispatchNormalCommitAsync(pipe, header, requestJson, NormalActionKinds.CancelBlueprintBuild, cancellationToken).ConfigureAwait(false);
+                    break;
                 case BridgeMethods.ExportBlueprint:
                     {
                         var request = PluginJson.Deserialize<BridgeRequestEnvelope<ExportBlueprintRequest>>(requestJson);

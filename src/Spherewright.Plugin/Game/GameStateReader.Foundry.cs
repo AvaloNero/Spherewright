@@ -17,7 +17,26 @@ internal sealed partial class GameStateReader
         if (!catalog.Success || catalog.Value is null) return GameCallResult<FoundryPlanSnapshot>.Failed(catalog.Error!);
         try
         {
+            if (request.Site is not null && request.Blueprint is not null)
+                throw new FoundryPlanningException("site_source_ambiguous", "Choose a machine grid or an explicit finite blueprint layout, never both.");
             var plan = FoundryPlanCompiler.Compile(request, recipes.Value, catalog.Value.Buildings);
+            if (request.Blueprint is not null)
+            {
+                if (request.Blueprint.Site is null)
+                    throw new FoundryPlanningException("blueprint_site_required", "Finite composition requires an explicit native blueprint position and fresh player hash.");
+                var inspection = InspectBlueprintOnMainThread(requestedSessionId, new InspectBlueprintRequest
+                {
+                    PlanetId = request.PlanetId, BlueprintCode = request.Blueprint.BlueprintCode,
+                    Site = request.Blueprint.Site,
+                });
+                if (!inspection.Success || inspection.Value?.Site is null)
+                    return GameCallResult<FoundryPlanSnapshot>.Failed(inspection.Error!);
+                plan.BlueprintSite = inspection.Value.Site;
+                plan.Construction = FoundryConstructionCompiler.Compile(plan, inspection.Value.Site,
+                    request.Blueprint.BoundaryPorts, catalog.Value.Buildings);
+                plan.Phase = "blueprint_construction_plan";
+                plan.RemainingChecks = plan.Construction.RemainingChecks.ToList();
+            }
             if (request.Site is not null)
             {
                 FoundrySitePlanner.ValidateRequest(request.Site);

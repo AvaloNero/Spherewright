@@ -14,6 +14,12 @@ namespace Spherewright.Mcp.BridgeClient;
 
 public interface IBridgeClient
 {
+    Task<BridgeCallResult<GovernorPlanSnapshot>> GetGovernorPlanAsync(string sessionId, GetGovernorPlanRequest request, CancellationToken cancellationToken);
+    Task<BridgeCallResult<BlueprintBuildList>> GetBlueprintBuildsAsync(string sessionId, BlueprintBuildRequest request, CancellationToken cancellationToken);
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareBlueprintBuildAsync(string sessionId, PrepareBlueprintBuildRequest request, CancellationToken cancellationToken);
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitBlueprintBuildAsync(string sessionId, CommitNormalActionRequest request, CancellationToken cancellationToken);
+    Task<BridgeCallResult<PreparedNormalAction>> PrepareCancelBlueprintAsync(string sessionId, PrepareCancelBlueprintRequest request, CancellationToken cancellationToken);
+    Task<BridgeCallResult<NormalActionCommitResult>> CommitCancelBlueprintAsync(string sessionId, CommitNormalActionRequest request, CancellationToken cancellationToken);
     Task<BridgeCallResult<BlueprintInspection>> InspectBlueprintAsync(
         string sessionId, InspectBlueprintRequest request, CancellationToken cancellationToken);
     Task<BridgeCallResult<BlueprintInspection>> ExportBlueprintAsync(
@@ -274,5 +280,4 @@ public interface IBridgeClient
     Task<BridgeCallResult<FlightCheckpointReloadResult>> CommitFlightCheckpointReloadAsync(
         CommitFlightCheckpointReloadRequest request,
         CancellationToken cancellationToken);
-    Task<BridgeCallResult<GovernorPlanSnapshot>> GetGovernorPlanAsync(string sessionId, GetGovernorPlanRequest request, CancellationToken cancellationToken);
 }

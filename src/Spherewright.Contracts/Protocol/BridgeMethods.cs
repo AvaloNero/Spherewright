@@ -45,6 +45,11 @@ public static class BridgeMethods
     public const string CommitUpgrade = "commit_upgrade";
     public const string InspectBlueprint = "inspect_blueprint";
     public const string ExportBlueprint = "export_blueprint";
+    public const string GetBlueprintBuilds = "get_blueprint_builds";
+    public const string PrepareBlueprintBuild = "prepare_blueprint_build";
+    public const string CommitBlueprintBuild = "commit_blueprint_build";
+    public const string PrepareCancelBlueprint = "prepare_cancel_blueprint";
+    public const string CommitCancelBlueprint = "commit_cancel_blueprint";
     public const string PrepareConfigureBuilding = "prepare_configure_building";
     public const string CommitConfigureBuilding = "commit_configure_building";
     public const string PrepareTransfer = "prepare_transfer";

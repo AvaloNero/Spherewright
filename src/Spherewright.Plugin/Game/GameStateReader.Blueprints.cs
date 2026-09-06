@@ -12,7 +12,17 @@ internal sealed partial class GameStateReader
     {
         var error = ValidateOwnedPlanetOnMainThread(sessionId, request.PlanetId, out _);
         if (error is not null) return GameCallResult<BlueprintInspection>.Failed(error);
-        try { return GameCallResult<BlueprintInspection>.Succeeded(ReadBlueprint(sessionId!, request.PlanetId, request.BlueprintCode)); }
+        try
+        {
+            var result = ReadBlueprint(sessionId!, request.PlanetId, request.BlueprintCode, out var native);
+            if (request.Site is not null)
+            {
+                var site = InspectBlueprintSiteOnMainThread(sessionId!, request.PlanetId, request.Site, result, native);
+                if (!site.Success) return GameCallResult<BlueprintInspection>.Failed(site.Error!);
+                result.Site = site.Value;
+            }
+            return GameCallResult<BlueprintInspection>.Succeeded(result);
+        }
         catch (BlueprintReadException exception) { return BlueprintRejected(exception.Reason); }
         catch (Exception) { return BlueprintRejected("blueprint_native_read_failed"); }
     }
@@ -87,9 +97,12 @@ internal sealed partial class GameStateReader
     }
 
     private BlueprintInspection ReadBlueprint(string sessionId, int planetId, string code)
+        => ReadBlueprint(sessionId, planetId, code, out _);
+
+    private BlueprintInspection ReadBlueprint(string sessionId, int planetId, string code, out BlueprintData native)
     {
         var bounded = BoundedBlueprintReader.Read(code);
-        var native = new BlueprintData();
+        native = new BlueprintData();
         if (native.HeaderFromBase64String(code) != BlueprintDataIOError.OK || native.CheckSignature(code) != BlueprintDataIOError.OK)
             throw new BlueprintReadException("blueprint_native_header_or_signature_invalid");
         using (var stream = new MemoryStream(bounded.Payload, false))

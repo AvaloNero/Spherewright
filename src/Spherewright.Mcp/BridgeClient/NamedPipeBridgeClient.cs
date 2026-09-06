@@ -45,6 +45,17 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
         string sessionId, InspectBlueprintRequest request, CancellationToken cancellationToken) =>
         CallAsync<InspectBlueprintRequest, BlueprintInspection>(BridgeMethods.InspectBlueprint, sessionId, request, cancellationToken);
 
+    public Task<BridgeCallResult<BlueprintBuildList>> GetBlueprintBuildsAsync(string sessionId, BlueprintBuildRequest request, CancellationToken cancellationToken) =>
+        CallAsync<BlueprintBuildRequest, BlueprintBuildList>(BridgeMethods.GetBlueprintBuilds, sessionId, request, cancellationToken);
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareBlueprintBuildAsync(string sessionId, PrepareBlueprintBuildRequest request, CancellationToken cancellationToken) =>
+        CallAsync<PrepareBlueprintBuildRequest, PreparedNormalAction>(BridgeMethods.PrepareBlueprintBuild, sessionId, request, cancellationToken);
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitBlueprintBuildAsync(string sessionId, CommitNormalActionRequest request, CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitBlueprintBuild, sessionId, request, cancellationToken);
+    public Task<BridgeCallResult<PreparedNormalAction>> PrepareCancelBlueprintAsync(string sessionId, PrepareCancelBlueprintRequest request, CancellationToken cancellationToken) =>
+        CallAsync<PrepareCancelBlueprintRequest, PreparedNormalAction>(BridgeMethods.PrepareCancelBlueprint, sessionId, request, cancellationToken);
+    public Task<BridgeCallResult<NormalActionCommitResult>> CommitCancelBlueprintAsync(string sessionId, CommitNormalActionRequest request, CancellationToken cancellationToken) =>
+        CallAsync<CommitNormalActionRequest, NormalActionCommitResult>(BridgeMethods.CommitCancelBlueprint, sessionId, request, cancellationToken);
+
     public Task<BridgeCallResult<BlueprintInspection>> ExportBlueprintAsync(
         string sessionId, ExportBlueprintRequest request, CancellationToken cancellationToken) =>
         CallAsync<ExportBlueprintRequest, BlueprintInspection>(BridgeMethods.ExportBlueprint, sessionId, request, cancellationToken);

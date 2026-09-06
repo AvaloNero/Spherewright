@@ -58,6 +58,9 @@ public sealed class ActionResultSnapshot
 
     public UpgradeReadback? UpgradeReadback { get; set; }
     public ResearchQueueReadback? ResearchQueueReadback { get; set; }
+    public string? BlueprintBuildId { get; set; }
+    public string? BlueprintBuildPhase { get; set; }
+    public List<Spherewright.Contracts.Factory.BlueprintObjectProgress>? BlueprintObjects { get; set; }
 
     public bool ReconciledFromOutcomeUnknown { get; set; }
 

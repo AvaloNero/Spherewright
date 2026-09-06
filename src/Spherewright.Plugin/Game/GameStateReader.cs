@@ -2760,6 +2760,9 @@ internal sealed partial class GameStateReader
                 PowerCoverRadius = item.prefabDesc.powerCoverRadius,
                 ProductionSpeedRaw = item.prefabDesc.isAssembler ? item.prefabDesc.assemblerSpeed
                     : item.prefabDesc.isLab ? item.prefabDesc.labAssembleSpeed : (int?)null,
+                BeltSpeedRaw = item.prefabDesc.isBelt ? item.prefabDesc.beltSpeed : (int?)null,
+                InserterSttRaw = item.prefabDesc.isInserter ? item.prefabDesc.inserterSTT : (int?)null,
+                InserterGrade = item.prefabDesc.isInserter ? item.prefabDesc.inserterGrade : (int?)null,
                 WorkEnergyPerTick = item.prefabDesc.workEnergyPerTick,
                 IdleEnergyPerTick = item.prefabDesc.idleEnergyPerTick,
                 NativePowerProfileKnown = true,

@@ -2573,6 +2573,66 @@
 - 关联：EXP-035/041/053、IFX-037、OrdinaryMechaFuelPolicy、game-api-foundry.md。
 - 最近复验：2026-09-06（672 Debug/Release通过并冷部署；live目录1114=4500000J/type1/true，1120=9000000J/type1/true。617普通氢20转移/refuel已验；不外推持续燃料产线）。
 
+### EXP-194 — 原生蓝图预检也可能触碰覆盖对象，必须先排除覆盖与开放端点
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：当前DSP0.10.34.28529的有限蓝图现场预览；源代码/程序集证据，不是实机施工通过。
+- 当前结论：不能仅凭方法名Check把native预检当纯读取。先以完整场地与内部碰撞守卫排除已有entity/prebuild覆盖、开放sorter和自动外接，再调用隔离native预检；显式要求所有条件Ok，独立核算整图库存与blueprintLimit。
+- 直接证据：当前DLL的paste Check会在covered belt上临时WriteObjectConn/ClearObjectConn；native paste Create另会处理NotEnoughItem/cover升级拆改。新适配器只复用native球面/朝向几何与正常Click/Path/Inserter建设入口，不开放整图paste。离线图/槽位/循环/库存哈希测试通过。
+- 限制或反例：保守碰撞体可能拒绝正常可放置模块；必须用明确有限候选实机验证，不能靠弱化现有实体守卫换取通过。
+- 复验触发：DLL、native preflight、副作用/清理或支持类型变化。
+- 关联：EXP-188/189/192、IFX-029、`BlueprintSitePolicy`、`SpherewrightBlueprintBuildTool`。
+- 最近复验：2026-09-06（完整Release0警告错误、458测试；尚未部署本切片）。
+
+### EXP-195 — 有限施工恢复的是逐对象证据，不是旧执行权限
+
+- 状态：`validated`
+- 日期：2026-09-06
+- 适用范围：Core有限施工状态与Plugin受保护原子存储的离线实现；不等同live续建验收。
+- 当前结论：每对象native调用前持久化submitting，之后核对准确扣料/prebuild/配置/双向连接。崩溃间隙是unknown，不重放。已完成实体必须fresh复验、世界tick不得早于证据；新session重新prepare，仅推进未提交对象。取消保留已提交物与正常施工无人机。
+- 直接证据：`BlueprintBuildStateTests`覆盖部分成功序列化/恢复去重、pending取消后自然完成、陈旧世界、未知/损坏收据、重复提交、循环依赖、批次限额。完整Release458测试通过；exact build读回先持久化新完成水位，列表只返回有界摘要。
+- 限制或反例：本机仍待native施工/取消/保存恢复实测；持久化本身不能证明世界已保存。已消费的prebuild ID可能由游戏重用，不可假设全计划唯一。
+- 复验触发：原生实体归属、存储格式/原子写入、计划取消/重启与人工改动。
+- 关联：EXP-185/194、`BlueprintBuildStore`、`NormalGameActionCoordinator.BlueprintBuild`。
+- 最近复验：2026-09-06（离线边界和完整构建通过，live待部署）。
+
+### EXP-201 — 全图连接不等于当前对象创建时应写入的连接
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：有限蓝图依赖执行器和当前DSP普通Path/Inserter创建路径。
+- 当前结论：皮带创建只安装其belt→belt出口；belt→sorter虚拟拾取边及机器端连接由分拣器创建安装。不能遍历全图把最后一条出边投影为皮带的native output。
+- 直接证据：离线审查发现原BlueprintStepPreview会先写下游带、再被尚未建成sorter的entity0覆盖；当前DLL BuildTool_Path.CreatePrebuilds按preview output字段写连接。Core新增CreationInput/Output按类型选择边，并拒绝多个有效端点，Plugin复用同一选择。
+- 限制或反例：首次蓝图写入尚未发生；这是部署前发现的代码缺陷，不虚构一次实机断带事故。全图双向/自由端读回及依赖排序不变，也不替代原生放置条件。
+- 复验触发：蓝图支持新类型、原生端点槽语义、边顺序、有限施工或恢复路径变化。
+- 关联：EXP-195、IFX-033、`BlueprintSitePolicy`、`NormalGameActionCoordinator.BlueprintNative`。
+- 最近复验：2026-09-06（11项新增回归与Debug/Release521测试通过；正常保存/关闭后521-test已4/4冷部署，同档恢复成功，首个蓝图施工仍待验证）。
+
+### EXP-210 — 完整物料意图应绑定同一有限蓝图执行记录
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：0.4显式蓝图布局的Foundry组合，不是任意自动布局。
+- 当前结论：复用现有配方图、native蓝图site和逐对象执行器，绑定精确机器配方/数量、每物品有向分配、明确空闲边界口、全部机器/物流/电力成本和依赖步骤。当前只接受单产物2302–2305配方和默认无禁用格2101仓；混料通道/缺失/额外阶段明确拒绝或阻断，不静默补齐。只读仍executable=false；prepare/commit重新校验意图/布局/功率，续建保留原意图而不接受替换或旧token。
+- 直接证据：42项Core组合/共享上游/错误布局/完整成本/哈希/部分成功/取消/重启记录测试通过；MCP可发现blueprint和Foundry绑定参数，仍复用既有有限执行器。736 Release回归及完整构建通过。
+- 限制或反例：有向流分配不是belt/sorter实际带宽或公平分流证明，空仓不是持续输入/输出保障；三级链现场复制、保存中途续建、真实产率仍待验收，不把材料草案改个phase当完成。完工对象在现网已计负载，续建只预算余项，避免二次计费。
+- 复验触发：布局来源、配方多产物/设备类型、过滤/仓储配置、预算、持久化、原生电网和实机施工变化。
+- 关联：FoundryConstructionCompiler、BlueprintBuildState、game-api-foundry.md、包内playbook。
+- 最近复验：2026-09-06（源码/离线通过，未部署/未声明新三级链成功）。
+
+### EXP-212 — 连接可达仍须核算原生带速和分拣器跨格周期
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：Foundry显式有限布局的满电单件理论输送预算，不是实测吞吐。
+- 当前结论：从当前DLL读取beltSpeed/inserterSTT/inserterGrade，带按10cell货物长度计速；普通2011/2012按原生span与四阶段量化往返周期计速。路径流量必须经过每个内部/边界带和sorter容量边；共享流不能各自独占全部能力。未知值、非法span及高级堆叠不作免费容量，明确阻断组合计划，普通蓝图独立白名单不变。
+- 直接证据：CargoPath.Update、PlanetFactory预建筑参数和InserterComponent四阶段调用链已用当前DLL核对；新增26项纯预算测试、3项组合流量回归、2项持久化损坏测试。完整Release零警告错误，Release767项通过；MCP说明及包内playbook已同步源码。
+- 限制或反例：满电、单件、无反压的理论数值不是源料充足、分流公平、连续工作或实测产量。部分路由失败时allocatedRate不是全部目标需求，必须同时检查CanPrepare/InternalFlowsRouted；2013不在本预算已证明子集。当前运行的736构建不含此项，不能冒充已实装或最终ZIP。
+- 复验触发：原生cargo长度/速度、sorter周期/等级/堆叠/参数、现场路由/负载、续建或目标速率变化。
+- 关联：EXP-210、FoundryTransportPlanner、FoundryConstructionCompiler、game-api-foundry.md、包内playbook。
+- 最近复验：2026-09-06（源码/离线，当前767 Release通过；对应实机仍待冷部署）。
+
 ## 修订记录
 
 - 2026-09-06：IFX-028最终部署4/4匹配（Plugin3FB233…/Core7199C2…），窗口#5–9分别为protected resume、749单实体升级、保存/正常关闭、protected resume、最终保存，完整action表见当档日记；未提供resume action tick不补造。修复版23一端负例无commit；749消耗2012 1→0/返2011 7→8、双端及filter1101保留，同步cargo空明确披露。恢复后新选区蓝图含3×2011/1×2012/1×2303，5对象/1区域、native signature及code往返hash一致、4条源边界，证明IFX-027白名单解耦未因实际升级回退。MCP58 tools/1 resource与必需双端playbook通过。最终保存22221235，fresh session22224301 revision2/owned/healthy/no blockers、player22224313 Walk/0/3idle/2011=8/2012=0、Journal22224316 54/54/no pending/error、749及723/724在22224323–32双向正确、power22224335 required=served49804。EXP-189/190/193获得限定范围live证据，EXP-027/028缩窄，存档日记索引按账本同步过期状态且不另维护易过时汇总。当前窗口9项accepted，无额外commit；下一项后必须严格十写审计。没有运行模块复制、Governor产量翻倍、新包/异机声明或push/tag/release。

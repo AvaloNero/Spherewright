@@ -385,3 +385,27 @@
 - 修复：指南明确普通业务必须Walk/低速/能源充分；Drift不无限等候，只在能源充足时用已验证Walk锚点做有界正常Move，已自然Walk就不再返岸；只有未accepted stale可最多3次紧邻fresh/prepare，不改变Move/hash/watchdog/幂等/精确订单中止。另为燃料选择公开与既有refuel一致的原生资格，不能只搜索“燃料棒”名称。
 - 验证：两次180tick位置停滞和一次600tick断能终态均如实保留。Walk静止735ticks净增980,000能量符合80kW被动补能，不冒充无线塔；正常补给/回充和新指南实机成功仍待。
 - 关联：EXP-039/041/053、包内playbook、OrdinaryMechaFuelPolicy；状态：`guidance_corrected_revalidation_pending`。
+
+## IFX-029 — 蓝图原生预检并非对覆盖对象无副作用
+
+- 首见：2026-09-06，有限蓝图现场预览的部署前DLL研究；未在实机执行覆盖预检。
+- 症状/根因：native paste `CheckBuildConditions` 会在covered belt上临时写入/清除连接；仅在返回后检查cover标志，不能证明读取工具没有改变旧对象。
+- 修复：调用前独立排除所有已有entity/prebuild覆盖与内部碰撞，拒绝开放sorter/外部自动匹配；仅对无cover/no-reform新对象使用隔离native预检，显式全部Ok。原生几何与普通逐对象建设分开，不开放整图paste。额外保存/恢复native cursor与inserter提示状态，清理隔离快照/工具。
+- 验证：Core图/槽位/碰撞前置与状态机测试，完整Release458项/零警告错误；新路径尚待部署和真实施工，不声称实机旧对象曾被本实现改变。
+- 关联：EXP-194/195、`GameStateReader.BlueprintSite`、`NormalGameActionCoordinator.BlueprintSite`、`NativeBuildPreviewUiScope`；状态：`fixed_offline_live_pending`。
+
+## IFX-031 — 受保护有限施工记录的空嵌套项会先在哈希处失败
+
+- 首见：2026-09-06，冷部署前的进度存储边界审查；未发生实机记录损坏。
+- 根因：校验了连接/预算列表非null，却未检查列表内的null项，计算不可变哈希会先抛NullReferenceException，绕过存储已有的明确数据错误分类。
+- 修复：在hash之前检查嵌套项、连接索引/槽位/限额、依赖和参数限额；以InvalidDataException拒绝附件，不恢复权限，也不修补或跳过损坏对象。
+- 验证：六项NULL对象/进度/连接/预算、无效端点及参数超限回归；完整Debug/Release510测试通过。没有把自动测试当作损坏存档live恢复。
+- 关联：EXP-195、`BlueprintBuildState.Validate`；状态：`fixed_offline`。
+
+## IFX-033 — 有限施工把皮带拾取边误当作皮带出口
+
+- 首见：2026-09-06，首次蓝图施工前的离线原生步骤审查；未发生实机蓝图断边。
+- 根因：全图包含belt→belt及belt→sorter边，原preview循环对所有皮带出边写同一个output字段；后出现的虚拟拾取边会覆盖已选下游带，依赖顺序下尚未施工sorter的entityId又为0。
+- 修复：Core明确每类对象创建的端点所有权，皮带只选belt→belt出口，分拣器选输入/输出各一条，机器不投影sorter边；多个有效候选明确拒绝。Plugin使用此投影，保留原有全部双向连接和自由端读回，未加旁路字段写入。
+- 验证：11项边顺序/单多sorter/自由皮带/机器/双端/歧义/无效索引回归、Debug/Release521项通过，完整Release零警告错误；安装的510-test cohort不含本修复，因此首次blueprint commit继续冻结至正常关闭后的同批更新。
+- 关联：EXP-201、`BlueprintSitePolicy.CreationInput/CreationOutput`；状态：`fixed_offline_live_pending`。

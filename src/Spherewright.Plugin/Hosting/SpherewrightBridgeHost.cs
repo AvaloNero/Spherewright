@@ -111,7 +111,8 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             configuration.MaxIdempotencyEntriesPerSession,
             sessionTracker,
             gameStateReader,
-            flightCheckpoints);
+            flightCheckpoints,
+            new BlueprintBuildStore(configuration.RuntimeDescriptorDirectory, gameVersion, sessionTracker, logger));
         var researchResultAutoAcknowledger = new ResearchResultAutoAcknowledger(
             configuration.AutoAcknowledgeResearchResults,
             logger);

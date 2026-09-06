@@ -13,6 +13,8 @@ public sealed class GetFoundryPlanRequest
     public List<FoundryRecipeChoice> RecipeChoices { get; set; } = new List<FoundryRecipeChoice>();
 
     public FoundrySiteRequest? Site { get; set; }
+
+    public FoundryBlueprintRequest? Blueprint { get; set; }
 }
 
 public sealed class FoundryRecipeChoice
@@ -65,6 +67,10 @@ public sealed class FoundryPlanSnapshot
     public List<string> RemainingChecks { get; set; } = new List<string>();
 
     public FoundrySiteSnapshot? Site { get; set; }
+
+    public FoundryConstructionPlan? Construction { get; set; }
+
+    public BlueprintSiteSnapshot? BlueprintSite { get; set; }
 }
 
 public sealed class FoundryStage

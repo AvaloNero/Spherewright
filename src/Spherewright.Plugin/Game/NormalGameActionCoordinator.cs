@@ -18,6 +18,7 @@ internal sealed partial class NormalGameActionCoordinator
     private readonly GameSessionTracker _sessions;
     private readonly GameStateReader _reader;
     private readonly FlightCheckpointStore _flightCheckpoints;
+    private readonly BlueprintBuildStore _blueprints;
     private readonly PreparedPlanStore<NormalActionPlanPayload> _plans;
     private readonly IdempotencyCache<NormalActionCommitResult> _idempotency;
     private readonly Dictionary<string, ActionRecord> _actions =
@@ -29,11 +30,13 @@ internal sealed partial class NormalGameActionCoordinator
         int idempotencyCapacity,
         GameSessionTracker sessions,
         GameStateReader reader,
-        FlightCheckpointStore flightCheckpoints)
+        FlightCheckpointStore flightCheckpoints,
+        BlueprintBuildStore blueprints)
     {
         _sessions = sessions;
         _reader = reader;
         _flightCheckpoints = flightCheckpoints;
+        _blueprints = blueprints;
         _plans = new PreparedPlanStore<NormalActionPlanPayload>(
             TimeSpan.FromSeconds(planLifetimeSeconds),
             128);
@@ -501,6 +504,12 @@ internal sealed partial class NormalGameActionCoordinator
             return GameCallResult<NormalActionCommitResult>.Failed(accessError);
         }
 
+        if (plan.ActionKind != NormalActionKinds.CancelBlueprintBuild
+            && _actions.Values.Any(a => !a.Terminal && a.ActionKind == NormalActionKinds.BlueprintBuild))
+            return GameCallResult<NormalActionCommitResult>.Failed(BridgeError.Create(BridgeErrorCodes.ServerBusy,
+                "A finite blueprint action owns construction; wait or explicitly prepare/commit cancellation first.",
+                false, "Poll the active action and its per-object progress. Do not issue competing actions."));
+
         var staleError = RevalidatePlanOnMainThread(plan);
         if (staleError is not null)
         {
@@ -724,6 +733,12 @@ internal sealed partial class NormalGameActionCoordinator
             case NormalActionKinds.Upgrade:
                 ExecuteUpgradeOnMainThread(action);
                 break;
+            case NormalActionKinds.BlueprintBuild:
+                StartBlueprintBuildOnMainThread(action);
+                break;
+            case NormalActionKinds.CancelBlueprintBuild:
+                CancelBlueprintBuildOnMainThread(action);
+                break;
             case NormalActionKinds.Transfer:
                 ExecuteStorageTransferOnMainThread(action);
                 break;
@@ -831,6 +846,9 @@ internal sealed partial class NormalGameActionCoordinator
                 break;
             case NormalActionKinds.Build:
                 UpdateBuild(action);
+                break;
+            case NormalActionKinds.BlueprintBuild:
+                UpdateBlueprintBuildOnMainThread(action);
                 break;
         }
     }
@@ -1127,6 +1145,10 @@ internal sealed partial class NormalGameActionCoordinator
                 return RevalidateDismantlePlanOnMainThread(plan);
             case NormalActionKinds.Upgrade:
                 return RevalidateUpgradeOnMainThread(plan);
+            case NormalActionKinds.BlueprintBuild:
+                return RevalidateBlueprintBuildOnMainThread(plan);
+            case NormalActionKinds.CancelBlueprintBuild:
+                return RevalidateBlueprintCancelOnMainThread(plan);
             case NormalActionKinds.Transfer:
                 return RevalidateStorageTransferOnMainThread(plan);
             case NormalActionKinds.LogisticsStationFleetTransfer:
@@ -1412,6 +1434,9 @@ internal sealed partial class NormalGameActionCoordinator
             AfterTargetAmount = action.AfterTargetAmount,
             UpgradeReadback = action.UpgradeReadback,
             ResearchQueueReadback = action.ResearchQueueReadback,
+            BlueprintBuildId = action.BlueprintBuild?.BuildId,
+            BlueprintBuildPhase = action.BlueprintBuild?.Phase,
+            BlueprintObjects = action.BlueprintBuild is null ? null : CloneBlueprintObjects(action.BlueprintBuild.Objects),
             ReconciledFromOutcomeUnknown = action.ReconciledFromOutcomeUnknown,
             ReconciledAtGameTick = action.ReconciledAtGameTick,
             FlightCheckpointId = action.FlightCheckpointId,
@@ -2114,6 +2139,8 @@ internal sealed partial class NormalGameActionCoordinator
         public int? AfterTargetAmount { get; set; }
         public UpgradeReadback? UpgradeReadback { get; set; }
         public ResearchQueueReadback? ResearchQueueReadback { get; set; }
+        public Spherewright.Bridge.Core.Factory.BlueprintBuildState? BlueprintBuild { get; set; }
+        public long LastBlueprintPollTick { get; set; }
         public string? Message { get; set; }
         public string? OriginalOutcomeMessage { get; set; }
         public bool ReconciledFromOutcomeUnknown { get; set; }

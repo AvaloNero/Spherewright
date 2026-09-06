@@ -61,7 +61,9 @@ public sealed class SpherewrightToolsTests
         Assert.Equal(
             new[]
             {
+                "spherewright_commit_blueprint_build",
                 "spherewright_commit_build",
+                "spherewright_commit_cancel_blueprint",
                 "spherewright_commit_configure_building",
                 "spherewright_commit_dismantle",
                 "spherewright_commit_handcraft",
@@ -81,6 +83,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_commit_upgrade",
                 "spherewright_export_blueprint",
                 "spherewright_get_action_result",
+                "spherewright_get_blueprint_builds",
                 "spherewright_get_build_catalog",
                 "spherewright_get_foundry_plan",
                 "spherewright_get_gameplay_journal",
@@ -102,7 +105,9 @@ public sealed class SpherewrightToolsTests
                 "spherewright_list_assemblers",
                 "spherewright_list_factory_entities",
                 "spherewright_list_resource_nodes",
+                "spherewright_prepare_blueprint_build",
                 "spherewright_prepare_build",
+                "spherewright_prepare_cancel_blueprint",
                 "spherewright_prepare_configure_building",
                 "spherewright_prepare_dismantle",
                 "spherewright_prepare_handcraft",
@@ -146,6 +151,39 @@ public sealed class SpherewrightToolsTests
         Assert.Equal(1101, Assert.Single(request.ExternalSupplyItemIds));
         Assert.Equal(2303, Assert.Single(request.RecipeChoices).BuildingItemId);
         Assert.Null(request.Site);
+    }
+
+    [Fact]
+    public async Task FoundryBlueprintLayoutAndIntentAreDiscoverableWithoutAnotherExecutor()
+    {
+        var client = new FakeBridgeClient(SuccessResult());
+        var blueprint = new FoundryBlueprintRequest
+        {
+            BlueprintCode = "explicit data only", Site = new() { ExpectedPlayerStateHash = "player", Position = new() { Y = 200 } },
+            BoundaryPorts = new() { new() { ItemId = 1001, Direction = "input", ObjectIndex = 0, Slot = 1 } },
+        };
+        await SpherewrightTools.GetFoundryPlanAsync(client, "session", 104, 1203, 10, blueprint: blueprint);
+        Assert.Same(blueprint, client.LastFoundryRequest!.Blueprint);
+        var intent = new FoundryConstructionIntent { TargetItemId = 1203, TargetRatePerMinute = 10, BoundaryPorts = blueprint.BoundaryPorts };
+        await SpherewrightTools.PrepareBlueprintBuildAsync(client, "session", 104, "native-assessment", "player",
+            blueprintCode: blueprint.BlueprintCode, site: blueprint.Site,
+            foundryIntent: intent, expectedFoundryPlanHash: "construction-hash");
+        Assert.Same(intent, client.LastBlueprintBuildRequest!.FoundryIntent);
+        Assert.Equal("construction-hash", client.LastBlueprintBuildRequest.ExpectedFoundryPlanHash);
+        Assert.Equal("native-assessment", client.LastBlueprintBuildRequest.ExpectedStateHash);
+        var services = new ServiceCollection();
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tools = provider.GetServices<McpServerTool>().Select(t => t.ProtocolTool).ToArray();
+        var read = tools.Single(t => t.Name == "spherewright_get_foundry_plan");
+        Assert.True(read.Annotations!.ReadOnlyHint);
+        Assert.True(read.InputSchema.GetProperty("properties").TryGetProperty("blueprint", out _));
+        Assert.Contains("transportBudget", read.Description, StringComparison.Ordinal);
+        Assert.Contains("transportCapacityVerified stays false", read.Description, StringComparison.Ordinal);
+        var prepare = tools.Single(t => t.Name == "spherewright_prepare_blueprint_build");
+        Assert.True(prepare.InputSchema.GetProperty("properties").TryGetProperty("foundryIntent", out _));
+        Assert.True(prepare.InputSchema.GetProperty("properties").TryGetProperty("expectedFoundryPlanHash", out _));
+        Assert.Contains("original intent remains durable", prepare.Description, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -226,6 +264,8 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("spherewright_get_governor_plan", contents.Text, StringComparison.Ordinal);
         Assert.Contains("prioritizeQueued=true", contents.Text, StringComparison.Ordinal);
         Assert.Contains("researchQueueReadback", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("get_blueprint_builds", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("never replay the whole blueprint", contents.Text, StringComparison.Ordinal);
         Assert.Contains("material draft is not an approved site", contents.Text, StringComparison.Ordinal);
         Assert.Contains("machine_previews_clear", contents.Text, StringComparison.Ordinal);
         Assert.Contains("up to 32 machines", contents.Text, StringComparison.Ordinal);
@@ -233,6 +273,10 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("prepare_harvest", contents.Text, StringComparison.Ordinal);
         Assert.Contains("Do not declare a production line complete", contents.Text, StringComparison.Ordinal);
         Assert.Contains("recovery_required", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("shore recovery", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("site.power", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("targetChainFindings", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("separate inventory observation interval", contents.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -736,8 +780,16 @@ public sealed class SpherewrightToolsTests
         services.AddSingleton<IBridgeClient>(client);
         services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
         using var provider = services.BuildServiceProvider();
-        var tools = provider.GetServices<McpServerTool>().Where(t => t.ProtocolTool.Name.EndsWith("_blueprint")).ToArray();
+        var tools = provider.GetServices<McpServerTool>().Where(t => t.ProtocolTool.Name == "spherewright_inspect_blueprint"
+            || t.ProtocolTool.Name == "spherewright_export_blueprint").ToArray();
         Assert.Equal(2, tools.Length);
+        Assert.Contains("storage2101", tools.Single(t => t.ProtocolTool.Name == "spherewright_inspect_blueprint")
+            .ProtocolTool.Description, StringComparison.Ordinal);
+        var playbook = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("storageConfiguration", playbook, StringComparison.Ordinal);
+        Assert.Contains("never its cargo", playbook, StringComparison.Ordinal);
+        Assert.Contains("inputEndpointFacingDot/outputEndpointFacingDot", playbook, StringComparison.Ordinal);
+        Assert.Contains("TooSkew", playbook, StringComparison.Ordinal);
         Assert.All(tools, t =>
         {
             Assert.True(t.ProtocolTool.Annotations?.ReadOnlyHint);
@@ -746,8 +798,76 @@ public sealed class SpherewrightToolsTests
         });
     }
 
+    [Fact]
+    public async Task OptionalBlueprintSiteIsDiscoverableBoundedAndStillReadOnly()
+    {
+        var client = new FakeBridgeClient(SuccessResult());
+        var site = new BlueprintSiteRequest { Position = new Vector3Snapshot { X = 100, Z = 170 },
+            QuarterTurns = 1, ExpectedPlayerStateHash = "fresh-player" };
+        var result = await SpherewrightTools.InspectBlueprintAsync(client, "session", 104, "explicit-code", site);
+        Assert.False(result.IsError);
+        Assert.Same(site, client.LastBlueprintRequest!.Site);
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(client);
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tool = provider.GetServices<McpServerTool>().Single(t => t.ProtocolTool.Name == "spherewright_inspect_blueprint").ProtocolTool;
+        Assert.True(tool.Annotations!.ReadOnlyHint);
+        Assert.Contains("site", tool.InputSchema.ToString());
+        Assert.Contains("at most32 NEW objects", tool.Description);
+        Assert.Contains("executable=false", tool.Description);
+        Assert.Contains("No covering", tool.Description);
+    }
+
+    [Fact]
+    public async Task BlueprintExecutionAndCancellationExposeFreshFiniteAuthority()
+    {
+        var client = new FakeBridgeClient(SuccessResult());
+        Assert.False((await SpherewrightTools.GetBlueprintBuildsAsync(client, "session", 104, "build")).IsError);
+        Assert.Equal("build", client.LastBlueprintReadRequest!.BuildId);
+        Assert.False((await SpherewrightTools.PrepareBlueprintBuildAsync(client, "session", 104, "progress", "player",
+            resumeBuildId: "build", maximumObjectsToSubmit: 1)).IsError);
+        Assert.Equal("build", client.LastBlueprintBuildRequest!.ResumeBuildId);
+        Assert.Equal("progress", client.LastBlueprintBuildRequest.ExpectedStateHash);
+        Assert.Equal(1, client.LastBlueprintBuildRequest.MaximumObjectsToSubmit);
+        Assert.Null(client.LastBlueprintBuildRequest.BlueprintCode);
+        Assert.Null(client.LastBlueprintBuildRequest.Site);
+        Assert.Null(client.LastBlueprintBuildRequest.FoundryIntent);
+        Assert.Null(client.LastBlueprintBuildRequest.ExpectedFoundryPlanHash);
+        Assert.False((await SpherewrightTools.CommitBlueprintBuildAsync(client, "session", 104, "token", "key")).IsError);
+        Assert.False((await SpherewrightTools.PrepareCancelBlueprintAsync(client, "session", 104, "build", "fresh")).IsError);
+        Assert.Equal("fresh", client.LastCancelBlueprintRequest!.ExpectedStateHash);
+        Assert.False((await SpherewrightTools.CommitCancelBlueprintAsync(client, "session", 104, "token", "key")).IsError);
+        var services = new ServiceCollection(); services.AddSingleton<IBridgeClient>(client);
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tools = provider.GetServices<McpServerTool>().ToDictionary(t => t.ProtocolTool.Name, t => t.ProtocolTool);
+        Assert.Contains("resumeBuildId", tools["spherewright_prepare_blueprint_build"].InputSchema.ToString());
+        Assert.Contains("one dependency-ready native prebuild", tools["spherewright_commit_blueprint_build"].Description);
+        Assert.Contains("NOT replay", tools["spherewright_commit_blueprint_build"].Description);
+        Assert.Contains("no automatic demolition", tools["spherewright_prepare_cancel_blueprint"].Description, StringComparison.OrdinalIgnoreCase);
+        Assert.True(tools["spherewright_get_blueprint_builds"].Annotations!.ReadOnlyHint);
+        Assert.False(tools["spherewright_commit_blueprint_build"].Annotations!.ReadOnlyHint);
+    }
+
     private sealed class FakeBridgeClient : IBridgeClient
     {
+        public PrepareBlueprintBuildRequest? LastBlueprintBuildRequest { get; private set; }
+        public PrepareCancelBlueprintRequest? LastCancelBlueprintRequest { get; private set; }
+        public BlueprintBuildRequest? LastBlueprintReadRequest { get; private set; }
+        public Task<BridgeCallResult<BlueprintBuildList>> GetBlueprintBuildsAsync(string sessionId, BlueprintBuildRequest request, CancellationToken cancellationToken)
+        {
+            LastBlueprintReadRequest = request;
+            return Task.FromResult(BridgeCallResult<BlueprintBuildList>.Succeeded(new BlueprintBuildList()));
+        }
+        public Task<BridgeCallResult<PreparedNormalAction>> PrepareBlueprintBuildAsync(string sessionId, PrepareBlueprintBuildRequest request, CancellationToken cancellationToken)
+        { LastBlueprintBuildRequest = request; return Prepared(sessionId, NormalActionKinds.BlueprintBuild); }
+        public Task<BridgeCallResult<NormalActionCommitResult>> CommitBlueprintBuildAsync(string sessionId, CommitNormalActionRequest request, CancellationToken cancellationToken) =>
+            Committed(sessionId, request, NormalActionKinds.BlueprintBuild);
+        public Task<BridgeCallResult<PreparedNormalAction>> PrepareCancelBlueprintAsync(string sessionId, PrepareCancelBlueprintRequest request, CancellationToken cancellationToken)
+        { LastCancelBlueprintRequest = request; return Prepared(sessionId, NormalActionKinds.CancelBlueprintBuild); }
+        public Task<BridgeCallResult<NormalActionCommitResult>> CommitCancelBlueprintAsync(string sessionId, CommitNormalActionRequest request, CancellationToken cancellationToken) =>
+            Committed(sessionId, request, NormalActionKinds.CancelBlueprintBuild);
         public InspectBlueprintRequest? LastBlueprintRequest { get; private set; }
         public ExportBlueprintRequest? LastExportRequest { get; private set; }
         public Task<BridgeCallResult<BlueprintInspection>> InspectBlueprintAsync(string sessionId,

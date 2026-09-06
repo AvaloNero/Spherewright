@@ -13,6 +13,8 @@ public static class NormalActionKinds
     public const string Build = "build";
     public const string Dismantle = "dismantle";
     public const string Upgrade = "upgrade";
+    public const string BlueprintBuild = "blueprint-build";
+    public const string CancelBlueprintBuild = "cancel-blueprint-build";
     public const string Transfer = "transfer";
     public const string LogisticsStationFleetTransfer = "logistics-station-fleet-transfer";
     public const string ConfigureBuilding = "configure-building";
@@ -315,6 +317,7 @@ public sealed class CommitNormalActionRequest
 
 public sealed class PreparedNormalAction
 {
+    public BlueprintBuildProgress? BlueprintBuild { get; set; }
     public bool Prepared { get; set; }
 
     public string ActionKind { get; set; } = string.Empty;

@@ -9,6 +9,10 @@
 
 ## Bounded blueprint data and native upgrades (2026-09-06)
 
+### Configuration hash-domain diagnosis (2026-09-07;1144 source/offline)
+
+No DSP call is added or changed. The existing sorter-filter prepare still binds the root configuration hash, including held cargo, while storage-capacity uses the full snapshot hash. A pure guard now rejects a positively identified current-full-hash request as non-retryable INVALID_REQUEST before the old equality check. An unmatched older hash remains STALE_STATE with neutral recovery wording because its domain cannot be inferred. Missing configuration evidence cannot compare equal to an empty request. The native write path, canonical hashes, idempotency and commit revalidation are unchanged. Eleven Core cases and one MCP schema/playbook case bring Debug/Release to1144; full Release and actual source MCP64 tools/1 resource with the exact32678-character guide pass. Installed1066 behavior motivated this change; the new diagnostic is not live-verified yet (EXP-225/IFX-045).
+
 ### Warehouse configuration instant readback (2026-09-07;1132 source/offline)
 
 The current DLL SHA was rechecked unchanged. No new DSP method is introduced: the already-proved SetBans/SetFilter/UI-mode path and immediate ordered-grid/entity/link/player checks remain unchanged. The successful action now retains a DTO from that synchronous boundary, before ordinary inserter delivery can run in later ticks. Core rechecks actual versus planned native-grid projection and copies separate before/after configuration and nonempty buffer lists; empty reserved metadata is never counted as stock. Identity, topology and player checks are still performed by the Plugin, not claimed by the pure helper.15 new Core tests and one each Contracts/MCP case bring Debug/Release to1132, with full Release zero warnings/errors; source stdio64 tools/1 resource and exact32057-character guide pass. This evidence field is not installed or live-verified yet.

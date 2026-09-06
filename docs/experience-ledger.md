@@ -2832,7 +2832,22 @@
 - 关联：EXP-220/221、IFX-044、StorageConfigurationPolicy、协议与包内playbook。
 - 最近复验：2026-09-07（实际投递及调用者误断言已核销，1132离线通过，新字段live待验）。
 
+### EXP-225 — 同名哈希参数不能跨配置模式机械复用
+
+- 状态：`observed`
+- 日期：2026-09-07
+- 适用范围：普通sorter-filter与storage-capacity的prepare调用；不改变既有状态绑定。
+- 当前结论：expectedFactoryStateHash只是参数名，sorter-filter必须填详情根configurationStateHash，storage-capacity仍填完整stateHash。先核对实际请求取值，不能将两次相同字段错误解释成现场持续变化或据此重新布线。
+- 直接证据：1066安装态2280改无过滤的两次prepare被STALE_STATE拒绝，均无commit；主会话读取调用代码确认取了before.stateHash。修正为before.configurationStateHash后，动作e3083eff-32a9-48e7-aaa0-b765e3574828在25042120正常成功，没有重放已接受动作。
+- 实现/验证：Core guard将能明确匹配当前full hash的错误域请求报为非重试INVALID_REQUEST；其它不匹配仍为可重试STALE_STATE，并列出正确域与可能原因，不猜测陈旧hash来源。缺少服务端配置证据、空请求、序数比较也fail closed。Plugin在原检查之前调用guard；原哈希版本/计划/commit/原生写入不变。MCP参数描述与内嵌指南同步。11 Core/1 MCP新增回归后1144项Debug/Release（31/1061/52）、完整Release零警告错误及源码MCP64 tools/1 resource/32678字符指南一致、stdout纯净通过。
+- 限制或反例：full hash若已经变旧，无法仅凭不匹配判断是错误域还是配置真实变化，不能一律报INVALID_REQUEST。只读诊断改善不构成稳定供水或扩产通过；当前仍1066安装态，新分支live待验。
+- 复验触发：配置模式新增、哈希包含项变化、参数文档/SDK schema、调用者重复prepare拒绝、冷部署。
+- 关联：EXP-220/223/224、IFX-045、SorterFilterPolicy、协议与包内playbook。
+- 最近复验：2026-09-07（实际错误域已定位并纠正；1144离线通过，未冷部署）。
+
 ## 修订记录
+
+- 2026-09-07：新增EXP-225/IFX-045，将重复错误哈希prepare的主会话纠正经验产品化；1144项Debug/Release、完整Release及实际源码MCP元数据通过。1132切片0ecf76d的Windows CI34057875433成功。游戏保存/重启审计仍单独核销，不因源码通过重置accepted计数或宣称新字段live通过。
 
 - 2026-09-07：新增EXP-224/IFX-044，产品化配置瞬间结构化证据。主会话原始核销本批三写：761解禁25011091、2280无过滤25042120、2268禁入25045193；不重放跨tick断言失败。第2到第3写3073游戏tick，收集仓净增74件（水不变、油+12/塑料+47/氢+15）；中间未执行原定分段观察，不能补称6000tick清理验收。accepted3保留，后续只读核实实际供水/产量。f32bd69十写审计文档的Windows CI34056875932成功。
 

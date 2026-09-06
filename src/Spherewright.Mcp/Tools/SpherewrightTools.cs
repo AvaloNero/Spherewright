@@ -407,6 +407,7 @@ public static partial class SpherewrightTools
         int planetId,
         int entityId,
         int recipeId,
+        [Description("For mode=sorter-filter use the inspected root configurationStateHash, NOT stateHash, despite this parameter's name. For mode=storage-capacity use the full stateHash. Follow the documented hash domain for each other mode.")]
         string expectedFactoryStateHash,
         string mode = BuildingConfigurationModes.Production,
         int techId = 0,

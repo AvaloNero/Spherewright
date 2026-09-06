@@ -485,3 +485,12 @@
 - 产品修复：可选storageConfigurationReadback记录即时tick、操作、前后设置和独立非空buffer；只在现有native不变量全部通过后生成，Core再次验证实际格投影。不新增写入口，不改state hash/幂等/unknown；指南和MCP描述明确跨tick差异须另核物流。
 - 验证：1132项Debug/Release（31 Contracts/1050 Core/51 MCP）、完整Release零警告错误、源码MCP64 tools/1 resource/32057字符指南一致/stdout纯净；新增字段未冷部署/live。旧set-bans动作的真实投递证据不冒充新字段实机通过。
 - 状态：`instant_readback_offline_verified_live_pending`；关联EXP-224。
+
+## IFX-045 — 错误哈希域被反复解释成现场陈旧
+
+- 首见：2026-09-07，1066安装态2280的两次sorter-filter prepare均使用before.stateHash，被旧通用检查报STALE_STATE；没有commit，不能计为写入失败或消耗accepted额度。
+- 根因：同一expectedFactoryStateHash参数在不同配置模式使用不同域，外部调用者机械沿用了普通仓配置的完整hash。现有工具长描述虽说明配置hash，参数位置未直说区别，错误也没有可操作的定位。
+- 处置：主会话核对真实请求代码，纠正为根configurationStateHash，再交回Luna继续同一有界计划；后续动作在25042120正常完成，未扩散候选、重做已接受动作或换档。
+- 产品修复：在原sorter配置检查前区分可确证的当前full-hash错误域（非重试INVALID_REQUEST）与无法确证来源的不匹配（保留STALE_STATE/fresh read）。缺失/空配置证据不通过；ordinal比较不折叠大小写。MCP参数和包内playbook明确sorter-filter/configurationStateHash与storage-capacity/stateHash，不修改原哈希及commit语义。
+- 验证：11 Core/1 MCP新回归，1144项Debug/Release（31 Contracts/1061 Core/52 MCP）、完整Release零警告错误；源码MCP64 tools/1 resource、32678字符指南一致、exit0且无额外stdout。当前游戏仍1066，新诊断分支尚未live验证。
+- 状态：`hash_domain_diagnostic_offline_verified_caller_corrected`；关联EXP-225。

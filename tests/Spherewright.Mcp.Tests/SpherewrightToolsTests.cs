@@ -674,6 +674,19 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void ConfigureHashParameterExplicitlySeparatesSorterAndWarehouseDomains()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareConfigureBuildingAsync))!;
+        var parameter = method.GetParameters().Single(p => p.Name == "expectedFactoryStateHash");
+        var description = ((System.ComponentModel.DescriptionAttribute)parameter.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).Single()).Description;
+        Assert.Contains("configurationStateHash, NOT stateHash", description);
+        Assert.Contains("storage-capacity use the full stateHash", description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("sorter-filter uses root `configurationStateHash`; storage-capacity uses full `stateHash`", guide);
+        Assert.Contains("inspect the actual payload/hash source", guide, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task WarehouseInstantReadbackSurvivesMcpAndWarnsAgainstCrossTickEquality()
     {
         var bridge = new FakeBridgeClient(SuccessResult())

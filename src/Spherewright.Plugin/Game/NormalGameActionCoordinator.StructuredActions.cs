@@ -1820,6 +1820,12 @@ internal sealed partial class NormalGameActionCoordinator
 
         var snapshot = snapshotResult.Value;
         var sorterFilterMode = request.Mode == BuildingConfigurationModes.SorterFilter;
+        if (sorterFilterMode)
+        {
+            var hashError = SorterFilterPolicy.ValidateInspectionHash(request.ExpectedFactoryStateHash,
+                snapshot.StateHash, snapshot.ConfigurationStateHash);
+            if (hashError is not null) return GameCallResult<PreparedNormalAction>.Failed(hashError);
+        }
         var configurationStateHash = sorterFilterMode
             ? snapshot.ConfigurationStateHash
             : snapshot.StateHash;

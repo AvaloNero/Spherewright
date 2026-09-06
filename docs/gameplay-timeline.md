@@ -6,6 +6,8 @@
 
 ## 结论与证据边界
 
+2026-09-07 / 调用哈希诊断离线切片：2280两次prepare错误已由主会话定位为混用完整stateHash，不是新的布线失败。修正字段后已有成功终态；1144-test源码进一步将可确证错误域标为非重试请求错误，并更新MCP参数与指南。Debug/Release、完整Release和源码64 tools/1 resource/32678字符指南通过，当前1066运行态尚未验证新分支；EXP-225/IFX-045保留根因、限制和复验条件。
+
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
 - 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留224条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。

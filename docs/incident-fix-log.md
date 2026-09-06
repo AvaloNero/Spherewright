@@ -359,3 +359,21 @@
 - 关联：EXP-205、NativeInserterEndpointGeometry；状态：`fixed_offline_live_pending`。
 
 582-test follow-up：同姿态只读预检的两个output dot为-0.174369559/-0.18947494，input为0.9832634/0.982118845，证实旧输出槽背离另一端；另有965占位。全条件保持拒绝、0蓝图commit。原生合法新sorter施工尚待，不能把诊断成功当成修复实机通过。
+
+## IFX-034 — Governor把正常库存流动误当作产线配置改变
+
+- 首见：2026-09-06，554-test同档恢复后、首个非零基线采样前的代码复核；没有虚构实机三窗失败。
+- 根因：adapter使用包含Buffers/InserterStackCount的FactoryConfigurationStateHash绑定选区，每次正常入库或分拣器取放均可能重置基线；空仓零产负例掩盖了这个缺陷。
+- 修复：提取纯Core GovernorSourceBinding，仅绑定固定身份、配方、姿态/端点、网络、静态设置。货物、增产点、加工进度和瞬时供电保持独立观测；不会因此忽略供电不足blocker。通用实体新增原生forceAccelerationMode读数，端点hash同时绑定它和sorter filter，以捕获手工配置变化而不受货物波动影响。蓝图导出另核对原生加速参数。
+- 验证：13项回归包含实际增长库存的四次600tick采样建立三窗、库存delta仍保留，以及十类真实变化/重复选区/顺序/设置哈希检查；567 Release测试和完整Release零警告错误。安装的554-test不含此修复；Luna已暂停Governor基线/蓝图施工，继续只读仓储验证与必要正常备料，等待正常保存后的冷部署。尚无非零live基线或2×证明。
+- 关联：EXP-198/204、`GovernorSourceBinding`、`GameStateReader.Governor`；状态：`fixed_offline_live_pending`。
+
+582-test follow-up：三个独立600tick live窗口全为金刚石30/min，source hash始终相同、唯一生产者归因完整、baseline ready、findings0。配置绑定修复现已`fixed_local_live`，十分钟扩产仍未通过；期间模型汇报造成的真实采样gap会正确重置窗口，改为有界只读采样脚本保留节奏而非放宽gap规则。
+
+## IFX-036 — Governor把尚未归因的全星球矿机告警当成目标链阻断
+
+- 首见：2026-09-06，617冷部署后，金刚石三个30/min非零基线成立但validationBaselineAvailable=false，首次锁定无写入拒绝。
+- 根因：observer候选和健康规则要求全局Findings.Count==0；14/263/796的矿竭告警只有各自extractor路径，没有item/选区路径证据，也被强行作为715目标线故障。
+- 修复：保留全部Findings，明确TargetChainFindings与UnattributedPlanetFindingCount，只有目标诊断/选中根/选中上游路径才归因；截断仍拒绝。候选、observer与提案哈希同批更新，不靠删告警过关。
+- 验证：6项新范围/哈希/健康回归，623 Release测试与完整Release零警告错误；修复仍源码态。另查出115→113真实缺边和石墨亏供，不能把范围修复当作现场修复或十分钟吞吐通过。
+- 关联：EXP-207、GovernorPlanCompiler、GovernorThroughputValidation；状态：`fixed_offline_live_pending`。

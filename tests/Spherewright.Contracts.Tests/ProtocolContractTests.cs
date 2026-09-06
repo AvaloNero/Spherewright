@@ -16,6 +16,22 @@ namespace Spherewright.Contracts.Tests;
 
 public sealed class ProtocolContractTests
 {
+    [Fact]
+    public void OptionalSorterGeometryDistinguishesOldDtoAndUnknownVirtualOccupancy()
+    {
+        var old = JsonSerializer.Deserialize<FactoryEntitySnapshot>("{}", JsonOptions)!;
+        Assert.Null(old.SorterEndpoints);
+        old.SorterEndpoints = new SorterEndpointObservation
+        {
+            State = "observed", Kind = "belt_virtual", CapturedAtGameTick = 123,
+            Endpoints = new List<SorterEndpointSnapshot> { new SorterEndpointSnapshot { Slot = -1, Outward = new Vector3Snapshot { Z = 1 } } },
+        };
+        var copy = JsonSerializer.Deserialize<FactoryEntitySnapshot>(JsonSerializer.Serialize(old, JsonOptions), JsonOptions)!;
+        Assert.Equal(123, copy.SorterEndpoints!.CapturedAtGameTick);
+        var point = Assert.Single(copy.SorterEndpoints.Endpoints);
+        Assert.Equal(-1, point.Slot); Assert.Null(point.Occupied); Assert.Equal(1, point.Outward.Z);
+    }
+
     private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,

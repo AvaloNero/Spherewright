@@ -9,6 +9,14 @@
 
 ## Bounded blueprint data and native upgrades (2026-09-06)
 
+### Detail-only native sorter endpoint geometry (2026-09-07; source/offline, live pending)
+
+The current DLL hash above was reread unchanged. The existing ordinary build adapter already reads `ItemProto.prefabDesc.slotPoses`, transforms each `Pose` by the selected `EntityData.pos/rot`, and uses the transformed forward vector for facing checks. Belt candidates use `Quaternion.AngleAxis(entity.tilt, entity.rot * Vector3.forward) * entity.rot` with four local quarter-turn orientations. The new detail observation copies those same poses; it does not run UI input, move objects or widen the straight-slot subset. `PlanetFactory.ReadObjectConn(int,int,out bool,out int,out int)` indexes the native connection pool with a fixed16 stride and has no local slot/array bounds check. The new reader bounds the slot count to16 and validates `(long)entityId*16+slotCount <= entityConnPool.Length` before these additional native reads.
+
+`sorterEndpoints` is null in lists/old DTOs. Detail reads return `observed` with fixed native slot occupancy (including negative prebuild references), or four virtual belt orientations with slot=-1 and null occupancy; unavailable/malformed/over-limit evidence never returns partial poses. Core verifies finite positions/unit directions, counts, indices and occupancy consistency, then deep-copies the DTOs. Existing Factory/FactoryConfiguration/FactoryEndpoint hashes remain unchanged; an observation is not a placement token, collision proof or native span approval.
+
+Twenty-five Core regressions plus one Contracts and one MCP case pass, bringing Debug/Release to1018 (28/945/45); full Release has zero warnings/errors. Source MCP remains64 tools/1 resource with28415 characters exactly matching the guide and clean stdout/exit. No new ZIP, deployment, successful route or live geometry is implied. IFX-041/EXP-218 record the repeated straight-subset refusals, mixed-source misclassification, and the owner's main-planning/Luna-execution handoff rule.
+
 ### Initial sorter filter at native construction (2026-09-07; source/offline, live pending)
 
 Same DSP/DLL baseline and hash. The normal inserter UI's `DeterminePreviews` assigns the chosen `BuildPreview.filterId`. `BuildTool_Inserter.CreatePrebuilds()` copies that field to `PrebuildData.filterId` before normal inventory debit, prebuild creation and reciprocal connection setup. Later, normal drone construction reaches `PlanetFactory.CreateEntityLogicComponents(int,PrefabDesc,int)` with the real prebuild ID; the inserter branch passes that filter into `FactorySystem.NewInserterComponent(int,int,int,int)`. The latter initializes the filter, empty cargo and matching native sign before the component can receive its first production tick. Spherewright calls only the existing normal validation/CreatePrebuilds path, not those low-level entity/component creators.

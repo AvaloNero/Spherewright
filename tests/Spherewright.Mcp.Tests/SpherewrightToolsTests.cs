@@ -25,6 +25,24 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void SorterEndpointGeometryIsDiscoverableAsReadOnlyNotPlacementAuthority()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tool = provider.GetServices<McpServerTool>().Single(value => value.ProtocolTool.Name == "spherewright_inspect_factory_entity").ProtocolTool;
+        Assert.True(tool.Annotations!.ReadOnlyHint);
+        Assert.Contains("sorterEndpoints", tool.Description);
+        Assert.Contains("not a placement approval", tool.Description);
+        Assert.Contains("unknown physical occupancy", tool.Description);
+        Assert.Contains("not building centers", tool.Description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("sorterEndpoints", guide);
+        Assert.Contains("one water source does not make a shared belt pure", guide);
+    }
+
+    [Fact]
     public void ObservationToolsAndPlaybookDiscloseComponentAndCargoCoverage()
     {
         var services = new ServiceCollection();

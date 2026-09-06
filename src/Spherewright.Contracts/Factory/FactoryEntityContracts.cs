@@ -93,6 +93,9 @@ public sealed class FactoryEntitySnapshot
     // Null (including list snapshots) means not observed, never an empty belt.
     public BeltCargoSnapshot? BeltCargo { get; set; }
 
+    // Optional detail-only geometry. Null/unknown never means no possible endpoint.
+    public SorterEndpointObservation? SorterEndpoints { get; set; }
+
     public List<int> ResourceNodeIds { get; set; } = new List<int>();
 
     public LogisticsStationSnapshot? LogisticsStation { get; set; }

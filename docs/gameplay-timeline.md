@@ -2,12 +2,12 @@
 
 更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 在767安装态正常保存24320012；最新十写完整审计见下文，owned/healthy、J55/55、2280built，明确prebuild空页24399620，无blocker/checkpoint。水旁路仍未恢复：两座新仓765/2268均保留，2268在输入sorter2280配置前已混入塑料/油/氢，至760的输出未建。业务施工冻结，初始过滤接口及新旧组件回显防护已完成源码/离线验证；不清仓、不建第三仓或重复消费者。991项Debug/Release和完整Release通过；游戏仍为767，未热装。完整带路证明仍是Core-only，未开放belt升级。运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。artifacts中的两个0.4.0 ZIP是9月5日旧构建，不是本轮完成包。
+当前截面：同一 `owned-world-001` 在767安装态正常保存24473406；最新单写提前完整审计见下文，owned/healthy、J55/55、2280built/0prebuild，无blocker/checkpoint。水旁路仍未恢复：两座新仓765/2268保留，2268混料且至760输出未建。用户已授权Luna连续方案失败时主会话接手规划，Luna继续负责执行；业务施工冻结等待端口几何和有限方案，不清仓、不建第三仓或重复消费者。源码初始过滤6846f97已推送/CI通过；新增端口只读明细后1018项Debug/Release和完整Release通过，游戏仍767、未热装。完整带路证明仍Core-only，未开放belt升级。运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。artifacts中两个0.4.0 ZIP为9月5日旧构建，不是本轮完成包。
 
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留217条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
+- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留218条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -16,6 +16,10 @@
 - 本文使用四种证据：`J` = 持久化运行时 Journal；`R` = 当前存档运行态；`M` = 产线读回、普通保存与 Git 里程碑；`D` = 经验账本。首次问题及代码修复另见 [incident-fix-log.md](./incident-fix-log.md)，现行规则与复验证据见 [experience-ledger.md](./experience-ledger.md)，版本门见 [ROADMAP.md](../ROADMAP.md)。
 
 ## 从落地到当前的主时间线
+
+2026-09-07 / 767正常保存与单写提前审计：唯一save `a633d80b-9422-449a-9462-da53f3905c6c` 在24473406 accepted、terminal/completed/succeeded，无材料变化；其前STALE_SESSION为未接受拒绝。fresh24510566/rev21同一owned104/healthy/和平/非沙盒/1×，saved、resume可用、0blocker/checkpoint。玩家24510581为Walk0/400MJ/3idle/手搓空，J24510589为55/55无pending/error；24510608同snapshot23页2280唯一built（46份响应为重复落盘，不能计4560），独立objectKind=prebuild且无item过滤的24511301空页。三网当前required=served55199/capacity191000，ratio均1。主会话核对19个关键实体：760水0/有机输出0，761塑料1053/油373，753水600，2268水19/塑料106/油13/氢34，765空且无边；既有塑料/油出边保留。本条和账本落盘后计数1→0，仍冻结至统一冷部署，绝不复用旧plan。
+
+同批规划复盘：四个直连候选均由当前保守直槽子集返回TooSkew，不能说完整原生UI所有放法都不可行。主会话发现2219还接2220上游；随后24517132/139/146复读2247/2251/2252分别持塑料/油/氢，纠正了“753到2243为纯水带”的错误标签。用户明确连续失败后主会话规划、Luna执行，已写AGENTS。补只读 `sorterEndpoints` 后1018项Debug/Release、完整Release零警告错误及MCP64工具/1资源通过；新端口观察尚未实机，未提交或称成功接线。详见EXP-218/IFX-041。
 
 2026-09-07 / 991-test初始过滤源码切片：普通2011/2012建造新增 `initialSorterFilterItemId`，原生prebuild和无人机路径使过滤在第一次取货前生效，并核对计划指纹、资格、预建筑、完工sign与双端。新MCP对漏回显/不匹配的旧Plugin拒绝公开未确认计划，不改变默认0调用；新增36项回归后991项Debug/Release通过，完整Release零警告错误。公共工具仍64个，MCP资源与精简指南同步。EXP-217/IFX-040仍标记实机待验；这不是水路恢复、冷部署或包验收结果，不改变已审核计数。
 

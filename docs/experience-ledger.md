@@ -2683,7 +2683,21 @@
 - 关联：EXP-198/204/206/208/210/212、GovernorPlanCompiler.ParallelConstruction、FoundryConstructionCompiler、包内playbook。
 - 最近复验：2026-09-06（806 Debug/Release离线，实际源码MCP64tools/1resource/24476字符指南一致、exit0/额外stdout0；未冷部署/未宣称新产线）。
 
+### EXP-214 — 未观测货物或局部设备类别不是“不存在”的证据
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：当前工厂设备查询、按配方找生产/消费端和有界物流追踪。
+- 当前结论：设备类别按运行时配方选择，矩阵生产须查lab并区分科研模式；完成相关分页、沿实际有向连接找到末端前不能宣称消费端不存在。当前普通belt.Buffers未观测CargoPath货物，空集合是unknown，不是空带；不得以此清仓或重复建消费线。
+- 直接证据：767只读诊断以36个assembler中recipe27为0作出不充分新建建议，主会话在任何新写入前纠正。源码独立CaptureLab保留实际配方/输入/输出，TryCaptureFactoryEntity没有belt cargo捕获路径。MCP三项工具描述和同批playbook新增明确边界及注册/资源回归。
+- 限制或反例：这些边界不直接解释717满仓的最终原因，也不证明整条线路有流量；仍需实际lab/端点/产率复验。未追到不等于不存在，不以历史记录代替fresh身份。
+- 复验触发：设备分类、配方类型、分页过滤、belt货物观察实现、生产/消费路径或字段覆盖变化。
+- 关联：IFX-039、EXP-007/158/161、GameStateReader.CaptureLab、包内playbook。
+- 最近复验：2026-09-06（807 Release：21Contracts/749Core/37MCP，完整Release构建零警告错误；源码MCP64tools/1resource/25250字符指南一致、exit0/额外stdout0。767原始bundle在24076211确认774/matrix_lab/6003的真实上游路径，原假定被证伪；未因此新增写入或声称持续产量恢复）。
+
 ## 修订记录
+
+- 2026-09-06：新增EXP-214/IFX-039并产品化设备分类和belt cargo的未观测语义；807项Release、完整Release零警告错误、实际源码MCP64tools/1resource/25250字符指南一致通过。767恢复后raw bundle24076211证明774矩阵产线确实存在，1112/1118/6003的实际产消均0；715输出100/100、目标上游路径中的水752输出50/50是该tick诊断，不直接宣称整链唯一根因。51eb5e4的Windows Core CI34042013510成功。本窗只有1次accepted resume，完整审计尚未归档，计数不归零；没有模块施工或清仓。
 
 - 2026-09-06：新增EXP-213，将Governor明确增建布局接到同一Foundry完整预算与有限施工协议，39项新增Core回归后Release806通过。方案指纹升级governor-proposal-v2并绑定可选完整布局；不改变普通游戏写入、旧owned恢复或有限施工权限。767冷部署/旧档恢复与此源码切片分开记录，不提交原第十项打包/CI，不打tag或发布。
 

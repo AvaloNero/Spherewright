@@ -422,6 +422,14 @@
 - 离线：21项Core策略回归、完整Release通过，MCP复用既有拆除工具。736同批实机拆除115和原生重建均terminal成功，2011为4→5→4、cargo/inc=0；新115的108输入及113:10输出双向完整，邻居原连接和recipe17保留。普通保存23753687及四写审计healthy/J55/55。随后719携带1件金刚石的正常回收、719/720正常重建也成功，货物返还和邻居保留有终态证据，保存23827812及五写审计通过。2012拆除、非零inc货物及本次修复的保存恢复尚待；不能由21项测试外推。
 - 修复后独立600tick三窗石墨实际产量18/12/12每分钟，后两窗113仍缺煤；连接已修正不等于产线配平，缺端也未被证明是原亏供唯一根因。
 
+## IFX-039 — 把设备类别与未观测字段误当作消费端不存在
+
+- 首见：2026-09-06，767恢复后的只读诊断。外部Agent看到36个assembler中recipe27为0、下游若干belt的buffers为空，错误建议新建结构矩阵消费端；未因此执行写入。
+- 根因：结构矩阵在lab组件中生产，不在assembler列表；GameStateReader只调用已支持设备的CaptureAssembler/Lab/Miner/Storage/Station/Tank/Inserter，未把CargoPath货物写进belt.Buffers。局部类别、未观测字段和未追完的有向路径都不构成“不存在”证据。
+- 修复：主会话阻止未经证实的新建建议，要求复读既有Lab774和真实有向下游；MCP三项观察工具描述及包内指南明确lab类别、完整分页、空belt字段的unknown含义和不清仓伪造需求。
+- 验证边界：这是读取解释/操作指南修复，不修改游戏货物、拓扑或动作权限，不声称已找到所有末端或恢复持续产量。新增MCP注册/指南契约回归后Release807通过，完整Release零警告错误，源码实际MCP64tools/1resource及25250字符指南一致。767原始bundle24076211已由主会话复核，明确存在774/matrix_lab/6003上游路径，三个目标实际产消均0；128对象的下游追踪仍只是有界前缀，不能补造终点。
+- 关联：EXP-214、GameStateReader.TryCaptureFactoryEntity、CaptureLab、MCP观察工具与包内playbook；状态：`guidance_corrected_revalidation_pending`。
+
 ## IFX-037 — 把Move距离终态后的Drift等待和低能量返岸当作安全交接
 
 - 首见：2026-09-06，617-test验收移动fd22bab1已达坐标，但fresh持续Drift；等待稳定耗能，旧指南缺少明确的有界返岸分支。

@@ -24,6 +24,33 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void ObservationToolsAndPlaybookDiscloseComponentAndCargoCoverage()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tools = provider.GetServices<McpServerTool>().Select(t => t.ProtocolTool).ToArray();
+        var assemblers = tools.Single(t => t.Name == "spherewright_list_assemblers");
+        var entities = tools.Single(t => t.Name == "spherewright_list_factory_entities");
+        var inspect = tools.Single(t => t.Name == "spherewright_inspect_factory_entity");
+        Assert.Contains("labs, not assemblers", assemblers.Description);
+        Assert.Contains("componentKind=lab", entities.Description);
+        Assert.Contains("same filtered snapshot", entities.Description);
+        foreach (var tool in new[] { entities, inspect })
+        {
+            Assert.True(tool.Annotations!.ReadOnlyHint);
+            Assert.Contains("Belt cargo is not observed", tool.Description);
+        }
+        Assert.Contains("unfinished trace", inspect.Description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("labs, not assemblers", guide);
+        Assert.Contains("Belt cargo is not observed", guide);
+        Assert.Contains("cargo unknown, not an empty belt", guide);
+        Assert.Contains("never manufacture demand by clearing storage", guide);
+    }
+
+    [Fact]
     public async Task GovernorExposesReadOnlyDeclaredTargetAndExplicitSource()
     {
         var client = new FakeBridgeClient(SuccessResult());

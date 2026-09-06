@@ -7,7 +7,7 @@
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留213条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
+- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留214条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -16,6 +16,8 @@
 - 本文使用四种证据：`J` = 持久化运行时 Journal；`R` = 当前存档运行态；`M` = 产线读回、普通保存与 Git 里程碑；`D` = 经验账本。首次问题及代码修复另见 [incident-fix-log.md](./incident-fix-log.md)，现行规则与复验证据见 [experience-ledger.md](./experience-ledger.md)，版本门见 [ROADMAP.md](../ROADMAP.md)。
 
 ## 从落地到当前的主时间线
+
+2026-09-06 / 767恢复与诊断纠正（尚未完成本窗完整审计）：唯一accepted protected resume `5381b28d-07a1-4869-8c39-081b16d8e7c2` 的精确run-complete为terminal/completed/succeeded，fresh主档重存23992240≥minimum23992209；该动作记录未给出精确起止game tick，不能把保存tick重标成动作完成tick。fresh24009795/revision1为同档owned104/saved/healthy/0blocker，J55/55、Walk0/400MJ/3idle，115、719、720修复双端和邻居配方/仓设置保留。随后Agent以assembler列表缺recipe27及若干belt空buffers提出不足以成立的新消费端建议，主会话在写入前纠正：lab与assembler分开，belt字段未读货物。原始bundle24076211（600tick窗24075612–24076211）明确774/matrix_lab产6003且三个目标1112/1118/6003实际产消均0；715输出100/100，6003目标路径经1118/767、1117/760、水752（输出50/50）。这不是已定位全部末端或唯一根因，仍须物理物流诊断。EXP-214/IFX-039、三项MCP观察描述和指南同期落盘，807项Release及源码MCP64tools/1resource/25250字符一致通过。51eb5e4已推送且CI34042013510成功；计数保持1，未新建、未清仓、未热换767。
 
 2026-09-06 / Governor源码增建比较：可选显式布局在实测非零基线后，以目标减基线复用Foundry完整模块建材/场地/功率/输送预算，不按瞬时缺料率夸大新增规模。39项Core新回归，Debug/Release806项、完整Release零警告错误；实际源码MCP为0.4.0.0、64tools/1resource、24476字符指南一致、正常退出且额外stdout为0。当前游戏仍是767，未把该离线比较记为实机扩产；EXP-213记录判断和复验边界。
 

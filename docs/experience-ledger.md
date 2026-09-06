@@ -2790,7 +2790,23 @@
 - 关联：EXP-219/220、IFX-042、StorageConfigurationPolicy、包内playbook与协议。
 - 最近复验：2026-09-07（DLL与1066离线回归、同批冷部署/恢复、761禁入配置本机正例；预约及实际供水恢复待验）。
 
+### EXP-222 — 有界导出流不能阻止原生函数在Write之前执行越界内存复制
+
+- 状态：`observed`
+- 日期：2026-09-07
+- 适用范围：当前DSP `CargoPath.Export`/`UnsafeIO.WriteMassive` 的只读路径捕获准备，不推广为任意游戏序列化工具。
+- 当前结论：仅限制Stream写入字节数还不够；原生UnsafeIO在调用Write前已经MemCpy。应该先取得并验证固定头中的私有计数及公开数组尺寸，再进行有界托管读取，不能先完整导出后才检查大小。
+- 直接证据：当前SHA DLL导出顺序为45字节header、逻辑buffer、chunk三元组、全部Vector3、全部Quaternion、belt/input列表；UnsafeIO使用共享8MiB临时数组且不检查源数组长度。头字段取完后以本次流私有sentinel立即退出只读Export，不到正文；不通过反射猜私有字段，不改native对象。
+- 实现：Core固定头probe与形状/数量验证，Plugin内部NativeBeltPathCapture有界复制复用已有严格解析；8192逻辑cell/512 belt/128 input/1MiB上限不变。没有接到公开reader/upgrade动作，白名单未扩大；未来调用方仍须验证owned/factory/main-thread、原生buffer锁、完整成员/邻边和货物。
+- 验证：39项新增离线回归，Debug/Release1105项（30 Contracts/1026 Core/49 MCP）及完整Release零警告错误；该适配没有冷部署或live调用。当前游戏仍为1066，水路配置实测与本条分开。
+- 限制或反例：不是发生过游戏内存损坏的证据，而是当前DLL读到的潜在边界；头正确不证明正文/拓扑/库存正确，也不授权调用Import/UpgradeFinally。未完成带升级接入，不冒充0.4验收。
+- 复验触发：DSP DLL/导出布局、数组类型/私有计数、线程/锁策略、读取接入、首次升级或冷部署。
+- 关联：EXP-216、BeltUpgradePathPolicy、NativeBeltPathCapture、game-api-foundry研究。
+- 最近复验：2026-09-07（同DLL研究和1105离线回归，公开接入/实机待验）。
+
 ## 修订记录
+
+- 2026-09-07：新增EXP-222，带路径固定头预检/托管捕获准备切片通过1105项Debug/Release和完整Release。未接公开工具/升级白名单，没有冷部署或游戏写；当前1066游戏由Luna继续主会话规划的有界预约，双方accepted计数不因代码测试重置。
 
 - 2026-09-07：EXP-220持氢过滤与EXP-221禁入容量两项原始terminal及双边库存/连接均通过；第10项后冻结并核销本窗十个唯一accepted。fresh24860193/rev5 owned/healthy/和平/非沙盒/1×，J55/55、Walk0/400MJ/3idle、三网ratio1；24860217同snapshot23页2280built和独立24860864空prebuild，12个关键对象保留。无unknown/重放或未解释库存变化；主会话原始审计并更新日记后10→0。下一有限段仍保持761禁入，先限定源与入仓类型，再将40油完整留在玩家、既有氢1守恒移到761，为原持氢分拣器预留合法投递格，锁已有/预约空格水；不手工加水、不增仓，不在审计前解除禁入，也不把有限移仓当生产或需求。
 

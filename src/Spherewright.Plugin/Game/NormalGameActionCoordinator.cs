@@ -1807,7 +1807,7 @@ internal sealed partial class NormalGameActionCoordinator
         return false;
     }
 
-    private static void ApplyBuildingConfigurationOnMainThread(NormalActionPlanPayload plan)
+    private void ApplyBuildingConfigurationOnMainThread(NormalActionPlanPayload plan)
     {
         var factory = GameMain.localPlanet?.factory
             ?? throw new InvalidOperationException("The local factory is unavailable.");
@@ -1834,10 +1834,32 @@ internal sealed partial class NormalGameActionCoordinator
             }
 
             ref var inserter = ref factory.factorySystem.inserterPool[entity.inserterId];
+            // A full native value-type copy includes private idleTick and typed
+            // targets as well as held count/inc, timing, stage, offsets and energy.
+            var expectedInserter = inserter;
+            expectedInserter.filter = plan.ConfigureFilterItemId;
+            var expectedSign = factory.entitySignPool[entity.id];
+            expectedSign.iconId0 = (uint)plan.ConfigureFilterItemId;
+            expectedSign.iconType = plan.ConfigureFilterItemId > 0 ? 1u : 0u;
+            var packageBefore = CapturePlayerPackageState(GameMain.mainPlayer);
+            var endpointBefore = _reader.InspectFactoryEntityOnMainThread(plan.SessionId,
+                new InspectFactoryEntityRequest { PlanetId = plan.PlanetId, ObjectId = plan.EntityId });
+            if (!endpointBefore.Success || endpointBefore.Value is null)
+                throw new InvalidOperationException("The sorter endpoint evidence could not be captured before changing its filter.");
+            // Endpoint hashes also include the blueprint filter setting.
+            endpointBefore.Value.FilterItemId = plan.ConfigureFilterItemId > 0 ? plan.ConfigureFilterItemId : (int?)null;
+            var expectedEndpointHash = CanonicalStateHash.FactoryEndpoint(endpointBefore.Value);
             inserter.filter = plan.ConfigureFilterItemId;
             ref var sign = ref factory.entitySignPool[entity.id];
             sign.iconId0 = (uint)plan.ConfigureFilterItemId;
             sign.iconType = plan.ConfigureFilterItemId > 0 ? 1u : 0u;
+            var endpointAfter = _reader.InspectFactoryEntityOnMainThread(plan.SessionId,
+                new InspectFactoryEntityRequest { PlanetId = plan.PlanetId, ObjectId = plan.EntityId });
+            if (!inserter.Equals(expectedInserter) || !sign.Equals(expectedSign)
+                || packageBefore != CapturePlayerPackageState(GameMain.mainPlayer)
+                || !endpointAfter.Success || endpointAfter.Value is null
+                || expectedEndpointHash != endpointAfter.Value.EndpointStateHash)
+                throw new InvalidOperationException("Sorter filter assignment did not preserve exact native cargo, stage, targets, topology, sign and player inventory.");
             return;
         }
 

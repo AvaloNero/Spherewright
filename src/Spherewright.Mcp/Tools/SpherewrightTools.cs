@@ -400,7 +400,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Re-reads one exact built device and prepares a production recipe, matrix-research mode, sorter item filter, logistics-station storage slot, station output-belt selector, or logistics-station maximum charge setting without changing it. Sorter mode uses the dedicated configuration hash and still requires zero carried cargo; station modes bind their separate configuration hash and never clear, replace, or fill station inventory.")]
+    [Description("Re-reads one exact built device and prepares a production recipe, matrix-research mode, sorter item filter, logistics-station storage slot, station output-belt selector, or logistics-station maximum charge setting without changing it. Sorter mode uses configurationStateHash including carried cargo: cargo-free sorters and ordinary2011/2012 unidirectional sorters in Inserting are supported. Existing cargo is preserved and still goes to the SAME destination; a new filter only governs future pickups and cannot clear a jam. Station modes bind their separate configuration hash and never clear, replace, or fill station inventory.")]
     public static async Task<CallToolResult> PrepareConfigureBuildingAsync(
         IBridgeClient bridgeClient,
         string sessionId,
@@ -456,7 +456,7 @@ public static partial class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Applies the prepared recipe, matrix-research mode, cargo-free sorter filter, logistics-station storage slot, station output-belt selector, or maximum charge setting once through the current-version UI/business path, then rereads the exact device and proves the requested configuration. Station inventory is never directly written.")]
+    [Description("Applies the prepared recipe, matrix-research mode, cargo-preserving sorter filter, logistics-station storage slot, station output-belt selector, or maximum charge setting once through the current-version UI/business path, then rereads the exact device and proves the requested configuration. Sorter cargo, destination, timing and topology remain unchanged by the filter assignment. Station inventory is never directly written.")]
     public static async Task<CallToolResult> CommitConfigureBuildingAsync(
         IBridgeClient bridgeClient,
         string sessionId,

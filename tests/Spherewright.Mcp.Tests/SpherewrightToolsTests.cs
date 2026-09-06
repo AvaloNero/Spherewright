@@ -623,6 +623,17 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void SorterFilterDescriptionDisclosesRetainedCargoAndUnchangedDestination()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareConfigureBuildingAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)method.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).Single()).Description;
+        Assert.Contains("configurationStateHash", description);
+        Assert.Contains("Inserting", description);
+        Assert.Contains("SAME destination", description);
+        Assert.Contains("cannot clear a jam", description);
+    }
+
+    [Fact]
     public async Task ConfigureBuildingTool_MapsSorterFilterMode()
     {
         var bridge = new FakeBridgeClient(SuccessResult());

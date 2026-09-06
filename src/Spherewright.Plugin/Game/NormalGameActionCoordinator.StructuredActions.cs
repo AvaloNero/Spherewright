@@ -1889,7 +1889,7 @@ internal sealed partial class NormalGameActionCoordinator
                 BridgeErrorCodes.ActionRejected,
                 sorterReason,
                 true,
-                "Wait until the exact sorter is idle and carrying no cargo, then inspect and prepare again with an unlocked filter item or zero to clear it."));
+                "Inspect the connected sorter again. Cargo-free sorters or ordinary2011/2012 unidirectional sorters in Inserting with valid existing cargo are supported; changing the filter never removes or redirects held cargo."));
         }
         else if (stationMode)
         {
@@ -2002,7 +2002,7 @@ internal sealed partial class NormalGameActionCoordinator
             request.Mode == BuildingConfigurationModes.Research
                 ? "The exact empty matrix lab reports research mode and the active technology after the UI/business setting path is called once."
                 : request.Mode == BuildingConfigurationModes.SorterFilter
-                    ? "The exact connected cargo-free sorter reports the target item filter and matching entity sign after the current-version UI setting path is applied once."
+                    ? "The exact connected sorter reports the target filter/sign; the complete native inserter state except filter, both endpoints, and player inventory are preserved immediately. Existing cargo still requires delivery to the same destination."
                     : request.Mode == BuildingConfigurationModes.LogisticsStationStorage
                         ? "The exact station slot reports the selected unlocked item, 100-step limit, and local/remote logic after PlanetTransport.SetStationStorage is called once; item count and proliferator points remain unchanged by the call."
                     : request.Mode == BuildingConfigurationModes.LogisticsStationBelt
@@ -2050,7 +2050,7 @@ internal sealed partial class NormalGameActionCoordinator
 
             return CanSetSorterFilter(factory, plan.EntityId, plan.ConfigureFilterItemId, out _)
                 ? null
-                : Stale("The exact sorter is no longer connected and cargo-free, or the filter item changed after preparation.");
+                : Stale("The exact sorter no longer satisfies the cargo-preserving filter assignment window, or the filter item changed after preparation.");
         }
 
         if (plan.ConfigureMode == BuildingConfigurationModes.LogisticsStationStorage
@@ -2456,7 +2456,7 @@ internal sealed partial class NormalGameActionCoordinator
         int filterItemId,
         out string reason)
     {
-        reason = "The exact entity is not a connected cargo-free sorter, or the requested filter item is unavailable.";
+        reason = "The exact entity is not a connected cargo-free sorter or a supported ordinary Inserting sorter with valid retained cargo, or the requested filter item is unavailable.";
         if (entityId <= 0 || entityId >= factory.entityCursor || entityId >= factory.entityPool.Length
             || entityId >= factory.entitySignPool.Length
             || filterItemId < 0)
@@ -2474,7 +2474,10 @@ internal sealed partial class NormalGameActionCoordinator
 
         ref var inserter = ref factory.factorySystem.inserterPool[entity.inserterId];
         if (inserter.id != entity.inserterId || inserter.entityId != entityId
-            || !SorterFilterPolicy.IsSafeAssignmentWindow(
+            || !SorterFilterPolicy.IsSafePreservingAssignmentWindow(
+                entity.protoId,
+                inserter.bidirectional,
+                inserter.stage.ToString(),
                 filterItemId,
                 inserter.pickTarget,
                 inserter.insertTarget,

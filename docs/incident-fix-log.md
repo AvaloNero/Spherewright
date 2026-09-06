@@ -512,4 +512,5 @@
 - 根因：普通prepare把最后一个精确槽的TooSkew和通用fallback失败串联输出，未报告几何是否取得、是否存在有效投影、最接近角度或候选校验是否执行；恢复说明一律建议移近或换位置，易诱导无效重试。
 - 修复：复用原候选和纯角度公式，补充固定捕获reason、实际阶段计数、最小有效偏差及明确unknown。最后精确槽结果单独标注；candidateChecks不声称原生放置检查次数。只对明确OutOfReach建议移近，暂时buffer busy只允许等待后一次fresh prepare；不更改原生阈值、计划/状态hash、材料/施工或commit语义。
 - 验证：1217项Debug/Release（32/1131/54）、完整Release零警告错误，源码MCP64 tools/1 resource及同批指南/stdout通过；当前1201安装态不热替换，新阶段live尚待。单元测试不作为供水恢复或偏移施工成功证明。
-- 状态：`rejection_stage_diagnostics_fixed_offline_live_pending`；关联EXP-227。
+- 本机后续：1217同批冷部署/同档恢复及33详情保持通过；四个明确接点分别返回两次无有效投影和59.768°/19.745°两个超界角度，geometry捕获均成功、候选校验和commit均0。新诊断没有放宽原生拒绝，也没有把未测角度填0。主会话停止重复候选，转向完整供料方案。
+- 状态：`rejection_stage_diagnostics_offline_and_local_verified`；关联EXP-227。新接线施工与持续供给未通过。

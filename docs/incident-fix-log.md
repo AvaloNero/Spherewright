@@ -526,6 +526,8 @@
 
 ## IFX-049 — 原生路径检查借用了玩家的锚点预览阶段
 
+2026-09-07本机补验：1258同档受保护恢复与完整审计通过；20个新点的自由路径完整stage1 prepare成功，754旧源NEW重叠明确拒绝，均无commit，玩家hash和源endpoint保持、无新增prebuild或BepInEx异常。阶段预检的局部live已证明，正常施工和cover复用仍未验；下文offline状态保留初始切片语义。
+
 - 首见：2026-09-07，主会话继续复核IFX-048的原生路径前置条件。
 - 根因：_Init绑定真实controller，CheckBuildConditions在cmd.stage0跳过后续弯折/坡度/接入检查；旧适配未提供独立阶段且只填源startObjectId，未填目标castObjectId。原生CreatePrebuilds还可修改阶段，不能把真实玩家命令当临时工具状态。
 - 修复：工具自己创建inactive/disabled的合法Unity组件容器，独立stage1命令；仅重绑定私有未注册BuildTool，检查真实玩家命令值不变、两端ID完整，finally恢复工具绑定/预览UI和释放自己创建的host。拒绝改玩家cmd、new/clone MonoBehaviour、跳过原生角度或拆除旧实体。原生普通材料/预建筑/无人机/终态语义保持。

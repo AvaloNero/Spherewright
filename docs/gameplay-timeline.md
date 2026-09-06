@@ -2,9 +2,15 @@
 
 更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 运行1217/5834edc，新窗第2写正常保存25521315，accepted=2保留，Luna冻结施工。主会话审计2280建筑完整身份/姿态/连接未变、41详情/独立0prebuild、J55/55 durable、healthy/Walk0/400MJ/三网ratio1。1258-test源码修复原生路径阶段依赖且保留全路径占位遏制，待冷部署；旧belt cover复用尚未实现。主会话已接手三料来源及有界方案设计；持续水/钛晶石/黄糖供给、运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。
+当前截面：同一 `owned-world-001` 已冷部署1258-test修复，受保护恢复并自动重存25521346，新窗accepted=3保留，Luna冻结施工。主会话审计2280建筑完整身份/姿态/连接未变、41详情/独立0prebuild、J55/55 durable、healthy/Walk0/400MJ/三网ratio1。一个20点自由带路径通过完整原生stage1预检，754旧源点的NEW重叠被拒绝，均未commit；旧belt cover复用尚未实现。主会话接手三料来源及有界方案设计；持续水/钛晶石/黄糖供给、运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。
 
 ## 结论与证据边界
+
+2026-09-07 / 新窗第3写与1258只读实测：protected resume `234f01df-c659-4e77-9cee-e773490d1c3e` terminal/completed/succeeded，动作起止tick为null，自动重存25521346。主会话逐raw核25525911/rev1同档owned104/healthy/和平/非沙盒/1×/0blocker/checkpoint，J55/55无pending/error、Walk0/400MJ/3idle、三网ratio1；25525961单snapshot23页2280唯一built全部item/pose/connection与#2及来源快照一致，独立25525953 prebuild0，41详情的配方/过滤/仓设置保持。accepted3保留，不因重启或审计归零。
+
+随后主会话只读复验已明确的gap5外侧水路：20个NEW点通过完整stage1原生预检，commitAllowedNow=true但0commit，不证明两个sorter接点。固定754源候选在point0正确返回belt_path_existing_overlap，源endpoint不变。原始响应action-f0c1489963c44947b75967431fc26bd6与action-851aa9966cf3459c9de0ee56008c44c3保存；25538451/25541440/25541451玩家哈希一致，25541454仍healthy/rev1、0prebuild。显示脚本最初误读player.gameTick，改为已存在的capturedAtGameTick并从已持久raw核销，没有重复提交候选。原生检查/临时组件没有BepInEx error/fatal/TypeLoad/NullReference日志；CI34067373558成功。负例error的通用recovery仍提“走近”，与具体占位原因不够一致，后续修正提示，不能据此重试原点。
+
+2026-09-07 / 1258-test冷安装：第2写审计已落盘，正常关闭精确DSP进程且确认退出；四个新程序集与已测试Release输出哈希逐一相等，完整哈希见environment。代码8883e31已按用户规则提交推送，未带原第十项打包/CI，未tag/release。仅经Steam启动一次，尚待同档protected resume（下一accepted为#3）；不热替换、不新建档或复用旧token。首轮只读预检通过前继续冻结施工。
 
 2026-09-07 / 完整路径阶段修复与第2写关机前审计：普通save `cd900130-3d48-4551-82da-eaae043cdc7d` 在25521315同步开始/完成、terminal/completed/succeeded。主会话独立核原始两写终态，25535243/rev2仍owned104/healthy/和平/非沙盒/1×/0blocker/checkpoint；玩家25535260 Walk0/400MJ/空手搓/3idle，J25535267为55/55无pending/error，25535277三网ratio1，独立25535282 prebuild0。25535287单snapshot23页2280唯一built的item/位置/旋转/连接全部与来源追踪快照相同；41详情通过，前33项完整仓设置也保持。本地审计初版误把一页built当prebuild，按原始记录类型修正索引后通过；重复日志按同一响应核对，不构成新增游戏动作。accepted2不归零。
 

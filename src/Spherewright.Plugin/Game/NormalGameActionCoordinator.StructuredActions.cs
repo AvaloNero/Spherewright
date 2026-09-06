@@ -609,7 +609,7 @@ internal sealed partial class NormalGameActionCoordinator
     {
         steps = new List<BuildStepPlan>();
         rejection = string.Empty;
-        var points = new Vector3[256];
+        var points = new Vector3[BeltBuildOccupancyPolicy.MaximumPathPoints];
         var maxSlope = 0f;
         var count = factory.planet.aux.SnapLineNonAlloc(
             source.Pose.position,
@@ -621,9 +621,9 @@ internal sealed partial class NormalGameActionCoordinator
             forceVertical: false,
             ref maxSlope,
             useOldPath: false);
-        if (count < 2)
+        if (count < 2 || count >= points.Length)
         {
-            rejection = "DSP's terrain grid did not return a belt path with at least two segments.";
+            rejection = "DSP's terrain grid did not return a complete, unsaturated bounded belt path.";
             return false;
         }
 
@@ -1068,6 +1068,8 @@ internal sealed partial class NormalGameActionCoordinator
             return false;
         }
 
+        if (!TryValidateNewBeltOccupancy(factory, candidates, out rejection)) return false;
+
         var tool = new SpherewrightPathBuildTool();
         tool._Init(GameMain.data!);
         tool.SetFactoryReferences();
@@ -1098,7 +1100,9 @@ internal sealed partial class NormalGameActionCoordinator
                 accepted.Add(BuildStepPlan.FromPreview(candidates[index], previews[index]));
             }
 
-            return true;
+            // Native checking can adjust heights/poses. Its output is also a NEW-object
+            // path, so it must pass the complete occupancy guard after adjustment.
+            return TryValidateNewBeltOccupancy(factory, accepted, out rejection);
         }
         finally
         {
@@ -1222,6 +1226,8 @@ internal sealed partial class NormalGameActionCoordinator
         Action cleanup;
         if (action.Plan.BuildKind == NormalBuildKinds.Belt)
         {
+            if (!TryValidateNewBeltOccupancy(factory, action.Plan.BuildSteps, out var occupied))
+                throw new InvalidOperationException("The prepared new belt site changed before construction: " + occupied);
             var tool = new SpherewrightPathBuildTool();
             tool._Init(GameMain.data!);
             tool.SetFactoryReferences();
@@ -1322,11 +1328,9 @@ internal sealed partial class NormalGameActionCoordinator
             }
             else if (action.Plan.BuildKind == NormalBuildKinds.Belt)
             {
-                // A path that starts from an existing belt can create its
-                // first new belt at exactly the source belt's pose. Capture
-                // every older co-located belt before CreatePrebuilds so the
-                // completion readback maps each step to the newly built
-                // entity instead of inserting the source belt into the path.
+                // Defence-in-depth attribution only, NOT permission for a co-located
+                // source/new belt. The complete-path occupancy gate rejects such
+                // previews before any native construction.
                 foreach (var preview in previews)
                 {
                     CaptureBuiltEntityIds(

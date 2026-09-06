@@ -514,3 +514,12 @@
 - 验证：1217项Debug/Release（32/1131/54）、完整Release零警告错误，源码MCP64 tools/1 resource及同批指南/stdout通过；当前1201安装态不热替换，新阶段live尚待。单元测试不作为供水恢复或偏移施工成功证明。
 - 本机后续：1217同批冷部署/同档恢复及33详情保持通过；四个明确接点分别返回两次无有效投影和59.768°/19.745°两个超界角度，geometry捕获均成功、候选校验和commit均0。新诊断没有放宽原生拒绝，也没有把未测角度填0。主会话停止重复候选，转向完整供料方案。
 - 状态：`rejection_stage_diagnostics_offline_and_local_verified`；关联EXP-227。新接线施工与持续供给未通过。
+
+## IFX-048 — 普通续带把既有锚点作为新对象再次建造
+
+- 首见：2026-09-07复核供水路径和EXP-149，主会话接手规划；本次未新增belt/blueprint施工。
+- 根因：TryCreateBeltSteps为全部SnapLine点生成NEW BuildStepPlan，首末点强制等于旧端点坐标；CreatePreview保留cover0。原生DeterminePreviews实际上将旧belt作为non-removing cover，CreatePrebuilds不另扣料而复用ID。旧完工归属/有向连接证明不能替代缺少的原生preview形成步骤，EXP-149的“原生转接层”解释撤回，实测物流事实保留。
+- 最小遏制：完整本地实体/预建筑扫描和纯Core有界同中心检查，无source例外；原生预检前/后、commit重验和施工前都检查。稳定reason/点索引/有符号对象ID指导外部Agent停止同点重试，MCP与指南明确既有belt锚点续接暂不支持。旧实体不自动拆除、归档不迁移，不用传送/注入或改玩家cmd绕过。
+- 验证：1250项Debug/Release（32Contracts/1163Core/55MCP）、完整Release零警告错误，源码MCP64tools/1resource/35210字符指南、正常exit0及纯stdout通过。32个新Core案例含源/末/中间/预建筑、相邻格、精确距离边界、自交、坏输入/限额、陈旧现场和坐标调整后重查；1MCP发现性回归。新防护暂未安装/live。
+- 未完成：完整native cover复用、原生cmd.stage依赖的无玩家副作用预检、成功正常续接和材料/拓扑/货物保存恢复回归。不能把暂时拒绝风险路径冒充完整修复或0.4通过。
+- 状态：`new_belt_overlap_containment_offline_verified_live_pending`；关联EXP-228（替代EXP-149施工解释）。

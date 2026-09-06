@@ -6,6 +6,10 @@
 
 ## 结论与证据边界
 
+2026-09-07 / 主会话路径复核与防重叠遏制：按当前DLL确认原生续带会复用旧belt端点，旧适配却把该坐标也作为新对象，撤回EXP-149的“急转转接层”解释。新源码对全部NEW点执行当前工厂有界占位检查、无source豁免；1250项Debug/Release、完整Release零警告错误和源码MCP64tools/1resource/35210字符指南通过，尚未部署。Luna只读追查三料来源，accepted仍1；不自动拆旧对象或换档。原生cover复用及cmd.stage条件依赖仍是明确后续项，而非宣称已经完整修复。
+
+同批只读候选证据：从2230/2232/2233明确选择并导出三带弯段，唯一候选(-63.8682,-99.4144,-161.6097)、quarterTurns0被旧金刚石带1202/1203占位拒绝，nativeCheckPerformed=false，0施工commit。导出成本3条带、玩家46条、科技/预算通过不覆盖占位拒绝。主会话fresh复读759确认754→759→753的水入口；1202/1203的path32局部物料为金刚石而不是水。重导出时间戳改变blueprintHash，因此只复用那份明确原始代码并fresh校验来源，不能拼接不同hash或把只读导出当成功复制。
+
 2026-09-07 / 1217诊断冷部署与新窗第1写：正常关闭已保存进程，四DLL与5834edc Release逐一相等，Steam仅启动一次；恢复 `2fe2922b-0ed6-4cdd-9dea-c4a90b5d219e` terminal/completed/succeeded、动作起止tick为null，自动重存25328405。主会话核25331137/rev1 owned104/healthy/和平/非沙盒/1×/0blocker/checkpoint，25331149 Walk0/400MJ/空手搓/3idle，J25331152为55/55 durable无pending/error、独立0prebuild、三网ratio1；33详情的item/位置/旋转/连接/完整仓设置与第10写后相等。初始BRIDGE_NOT_READY未消费票据且无accepted。随后主会话在新安装态仅复验四个既有接点：753→2219为24/40 admitted seeds、4投影、最小59.768°；753→2232为8/40、4投影、19.745°；2246/2277→761各8/28、0投影、偏角unknown。全部几何捕获成功，0面对面候选/0最终候选校验/0commit，明确不属于继续走近即可消除的OutOfReach。新错误阶段确实可用，不证明接线成功；停止这四点的重复尝试，先按完整供料证据规划。accepted1不因只读审计归零。
 
 2026-09-07 / 十写冻结审计完成：#10普通save `8ffa3c29-9de7-47de-9491-10d4f37b920c`在25328373同步开始/完成并成功保存、revision2。主会话独立读取本窗10个唯一action的原始terminal，全部completed/succeeded；三次正常保存、两次protected resume、四次配置和一次Move均已核销，无unknown或重放。25336801/rev2为同档104/owned/healthy/和平/非沙盒/1×、0blocker/checkpoint且protected resume可用；25336815玩家Walk0/400MJ/3idle/空手搓，25336819 Journal55/55 durable、无pending/error，25336826三网ratio1。25336830同snapshot23页2280唯一built的每个item、位置、旋转和连接均与第4写后完整快照一致；独立25337409 prebuild0，33详情成功，761完整仓设置与第5写后相等、775/2268仍bans30。水源753有600、760水0、769钛晶石16、775金刚石3000、774黄糖0；持续物流未恢复，不把稳定库存或等待当产量。日记/EXP修订落盘后accepted10→0，允许下一次按EXP-001/002冷部署1217并从新窗#1受保护恢复。源码5834edc的Windows CI34063130914成功；新诊断仍待安装实测，不外推为修复通过。

@@ -195,6 +195,12 @@ Flight-checkpoint reload is a narrower repeatable recovery path. It accepts only
 
 The public surface contains no composite red-matrix or legacy sandbox operation. Missing future methods return no simulated data and must not be substituted with historical sandbox code.
 
+### New belt centre-occupancy containment (0.4 development slice)
+
+Ordinary path plans still describe only NEW objects; native existing-belt cover reuse is not yet implemented. Every planned node, including both endpoints, must be more than0.25m from every current built/prebuild belt and every other new node. The Plugin scans the complete local owned factory (at most65536 pool slots including holes), not just a nearby page; the pure guard bounds path size to256 and exact-distance comparisons to65536. A saturated256-point native path result is rejected as potentially truncated. Malformed/missing evidence, unclassified prototypes and excessive bounds fail closed. The guard runs before/after native pose adjustment, again at commit revalidation, and immediately before construction. Native checks, cost, drones, hashes, exact outcomes and single-flight remain required.
+
+Rejections retain the existing error DTO and report a stable occupancy reason, planned index and signed object ID (negative for prebuild;0 for self-overlap). Existing-belt source/destination previews currently coincide with their old anchor and are therefore rejected, not silently clipped, charged again or rebuilt. Free new paths and proven non-belt native ports remain subject to the same native checks. Omitting the endpoint ID does not bypass occupancy. This is containment, not completed native anchor reuse or general collision/pathfinding support; it never repairs/dismantles old coincident entities or claims material flow proves their native placement legitimacy. Full cover semantics, native path-stage validation and successful live continuation remain follow-up work.
+
 ### Initial sorter filter during normal construction (0.4 development slice)
 
 `spherewright_prepare_build` accepts optional `initialSorterFilterItemId` (default0). A nonzero value is supported only for native ordinary2011/2012 sorters and must be an existing unlocked bounded item ID. Non-sorters, unsupported grades, negative/oversized/unknown IDs and locked filters reject before a plan; zero retains unfiltered legacy construction. The prepared DTO returns `plannedSorterFilterItemId` (null for other build kinds,0 for explicitly unfiltered).

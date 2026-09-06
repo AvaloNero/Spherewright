@@ -7,6 +7,14 @@
 - Read-only ILSpy inspection of the local assembly; no decompiled code or game binaries are redistributed.
 - Plugin reads occur only on the Unity main thread after the existing exact-owned-session/local-planet check. Core receives copied DTOs, not game objects.
 
+## New belt overlap containment and anchor mismatch (2026-09-07)
+
+The installed current Assembly-CSharp SHA above was rechecked unchanged. Read-only inspection of `BuildTool_Path.DeterminePreviews()` proves an existing source belt becomes the first preview's `coverObjId`; same-item reuse has `willRemoveCover=false`. The destination belt likewise becomes a non-removing cover, with the preceding new preview choosing a free native input slot. `CreatePrebuilds()` consumes an item only for no-cover/removing-cover previews; a non-removing cover returns its existing object ID. It does not create a second belt at that anchor. The current adapter instead made every snapped point new with cover0, including the exact source/destination position, and attributed the later duplicate by topology. Native creation after an incomplete preview is not evidence of vanilla placement legitimacy: EXP-149's previous turning-layer explanation is withdrawn.
+
+Minimal containment keeps the current new-object plan/count/proof contract: a bounded Core centre guard and main-thread complete entity/prebuild scan reject all coincident NEW points, with no source exception. Recheck before/after native preview adjustment and immediately before creation; a changed site also fails normal commit revalidation. The0.25m rule is a conservative same-centre exclusion, not DSP's collision radius; native collision/technology/material rules are still mandatory. Oversized/saturated/malformed evidence rejects rather than dropping objects. No new game write API is introduced, and existing entities/cargo remain untouched. This intentionally makes existing-belt anchored continuation unavailable until a correct non-removing-cover implementation has its own material/topology/cargo proof.
+
+Further native constraints discovered, not silently worked around: `_Init(GameData)` binds the real player controller; `CheckBuildConditions()` uses `controller.cmd.stage`, and stage0 skips the later bend/slope/junction pass. `CreatePrebuilds()` can set stage1 to continue a UI path. A future cover adapter must prove full native validation without changing the player's command during prepare. Clipping the anchor, guessing cover flags, temporarily changing live command state or declaring a unit test to be live success are rejected alternatives. This slice does not claim the complete path adapter is repaired; free-path native/live regression and faithful anchored continuation remain distinct gates (EXP-228/IFX-048).
+
 ## Bounded blueprint data and native upgrades (2026-09-06)
 
 ### Single-belt rejection-stage diagnostics (2026-09-07;1217 source/offline)

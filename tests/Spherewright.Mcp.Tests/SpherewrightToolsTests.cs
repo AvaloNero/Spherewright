@@ -25,6 +25,25 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void NewBeltOccupancyBoundaryIsDiscoverableWithoutPromisingAnchorReuse()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tool = Assert.Single(provider.GetServices<McpServerTool>(),
+            value => value.ProtocolTool.Name == "spherewright_prepare_build").ProtocolTool;
+        Assert.Contains("including both ends", tool.Description);
+        Assert.Contains("0.25 m", tool.Description);
+        Assert.Contains("anchors are temporarily unsupported", tool.Description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("belt_path_existing_overlap", guide);
+        Assert.Contains("Do not omit endpoint IDs", guide);
+        Assert.Contains("native cover reuse", guide);
+        Assert.Contains("does not automatically repair", guide);
+    }
+
+    [Fact]
     public void AttachmentFailureStagesAreDiscoverableAndDoNotEncourageBlindPairRetries()
     {
         var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareBuildAsync))!;

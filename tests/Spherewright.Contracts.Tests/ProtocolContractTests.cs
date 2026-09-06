@@ -22,6 +22,41 @@ public sealed class ProtocolContractTests
     };
 
     [Fact]
+    public void BeltCargoUnavailableDoesNotSerializeAsObservedZero()
+    {
+        var snapshot = new FactoryEntitySnapshot { BeltCargo = new BeltCargoSnapshot { ReasonCode = "cargo_path_unavailable" } };
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(snapshot, JsonOptions));
+        var cargo = json.RootElement.GetProperty("beltCargo");
+        Assert.Equal("unavailable", cargo.GetProperty("state").GetString());
+        Assert.Equal(JsonValueKind.Null, cargo.GetProperty("itemCount").ValueKind);
+        Assert.Equal(JsonValueKind.Null, cargo.GetProperty("cargoStackCount").ValueKind);
+        Assert.Equal("cargo_path_unavailable", cargo.GetProperty("reasonCode").GetString());
+        Assert.Equal(0, cargo.GetProperty("items").GetArrayLength());
+        Assert.Null(JsonSerializer.Deserialize<FactoryEntitySnapshot>("{\"objectId\":1}", JsonOptions)!.BeltCargo);
+    }
+
+    [Fact]
+    public void BeltCargoObservationRoundTripsExplicitLocalCoverageAndNativeStackUnits()
+    {
+        var snapshot = new FactoryEntitySnapshot
+        {
+            BeltCargo = new BeltCargoSnapshot
+            {
+                State = "observed", CapturedAtGameTick = 1234, PathId = 9, PathLengthCells = 1000,
+                SegmentStartCell = 100, SegmentLengthCells = 10, PathClosed = false,
+                CargoStackCount = 1, ItemCount = 4,
+                Items = new List<BeltCargoItemSnapshot> { new() { ItemId = 1112, Count = 4, Inc = 12, CargoStackCount = 1 } },
+            },
+        };
+        var copy = JsonSerializer.Deserialize<FactoryEntitySnapshot>(JsonSerializer.Serialize(snapshot, JsonOptions), JsonOptions)!;
+        Assert.Empty(copy.Buffers);
+        Assert.Equal("unique_stacks_touching_selected_belt_segment", copy.BeltCargo!.Coverage);
+        Assert.Equal(1234, copy.BeltCargo.CapturedAtGameTick);
+        Assert.Equal(4, copy.BeltCargo.ItemCount);
+        Assert.Equal(12, Assert.Single(copy.BeltCargo.Items).Inc);
+    }
+
+    [Fact]
     public void UpgradeResultCarriesImmediateCargoAndTimingNotLaterPollState()
     {
         Assert.Null(new ActionResultSnapshot().UpgradeReadback);

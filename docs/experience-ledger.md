@@ -1,6 +1,6 @@
 # Spherewright experience ledger
 
-更新时间：2026-09-06（Asia/Singapore）
+更新时间：2026-09-07（Asia/Singapore）
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
@@ -2697,7 +2697,23 @@
 - 关联：IFX-039、EXP-007/158/161、GameStateReader.CaptureLab、包内playbook。
 - 最近复验：2026-09-06（807 Release：21Contracts/749Core/37MCP，完整Release构建零警告错误；源码MCP64tools/1resource/25250字符指南一致、exit0/额外stdout0。767原始bundle在24076211确认774/matrix_lab/6003的真实上游路径，原假定被证伪；未因此新增写入或声称持续产量恢复）。
 
+### EXP-215 — 单段带货物观察必须声明覆盖，并保留未知与零的区别
+
+- 状态：`observed`
+- 日期：2026-09-07
+- 适用范围：当前DLL的单个owned belt详情观察，非整条带路或升级守恒证据。
+- 当前结论：分页和原buffers不新增隐式货物含义；独立beltCargo只在state=observed时给出单tick、native segIndex/segLength触及的独立cargo stacks及真实stack/inc。至多512cell+两侧9cell，先验证十字节帧/引用再native GetCargoAtIndex；CargoContainer从ID0分配，不能套用实体池的正ID规则。字段缺失/unavailable是未知，失败不返回部分计数。跨相邻段同一stack可能重复出现，不相加、不由一次空段判stall或由局部货物证明全路径升级保持。
+- 直接证据：当前DLL哈希及精确字段/方法记录在game-api-foundry.md；70项Core回归覆盖帧的十个位置、零ID/base100边界、损坏/缺失/重复引用、单格损坏零与1000个确定性随机局部窗口；两项契约测试明确null与0、stack/inc及旧DTO兼容，MCP指南注册回归更新。
+- 限制或反例：本源码未冷部署，只有离线证据。闭环接缝片段保守返回不可观测；不读取整条带路/容器，不保证一般第三方Mod格式。新读数不加入现有action/configuration/endpoint hash，不授予写权限，也不启用belt升级。
+- 复验触发：DLL货物编码/池分配/路径分段/原生reader、同批部署与恢复、字段覆盖或hash语义变化。
+- 关联：EXP-214、IFX-039、BeltCargoObservationPolicy、GameStateReader.BeltCargo、包内playbook。
+- 最近复验：2026-09-07（Debug/Release879项：23Contracts/819Core/37MCP，完整Release构建零警告错误；源码MCP0.4.0.0、64tools/1resource、26107字符指南完全匹配、退出0/额外stdout0。尚无新读数live声明）。
+
 ## 修订记录
+
+- 2026-09-07：新增EXP-215及单段beltCargo详情读取，补充IFX-039、公共工具描述/协议/指南；70项新Core与2项契约回归后Debug/Release879通过，完整Release0警告错误，真实源码MCP64tools/1resource/26107字符指南一致。该切片不改变游戏写入、hash、现有升级白名单或运行767安装态，不计作全路径货物证明、实测吞吐或最终包。
+
+- 2026-09-07：只读复核原始实体24180895–24189453：761三十格全部是塑料/油，无水；2248/2253/2254各持1水向761的0/1/6槽输入，765过滤水从761:7到760:4，实际双向连接成立，760水输入0。753纯水仓600水及752输出50/50证明上游有水，不证明全线输送畅通。决定通过正常专用水旁路/独立缓冲解除这处共仓互斥，不清仓、不注入、不新建重复消费者；复制/配平仍需实际恢复后重新建立非零基线。此批accepted=0，原计数保持0，相关诊断、材料和改线结果必须另行核销。
 
 - 2026-09-06：复核767唯一accepted恢复5381b28d的原始terminal收据、主档23992240、24112905–24113594完整审计和四个明确选址负例；115/719/720保存恢复通过，EXP-211与IFX-038的该项pending取消。EXP-212增加真实理论输送与满负载供电负例，保留未施工/未实测吞吐边界。owned104/和平/非沙盒/1×/healthy、0blocker/checkpoint、J55/55无pending/error、Walk0/400MJ/3idle/手搓空、2267built/0prebuild，三网当前满供电；不存在accepted未知结果重放。本条及日记落盘后计数1→0，游戏保持同档运行。EXP-007/018/021/028/048/158/190/193/207/211–214在各自证据边界内复核，0产消不改判为配平，局部追踪不改判为已到终点。
 

@@ -430,6 +430,8 @@
 - 验证边界：这是读取解释/操作指南修复，不修改游戏货物、拓扑或动作权限，不声称已找到所有末端或恢复持续产量。新增MCP注册/指南契约回归后Release807通过，完整Release零警告错误，源码实际MCP64tools/1resource及25250字符指南一致。767原始bundle24076211已由主会话复核，明确存在774/matrix_lab/6003上游路径，三个目标实际产消均0；128对象的下游追踪仍只是有界前缀，不能补造终点。
 - 关联：EXP-214、GameStateReader.TryCaptureFactoryEntity、CaptureLab、MCP观察工具与包内playbook；状态：`guidance_corrected_revalidation_pending`。
 
+- 2026-09-07源码补充：独立beltCargo详情观察以明确局部覆盖/observed或unavailable弥补货物盲点，不改变旧buffers含义，不把未读到当0。分段边界与零ID原生证据、严格界限和测试见EXP-215；未冷部署，不把该补充算成全线路诊断或belt升级已验。
+
 ## IFX-037 — 把Move距离终态后的Drift等待和低能量返岸当作安全交接
 
 - 首见：2026-09-06，617-test验收移动fd22bab1已达坐标，但fresh持续Drift；等待稳定耗能，旧指南缺少明确的有界返岸分支。

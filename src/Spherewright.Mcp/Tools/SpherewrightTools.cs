@@ -240,7 +240,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Lists an immutable bounded snapshot of built factory entities and legal prebuilds, including component identity, position, recipe, buffers, connections, and power state where applicable. Use componentKind=station for detailed logistics-station state, and componentKind=lab for matrix production/research; assembler-only results do not include labs. Finish the same filtered snapshot's pages before claiming absence. Belt cargo is not observed in buffers; an empty belt buffers list does not prove an empty belt. Trace actual directed/reciprocal endpoints and observed device buffers/Overseer rates instead.")]
+    [Description("Lists an immutable bounded snapshot of built factory entities and legal prebuilds, including component identity, position, recipe, buffers, connections, and power state where applicable. Use componentKind=station for detailed logistics-station state, and componentKind=lab for matrix production/research; assembler-only results do not include labs. Finish the same filtered snapshot's pages before claiming absence. Belt cargo is not observed in buffers; an empty belt buffers list does not prove an empty belt. List snapshots omit beltCargo: use inspect_factory_entity for that bounded local observation. Trace actual directed/reciprocal endpoints and observed device buffers/Overseer rates instead.")]
     public static async Task<CallToolResult> ListFactoryEntitiesAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,
@@ -274,7 +274,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Re-reads one built entity (positive objectId) or prebuild (negative objectId) on Unity's main thread. Completed station entities include detailed logisticsStation state and independent live/configuration hashes. Belt cargo is not observed in buffers: an empty belt buffers list is unknown cargo, not an empty-belt or flow-stopped proof. Follow bounded directed/reciprocal connections to real consumers; an unfinished trace is not proof that no consumer exists.")]
+    [Description("Re-reads one built entity (positive objectId) or prebuild (negative objectId) on Unity's main thread. Completed station entities include detailed logisticsStation state and independent live/configuration hashes. Belt cargo is not observed in buffers: use the separate detail-only beltCargo object. state=observed reports unique stacks touching only this belt segment at one game tick; unavailable/null is unknown, never zero. The read is bounded to 512 segment cells, with explicit reasons for unobserved seams or invalid references. Adjacent observations can include the same stack: do not sum them, infer flow from a single sample, or use these counts as an upgrade-preservation proof. Existing action/endpoint hashes do not bind this optional observation. Follow bounded directed/reciprocal connections to real consumers; an unfinished trace is not proof that no consumer exists.")]
     public static async Task<CallToolResult> InspectFactoryEntityAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,

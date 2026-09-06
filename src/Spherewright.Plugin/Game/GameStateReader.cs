@@ -632,6 +632,8 @@ internal sealed partial class GameStateReader
         if (request.ObjectId > 0 && request.ObjectId < factory!.entityCursor)
         {
             snapshot = TryCaptureFactoryEntity(factory, request.ObjectId);
+            if (snapshot?.ComponentKind == "belt")
+                snapshot.BeltCargo = CaptureBeltCargo(factory, request.ObjectId);
         }
         else if (request.ObjectId < 0 && -request.ObjectId < factory!.prebuildCursor)
         {

@@ -89,6 +89,10 @@ public sealed class FactoryEntitySnapshot
 
     public List<FactoryBufferSnapshot> Buffers { get; set; } = new List<FactoryBufferSnapshot>();
 
+    // Detail-only observation, separate from device buffers and action hashes.
+    // Null (including list snapshots) means not observed, never an empty belt.
+    public BeltCargoSnapshot? BeltCargo { get; set; }
+
     public List<int> ResourceNodeIds { get; set; } = new List<int>();
 
     public LogisticsStationSnapshot? LogisticsStation { get; set; }

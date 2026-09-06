@@ -43,11 +43,19 @@ public sealed class SpherewrightToolsTests
             Assert.Contains("Belt cargo is not observed", tool.Description);
         }
         Assert.Contains("unfinished trace", inspect.Description);
+        Assert.Contains("separate detail-only beltCargo", inspect.Description);
+        Assert.Contains("unavailable/null is unknown", inspect.Description);
+        Assert.Contains("do not sum", inspect.Description);
+        Assert.Contains("upgrade-preservation proof", inspect.Description);
+        Assert.Contains("List snapshots omit beltCargo", entities.Description);
         var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
         Assert.Contains("labs, not assemblers", guide);
         Assert.Contains("Belt cargo is not observed", guide);
         Assert.Contains("cargo unknown, not an empty belt", guide);
         Assert.Contains("never manufacture demand by clearing storage", guide);
+        Assert.Contains("state=observed", guide);
+        Assert.Contains("do not sum", guide);
+        Assert.Contains("whole-path upgrade cargo-preservation", guide);
     }
 
     [Fact]

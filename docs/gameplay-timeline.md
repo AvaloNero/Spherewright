@@ -1,13 +1,13 @@
 # 存档日记 001：从落地到当前的决策、科技与首次产出
 
-更新时间：2026-09-06（Asia/Singapore）
+更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 当前截面：同一 `owned-world-001` 已在767安装态完成 protected resume，并复验115/719/720修复连接和邻居配置保留；主档重存23992240。最新一写完整审计为24112905–24113594：owned/healthy、无blocker/checkpoint、J55/55、2267built/0prebuild、Walk0/400MJ/3idle。四个有限模块选址均因占位、满负载供电预算或原生跨纬线条件拒绝，没有blueprint commit。774黄糖消费者确实存在，但1112/1118/6003在诊断窗内实际产消均0，仍须恢复真实供给。源码bf655e6已推送，807项Release和CI通过；其观察指南及此前806项全模块成本比较未热装到767游戏。完整Foundry/Governor、两倍十分钟、准备清单和最终包仍未完成。artifacts中的两个0.4.0 ZIP是9月5日旧构建，不是本轮完成包。
 
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留214条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
+- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留215条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -16,6 +16,10 @@
 - 本文使用四种证据：`J` = 持久化运行时 Journal；`R` = 当前存档运行态；`M` = 产线读回、普通保存与 Git 里程碑；`D` = 经验账本。首次问题及代码修复另见 [incident-fix-log.md](./incident-fix-log.md)，现行规则与复验证据见 [experience-ledger.md](./experience-ledger.md)，版本门见 [ROADMAP.md](../ROADMAP.md)。
 
 ## 从落地到当前的主时间线
+
+2026-09-07 / 879-test单段带货物源码：为现有inspect详情增加单tick、至多512cell的独立beltCargo，区分观察到的数量与unknown，不改变分页buffers、动作hash或升级范围。Debug/Release879通过，完整Release零警告错误，真实MCP64tools/1resource/26107字符指南一致。尚未安装，游戏继续767；这是观察缺口的代码切片，不是水路修复、产线扩产或最终包完成。
+
+2026-09-07 / 现有黄糖链只读诊断与修复决策（原始游戏采样24180860–24189453，计数保持0）：主会话复核760输入塑料4/油2/水0；761为30格/default/无格过滤，30格全部被塑料或精炼油占用，没有水。水源752缓冲50/50、753的30格各20水；2248/2253/2254均从2246取水并各持1件，却都向761输入，765则只从761过滤水供760。实际reciprocal连接存在，因此不是补重复进仓sorter即可解决。三个物料共仓互相占位阻断水进入，是有直接库存/拓扑证据的局部物流问题；是否还有其他瓶颈仍待恢复后采样。600tick诊断窗24185586–24186185内水/有机晶体/钛晶石/结构矩阵实际产出均0。下一有限修复优先用现有纯水带直供760，或新增一座独立水缓冲并过滤供水，保留761现有库存与塑料/油出边；只走正常建造/分拣器回收重建，不清仓制造需求、不新建重复消费端。尚未提交这项修复，不声称产量恢复。
 
 2026-09-06 / 767恢复后一写完整审计（原始审计记录23:40:26，Asia/Singapore）：本窗仅 protected resume `5381b28d-07a1-4869-8c39-081b16d8e7c2` 被接受，原始run-complete明确terminal/completed/succeeded，主档自动重存23992240≥minimum23992209；动作自身起止tick仍为空，不以保存tick代替。fresh session24112905/revision1为同档owned104、和平/非沙盒/1×、healthy、blockers0、checkpoint不可用、protected resume可用；玩家24112920为Walk0、400/400MJ、3idle/0施工目标/手搓空。Journal24112923为55/55 durable、pending=false/error=null。工厂同一24113018快照23页共2267实体，无截断；24113594的prebuild页为0。三网24112929的需求=供应=72756/tick、容量191000/tick、consumerRatio均1；这只是当前供电，不能替代全基础负载预算。115、719、720及对应配方/仓设置在恢复后已复读保留，玩家仍有2011×4、2101×2、2302×1和此前回收金刚石×1。本窗无新建/拆除/转移/保存/关机、没有未知动作重放或物品人工注入；主会话复核原始响应并将本条与账本落盘后，计数1→0。下一动作必须fresh read，不复用此审计的hash。
 

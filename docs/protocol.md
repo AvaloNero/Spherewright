@@ -83,6 +83,14 @@ spherewright_commit_reload_flight_checkpoint
 
 `prepare_new_game` and `commit_new_game` now describe only a peaceful 1x non-sandbox world. The old sandbox basic-production-line methods are not registered as MCP tools and are excluded from M0.
 
+### Detail-only belt cargo observation (0.4 development slice)
+
+`spherewright_inspect_factory_entity` adds nullable `beltCargo` on exact completed local belt entities. It is separate from `buffers`, not populated in paginated lists, and not part of existing `stateHash`, `configurationStateHash` or `endpointStateHash`; those action semantics and versions are unchanged. The field is a read-only single-tick observation, not a write token or preservation proof.
+
+`state=observed` gives `capturedAtGameTick`, native path/segment identity and bounds, `pathClosed`, `cargoStackCount`, `itemCount` and item-sorted `items` (item/count/native inc and stack count). Coverage is `unique_stacks_touching_selected_belt_segment`: a stack crossing a segment edge can appear in both adjacent reads, so the results must not be summed into path inventory. Empty counts prove only this selected segment was empty at that tick, not zero flow, a stalled belt, or an empty entire path.
+
+The adapter copies at most530 bytes (512 selected cells plus9 guards per side), checks the native ten-cell representation and zero-based cargo IDs, and confirms each distinct reference via bounded `CargoPath.GetCargoAtIndex` before copying item/stack/inc scalars. It neither scans the whole path/container nor traverses other factories. Null/missing means not observed; `state=unavailable` returns a fixed `reasonCode`, null totals and no partial items. Oversized/out-of-range segments, unresolved seam fragments, malformed/ambiguous cargo references, absent pool identity or failed native readback never become successful zero counts. Current native component and owned-world checks remain in force. Belt upgrades still require a separate full affected-path/chunk/cargo proof and are not enabled by this observation.
+
 ### Governor proposal (0.4 development slice)
 
 Factory observations retain component and pagination boundaries: `list_assemblers` is not an all-producer/consumer query. Matrix production is in `componentKind=lab`, with research mode and matrix-point units handled separately. Complete the relevant immutable filtered pages and actual bounded directed connections before declaring absence. The current entity reader does not capture `CargoPath` cargo into belt `buffers`; an empty list means **unobserved**, not verified empty. Diagnose transport using reciprocal endpoints, observed sorter/device buffers and native production windows. Do not clear storage or construct a duplicate consumer based on a partial trace.

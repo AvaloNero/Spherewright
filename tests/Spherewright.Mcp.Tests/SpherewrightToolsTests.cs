@@ -223,6 +223,9 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("A commit acceptance or host timeout is not completion", contents.Text, StringComparison.Ordinal);
         Assert.Contains("Retain `actionId` and its terminal result before formatting", contents.Text, StringComparison.Ordinal);
         Assert.Contains("spherewright_get_foundry_plan", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("spherewright_get_governor_plan", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("prioritizeQueued=true", contents.Text, StringComparison.Ordinal);
+        Assert.Contains("researchQueueReadback", contents.Text, StringComparison.Ordinal);
         Assert.Contains("material draft is not an approved site", contents.Text, StringComparison.Ordinal);
         Assert.Contains("machine_previews_clear", contents.Text, StringComparison.Ordinal);
         Assert.Contains("up to 32 machines", contents.Text, StringComparison.Ordinal);
@@ -430,8 +433,9 @@ public sealed class SpherewrightToolsTests
         Assert.Equal("cursor-bundle", bridge.LastOverseerDiagnosticBundleRequest?.Cursor);
     }
 
-    [Fact]
-    public async Task PrepareSelectResearch_MapsDedicatedSelectionHash()
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public async Task PrepareSelectResearch_MapsDedicatedSelectionHash(bool prioritize)
     {
         var bridge = new FakeBridgeClient(SuccessResult());
 
@@ -442,12 +446,14 @@ public sealed class SpherewrightToolsTests
             1604,
             "sha256:selection",
             1,
+            prioritize,
             CancellationToken.None);
 
         Assert.False(result.IsError);
         Assert.Equal("session-research", bridge.LastSessionId);
         Assert.Equal(1604, bridge.LastSelectResearchRequest?.TechId);
         Assert.Equal("sha256:selection", bridge.LastSelectResearchRequest?.ExpectedSelectionStateHash);
+        Assert.Equal(prioritize, bridge.LastSelectResearchRequest?.PrioritizeQueued);
     }
 
     [Fact]

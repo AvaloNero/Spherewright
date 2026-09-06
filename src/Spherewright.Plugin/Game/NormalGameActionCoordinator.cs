@@ -333,7 +333,14 @@ internal sealed partial class NormalGameActionCoordinator
             return InvalidPlan("The requested technology is already unlocked.");
         }
 
-        if (history is null || !history.CanEnqueueTech(request.TechId))
+        int[]? researchOrder = null;
+        if (request.PrioritizeQueued)
+        {
+            researchOrder = TryPrepareResearchPriority(request.TechId);
+            if (researchOrder is null)
+                return InvalidPlan("Priority requires an active queue, a selected non-head queued technology, and every native prerequisite already unlocked. No queue or progress was changed.");
+        }
+        else if (history is null || !history.CanEnqueueTech(request.TechId))
         {
             return GameCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
                 BridgeErrorCodes.ActionRejected,
@@ -347,18 +354,22 @@ internal sealed partial class NormalGameActionCoordinator
             _sessions.SessionId,
             request.PlanetId,
             progression.SelectionStateHash,
-            request.TechId);
+            request.TechId,
+            request.PrioritizeQueued);
         var payload = NormalActionPlanPayload.Research(
             _sessions.SessionId!,
             request.PlanetId,
             expectedHash,
             progression.SelectionStateHash,
-            request.TechId);
+            request.TechId,
+            researchOrder);
         var prepared = AddPreparedPlan(
             payload,
             common.Session!,
             techState.HashRequired - techState.HashUploaded,
-            "DSP's normal technology queue contains the requested technology and currentTech reflects the queue head.");
+            request.PrioritizeQueued
+                ? "Native queue priority only: requested technology becomes head; all other order, research progress and inventory remain unchanged. This does not complete research."
+                : "DSP's normal technology queue contains the requested technology and currentTech reflects the queue head.");
         if (prepared.Success && prepared.Value is not null)
         {
             foreach (var requirement in techState.ItemRequirements)
@@ -685,6 +696,11 @@ internal sealed partial class NormalGameActionCoordinator
                 action.Message = "DSP accepted the recipe into the normal replicator queue.";
                 break;
             case NormalActionKinds.SelectResearch:
+                if (plan.ResearchQueueOrder is not null)
+                {
+                    ExecuteResearchPriorityOnMainThread(action);
+                    break;
+                }
                 GameMain.history.EnqueueTech(plan.TechId);
                 if (!GameMain.history.techQueue.Contains(plan.TechId))
                 {
@@ -1101,7 +1117,8 @@ internal sealed partial class NormalGameActionCoordinator
                 }
 
                 return string.Equals(progression.Value.SelectionStateHash, plan.ProgressionSelectionStateHash, StringComparison.Ordinal)
-                    && GameMain.history.CanEnqueueTech(plan.TechId)
+                    && (plan.ResearchQueueOrder is null ? GameMain.history.CanEnqueueTech(plan.TechId)
+                        : TryPrepareResearchPriority(plan.TechId)?.SequenceEqual(plan.ResearchQueueOrder) == true)
                     ? null
                     : Stale("Technology state, prerequisites, or queue changed after prepare.");
             case NormalActionKinds.Build:
@@ -1394,6 +1411,7 @@ internal sealed partial class NormalGameActionCoordinator
             BeforeTargetAmount = action.BeforeTargetAmount,
             AfterTargetAmount = action.AfterTargetAmount,
             UpgradeReadback = action.UpgradeReadback,
+            ResearchQueueReadback = action.ResearchQueueReadback,
             ReconciledFromOutcomeUnknown = action.ReconciledFromOutcomeUnknown,
             ReconciledAtGameTick = action.ReconciledAtGameTick,
             FlightCheckpointId = action.FlightCheckpointId,
@@ -2095,6 +2113,7 @@ internal sealed partial class NormalGameActionCoordinator
         public int? BeforeTargetAmount { get; set; }
         public int? AfterTargetAmount { get; set; }
         public UpgradeReadback? UpgradeReadback { get; set; }
+        public ResearchQueueReadback? ResearchQueueReadback { get; set; }
         public string? Message { get; set; }
         public string? OriginalOutcomeMessage { get; set; }
         public bool ReconciledFromOutcomeUnknown { get; set; }
@@ -2160,6 +2179,7 @@ internal sealed partial class NormalGameActionCoordinator
         public List<int> YieldItemIds { get; } = new List<int>();
         public int RecipeId { get; private set; }
         public int TechId { get; private set; }
+        public int[]? ResearchQueueOrder { get; private set; }
         public int BuildingItemId { get; private set; }
         public string BuildKind { get; private set; } = string.Empty;
         public string BuildResourceStateHash { get; private set; } = string.Empty;
@@ -2291,7 +2311,8 @@ internal sealed partial class NormalGameActionCoordinator
             int planetId,
             string expectedStateHash,
             string progressionSelectionStateHash,
-            int techId) => new NormalActionPlanPayload
+            int techId,
+            int[]? researchQueueOrder = null) => new NormalActionPlanPayload
             {
                 ActionKind = NormalActionKinds.SelectResearch,
                 SessionId = sessionId,
@@ -2299,6 +2320,7 @@ internal sealed partial class NormalGameActionCoordinator
                 ExpectedStateHash = expectedStateHash,
                 ProgressionSelectionStateHash = progressionSelectionStateHash,
                 TechId = techId,
+                ResearchQueueOrder = researchQueueOrder?.ToArray(),
             };
 
         public static NormalActionPlanPayload Build(

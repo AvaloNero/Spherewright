@@ -128,6 +128,8 @@ public sealed class PrepareSelectResearchRequest
 
     public string ExpectedSelectionStateHash { get; set; } = string.Empty;
 
+    public bool PrioritizeQueued { get; set; }
+
     public int StateHashVersion { get; set; } = 1;
 }
 

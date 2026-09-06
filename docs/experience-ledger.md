@@ -2548,6 +2548,19 @@
 - 关联：EXP-198/204、GovernorThroughputValidation、get_governor_plan、包内playbook。
 - 最近复验：2026-09-06（617已正常冷部署并同档恢复23398654；三个独立30/min窗口形成基线，但首次锁定被全局矿机告警误阻断，0锁定/0blueprint commit。EXP-207记录范围修复，离线测试不冒充实机2×）。
 
+### EXP-199 — 已排队不等于已解锁，科研优先级只能用保持进度的原生排序
+
+- 状态：`validated`
+- 日期：2026-09-06
+- 适用范围：本档蓝图科技与当前DSP原生研究队列；当前DLL已做一次正常优先级实测。
+- 当前结论：2701正常排入队列后可能被其他研究占用首位；只能在fresh前置均已解锁时明确将该排队项前移，不删除研究、不写hash或完成标志。原生SortTechQueue用于UI拖动，保持其他顺序与已投入进度；独立材料/时间仍必须提供。
+- 直接证据：本窗#7正常选择2701得到3402/1202/2701队列及Journal55（upgrade_first_selected）；runtime2701要求电路板100而非矩阵。DLL的SortTechQueue/AlterCurrentTech与UI调用交叉证明；Core16回归和MCP双参数映射、当前510项Debug/Release与完整构建通过。
+- 实机复验：510-test冷部署后的新窗口#2在23147953将[3402,1202,2701]改为[2701,3402,1202]，即时完整科技进度/库存保持。#4从仓26正常取100电路板，自动研究管理将其转入research buffer；2701于23177285正常解锁，fresh23178354证明12000/12000且回到原队列[3402,1202]。
+- 限制或反例：暂停、重复等级、缺前置、不在队列或已在首位均拒绝。选择终态只证明排队/排序，不是研究完成；research buffer后读与transfer即时库存不是同一时刻，不能据玩家背包随后为空推断丢失。
+- 复验触发：DSP科研UI、前置等级语义、队列长度或选择哈希变化。
+- 关联：EXP-063/189、`ResearchQueuePolicy`、`NormalGameActionCoordinator.ResearchPriority`。
+- 最近复验：2026-09-06（同档priority终态、正常电路板转移与2701实际unlockTick均已观察）。
+
 ## 修订记录
 
 - 2026-09-06：IFX-028最终部署4/4匹配（Plugin3FB233…/Core7199C2…），窗口#5–9分别为protected resume、749单实体升级、保存/正常关闭、protected resume、最终保存，完整action表见当档日记；未提供resume action tick不补造。修复版23一端负例无commit；749消耗2012 1→0/返2011 7→8、双端及filter1101保留，同步cargo空明确披露。恢复后新选区蓝图含3×2011/1×2012/1×2303，5对象/1区域、native signature及code往返hash一致、4条源边界，证明IFX-027白名单解耦未因实际升级回退。MCP58 tools/1 resource与必需双端playbook通过。最终保存22221235，fresh session22224301 revision2/owned/healthy/no blockers、player22224313 Walk/0/3idle/2011=8/2012=0、Journal22224316 54/54/no pending/error、749及723/724在22224323–32双向正确、power22224335 required=served49804。EXP-189/190/193获得限定范围live证据，EXP-027/028缩窄，存档日记索引按账本同步过期状态且不另维护易过时汇总。当前窗口9项accepted，无额外commit；下一项后必须严格十写审计。没有运行模块复制、Governor产量翻倍、新包/异机声明或push/tag/release。

@@ -57,6 +57,7 @@ public sealed class ActionResultSnapshot
     public List<ActionItemDelta> ItemDeltas { get; set; } = new List<ActionItemDelta>();
 
     public UpgradeReadback? UpgradeReadback { get; set; }
+    public ResearchQueueReadback? ResearchQueueReadback { get; set; }
 
     public bool ReconciledFromOutcomeUnknown { get; set; }
 

@@ -1100,7 +1100,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Validates a runtime technology, prerequisites, level, and queue through DSP's CanEnqueueTech path without changing research state.")]
+    [Description("Validates a runtime technology, prerequisites, level, and queue without mutation. Default enqueues normally. Explicit prioritizeQueued=true only moves an already queued non-head technology with all native prerequisites completed to the front, preserving other queue order, progress and inventory. Fresh selection hash required; paused, duplicate-level or invalid queues reject. No research progress or unlocks are granted.")]
     public static async Task<CallToolResult> PrepareSelectResearchAsync(
         IBridgeClient bridgeClient,
         string sessionId,
@@ -1108,6 +1108,7 @@ public static partial class SpherewrightTools
         int techId,
         string expectedSelectionStateHash,
         int stateHashVersion = 1,
+        bool prioritizeQueued = false,
         CancellationToken cancellationToken = default)
     {
         var result = await bridgeClient.PrepareSelectResearchAsync(
@@ -1117,6 +1118,7 @@ public static partial class SpherewrightTools
                 PlanetId = planetId,
                 TechId = techId,
                 ExpectedSelectionStateHash = expectedSelectionStateHash,
+                PrioritizeQueued = prioritizeQueued,
                 StateHashVersion = stateHashVersion,
             },
             cancellationToken).ConfigureAwait(false);
@@ -1130,7 +1132,7 @@ public static partial class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Queues the prepared technology through GameHistoryData.EnqueueTech; it does not add hashes, matrices, or unlock flags.")]
+    [Description("Applies the exact prepared native enqueue or explicit queued-tech priority change. Priority uses native SortTechQueue, preserves all other order, verifies research progress and inventory immediately, and returns researchQueueReadback. Poll to terminal then fresh progression. No hashes, matrices or unlock flags are added.")]
     public static async Task<CallToolResult> CommitSelectResearchAsync(
         IBridgeClient bridgeClient,
         string sessionId,

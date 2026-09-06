@@ -25,6 +25,19 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void FullNativePathStageDoesNotDependOnThePlayersUiCommand()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareBuildAsync))!;
+        var description = (System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!;
+        Assert.Contains("tool-owned stage1 command container", description.Description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("full native path checks", guide);
+        Assert.Contains("never edits the player's command", guide);
+        Assert.Contains("does not enable existing-belt cover reuse", guide);
+    }
+
+    [Fact]
     public void NewBeltOccupancyBoundaryIsDiscoverableWithoutPromisingAnchorReuse()
     {
         var services = new ServiceCollection();

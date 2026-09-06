@@ -1085,9 +1085,10 @@ internal sealed partial class NormalGameActionCoordinator
             tool.handItem = item;
             tool.handPrefabDesc = item.prefabDesc;
             tool.startObjectId = candidates[0].InputObjectId;
+            tool.castObjectId = candidates[candidates.Count - 1].OutputObjectId;
             tool.SnapshotPlayerInventory();
             tool.buildPreviews.AddRange(previews);
-            var valid = tool.CheckBuildConditions();
+            var valid = tool.CheckFullPathConditions();
             var rejected = previews.FirstOrDefault(preview => preview.condition != EBuildCondition.Ok || preview.coverObjId != 0);
             if (!valid || rejected is not null)
             {
@@ -1106,9 +1107,8 @@ internal sealed partial class NormalGameActionCoordinator
         }
         finally
         {
-            tool.buildPreviews.Clear();
-            tool.ReleaseSnapshot();
-            tool._Free();
+            try { tool.ReleaseSnapshot(); }
+            finally { tool.buildPreviews.Clear(); tool._Free(); }
         }
     }
 
@@ -1234,23 +1234,27 @@ internal sealed partial class NormalGameActionCoordinator
             tool.handItem = item;
             tool.handPrefabDesc = item.prefabDesc;
             tool.startObjectId = action.Plan.BuildSteps[0].InputObjectId;
+            tool.castObjectId = action.Plan.BuildSteps[action.Plan.BuildSteps.Count - 1].OutputObjectId;
             tool.SnapshotPlayerInventory();
             previews = CreateLinkedPreviews(action.Plan.BuildSteps, item);
             tool.buildPreviews.AddRange(previews);
-            if (!tool.CheckBuildConditions() || !PreviewsExactlyMatch(action.Plan.BuildSteps, previews))
+            try
             {
-                tool.buildPreviews.Clear();
-                tool.ReleaseSnapshot();
-                tool._Free();
-                throw new InvalidOperationException("DSP rejected or changed the exact prepared belt path at commit.");
+                if (!tool.CheckFullPathConditions() || !PreviewsExactlyMatch(action.Plan.BuildSteps, previews))
+                    throw new InvalidOperationException("DSP rejected or changed the exact prepared belt path at commit.");
+            }
+            catch
+            {
+                try { tool.ReleaseSnapshot(); }
+                finally { tool.buildPreviews.Clear(); tool._Free(); }
+                throw;
             }
 
-            create = tool.CreatePrebuilds;
+            create = tool.CreatePrebuildsWithDetachedCommand;
             cleanup = () =>
             {
-                tool.buildPreviews.Clear();
-                tool.ReleaseSnapshot();
-                tool._Free();
+                try { tool.ReleaseSnapshot(); }
+                finally { tool.buildPreviews.Clear(); tool._Free(); }
             };
         }
         else if (action.Plan.BuildKind == NormalBuildKinds.Inserter)

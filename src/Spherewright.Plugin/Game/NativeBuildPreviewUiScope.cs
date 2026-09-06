@@ -11,6 +11,7 @@ internal sealed class NativeBuildPreviewUiScope : IDisposable
     private readonly int _cursor = (int)CursorIndex.GetValue(null);
     private readonly int _state = GameMain.mainPlayer.controller.actionBuild.model.cursorState;
     private readonly string _text = GameMain.mainPlayer.controller.actionBuild.model.cursorText;
+    private readonly string _promptText = GameMain.mainPlayer.controller.actionBuild.model.promptText;
     private readonly int _gridLength = UIRoot.instance.uiGame.inserterBuildTip.gridLen;
 
     public void Dispose()
@@ -18,6 +19,7 @@ internal sealed class NativeBuildPreviewUiScope : IDisposable
         UICursor.SetCursor((ECursor)_cursor);
         GameMain.mainPlayer.controller.actionBuild.model.cursorState = _state;
         GameMain.mainPlayer.controller.actionBuild.model.cursorText = _text;
+        GameMain.mainPlayer.controller.actionBuild.model.promptText = _promptText;
         UIRoot.instance.uiGame.inserterBuildTip.gridLen = _gridLength;
     }
 }

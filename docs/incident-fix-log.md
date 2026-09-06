@@ -523,3 +523,12 @@
 - 验证：1250项Debug/Release（32Contracts/1163Core/55MCP）、完整Release零警告错误，源码MCP64tools/1resource/35210字符指南、正常exit0及纯stdout通过。32个新Core案例含源/末/中间/预建筑、相邻格、精确距离边界、自交、坏输入/限额、陈旧现场和坐标调整后重查；1MCP发现性回归。新防护暂未安装/live。
 - 未完成：完整native cover复用、原生cmd.stage依赖的无玩家副作用预检、成功正常续接和材料/拓扑/货物保存恢复回归。不能把暂时拒绝风险路径冒充完整修复或0.4通过。
 - 状态：`new_belt_overlap_containment_offline_verified_live_pending`；关联EXP-228（替代EXP-149施工解释）。
+
+## IFX-049 — 原生路径检查借用了玩家的锚点预览阶段
+
+- 首见：2026-09-07，主会话继续复核IFX-048的原生路径前置条件。
+- 根因：_Init绑定真实controller，CheckBuildConditions在cmd.stage0跳过后续弯折/坡度/接入检查；旧适配未提供独立阶段且只填源startObjectId，未填目标castObjectId。原生CreatePrebuilds还可修改阶段，不能把真实玩家命令当临时工具状态。
+- 修复：工具自己创建inactive/disabled的合法Unity组件容器，独立stage1命令；仅重绑定私有未注册BuildTool，检查真实玩家命令值不变、两端ID完整，finally恢复工具绑定/预览UI和释放自己创建的host。拒绝改玩家cmd、new/clone MonoBehaviour、跳过原生角度或拆除旧实体。原生普通材料/预建筑/无人机/终态语义保持。
+- 验证：1258项Debug/Release（32Contracts/1170Core/56MCP），完整Release零警告错误；真实源码MCP64tools/1resource/35797字符指南、exit0且无额外stdout。7项纯策略和1项MCP回归不证明Unity lifecycle或游戏正例；当前DSP/Unity调用证据见game-api-foundry。
+- 未完成：冷部署后只读正/负预检、正常自由路径施工回归、原生旧belt cover复用及其材料/货物/连接/保存恢复证明。该修复不是接线/产线验收完成。
+- 状态：`full_native_path_stage_offline_verified_live_pending`；关联EXP-229/IFX-048。

@@ -2891,7 +2891,22 @@
 - 关联：EXP-132/133/148/149/226/227、IFX-048、BeltBuildOccupancyPolicy、包内playbook。
 - 最近复验：2026-09-07（离线与当前DLL研究；同档新窗accepted仍1，无新增游戏写）。
 
+### EXP-229 — 原生UI预检阶段必须由私有上下文确定，不能借用玩家阶段
+
+- 状态：`observed`
+- 日期：2026-09-07
+- 适用范围：当前DSP BuildTool_Path的普通新带；不扩大旧belt cover、蓝图或自主施工权限。
+- 当前结论：调用CheckBuildConditions不等于完整路径预检。stage0是锚点阶段，必须以工具私有inactive/disabled stage1运行完整弯折/坡度/接入检查，不能为通过预检临时改玩家cmd。原始玩家命令值只比较不覆盖，失败/异常同帧清理全部临时对象。
+- 直接证据：当前Assembly-CSharp同SHA中_Init绑定真实controller；CheckBuildConditions使用cmd.stage分支并读取startObjectId/castObjectId；CreatePrebuilds可推进stage。PlayerController为MonoBehaviour，无Awake/OnEnable/Start/OnDestroy/RequireComponent，故使用inactive GameObject上的disabled组件，不采用普通new/clone/未初始化分配。具体DSP/Unity签名及哈希见game-api-foundry。
+- 实现/验证：只重绑定自有未注册BuildTool，独立CommandState stage1，原生预检/创建后检查真实玩家命令保持，finally恢复工具绑定并销毁自己创建的host；补回promptText预览状态和目标castObjectId。7 Core策略/1 MCP发现回归后1258项Debug/Release（32/1170/56）、完整Release零警告错误、真实源码MCP64tools/1resource/35797字符指南、exit0/纯stdout通过。
+- 限制或反例：纯Core策略测试不执行Unity生命周期；尚未冷部署/live，未证明自由路径施工或既有端点复用。原生拒绝仍终止该候选，不能裁剪端点/放宽角度使之通过。EXP-228遏制继续有效。
+- 复验触发：DSP/Unity版本、PlayerController生命周期、BuildTool绑定/阶段使用、冷部署、native正/负路径和异常清理、首个施工/恢复。
+- 关联：EXP-001/002/228、IFX-049、NativePathCommandScope、BeltPathNativeStagePolicy。
+- 最近复验：2026-09-07（离线与当前DLL；安装仍1217，accepted2保留）。
+
 ## 修订记录
+
+- 2026-09-07：新增EXP-229/IFX-049，复核EXP-228防重叠与原生阶段是两个独立问题，1258源码尚待冷部署。Luna普通save cd900130于25521315终态成功，主会话独立核两写、25535243/rev2 healthy/owned104/J55/55/Walk0/400MJ/三网满供电、独立0prebuild和25535287单快照23页2280唯一built；每个item/pose/connection与完整来源快照一致，41详情与33旧配置证据保持。accepted2跨重启保留，无belt/blueprint commit。来源追踪确认水源752、塑料552、炼油707和油仓163/784的有向路径，但产量仍未恢复；必须验证氢副产物出口与实际需求，仓库/拓扑或一张满缓冲快照不代替稳态。a8396b6的CI34066120124成功。
 
 - 2026-09-07：EXP-149施工解释降为superseded，新增EXP-228/IFX-048。EXP-132/133/148仍保留其全路径检查和真实物流事实，但“忽略绑定source”的历史施工策略不再适用；source/destination一律不能作为NEW点占位豁免。1250离线防护尚待冷部署，旧存档不迁移/重建/回滚。主会话原生蓝图导出2230/2232/2233后，一个明确三带候选只得到占位1202/1203拒绝，未通过native放置、无commit；重新导出的代码含时间戳导致不同hash是不同数据，候选继续使用原始明确代码，绝不复用旧token。Luna只读追踪来源，不扩散施工候选。
 

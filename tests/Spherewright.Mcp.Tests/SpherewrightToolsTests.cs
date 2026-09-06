@@ -25,6 +25,26 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void BoundedSingleBeltAttachmentIsDiscoverableWithoutWeakeningNativePlacementRules()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tool = Assert.Single(provider.GetServices<McpServerTool>(),
+            value => value.ProtocolTool.Name == "spherewright_prepare_build").ProtocolTool;
+        Assert.Contains("native_single_belt_segment", tool.Description);
+        Assert.Contains("plannedInserterAttachment", tool.Description);
+        Assert.Contains("without retargeting", tool.Description);
+        Assert.Contains("collision and materials remain mandatory", tool.Description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("at most64 native path intervals", guide);
+        Assert.Contains("geometry requires fresh prepare", guide);
+        Assert.Contains("does not prove its two sorter attachments", guide);
+        Assert.Contains("Closed paths", guide);
+    }
+
+    [Fact]
     public void ExactObjectReadParameterAndPlaybookDiscloseDirectBridgeSchema()
     {
         var parameter = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.InspectFactoryEntityAsync))!

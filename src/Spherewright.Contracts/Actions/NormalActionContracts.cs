@@ -371,6 +371,8 @@ public sealed class PreparedNormalAction
     /// <summary>Null for non-sorter builds; zero explicitly means unfiltered.</summary>
     public int? PlannedSorterFilterItemId { get; set; }
 
+    public InserterAttachmentPlanSnapshot? PlannedInserterAttachment { get; set; }
+
     public int? TargetObjectId { get; set; }
 
     public int? SourceObjectId { get; set; }

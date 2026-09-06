@@ -496,3 +496,11 @@
 - 验证：11 Core/1 MCP新回归，1144项Debug/Release（31 Contracts/1061 Core/52 MCP）、完整Release零警告错误；源码MCP64 tools/1 resource、32678字符指南一致、exit0且无额外stdout。当前游戏仍1066，新诊断分支尚未live验证。
 - 后续实机：1144冷部署后，对2280的一次fresh完整stateHash负向prepare实际返回INVALID_REQUEST/retryable=false及正确域恢复提示；没有commit/action，不计accepted写入。
 - 状态：`hash_domain_diagnostic_offline_and_local_rejection_verified`；关联EXP-225。
+
+## IFX-046 — 只枚举传送带中心，无法使用原生带段接点微调
+
+- 首见：2026-09-07，主会话接手Luna重复拒绝的供水方案。753/761附近现有原生槽角度不满足旧直线子集；移近后外侧20段带可放，但这不构成两端连接批准。
+- 根因：旧普通分拣器prepare没有复用DeterminePreviews的单belt插值分支，只有实体中心四向姿态；不能以持续修改业务路线掩盖这一适配限制。另发现private build fingerprint遗漏了InputOffset/OutputOffset，当前旧子集都为0，但开放偏移前必须补齐。
+- 修复：在原执行器内增加一个明确belt与2101仓/assembler/lab的有界几何候选，最多64区间；不调用含UI/输入副作用的完整方法，不扫描邻带。保留11/24.1度和原生全预检，静态几何及offset参与绑定，提交前重查，原生预建筑/实体双位姿、offset、身份、过滤和双边连接核验。
+- 验证：1201项Debug/Release、完整Release零警告错误、源码MCP64 tools/1 resource/33408字符指南一致通过；55项Core与Contracts/MCP各1新增回归。尚未冷部署或取得新适配实机正例。
+- 状态：`bounded_native_attachment_offline_verified_live_pending`；关联EXP-226。持续供水、模块复制、Governor和最终包门未减少。

@@ -183,6 +183,8 @@ Overseer 部分保留的 live 覆盖缺口是真实 carrier 连续 600 game tick
 
 ### Governor 验收门
 
+2026-09-07 / 1201-test接线适配：普通2011/2012可在旧精确槽之外预检一个明确belt上的原生微调接点，不扫描邻带、不放宽角度/碰撞，静态几何/offset绑定和逐阶段位姿/连接证明齐备。1201项Debug/Release、完整Release零警告错误、源码MCP64 tools/1 resource通过；未安装/live，当前1144同档正常保存25258840、八写提前审计healthy/J55/55/2280built/0prebuild。供水/黄糖运输、运行模块复制/续建、三级链、2×十分钟、准备清单和最终双包门仍未通过。
+
 2026-09-07 / 1144安装态复验：同批冷部署和protected resume成功、自动重存25092923；761容量/预约设置跨保存恢复一致。775 set-bans30在25142861的即时DTO与2280错误哈希域的非重试拒绝均有本机原始证据。15m Move成功，accepted7保留；外侧水带仅原生放置prepare通过，端点连接及持续供水/钛晶石/黄糖仍未证明。下面较早段落的“待冷部署”保留当时截面，不覆盖本次有限正例，也不缩减运行模块/三级链/2×十分钟/准备清单/最终双包门。
 
 2026-09-07 / 1144-test调用诊断：MCP参数与指南明确sorter-filter采用根configurationStateHash，storage-capacity仍采用完整stateHash。可确证的错误域不再误报可重试现场变化；未知来源不匹配仍要求fresh read。1144项Debug/Release、完整Release零警告错误与源码MCP64 tools/1 resource/32678字符指南通过；1066运行态的新诊断和1132即时证据仍待冷部署/live。此修复不改变写入语义，也不抵扣下列生产/扩产/整包验收门。

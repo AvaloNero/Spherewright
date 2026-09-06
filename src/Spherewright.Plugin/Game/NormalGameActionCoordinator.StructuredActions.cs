@@ -144,6 +144,17 @@ internal sealed partial class NormalGameActionCoordinator
             prepared.Value.BuildKind = preparation.Kind;
             prepared.Value.PlannedSorterFilterItemId = preparation.Kind == NormalBuildKinds.Inserter
                 ? preparation.Steps[0].FilterItemId : (int?)null;
+            if (preparation.Kind == NormalBuildKinds.Inserter)
+            {
+                var step = preparation.Steps[0];
+                prepared.Value.PlannedInserterAttachment = new InserterAttachmentPlanSnapshot
+                {
+                    Mode = step.AttachmentGeometryHash is null ? "exact_slots" : "native_single_belt_segment",
+                    SourceSlot = step.InputFromSlot, DestinationSlot = step.OutputToSlot,
+                    InputOffset = step.InputOffset, OutputOffset = step.OutputOffset,
+                    SourcePosition = Snapshot(step.Position), DestinationPosition = Snapshot(step.Position2),
+                };
+            }
             prepared.Value.SourceObjectId = preparation.SourceObjectId > 0 ? preparation.SourceObjectId : (int?)null;
             prepared.Value.DestinationObjectId = preparation.DestinationObjectId > 0
                 ? preparation.DestinationObjectId
@@ -422,7 +433,17 @@ internal sealed partial class NormalGameActionCoordinator
             }
         }
 
-        return BuildPreparation.Failed(BridgeErrorCodes.BuildConnectionInvalid, last);
+        if (TryPrepareBeltAttachment(factory, player, item, sourcePoints, destinationPoints,
+                request.InitialSorterFilterItemId, out var offsetStep, out var offsetRejection))
+        {
+            var result = BuildPreparation.Succeeded(NormalBuildKinds.Inserter, new[] { offsetStep! });
+            result.SourceObjectId = source!.ObjectId;
+            result.DestinationObjectId = destination!.ObjectId;
+            result.SourceEndpointHash = BuildEndpointHash(source);
+            result.DestinationEndpointHash = BuildEndpointHash(destination);
+            return result;
+        }
+        return BuildPreparation.Failed(BridgeErrorCodes.BuildConnectionInvalid, last + " " + offsetRejection);
     }
 
     private BuildPreparation TryPrepareBeltBuild(
@@ -955,7 +976,8 @@ internal sealed partial class NormalGameActionCoordinator
             return false;
         }
         // Vanilla DeterminePreviews rejects TooSkew BEFORE CheckBuildConditions.
-        // We enumerate only exact explicit slots, not its belt offset-search branches.
+        // Exact slots are tried first; the bounded one-belt fallback retains a private
+        // geometry binding and still obeys the native angle/collision/material checks.
         if (candidate.InputObjectId <= 0 || candidate.InputObjectId >= factory.entityCursor
             || candidate.InputObjectId >= factory.entityPool.Length
             || candidate.OutputObjectId <= 0 || candidate.OutputObjectId >= factory.entityCursor
@@ -966,12 +988,23 @@ internal sealed partial class NormalGameActionCoordinator
             rejection = "The bound inserter endpoints no longer identify completed local entities.";
             return false;
         }
+        if (!RevalidateBeltAttachment(factory, candidate))
+        {
+            rejection = "The exact native belt attachment geometry or offset changed; fresh prepare is required.";
+            return false;
+        }
         if (!NativeInserterEndpointGeometry.AcceptsStraightPair(
                 Snapshot(candidate.Position2 - candidate.Position), Snapshot(candidate.Rotation * Vector3.forward),
                 Snapshot(candidate.Rotation2 * Vector3.back),
                 factory.entityPool[candidate.InputObjectId].beltId > 0 || factory.entityPool[candidate.OutputObjectId].beltId > 0))
         {
-            rejection = "Native inserter endpoint selection requires facing straight slots (TooSkew); offset/bent candidates are not supported by this bounded adapter.";
+            rejection = "Native inserter endpoint selection requires facing slots (TooSkew); the selected poses do not pass the native angle bound.";
+            return false;
+        }
+        if (candidate.AttachmentGeometryHash is not null
+            && !InserterBeltAttachmentPolicy.AcceptsFinalRotations(AttachmentRotation(candidate.Rotation), AttachmentRotation(candidate.Rotation2)))
+        {
+            rejection = "Native belt tilt correction leaves the inserter too skewed.";
             return false;
         }
         if (!BuildUiIsIdle(player))
@@ -1214,6 +1247,8 @@ internal sealed partial class NormalGameActionCoordinator
         }
         else if (action.Plan.BuildKind == NormalBuildKinds.Inserter)
         {
+            if (!RevalidateBeltAttachment(factory, action.Plan.BuildSteps[0]))
+                throw new InvalidOperationException("The bound native belt attachment changed before construction; do not replay the accepted action.");
             var tool = new SpherewrightInserterBuildTool();
             tool._Init(GameMain.data!);
             tool.SetFactoryReferences();
@@ -1314,8 +1349,18 @@ internal sealed partial class NormalGameActionCoordinator
                     if (prebuildId <= 0 || prebuildId >= factory.prebuildCursor || prebuildId >= factory.prebuildPool.Length
                         || factory.prebuildPool[prebuildId].id != prebuildId
                         || factory.prebuildPool[prebuildId].protoId != item.ID
-                        || factory.prebuildPool[prebuildId].filterId != action.Plan.BuildSteps[0].FilterItemId)
+                        || factory.prebuildPool[prebuildId].filterId != action.Plan.BuildSteps[0].FilterItemId
+                        || factory.prebuildPool[prebuildId].pickOffset != action.Plan.BuildSteps[0].InputOffset
+                        || factory.prebuildPool[prebuildId].insertOffset != action.Plan.BuildSteps[0].OutputOffset)
                         throw new InvalidOperationException("Native sorter prebuild identity or initial filter readback failed; do not replay construction.");
+                    var step = action.Plan.BuildSteps[0];
+                    var prebuild = factory.prebuildPool[prebuildId];
+                    if (step.AttachmentGeometryHash is not null
+                        && (Vector3.Distance(prebuild.pos, step.Position) > .01f
+                            || Vector3.Distance(prebuild.pos2, step.Position2) > .01f
+                            || Quaternion.Angle(prebuild.rot, step.Rotation) > .1f
+                            || Quaternion.Angle(prebuild.rot2, step.Rotation2) > .1f))
+                        throw new InvalidOperationException("Native sorter prebuild attachment poses changed; do not replay construction.");
                 }
 
                 action.PrebuildIds.Add(-preview.objId);
@@ -1445,7 +1490,11 @@ internal sealed partial class NormalGameActionCoordinator
         if (plan.BuildKind == NormalBuildKinds.Inserter)
         {
             ref var entity = ref factory.entityPool[entityIds[0]];
-            if (entity.inserterId <= 0 || entity.inserterId >= factory.factorySystem.inserterCursor)
+            if (entity.inserterId <= 0 || entity.inserterId >= factory.factorySystem.inserterCursor
+                || entity.inserterId >= factory.factorySystem.inserterPool.Length
+                || entity.inserterId >= factory.factorySystem.inserterPosePool.Length
+                || factory.factorySystem.inserterPool[entity.inserterId].id != entity.inserterId
+                || factory.factorySystem.inserterPool[entity.inserterId].entityId != entityIds[0])
             {
                 rejection = "The built sorter has no valid inserter component.";
                 return false;
@@ -1459,6 +1508,17 @@ internal sealed partial class NormalGameActionCoordinator
             }
 
             var step = plan.BuildSteps[0];
+            if (step.AttachmentGeometryHash is not null
+                && (!RevalidateBeltAttachment(factory, step) || inserter.pickOffset != step.InputOffset
+                    || inserter.insertOffset != step.OutputOffset
+                    || Vector3.Distance(entity.pos, step.Position) > .01f
+                    || Quaternion.Angle(entity.rot, step.Rotation) > .1f
+                    || Vector3.Distance(factory.factorySystem.inserterPosePool[entity.inserterId].pos2, step.Position2) > .01f
+                    || Quaternion.Angle(factory.factorySystem.inserterPosePool[entity.inserterId].rot2, step.Rotation2) > .1f))
+            {
+                rejection = "The built sorter did not retain its bound native segment, offsets and source pose.";
+                return false;
+            }
             if (!IsSorterFilterApplied(entityIds[0], step.FilterItemId))
             {
                 rejection = "The built sorter did not retain its exact prepared initial filter and native sign.";
@@ -2774,7 +2834,9 @@ internal sealed partial class NormalGameActionCoordinator
         bool requireOutput)
     {
         var result = new List<EndpointPoint>();
-        if (snapshot.ObjectId <= 0 || snapshot.ObjectId >= factory.entityCursor)
+        if (snapshot.ObjectId <= 0 || snapshot.ObjectId >= factory.entityCursor
+            || snapshot.ObjectId >= factory.entityPool.Length
+            || factory.entityPool[snapshot.ObjectId].id != snapshot.ObjectId)
         {
             return result;
         }
@@ -2820,7 +2882,9 @@ internal sealed partial class NormalGameActionCoordinator
         FactoryEntitySnapshot snapshot)
     {
         var result = new List<EndpointPoint>();
-        if (snapshot.ObjectId <= 0 || snapshot.ObjectId >= factory.entityCursor)
+        if (snapshot.ObjectId <= 0 || snapshot.ObjectId >= factory.entityCursor
+            || snapshot.ObjectId >= factory.entityPool.Length
+            || factory.entityPool[snapshot.ObjectId].id != snapshot.ObjectId)
         {
             return result;
         }
@@ -2854,6 +2918,8 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         var slots = item.prefabDesc.slotPoses ?? Array.Empty<Pose>();
+        if (slots.Length > 16 || factory.entityConnPool is null
+            || (long)snapshot.ObjectId * 16 + slots.Length > factory.entityConnPool.Length) return result;
         var occupiedSlots = new List<int>();
         for (var index = 0; index < slots.Length; index++)
         {
@@ -3151,6 +3217,8 @@ internal sealed partial class NormalGameActionCoordinator
         public int OutputToSlot { get; set; }
         public int InputOffset { get; set; }
         public int OutputOffset { get; set; }
+        public int AttachmentBeltObjectId { get; set; }
+        public string? AttachmentGeometryHash { get; set; }
         public bool IsConnectionNode { get; private set; }
         public List<int> Parameters { get; } = new List<int>();
 
@@ -3221,6 +3289,8 @@ internal sealed partial class NormalGameActionCoordinator
                 OutputToSlot = preview.outputToSlot,
                 InputOffset = preview.inputOffset,
                 OutputOffset = preview.outputOffset,
+                AttachmentBeltObjectId = template.AttachmentBeltObjectId,
+                AttachmentGeometryHash = template.AttachmentGeometryHash,
                 IsConnectionNode = preview.isConnNode,
             };
             if (preview.parameters is not null && preview.paramCount > 0)
@@ -3250,6 +3320,8 @@ internal sealed partial class NormalGameActionCoordinator
                    && OutputToSlot == other.OutputToSlot
                    && InputOffset == other.InputOffset
                    && OutputOffset == other.OutputOffset
+                   && AttachmentBeltObjectId == other.AttachmentBeltObjectId
+                   && string.Equals(AttachmentGeometryHash, other.AttachmentGeometryHash, StringComparison.Ordinal)
                    && IsConnectionNode == other.IsConnectionNode
                    && Parameters.SequenceEqual(other.Parameters);
         }
@@ -3281,10 +3353,28 @@ internal sealed partial class NormalGameActionCoordinator
             fields.Add(InputToSlot);
             fields.Add(OutputFromSlot);
             fields.Add(OutputToSlot);
+            fields.Add(AttachmentBeltObjectId);
+            fields.Add(InserterBeltAttachmentPolicy.BindOffsets(InputOffset, OutputOffset, AttachmentGeometryHash));
+            fields.Add(IsConnectionNode);
+            fields.Add(Parameters.Count);
             foreach (var parameter in Parameters)
             {
                 fields.Add(parameter);
             }
+        }
+
+        public void ApplyNativeBeltTilt(PlanetFactory factory, bool sourceIsBelt)
+        {
+            var entity = factory.entityPool[sourceIsBelt ? InputObjectId : OutputObjectId];
+            var forward = entity.rot * Vector3.forward;
+            var nativeUp = Quaternion.AngleAxis(entity.tilt, forward) * (entity.rot * Vector3.up);
+            var rotation = sourceIsBelt ? Rotation : Rotation2;
+            var previewUp = rotation * Vector3.up;
+            var angle = Vector3.Angle(previewUp, nativeUp);
+            if (Vector3.Dot(Vector3.Cross(nativeUp, forward), previewUp) <= 0) angle = -angle;
+            rotation = Quaternion.AngleAxis(angle, forward) * rotation;
+            if (sourceIsBelt) Rotation = rotation;
+            else Rotation2 = rotation;
         }
     }
 

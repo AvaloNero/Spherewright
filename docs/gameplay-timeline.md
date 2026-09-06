@@ -2,9 +2,11 @@
 
 更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 已冷部署1144-test/4faf169，同档protected resume自动重存25092923；accepted=7，Luna冻结等待主会话供水方案。新仓配置即时证据及错误哈希域诊断均有本机正例；775已限制自动输入但仍存3000金刚石，这不是送达修复。15m短移25154376成功、25154424稳定Walk0/397.7MJ；之后20段外侧水带仅通过放置prepare，没有commit，也未证明两端分拣器可接。761预约设置已跨保存恢复保持，持续水/钛晶石/黄糖供给仍未恢复。运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成；9月5日旧0.4 ZIP不是本轮完成包。
+当前截面：同一 `owned-world-001` 运行1144-test/4faf169，第8写正常保存25258840；accepted=8保留，提前完整审计healthy/J55/55/Walk0/400MJ/2280built/0prebuild、三网ratio1。仓配置即时证据及错误哈希域诊断已有本机正例；新的1201-test单belt微调接点适配完成离线回归和完整构建，等待冷部署。775已限制自动输入但仍存3000金刚石，不是送达修复。15m短移成功，20段外侧水带只有放置prepare，没有commit或两端接线证明。761预约设置跨保存恢复保持，持续水/钛晶石/黄糖供给仍未恢复。运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成；9月5日旧0.4 ZIP不是本轮完成包。
 
 ## 结论与证据边界
+
+2026-09-07 / 新接点适配离线与重启前八写审计：主会话按当前DLL实现有界单belt接点微调，1201项Debug/Release、完整Release零警告错误、源码MCP64 tools/1 resource/33408字符指南通过，新适配尚未安装/live（EXP-226/IFX-046）。Luna仅执行#8普通save `a952a0b4-1db4-4889-a782-1665bf3ad617`，25258840同步成功并签发下次protected resume。主会话核全部8个唯一action均terminal/completed/succeeded；25262011/rev6 healthy/owned104/和平/非沙盒/1×/0blocker/checkpoint，25262025 Walk0/400MJ/3idle/空手搓，25262030 Journal55/55 durable、无pending/error。25262041同snapshot23页2280唯一built全部身份/位置/旋转/连接与前次一致，独立25262693 prebuild0，三网ratio1；29指定详情通过，761预约与重启后保持、775/2268仍bans30。水源753仍600、760水0、769钛晶石16、775金刚石3000、774黄糖0；没有因等待或配置产生虚假供应完成。accepted8冻结，后续恢复从9计，不因提前审计清零。
 
 2026-09-07 / 1144同批冷部署和三项后续动作：正常关闭已经审计保存的1066进程，四个安装DLL与4faf169完整Release逐一哈希一致，通过Steam只启动一次。#5 protected resume `52d30c80-0359-46b3-8896-23c8be9c2616` completed/succeeded/terminal，动作起止tick为null，不以重存tick代填；同一主档自动保存25092923。fresh25096017/rev1为owned104/healthy、和平/非沙盒/1×、无blocker/checkpoint，25096032 Walk0/400MJ/3idle/空手搓，Journal25096037为55/55 durable且无pending/error，独立prebuild0及三网ratio1。主会话核销29个指定对象详情，761的完整预约/容量设置与保存前精确一致；这是设置持久性，不是供水或新蓝图施工验收。
 

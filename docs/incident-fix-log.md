@@ -10,6 +10,7 @@
 
 状态取 `fixed | mitigated | open`。`fixed` 只表示写明范围内已有代码和验证证据，
 不代表跨 DSP 版本永久成立。
+需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
 ## IFX-001 — 已接受动作被客户端展示错误误报为失败
 
@@ -341,6 +342,14 @@
 - 验证：11项新回归、Debug/Release共404测试、完整Release零警告错误。修复版实际对一端23在prepare返回BUILD_CONNECTION_INVALID、无commit；两端749升级于22207214成功，filter1101/verifiedConnectionCount2/扣新1返旧1均明确，同步cargo空。保存22213308、正常退出、protected resume后两端与过滤/供电保持，最终保存22221235/J54/54/healthy。旧27的即时铜1守恒仍为独立历史样本，不伪装成最终版带货双端样本。
 - 关联：EXP-028、EXP-190、EXP-193、`BuildingUpgradePolicy.HasCompleteInserterConnections`；状态：`fixed`。
 
+## IFX-029 — 蓝图原生预检并非对覆盖对象无副作用
+
+- 首见：2026-09-06，有限蓝图现场预览的部署前DLL研究；未在实机执行覆盖预检。
+- 症状/根因：native paste `CheckBuildConditions` 会在covered belt上临时写入/清除连接；仅在返回后检查cover标志，不能证明读取工具没有改变旧对象。
+- 修复：调用前独立排除所有已有entity/prebuild覆盖与内部碰撞，拒绝开放sorter/外部自动匹配；仅对无cover/no-reform新对象使用隔离native预检，显式全部Ok。原生几何与普通逐对象建设分开，不开放整图paste。额外保存/恢复native cursor与inserter提示状态，清理隔离快照/工具。
+- 验证：Core图/槽位/碰撞前置与状态机测试，完整Release458项/零警告错误；新路径尚待部署和真实施工，不声称实机旧对象曾被本实现改变。
+- 关联：EXP-194/195、`GameStateReader.BlueprintSite`、`NormalGameActionCoordinator.BlueprintSite`、`NativeBuildPreviewUiScope`；状态：`fixed_offline_live_pending`。
+
 ## IFX-030 — 有限蓝图预览把分拣器碰撞体过度拉长
 
 - 首见：2026-09-06，458-test开发Plugin的五对象负例预览后复核当前DLL。
@@ -349,6 +358,32 @@
 - 修复：新增纯Core几何helper并让Plugin遵循当前DLL实际公式；不放宽已存在实体/预建筑守卫，不把任何native错误强制设为Ok。795的slot/端点几何仍需独立复核。
 - 验证：九项公式/非法维度回归、完整Release零警告错误、487项总测试通过。修复尚未冷部署，尚无正例模块施工；不能声称live原生几何错误已修复。
 - 关联：EXP-197、`NativeInserterColliderGeometry`、`NormalGameActionCoordinator.BlueprintSite`；状态：`fixed_offline_live_pending`。
+
+## IFX-031 — 受保护有限施工记录的空嵌套项会先在哈希处失败
+
+- 首见：2026-09-06，冷部署前的进度存储边界审查；未发生实机记录损坏。
+- 根因：校验了连接/预算列表非null，却未检查列表内的null项，计算不可变哈希会先抛NullReferenceException，绕过存储已有的明确数据错误分类。
+- 修复：在hash之前检查嵌套项、连接索引/槽位/限额、依赖和参数限额；以InvalidDataException拒绝附件，不恢复权限，也不修补或跳过损坏对象。
+- 验证：六项NULL对象/进度/连接/预算、无效端点及参数超限回归；完整Debug/Release510测试通过。没有把自动测试当作损坏存档live恢复。
+- 关联：EXP-195、`BlueprintBuildState.Validate`；状态：`fixed_offline`。
+
+## IFX-032 — 客户端审计汇总把逗号列表和范围表达式混用
+
+- 首见：2026-09-06，同档第10次保存前汇总已持久的只读响应。
+- 症状：PowerShell报Object[]不能转换为IConvertible，错误光标落在大对象构造的附近字段，让客户端误查entity/采样tick类型；游戏读取已完成，无accepted写丢失或重放。
+- 根因：`@(1,2,3,4,5,6,7..41)`的运算符优先级把数组作为范围起点，而非“前六项加7到41”。
+- 修复：此处本就是完整1–41证据序号，使用`@(1..41)`；复用已落盘响应，不重新读取整套世界，更不重放动作。涉及分段时需显式括号和数组连接。
+- 验证：主会话无游戏的最小表达式原样重现同一异常；替代表达式返回41项、首1末41。客户端汇总成功和最终保存审计另待子Agent回传，不把本地显示错误算成游戏失败。
+- 客户端后续：复用已落盘23页factory与其他原始响应完成摘要，随后第10项save终态23140359、J55/55/healthy并完整审计；未重放动作，正常关闭后进程/descriptor清零。
+- 关联：EXP-200、十写审计客户端；状态：`fixed`。
+
+## IFX-033 — 有限施工把皮带拾取边误当作皮带出口
+
+- 首见：2026-09-06，首次蓝图施工前的离线原生步骤审查；未发生实机蓝图断边。
+- 根因：全图包含belt→belt及belt→sorter边，原preview循环对所有皮带出边写同一个output字段；后出现的虚拟拾取边会覆盖已选下游带，依赖顺序下尚未施工sorter的entityId又为0。
+- 修复：Core明确每类对象创建的端点所有权，皮带只选belt→belt出口，分拣器选输入/输出各一条，机器不投影sorter边；多个有效候选明确拒绝。Plugin使用此投影，保留原有全部双向连接和自由端读回，未加旁路字段写入。
+- 验证：11项边顺序/单多sorter/自由皮带/机器/双端/歧义/无效索引回归、Debug/Release521项通过，完整Release零警告错误；安装的510-test cohort不含本修复，因此首次blueprint commit继续冻结至正常关闭后的同批更新。
+- 关联：EXP-201、`BlueprintSitePolicy.CreationInput/CreationOutput`；状态：`fixed_offline_live_pending`。
 
 ## IFX-035 — 普通分拣器绕过了原生候选角度选择
 
@@ -378,6 +413,15 @@
 - 验证：6项新范围/哈希/健康回归，623 Release测试与完整Release零警告错误；修复仍源码态。另查出115→113真实缺边和石墨亏供，不能把范围修复当作现场修复或十分钟吞吐通过。
 - 关联：EXP-207、GovernorPlanCompiler、GovernorThroughputValidation；状态：`fixed_offline_live_pending`。
 
+## IFX-038 — 已识别故障分拣器却没有受控拆除入口
+
+- 日期：2026-09-06；状态：`local_live_empty_basic_sorter_passed_resume_pending`。
+- 现场：672同档Move `74b3566b-e04c-4d78-952d-797c9291dba6` 于23637299→23638580成功到煤308附近，Walk0/约286.3MJ；115仅有108:4→115:1，113无返回输入边。prepare_dismantle明确拒绝只接受resource-miner，没有commit。
+- 根因：早期拆除只为矿机换源开放；缺一端sorter也不能沿用要求完整双端的升级入口。不是延长Move超时或新档能解决的事。
+- 修复：复用原生DoDismantleObject，增加普通2011/2012及可回收的stack/cargo状态。允许缺少端点，但存在边和反向引用必须配对，因为原生ClearObjectConn会无条件清对端槽。8192池条目/4邻居上限，拒绝prebuild引用/高级堆叠/活动instantDismantle；核对库存count/inc、目标消失和其他端点配置/连接，不写slot、不自动重建。
+- 离线：21项Core策略回归、完整Release通过，MCP复用既有拆除工具。736同批实机拆除115和原生重建均terminal成功，2011为4→5→4、cargo/inc=0；新115的108输入及113:10输出双向完整，邻居原连接和recipe17保留。普通保存23753687及四写审计healthy/J55/55。随后719携带1件金刚石的正常回收、719/720正常重建也成功，货物返还和邻居保留有终态证据，保存23827812及五写审计通过。2012拆除、非零inc货物及本次修复的保存恢复尚待；不能由21项测试外推。
+- 修复后独立600tick三窗石墨实际产量18/12/12每分钟，后两窗113仍缺煤；连接已修正不等于产线配平，缺端也未被证明是原亏供唯一根因。
+
 ## IFX-037 — 把Move距离终态后的Drift等待和低能量返岸当作安全交接
 
 - 首见：2026-09-06，617-test验收移动fd22bab1已达坐标，但fresh持续Drift；等待稳定耗能，旧指南缺少明确的有界返岸分支。
@@ -385,27 +429,3 @@
 - 修复：指南明确普通业务必须Walk/低速/能源充分；Drift不无限等候，只在能源充足时用已验证Walk锚点做有界正常Move，已自然Walk就不再返岸；只有未accepted stale可最多3次紧邻fresh/prepare，不改变Move/hash/watchdog/幂等/精确订单中止。另为燃料选择公开与既有refuel一致的原生资格，不能只搜索“燃料棒”名称。
 - 验证：两次180tick位置停滞和一次600tick断能终态均如实保留。Walk静止735ticks净增980,000能量符合80kW被动补能，不冒充无线塔；正常补给/回充和新指南实机成功仍待。
 - 关联：EXP-039/041/053、包内playbook、OrdinaryMechaFuelPolicy；状态：`guidance_corrected_revalidation_pending`。
-
-## IFX-029 — 蓝图原生预检并非对覆盖对象无副作用
-
-- 首见：2026-09-06，有限蓝图现场预览的部署前DLL研究；未在实机执行覆盖预检。
-- 症状/根因：native paste `CheckBuildConditions` 会在covered belt上临时写入/清除连接；仅在返回后检查cover标志，不能证明读取工具没有改变旧对象。
-- 修复：调用前独立排除所有已有entity/prebuild覆盖与内部碰撞，拒绝开放sorter/外部自动匹配；仅对无cover/no-reform新对象使用隔离native预检，显式全部Ok。原生几何与普通逐对象建设分开，不开放整图paste。额外保存/恢复native cursor与inserter提示状态，清理隔离快照/工具。
-- 验证：Core图/槽位/碰撞前置与状态机测试，完整Release458项/零警告错误；新路径尚待部署和真实施工，不声称实机旧对象曾被本实现改变。
-- 关联：EXP-194/195、`GameStateReader.BlueprintSite`、`NormalGameActionCoordinator.BlueprintSite`、`NativeBuildPreviewUiScope`；状态：`fixed_offline_live_pending`。
-
-## IFX-031 — 受保护有限施工记录的空嵌套项会先在哈希处失败
-
-- 首见：2026-09-06，冷部署前的进度存储边界审查；未发生实机记录损坏。
-- 根因：校验了连接/预算列表非null，却未检查列表内的null项，计算不可变哈希会先抛NullReferenceException，绕过存储已有的明确数据错误分类。
-- 修复：在hash之前检查嵌套项、连接索引/槽位/限额、依赖和参数限额；以InvalidDataException拒绝附件，不恢复权限，也不修补或跳过损坏对象。
-- 验证：六项NULL对象/进度/连接/预算、无效端点及参数超限回归；完整Debug/Release510测试通过。没有把自动测试当作损坏存档live恢复。
-- 关联：EXP-195、`BlueprintBuildState.Validate`；状态：`fixed_offline`。
-
-## IFX-033 — 有限施工把皮带拾取边误当作皮带出口
-
-- 首见：2026-09-06，首次蓝图施工前的离线原生步骤审查；未发生实机蓝图断边。
-- 根因：全图包含belt→belt及belt→sorter边，原preview循环对所有皮带出边写同一个output字段；后出现的虚拟拾取边会覆盖已选下游带，依赖顺序下尚未施工sorter的entityId又为0。
-- 修复：Core明确每类对象创建的端点所有权，皮带只选belt→belt出口，分拣器选输入/输出各一条，机器不投影sorter边；多个有效候选明确拒绝。Plugin使用此投影，保留原有全部双向连接和自由端读回，未加旁路字段写入。
-- 验证：11项边顺序/单多sorter/自由皮带/机器/双端/歧义/无效索引回归、Debug/Release521项通过，完整Release零警告错误；安装的510-test cohort不含本修复，因此首次blueprint commit继续冻结至正常关闭后的同批更新。
-- 关联：EXP-201、`BlueprintSitePolicy.CreationInput/CreationOutput`；状态：`fixed_offline_live_pending`。

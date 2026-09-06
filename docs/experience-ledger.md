@@ -10,7 +10,7 @@
 - `observed` 表示证据真实但适用范围尚窄；不得自行外推为稳定 API 或通用阈值。
 - `validated` 表示当前写明的适用范围内已有独立复读、自动化测试或当前版本实机证据。
 - `superseded` 必须指向替代条目；`invalidated` 必须说明反证。历史不删除。
-- 每个实现批次结束、每累计 10 个成功游戏写动作、Plugin 部署或重启、DSP/程序集版本变化、写入隔离或恢复、版本验收状态变化以及最终发布前，复核新增条目和所有受影响条目，并更新“最近复验”。
+- 每个实现批次结束、每累计 10 个不同 accepted 游戏写动作（包括终态失败，不重复计幂等回放）、Plugin 部署或重启、DSP/程序集版本变化、写入隔离或恢复、版本验收状态变化以及最终发布前，复核新增条目和所有受影响条目，并更新“最近复验”。
 - 安全相关新经验和会影响下一动作前提的新经验，必须先写入本文件，再执行下一次游戏写入。
 - 证据只记录可复核的脱敏摘要、动作/实体 ID 或代码测试位置；不记录 token、存档内容或 runtime descriptor。
 
@@ -666,7 +666,7 @@
 - 限制或反例：资源节点、风机或电塔“存在”只说明实体建在星球表面，不保证实体中心的每一侧都可行走，也不保证两个陆地锚点的球面插值不跨水；优先复用已有 Walk 坐标与已验证连续锚点，首次新锚点/弧段仍需短窗状态/能量复读。原子 stale 重试只解决漂浮快照变化，不绕过碰撞、能量预算、单飞订单或动作失败。
 - 复验触发：新增地形类型、不同星球海洋比例、目标建筑两侧落地差异、连续三次无需重试的 Drift 恢复、Move 哈希或玩家运动状态实现变化。
 - 关联：EXP-035、EXP-036、EXP-039、EXP-041、EXP-046、EXP-051、`scripts/invoke-surface-route.ps1`。
-- 最近复验：2026-09-01（母星两次 Drift 早停、同进程 stale 绑定和精确 Walk 落点恢复均已 live）。
+- 最近复验：2026-09-06（617-test现场再次验证Move到达≠Walk：fd22bab1在23504693完成后仍Drift并持续耗能。随后执行策略错误地在已Walk/仅0.185MJ时提交14a9af65，600tick断能失败；这不是unknown或规则失效，也不是成功返岸验收。包内指南补齐“已Walk不再返岸”、真实能量预算和至多3次未accepted stale的紧邻绑定，保留此前正确的陆地/原子绑定经验，严禁重放这次失败目标）。
 
 ### EXP-054 — 跨区长带必须先扫起点方向，再按施工前沿分段并从陆地等待
 
@@ -2439,140 +2439,6 @@
 - 关联：EXP-027/028/067/190、IFX-028、`BuildingUpgradePolicy.HasCompleteInserterConnections`。
 - 最近复验：2026-09-06（修复版对一端23的合法fresh prepare返回BUILD_CONNECTION_INVALID、无commit；749两端完整升级通过，随后普通保存/关闭/恢复，fresh22224323–32仍双端reciprocal、filter1101、network1/serve1。11项新增回归，404测试与完整Release通过）。
 
-### EXP-197 — 蓝图分拣器碰撞体必须复用实际端点公式，不能混淆原生几何错误
-
-- 状态：`observed`
-- 日期：2026-09-06
-- 适用范围：当前DSP0.10.34.28529有限蓝图native几何；程序集与离线证据。
-- 当前结论：分拣器half-length、带端中心偏移、两端朝向和prefab collider旋转均遵循当前DLL公式；任意padding可能让相邻正常插入器假冲突。独立native ErrorInserterData仍须按slot/姿态核对，不能通过缩小自有碰撞体掩盖。
-- 直接证据：五对象预览object2/3 overlap触发复核；DLL证明half-length=max(.1,span/2+ext.z-.5+.35×带端数)，而首稿多加1并忽略q。九项Core几何回归通过，原生错误守卫保留；源795几何问题尚未核销。
-- 限制或反例：尚未冷部署本修复或证明正例模块；无证据表明这是一切ErrorInserterData的共同根因。
-- 复验触发：分拣器类型、native几何、星球网格或预览适配变化。
-- 关联：EXP-194、IFX-030、`NativeInserterColliderGeometry`。
-- 最近复验：2026-09-06（完整Release487项/零警告错误；live待验证）。
-
-### EXP-205 — 分拣器原生放置条件不包含此前候选端点的角度筛选
-
-- 状态：`observed`
-- 日期：2026-09-06
-- 适用范围：当前DLL普通分拣器双端候选和有限蓝图种子选择。
-- 当前结论：只调用CheckBuildConditions不足以复用完整原生放置规则；DeterminePreviews已提前筛选端点朝向并可设TooSkew。当前精确槽适配器补保守直线子集，两设备最大角误差须小于14度，带端小于11度；偏移/弯曲搜索不在子集内，不能通过改条件或移动已有对象强行通过。
-- 直接证据：554-test金刚石五对象导出保留recipe60、两仓设置及全部内部连接；23348926/23348937两处预检均对719/720返回ErrorInserterData，均未commit。当前DLL的DeterminePreviews角度选择及BlueprintUtils.Refresh端点面向/位移检查已逐段核实。新Core纯几何策略覆盖15个朝向/阈值/相对夹角/非法向量回归，Plugin在池索引前重验实体身份，并公开只读端点facing dot诊断。
-- 限制或反例：582-test同姿态实读确认index3/4 output dot分别为-0.174369559/-0.18947494，确有输出槽背离另一端；input分别0.9832634/0.982118845。另有965占位，所以这不是全部现场阻断。旧正常货物流动不能证明蓝图姿态合法。无自动拆除/修复/位置写入，尚无合法新分拣器施工live正例。
-- 复验触发：DLL原生UI、sorter/belt姿态、候选生成、slot语义、蓝图转换或重启续建变化。
-- 关联：EXP-195/203、IFX-035、NativeInserterEndpointGeometry、game-api-foundry.md。
-- 最近复验：2026-09-06（582 Debug/Release和完整Release全过，4/4冷部署并同档恢复；负output dot诊断实读通过，未改原生条件或旧对象，修正后施工待live）。
-
-### EXP-203 — 闭合生产模块需要仓储配置，但仓库连接口不等于容量
-
-- 状态：`observed`
-- 日期：2026-09-06
-- 适用范围：当前DLL普通未堆叠仓储箱2101的有限蓝图，库存与连接证据的解释。
-- 当前结论：复制输入仓→生产设备→输出仓模块必须完整支持仓储配置，不能删去仓库后放宽开放分拣器检查。原生110-int参数包含禁用格数、模式、逐格过滤而不含货物；12个物理slot不代表12个库存格。未支持的类型、堆叠、过滤项/尾部、被原生clamp或忽略的设置均明确拒绝。
-- 直接证据：521-test实机五对象716/720/715/719/717中715才是recipe60生产设备；含仓导出被type_unsupported拒绝，去仓三对象被open_sorter_unsupported拒绝，均未commit。DLL的BuildingParameters/StorageComponent/PrefabDesc已核实；Core扩展形状/容量/过滤策略，配置深复制公开并绑定三种factory hash，source roundtrip、逐帧剩余参数/科技检查及completed配置复读保持严格。库存不进入导出，也不冻结其后正常货物流动。
-- 限制或反例：该扩展33项新Core回归及MCP描述/playbook发现断言已过，完整Release554测试无警告错误；尚无新仓储蓝图实机施工，不把只读/离线证据冒充正例。只支持2101、至多100原生格，不支持2102/堆叠/仓储增容Mod。
-- 复验触发：DSP/DLL、storage类型/容量/参数、空格过滤、手工更改设置、建设及重启续建路径变化。
-- 关联：EXP-195/201、`BlueprintStoragePolicy`、`FactoryEntitySnapshot.StorageConfiguration`、`game-api-foundry.md`。
-- 最近复验：2026-09-06（554-test冷部署后716/717均30格/default/禁用0/30个0过滤，读回正例成立；567源码延续配置绑定，仓储施工仍待live）。
-
-### EXP-208 — 电网余量必须计满基础负载、接网几何和新接通的旧设备
-
-- 状态：`observed`
-- 日期：2026-09-06
-- 适用范围：Foundry/有限蓝图只读现场的基础功率预算，非施工许可。
-- 当前结论：原生网络几何用壳面投影和两塔连接半径最大值，不用视觉powerPoint或半径和。现网预留consumer/charger的work、idle、current最大值，加上出口、新设备和新塔接通的原net0设备；近边界或多网覆盖不明确时不能宣布余量充足。新发电只贷记当前原生风能，燃料持续性另验。
-- 直接证据：当前DLL OnNodeAdded/OnConsumerAdded/NewConsumerComponent/电力tick和EnergyCap_Wind已核验并落研究文档。39项Core测试覆盖覆盖/功率分别不足、网络合并、半径最大值、未知发电、充电、旧未供电负载、边界、哈希和非法/超限；662 Release测试与完整DLL构建通过。
-- 限制或反例：本切片不自动布电塔、不选择或建设完整物流，不证明将来增产剂/天气/燃料或持续吞吐；实机目前只验证机器占位通过而无电覆盖的否定分支。独立power capture hash含tick，但不进入原生建设assessment hash，避免每tick误作陈旧施工计划。
-- 复验触发：DLL电网/发电公式、地形尺度、叠层/add-on支持、load来源、网络membership及完整计划适配变化。
-- 关联：FoundryPowerPlanner、GameStateReader.FoundryPower、game-api-foundry.md、包内playbook。
-- 最近复验：2026-09-06（672 Debug/Release回归含两个hash隔离测试全通过；同批冷部署后单炉30/min占位通过但power_plan_incomplete/未覆盖/360kW，正确区分两种证据）。
-
-### EXP-196 — 短窗满产与诊断无finding不证明持续配平
-
-- 状态：`observed`
-- 日期：2026-09-06
-- 适用范围：本档石墨→金刚石供给与Governor基线选择。
-- 当前结论：目标产出、上游实际供给、消耗和库存变化分别核销。缺料设备可以瞬时working，无finding不能代替反证；矿机有积货时不能把短窗低产直接当采矿不足而扩矿。cached sorter target不代替真实双端（EXP-193）。
-- 直接证据：新10带/2sorter连接114→716后，三段独立600tick窗金刚石均5件=30/min，石墨2/3/3件=12–18/min而消耗5件=30/min，114库存2994→2991→2988。后续106有47/48煤积货；115缓存insert113仍在工作，但fresh23001130–57只有115:1↔108:4，115:0和113回链均缺。初次客户端“完整煤链”推断已撤销，未扩矿或改旧线路。
-- 限制或反例：不推断旧缺边发生时间；短窗不足以归因全部瓶颈，也不能作为十分钟稳定2×验收。
-- 复验触发：修复接线、升级/复制、任意上游/供电/物流变化和稳态窗口。
-- 关联：EXP-193、同档日记新窗口#1–5、Governor验收门。
-- 最近复验：2026-09-06（#5正常保存22943478/J54/54，随后仅只读补查并正常关闭）。
-
-### EXP-198 — Governor基线不得借用重叠窗口或重启前历史，预测成本与收益须标范围
-
-- 状态：`validated`
-- 日期：2026-09-06
-- 适用范围：Governor只读提案的Core/协议不变量与本机零产/未建立基线负例，不代表扩产实机通过。
-- 当前结论：目标产率、消费、目标需求、当地余量和选区库存差独立表达；缺料下P=C不是配平。三个独立非零窗口只建立候选基线，十分钟2×必须另外验证。重启/现场/规模变化后旧基线无效，重叠读回不能增加独立样本数。
-- 直接证据：`GovernorPlanCompilerTests`覆盖重叠/零产/波动/缺口/回退、库存差不等于P-C、行星计数非逐机器归因、完整升级成本与独立退款、Foundry复用及提案hash。支持升级/增建/复制三类，实际收益unknown，机器成本明确不含尚未规划的基础设施。
-- 限制或反例：当前无持久化十分钟验收器；八选区×三窗口仅存当前session。原生600tick低速率有量化，不等同长窗稳态。供电/物流/矿源完整方案尚未完成，工具不得称为可执行。
-- 2026-09-06复核：adapter把实时货物configuration hash用于source binding，运行仓储会让三窗反复归零；旧零产live负例不能证明非零基线链路可用。该部分由EXP-204/IFX-034修正，源码567项通过但待冷部署live；上述Core窗口/缺料规则及零产负例的证据范围保留。
-- 复验触发：计数范围、单位、baseline绑定/持久化、供给分配或方案执行变化。
-- 关联：EXP-196、`GovernorMeasurementSeries`、`GovernorPlanCompiler`、Governor验收门。
-- 最近复验：2026-09-06（510-test冷部署后首个live提案：724电机30/min目标，600tick窗23201207–23201806 ready但实际产消0、baseline warming_up/0样本、balanced=false；三网满供电不替代非零基线）。
-
-### EXP-204 — 稳态观测的配置身份不能包含正在流动的库存
-
-- 状态：`validated`
-- 日期：2026-09-06
-- 适用范围：Governor选区、稳定基线、fresh手工配置与Blueprint选择。
-- 当前结论：source binding只包含身份/recipe/pose/连接/网络/加速模式/sorter filter/仓储设置，库存、增产点、加工进度、分拣器携货阶段与瞬时供电单独观测。真实设置/源改变需新基线，普通生产不能使基线永远warming_up。
-- 直接证据：代码在GameStateReader.Governor中把含实时buffers的ConfigurationStateHash用于绑定。Core新helper与13测试复现持续入库时仍积累三窗/保留库存delta，并验证真实配置变化会失效；endpoint hash新增原生加速模式及sorter filter。完整Release567测试零警告错误。
-- 限制或反例：发现时还未开始该模块live基线，不能说现场已经发生三窗卡死。旧554-test不能采用修正后的语义，已暂停基线/蓝图施工等待正常部署；单位测试不是十分钟2×实测。
-- 复验触发：静态配置/DTO/hash、生产buffer、源选择、存档重启、供电及窗口采样变化。
-- 关联：EXP-198、IFX-034、`GovernorSourceBinding`、`CanonicalStateHash`。
-- 最近复验：2026-09-06（582-test同档恢复后，金刚石唯一生产者715的23376124–23376723、23376797–23377396、23377465–23378064三个独立窗口全为30/min，source hash不变、baseline ready、归因完整且findings0；真实库存流动未重置绑定。窗口之间有小间隔，不冒充连续十分钟2×验收）。
-
-### EXP-207 — 全局告警不能没有路径证据就归因到选定产线
-
-- 状态：`observed`
-- 日期：2026-09-06
-- 适用范围：Governor实验基线/吞吐健康与Overseer诊断范围。
-- 当前结论：全部有界告警保留，另列目标物品诊断、选中对象或含选区对象的上游路径告警；未归因告警数量单列，不自动判定其矿脉与目标有关或已修好。截断/目标链告警仍阻断，实际供给缺口仍要处理。库存差的捕获间隔不能写成生产窗口。
-- 直接证据：617安装态三个独立600tick窗口23406387–23406986、23407062–23407661、23407732–23408331均为金刚石30/min，归因完整；基线锁定被14/263/796三条无item/选区路径证据的vein_exhausted拒绝。源码原先用全部Findings.Count，现改为TargetChainFindings；6项范围/哈希/observer回归及623总测试通过。
-- 限制或反例：另有真实上游问题：115只连108、缺少113输出边，石墨产量不足而114库存878仍掩盖短窗缺口。修复诊断范围不是修复供给，不得据此宣称2×可持续。23407661→23408331为670tick库存间隔，而600tick生产窗口从23407732开始。
-- 复验触发：诊断路径、目标/选区、全局告警截断、速率/库存字段、冷部署和正式吞吐验收。
-- 关联：EXP-196/198/206、IFX-036、GovernorPlanCompiler/GovernorThroughputValidation。
-- 最近复验：2026-09-06（672修复版已冷部署并同档恢复，尚未重做目标锁定；617首次拒绝无accepted/action）。
-
-### EXP-206 — 吞吐验收必须先锁基线，连续覆盖不能靠等待或重叠样本凑时长
-
-- 状态：`observed`
-- 日期：2026-09-06
-- 适用范围：Governor只读提案上的有限吞吐观察，不是完整配平/发行认证。
-- 当前结论：服务端保留真实ready提案，Agent须在后续任何accepted写之前以精确hash锁定相同revision/source的基线（3600tick内）。目标、误差、窗口和recipe scale复制后不可改；用户不能上传声称的历史速率。有效600tick窗口只累计并集，重复不增长、哪怕1tick采样缺口也重新计段；源变化需完整后置窗口，断流/失去归因/采样健康异常均重置观测而非声明。
-- 直接证据：35项Core回归覆盖真正36000tick门、重叠/重复/gap、零产/超误差、七种声明篡改、事后锁定、源变更、六类健康失效、失真窗口、基线非法、DTO修改和非2×目标。Debug/Release617项及完整Release零警告错误；真实源码MCP64tools/1resource、18565字符同批指南和stdin关闭后exit0/额外stdout0通过。
-- 限制或反例：当前582-test实机只有三窗30/min基线，尚无新observer实读/2×验收。最多8候选选区/8锁定声明；仅当前session内存，重启不能复活旧hash。健康是采样不是逐tick连续证明，throughput target observed不等于供需已配平、完整上游自动化或版本完成。实验期间不要安排会丢失声明的重启。
-- 复验触发：Overseer窗口边界、采样调度、声明/源绑定、重启、原生速率字段或验收窗口变化。
-- 关联：EXP-198/204、GovernorThroughputValidation、get_governor_plan、包内playbook。
-- 最近复验：2026-09-06（617已正常冷部署并同档恢复23398654；三个独立30/min窗口形成基线，但首次锁定被全局矿机告警误阻断，0锁定/0blueprint commit。EXP-207记录范围修复，离线测试不冒充实机2×）。
-
-### EXP-199 — 已排队不等于已解锁，科研优先级只能用保持进度的原生排序
-
-- 状态：`validated`
-- 日期：2026-09-06
-- 适用范围：本档蓝图科技与当前DSP原生研究队列；当前DLL已做一次正常优先级实测。
-- 当前结论：2701正常排入队列后可能被其他研究占用首位；只能在fresh前置均已解锁时明确将该排队项前移，不删除研究、不写hash或完成标志。原生SortTechQueue用于UI拖动，保持其他顺序与已投入进度；独立材料/时间仍必须提供。
-- 直接证据：本窗#7正常选择2701得到3402/1202/2701队列及Journal55（upgrade_first_selected）；runtime2701要求电路板100而非矩阵。DLL的SortTechQueue/AlterCurrentTech与UI调用交叉证明；Core16回归和MCP双参数映射、当前510项Debug/Release与完整构建通过。
-- 实机复验：510-test冷部署后的新窗口#2在23147953将[3402,1202,2701]改为[2701,3402,1202]，即时完整科技进度/库存保持。#4从仓26正常取100电路板，自动研究管理将其转入research buffer；2701于23177285正常解锁，fresh23178354证明12000/12000且回到原队列[3402,1202]。
-- 限制或反例：暂停、重复等级、缺前置、不在队列或已在首位均拒绝。选择终态只证明排队/排序，不是研究完成；research buffer后读与transfer即时库存不是同一时刻，不能据玩家背包随后为空推断丢失。
-- 复验触发：DSP科研UI、前置等级语义、队列长度或选择哈希变化。
-- 关联：EXP-063/189、`ResearchQueuePolicy`、`NormalGameActionCoordinator.ResearchPriority`。
-- 最近复验：2026-09-06（同档priority终态、正常电路板转移与2701实际unlockTick均已观察）。
-
-### EXP-209 — 燃料资格必须来自原生目录，不能只按“燃料棒”名称搜索
-
-- 状态：`observed`
-- 日期：2026-09-06
-- 适用范围：机甲普通补能、0.4燃料准备和只读运行时目录。
-- 当前结论：recipe catalog公开FuelHeatValueJoules/FuelType/nullable AcceptedAsMechaFuel，与既有refuel相同地要求HeatValue>0、FuelType>0和当前原生itemIsFuel；没有表证据返回unknown。名称/解锁不替代资格，热值不等于燃烧速度/移动航程，持有燃料还须正常exact-stack补入反应室。
-- 直接证据：当前DLL ItemProto字段与原有UtilityActions.refuel三条件已核验，新增共享纯策略和8个回归保留全部原有条件。617实机搜索只盯燃料棒，遗漏69.921m处907里的氢/精炼油候选；其当前可燃性先由native prepare诊断和正常操作验证，不提前假定。
-- 限制或反例：原目录没有公开这些字段，不能声称旧包已提供。补能失败/低核心不准通过目录读数伪造燃料、瞬充或扩大移动授权；燃料产线、稳定补给与最终0.4仍需独立验证。
-- 复验触发：DLL燃料表、refuel原生入口、fuel字段、目录未知值、自动补充/堆栈守恒和0.4出发清单变化。
-- 关联：EXP-035/041/053、IFX-037、OrdinaryMechaFuelPolicy、game-api-foundry.md。
-- 最近复验：2026-09-06（672 Debug/Release通过并冷部署；live目录1114=4500000J/type1/true，1120=9000000J/type1/true。617普通氢20转移/refuel已验；不外推持续燃料产线）。
-
 ### EXP-194 — 原生蓝图预检也可能触碰覆盖对象，必须先排除覆盖与开放端点
 
 - 状态：`observed`
@@ -2597,6 +2463,68 @@
 - 关联：EXP-185/194、`BlueprintBuildStore`、`NormalGameActionCoordinator.BlueprintBuild`。
 - 最近复验：2026-09-06（离线边界和完整构建通过，live待部署）。
 
+### EXP-196 — 短窗满产与诊断无finding不证明持续配平
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：本档石墨→金刚石供给与Governor基线选择。
+- 当前结论：目标产出、上游实际供给、消耗和库存变化分别核销。缺料设备可以瞬时working，无finding不能代替反证；矿机有积货时不能把短窗低产直接当采矿不足而扩矿。cached sorter target不代替真实双端（EXP-193）。
+- 直接证据：新10带/2sorter连接114→716后，三段独立600tick窗金刚石均5件=30/min，石墨2/3/3件=12–18/min而消耗5件=30/min，114库存2994→2991→2988。后续106有47/48煤积货；115缓存insert113仍在工作，但fresh23001130–57只有115:1↔108:4，115:0和113回链均缺。初次客户端“完整煤链”推断已撤销，未扩矿或改旧线路。
+- 限制或反例：不推断旧缺边发生时间；短窗不足以归因全部瓶颈，也不能作为十分钟稳定2×验收。
+- 复验触发：修复接线、升级/复制、任意上游/供电/物流变化和稳态窗口。
+- 关联：EXP-193、同档日记新窗口#1–5、Governor验收门。
+- 最近复验：2026-09-06（#5正常保存22943478/J54/54，随后仅只读补查并正常关闭）。
+
+### EXP-197 — 蓝图分拣器碰撞体必须复用实际端点公式，不能混淆原生几何错误
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：当前DSP0.10.34.28529有限蓝图native几何；程序集与离线证据。
+- 当前结论：分拣器half-length、带端中心偏移、两端朝向和prefab collider旋转均遵循当前DLL公式；任意padding可能让相邻正常插入器假冲突。独立native ErrorInserterData仍须按slot/姿态核对，不能通过缩小自有碰撞体掩盖。
+- 直接证据：五对象预览object2/3 overlap触发复核；DLL证明half-length=max(.1,span/2+ext.z-.5+.35×带端数)，而首稿多加1并忽略q。九项Core几何回归通过，原生错误守卫保留；源795几何问题尚未核销。
+- 限制或反例：尚未冷部署本修复或证明正例模块；无证据表明这是一切ErrorInserterData的共同根因。
+- 复验触发：分拣器类型、native几何、星球网格或预览适配变化。
+- 关联：EXP-194、IFX-030、`NativeInserterColliderGeometry`。
+- 最近复验：2026-09-06（完整Release487项/零警告错误；live待验证）。
+
+### EXP-198 — Governor基线不得借用重叠窗口或重启前历史，预测成本与收益须标范围
+
+- 状态：`validated`
+- 日期：2026-09-06
+- 适用范围：Governor只读提案的Core/协议不变量与本机零产/未建立基线负例，不代表扩产实机通过。
+- 当前结论：目标产率、消费、目标需求、当地余量和选区库存差独立表达；缺料下P=C不是配平。三个独立非零窗口只建立候选基线，十分钟2×必须另外验证。重启/现场/规模变化后旧基线无效，重叠读回不能增加独立样本数。
+- 直接证据：`GovernorPlanCompilerTests`覆盖重叠/零产/波动/缺口/回退、库存差不等于P-C、行星计数非逐机器归因、完整升级成本与独立退款、Foundry复用及提案hash。支持升级/增建/复制三类，实际收益unknown，机器成本明确不含尚未规划的基础设施。
+- 限制或反例：当前无持久化十分钟验收器；八选区×三窗口仅存当前session。原生600tick低速率有量化，不等同长窗稳态。供电/物流/矿源完整方案尚未完成，工具不得称为可执行。
+- 2026-09-06复核：adapter把实时货物configuration hash用于source binding，运行仓储会让三窗反复归零；旧零产live负例不能证明非零基线链路可用。该部分由EXP-204/IFX-034修正，源码567项通过但待冷部署live；上述Core窗口/缺料规则及零产负例的证据范围保留。
+- 复验触发：计数范围、单位、baseline绑定/持久化、供给分配或方案执行变化。
+- 关联：EXP-196、`GovernorMeasurementSeries`、`GovernorPlanCompiler`、Governor验收门。
+- 最近复验：2026-09-06（510-test冷部署后首个live提案：724电机30/min目标，600tick窗23201207–23201806 ready但实际产消0、baseline warming_up/0样本、balanced=false；三网满供电不替代非零基线）。
+
+### EXP-199 — 已排队不等于已解锁，科研优先级只能用保持进度的原生排序
+
+- 状态：`validated`
+- 日期：2026-09-06
+- 适用范围：本档蓝图科技与当前DSP原生研究队列；当前DLL已做一次正常优先级实测。
+- 当前结论：2701正常排入队列后可能被其他研究占用首位；只能在fresh前置均已解锁时明确将该排队项前移，不删除研究、不写hash或完成标志。原生SortTechQueue用于UI拖动，保持其他顺序与已投入进度；独立材料/时间仍必须提供。
+- 直接证据：本窗#7正常选择2701得到3402/1202/2701队列及Journal55（upgrade_first_selected）；runtime2701要求电路板100而非矩阵。DLL的SortTechQueue/AlterCurrentTech与UI调用交叉证明；Core16回归和MCP双参数映射、当前510项Debug/Release与完整构建通过。
+- 实机复验：510-test冷部署后的新窗口#2在23147953将[3402,1202,2701]改为[2701,3402,1202]，即时完整科技进度/库存保持。#4从仓26正常取100电路板，自动研究管理将其转入research buffer；2701于23177285正常解锁，fresh23178354证明12000/12000且回到原队列[3402,1202]。
+- 限制或反例：暂停、重复等级、缺前置、不在队列或已在首位均拒绝。选择终态只证明排队/排序，不是研究完成；research buffer后读与transfer即时库存不是同一时刻，不能据玩家背包随后为空推断丢失。
+- 复验触发：DSP科研UI、前置等级语义、队列长度或选择哈希变化。
+- 关联：EXP-063/189、`ResearchQueuePolicy`、`NormalGameActionCoordinator.ResearchPriority`。
+- 最近复验：2026-09-06（同档priority终态、正常电路板转移与2701实际unlockTick均已观察）。
+
+### EXP-200 — 审计输出异常要缩小表达式复现，不能让显示失败重放游戏动作
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：PowerShell客户端对已持久游戏响应的汇总；无新增游戏调用。
+- 当前结论：大对象构造的错误定位不一定就是错误字段。逗号列表与范围表达式要显式分组；完整序列直接使用`@(1..41)`，不写`@(1,2,3,4,5,6,7..41)`。
+- 直接证据：后者在无Bridge/无游戏的独立表达式中复现Object[]→IConvertible，前者返回41项。原23页factory响应与动作receipt已落盘，可直接重组摘要，不重放或反复重新采全厂。
+- 限制或反例：这是本地表示层错误，不证明Bridge、游戏或存档故障；最终审计仍须核对真实原始响应，不依赖丢失的显示文本。
+- 复验触发：审计脚本/PowerShell表达式变化、任意accepted后输出异常。
+- 关联：EXP-007、IFX-032、十写审计规则。
+- 最近复验：2026-09-06（最小复现、替代表达式及复用原始响应完成十写审计均通过）。
+
 ### EXP-201 — 全图连接不等于当前对象创建时应写入的连接
 
 - 状态：`observed`
@@ -2609,6 +2537,102 @@
 - 关联：EXP-195、IFX-033、`BlueprintSitePolicy`、`NormalGameActionCoordinator.BlueprintNative`。
 - 最近复验：2026-09-06（11项新增回归与Debug/Release521测试通过；正常保存/关闭后521-test已4/4冷部署，同档恢复成功，首个蓝图施工仍待验证）。
 
+### EXP-202 — 合并版安装包要验证能力和同批指南，不能仅靠工具数量
+
+- 状态：`validated`
+- 日期：2026-09-06
+- 适用范围：0.4及后续包的离线MCP能力/指南一致性检查；不是游戏验收门。
+- 当前结论：只要求工具数大于默认1及旧移动指南关键词，会让Overseer-only旧候选通过。按版本要求Foundry/Governor/蓝图施工/取消/升级与科研priority，分别检查只读标记，并逐字比较包内指南和MCP内嵌资源（仅统一换行/BOM）。
+- 直接证据：新增26项无DSP包策略回归，缺任一必需工具/重复注册/错误只读标记/缺priority/旧指南均拒绝，0.3兼容与正常换行差异通过。源码MCP真实stdio64工具通过同一策略、指南一致、stdin关闭后exit0且无额外stdout；日志异步从stderr排空。
+- 限制或反例：未生成或验证最终0.4 ZIP，没有运行GitHub CI；新CI步骤只已写入本地。MCP元数据存在不证明Plugin能力实机通过，不证明整个版本完成。
+- 复验触发：版本能力合并、工具/参数/注释修改、指南嵌入、包结构或进程退出协议改变。
+- 关联：`SpherewrightPackageSurface.ps1`、`test-release-package.ps1`、包内playbook与0.4发行门。
+- 最近复验：2026-09-06（26项本地脚本测试+真实源码MCP元数据通过；零游戏请求）。
+
+### EXP-203 — 闭合生产模块需要仓储配置，但仓库连接口不等于容量
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：当前DLL普通未堆叠仓储箱2101的有限蓝图，库存与连接证据的解释。
+- 当前结论：复制输入仓→生产设备→输出仓模块必须完整支持仓储配置，不能删去仓库后放宽开放分拣器检查。原生110-int参数包含禁用格数、模式、逐格过滤而不含货物；12个物理slot不代表12个库存格。未支持的类型、堆叠、过滤项/尾部、被原生clamp或忽略的设置均明确拒绝。
+- 直接证据：521-test实机五对象716/720/715/719/717中715才是recipe60生产设备；含仓导出被type_unsupported拒绝，去仓三对象被open_sorter_unsupported拒绝，均未commit。DLL的BuildingParameters/StorageComponent/PrefabDesc已核实；Core扩展形状/容量/过滤策略，配置深复制公开并绑定三种factory hash，source roundtrip、逐帧剩余参数/科技检查及completed配置复读保持严格。库存不进入导出，也不冻结其后正常货物流动。
+- 限制或反例：该扩展33项新Core回归及MCP描述/playbook发现断言已过，完整Release554测试无警告错误；尚无新仓储蓝图实机施工，不把只读/离线证据冒充正例。只支持2101、至多100原生格，不支持2102/堆叠/仓储增容Mod。
+- 复验触发：DSP/DLL、storage类型/容量/参数、空格过滤、手工更改设置、建设及重启续建路径变化。
+- 关联：EXP-195/201、`BlueprintStoragePolicy`、`FactoryEntitySnapshot.StorageConfiguration`、`game-api-foundry.md`。
+- 最近复验：2026-09-06（554-test冷部署后716/717均30格/default/禁用0/30个0过滤，读回正例成立；567源码延续配置绑定，仓储施工仍待live）。
+
+### EXP-204 — 稳态观测的配置身份不能包含正在流动的库存
+
+- 状态：`validated`
+- 日期：2026-09-06
+- 适用范围：Governor选区、稳定基线、fresh手工配置与Blueprint选择。
+- 当前结论：source binding只包含身份/recipe/pose/连接/网络/加速模式/sorter filter/仓储设置，库存、增产点、加工进度、分拣器携货阶段与瞬时供电单独观测。真实设置/源改变需新基线，普通生产不能使基线永远warming_up。
+- 直接证据：代码在GameStateReader.Governor中把含实时buffers的ConfigurationStateHash用于绑定。Core新helper与13测试复现持续入库时仍积累三窗/保留库存delta，并验证真实配置变化会失效；endpoint hash新增原生加速模式及sorter filter。完整Release567测试零警告错误。
+- 限制或反例：发现时还未开始该模块live基线，不能说现场已经发生三窗卡死。旧554-test不能采用修正后的语义，已暂停基线/蓝图施工等待正常部署；单位测试不是十分钟2×实测。
+- 复验触发：静态配置/DTO/hash、生产buffer、源选择、存档重启、供电及窗口采样变化。
+- 关联：EXP-198、IFX-034、`GovernorSourceBinding`、`CanonicalStateHash`。
+- 最近复验：2026-09-06（582-test同档恢复后，金刚石唯一生产者715的23376124–23376723、23376797–23377396、23377465–23378064三个独立窗口全为30/min，source hash不变、baseline ready、归因完整且findings0；真实库存流动未重置绑定。窗口之间有小间隔，不冒充连续十分钟2×验收）。
+
+### EXP-205 — 分拣器原生放置条件不包含此前候选端点的角度筛选
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：当前DLL普通分拣器双端候选和有限蓝图种子选择。
+- 当前结论：只调用CheckBuildConditions不足以复用完整原生放置规则；DeterminePreviews已提前筛选端点朝向并可设TooSkew。当前精确槽适配器补保守直线子集，两设备最大角误差须小于14度，带端小于11度；偏移/弯曲搜索不在子集内，不能通过改条件或移动已有对象强行通过。
+- 直接证据：554-test金刚石五对象导出保留recipe60、两仓设置及全部内部连接；23348926/23348937两处预检均对719/720返回ErrorInserterData，均未commit。当前DLL的DeterminePreviews角度选择及BlueprintUtils.Refresh端点面向/位移检查已逐段核实。新Core纯几何策略覆盖15个朝向/阈值/相对夹角/非法向量回归，Plugin在池索引前重验实体身份，并公开只读端点facing dot诊断。
+- 限制或反例：582-test同姿态实读确认index3/4 output dot分别为-0.174369559/-0.18947494，确有输出槽背离另一端；input分别0.9832634/0.982118845。另有965占位，所以这不是全部现场阻断。旧正常货物流动不能证明蓝图姿态合法。736安装态已取得正常重建正例，但新候选仍因占位未执行完整native放置检查；无自动拆除/修复/位置写入。
+- 复验触发：DLL原生UI、sorter/belt姿态、候选生成、slot语义、蓝图转换或重启续建变化。
+- 关联：EXP-195/203、IFX-035、NativeInserterEndpointGeometry、game-api-foundry.md。
+- 最近复验：2026-09-06（736同档正常拆除并无人机重建719/720后，23819363只读候选中两者nativeCondition=Ok，facing分别0.997947454/0.9982711与0.9793151/0.984285235，旧ErrorInserterData消失。候选仍有五对象占位、nativeCheckPerformed=false及功率预算缺口；没有blueprint commit，不外推整图可建）。
+
+### EXP-206 — 吞吐验收必须先锁基线，连续覆盖不能靠等待或重叠样本凑时长
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：Governor只读提案上的有限吞吐观察，不是完整配平/发行认证。
+- 当前结论：服务端保留真实ready提案，Agent须在后续任何accepted写之前以精确hash锁定相同revision/source的基线（3600tick内）。目标、误差、窗口和recipe scale复制后不可改；用户不能上传声称的历史速率。有效600tick窗口只累计并集，重复不增长、哪怕1tick采样缺口也重新计段；源变化需完整后置窗口，断流/失去归因/采样健康异常均重置观测而非声明。
+- 直接证据：35项Core回归覆盖真正36000tick门、重叠/重复/gap、零产/超误差、七种声明篡改、事后锁定、源变更、六类健康失效、失真窗口、基线非法、DTO修改和非2×目标。Debug/Release617项及完整Release零警告错误；真实源码MCP64tools/1resource、18565字符同批指南和stdin关闭后exit0/额外stdout0通过。
+- 限制或反例：当前582-test实机只有三窗30/min基线，尚无新observer实读/2×验收。最多8候选选区/8锁定声明；仅当前session内存，重启不能复活旧hash。健康是采样不是逐tick连续证明，throughput target observed不等于供需已配平、完整上游自动化或版本完成。实验期间不要安排会丢失声明的重启。
+- 复验触发：Overseer窗口边界、采样调度、声明/源绑定、重启、原生速率字段或验收窗口变化。
+- 关联：EXP-198/204、GovernorThroughputValidation、get_governor_plan、包内playbook。
+- 最近复验：2026-09-06（617已正常冷部署并同档恢复23398654；三个独立30/min窗口形成基线，但首次锁定被全局矿机告警误阻断，0锁定/0blueprint commit。EXP-207记录范围修复，离线测试不冒充实机2×）。
+
+### EXP-207 — 全局告警不能没有路径证据就归因到选定产线
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：Governor实验基线/吞吐健康与Overseer诊断范围。
+- 当前结论：全部有界告警保留，另列目标物品诊断、选中对象或含选区对象的上游路径告警；未归因告警数量单列，不自动判定其矿脉与目标有关或已修好。截断/目标链告警仍阻断，实际供给缺口仍要处理。库存差的捕获间隔不能写成生产窗口。
+- 直接证据：617安装态三个独立600tick窗口23406387–23406986、23407062–23407661、23407732–23408331均为金刚石30/min，归因完整；基线锁定被14/263/796三条无item/选区路径证据的vein_exhausted拒绝。源码原先用全部Findings.Count，现改为TargetChainFindings；6项范围/哈希/observer回归及623总测试通过。
+- 限制或反例：另有真实上游问题：115只连108、缺少113输出边，石墨产量不足而114库存878仍掩盖短窗缺口。修复诊断范围不是修复供给，不得据此宣称2×可持续。23407661→23408331为670tick库存间隔，而600tick生产窗口从23407732开始。
+- 复验触发：诊断路径、目标/选区、全局告警截断、速率/库存字段、冷部署和正式吞吐验收。
+- 关联：EXP-196/198/206、IFX-036、GovernorPlanCompiler/GovernorThroughputValidation。
+- 最近复验：2026-09-06（672修复版已冷部署并同档恢复，尚未重做目标锁定；617首次拒绝无accepted/action）。
+
+### EXP-208 — 电网余量必须计满基础负载、接网几何和新接通的旧设备
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：Foundry/有限蓝图只读现场的基础功率预算，非施工许可。
+- 当前结论：原生网络几何用壳面投影和两塔连接半径最大值，不用视觉powerPoint或半径和。现网预留consumer/charger的work、idle、current最大值，加上出口、新设备和新塔接通的原net0设备；近边界或多网覆盖不明确时不能宣布余量充足。新发电只贷记当前原生风能，燃料持续性另验。
+- 直接证据：当前DLL OnNodeAdded/OnConsumerAdded/NewConsumerComponent/电力tick和EnergyCap_Wind已核验并落研究文档。39项Core测试覆盖覆盖/功率分别不足、网络合并、半径最大值、未知发电、充电、旧未供电负载、边界、哈希和非法/超限；662 Release测试与完整DLL构建通过。
+- 限制或反例：本切片不自动布电塔、不选择或建设完整物流，不证明将来增产剂/天气/燃料或持续吞吐；实机目前只验证机器占位通过而无电覆盖的否定分支。独立power capture hash含tick，但不进入原生建设assessment hash，避免每tick误作陈旧施工计划。
+- 复验触发：DLL电网/发电公式、地形尺度、叠层/add-on支持、load来源、网络membership及完整计划适配变化。
+- 关联：FoundryPowerPlanner、GameStateReader.FoundryPower、game-api-foundry.md、包内playbook。
+- 最近复验：2026-09-06（672 Debug/Release回归含两个hash隔离测试全通过；同批冷部署后单炉30/min占位通过但power_plan_incomplete/未覆盖/360kW，正确区分两种证据）。
+
+### EXP-209 — 燃料资格必须来自原生目录，不能只按“燃料棒”名称搜索
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：机甲普通补能、0.4燃料准备和只读运行时目录。
+- 当前结论：recipe catalog公开FuelHeatValueJoules/FuelType/nullable AcceptedAsMechaFuel，与既有refuel相同地要求HeatValue>0、FuelType>0和当前原生itemIsFuel；没有表证据返回unknown。名称/解锁不替代资格，热值不等于燃烧速度/移动航程，持有燃料还须正常exact-stack补入反应室。
+- 直接证据：当前DLL ItemProto字段与原有UtilityActions.refuel三条件已核验，新增共享纯策略和8个回归保留全部原有条件。617实机搜索只盯燃料棒，遗漏69.921m处907里的氢/精炼油候选；其当前可燃性先由native prepare诊断和正常操作验证，不提前假定。
+- 限制或反例：原目录没有公开这些字段，不能声称旧包已提供。补能失败/低核心不准通过目录读数伪造燃料、瞬充或扩大移动授权；燃料产线、稳定补给与最终0.4仍需独立验证。
+- 复验触发：DLL燃料表、refuel原生入口、fuel字段、目录未知值、自动补充/堆栈守恒和0.4出发清单变化。
+- 关联：EXP-035/041/053、IFX-037、OrdinaryMechaFuelPolicy、game-api-foundry.md。
+- 最近复验：2026-09-06（672 Debug/Release通过并冷部署；live目录1114=4500000J/type1/true，1120=9000000J/type1/true。617普通氢20转移/refuel已验；不外推持续燃料产线）。
+
 ### EXP-210 — 完整物料意图应绑定同一有限蓝图执行记录
 
 - 状态：`observed`
@@ -2620,6 +2644,20 @@
 - 复验触发：布局来源、配方多产物/设备类型、过滤/仓储配置、预算、持久化、原生电网和实机施工变化。
 - 关联：FoundryConstructionCompiler、BlueprintBuildState、game-api-foundry.md、包内playbook。
 - 最近复验：2026-09-06（源码/离线通过，未部署/未声明新三级链成功）。
+
+### EXP-211 — 缺端分拣器可正常回收，错配的存在边不能直接拆
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：普通2011/2012分拣器原生拆除/重建修复。
+- 当前结论：使用DoDismantleObject；0–2条存在边与全有界反向引用必须配对，缺边可接受、错边拒绝。原生TakeBackItems_Inserter要求itemId及stackCount均正才返货，不能忽略非空零stack损坏。只接受grade1/2非高级堆叠，充分背包空位，准确count/inc与邻居pose/config/其他slot保持；不写连接字段、不自动重建。拒绝会丢货的活动native instantDismantle，不改变用户设置。
+- 直接证据：672实机到煤308成功后，115拆除prepare因矿机白名单拒绝，无commit。当前DLL证明ClearObjectConn无条件清引用的邻居slot；新增8192实体/prebuild池条目、4邻居限额与21项Core安全测试，完整Release通过。
+- 限制或反例：不支持高级sorter、prebuild端点或一般建筑拆除；不把缓存target当实际边，不以升级修复缺边。当前货物策略只接受空载或单件/单stack，普通sorter拾取多件堆叠带货物也会保守拒绝。113在609tick观察中仍有煤0→1；736修复115后的精确600tick三窗石墨产量18/12/12每分钟、后两窗113输入0，缺端不是未经对照可认定的唯一亏供原因。空载及携1件金刚石的2011均已有live正例；2012拆除、非零inc货物及此次修复的保存恢复尚待。
+- 复验触发：DLL拆除/回收/连接清理、sorter分级/堆叠、cargo/count/inc、邻居状态、准备/提交语义。
+- 关联：IFX-038、EXP-207、SorterDismantlePolicy、NormalGameActionCoordinator.Dismantle。
+- 最近复验：2026-09-06（736冷部署后，拆除53e71a7f及重建1b4b8246均terminal成功，2011为4→5→4、inc0；新115实际读回108:4↔115:1和115:0↔113:10，108旧107/109连接、113 recipe17及113→116→114保持。保存23753687、四写审计healthy/J55/55；不是持续配平或异机证明）。
+
+- 后续复验：同一736安装态中cd0bd811拆除719返还2011×1及携货金刚石×1；9a1ae940、5711428f、642a2238分别完成719重建、空载720拆除、720重建，均terminal成功，最终2011仍4。新连接及邻居其他连接、recipe60/仓设置均复读保留。普通save304e46eb保存23827812，五写审计healthy/J55/55/2267built/0prebuild/满电。三个真实600tick窗金刚石0/min且输出满，故仅认定受控回收及几何修复，不认定持续产出。
 
 ### EXP-212 — 连接可达仍须核算原生带速和分拣器跨格周期
 
@@ -2635,6 +2673,69 @@
 
 ## 修订记录
 
+- 2026-09-06：九个功能切片的独立暂存快照均完成锁定还原、完整Release构建（0warning/0error）及Contracts/Core/MCP测试，依次为428、495、535、572、609、626、634、746、767项；第九个快照另通过Debug767项（21Contracts/710Core/36MCP）。第1–8提交为04fe546、a1b2881、52c1bca、cdc1d8c、a707f90、de66fcd、6ca4d3a、88a1d9e，按用户授权逐项推送；第九项把普通sorter回收和最后已核验文档归并，不包含打包/CI改动。上述数字是独立提交树的测试集合，不等于历史安装cohort编号；游戏仍为736安装态，不能声称已用767实机验证，未打tag或发布。
+
+- 2026-09-06：736安装态新增五写提前审计全部核销，具体actionId、库存/拓扑及保存23827812见本档日记。最终owned/和平/非沙盒/1×/revision15/healthy/blockers0/resume可用，J55/55无pending/error、Walk0/400MJ/3idle/无手搓，23页2267built/0prebuild、三网51656/51656。修订EXP-205/211的窄范围live证明；原始三窗run7b8f026b的ordinal3/5/7已核对，4/6/8只是重复记录，误指向115批次的摘要文件不用于本次产率。文件标签不能替代action/tick关联核验；再次支持EXP-007的原始证据复读要求。本条及日记落盘后五写归零，无blueprint commit/unknown/基线锁定；游戏保持同一736安装态。
+
+- 2026-09-06：按用户最新授权把当前功能拆成九个独立可构建提交并逐个推送，原第十项打包/CI保留本地。拆分时发现零上下文diff的目标行偏移不能用于任意子集重放；索引辅助器改为校验旧行并逆序应用，每个实际暂存树复制到隔离验证目录完成locked restore、完整Release及测试，再提交。错误暂存定位在提交前被检查发现，原工作文件未改、未影响游戏；后续整树回归不替代每个提交的独立验证。
+
+- 2026-09-06：新增EXP-212，把有限布局从只验证连通/物料分配推进到原生单件带宽约束；31项新增Core回归，完整Release0警告错误、767项Release通过。仍复用同一prepare/commit/逐对象记录，未修改运行中的736安装态、未造蓝图实测结果或最终ZIP。现存0.4旧ZIP与当前安装Plugin哈希不同，不对旧工件作新能力声明。
+
+- 2026-09-06：736安装态提前4写审计已核销：protected resume e85fa1d9、拆除53e71a7f、原生重建1b4b8246、正常save d4dc63eb全部terminal成功，保存23753687；首次prepare超时未accepted。owned/和平/非沙盒/1×/healthy/blockers0/无checkpoint/resume可用，J55/55无pending/error、Walk0/400MJ/手搓空/3idle，23页2267built/0prebuild、三网满供电。115缺端修复及三段独立600tick窗口见EXP-211和本档日记，不把间隔采样算连续、不把连接修复算配平。复读672和736原始inventory证明2011×4、2012×2早已存在；此前“无”的摘要筛选漏项已纠正，没有手搓或不明物品增量。依据EXP-007重新核销原始状态，而非沿用摘要零值。本条及日记落盘后4写归零，仍只用本档；游戏保持运行，无blueprint commit/基线锁定/重放/unknown。后续物料规则续建守卫的源码Release736回归和完整Release0警告错误再通过，尚未替换运行中736安装态。9月5日两个旧0.4 ZIP仍非本轮最终工件。
+
+- 2026-09-06：736最终源码同批Debug/Release各21Contracts/679Core/36MCP通过；锁定还原成功，完整Release零警告错误，真实MCP64tools/1resource/22881字符指南相同、exit0/额外stdout0。35包策略加入Foundry绑定参数与普通sorter回收发现性校验；这是源元数据与离线策略测试，不是ZIP、实机完工或异机测试。准备在23725814三写审计后正常关闭、冷部署，EXP-210/211仍为live pending。
+
+- 2026-09-06：672安装态提前3写完整审计。#1 resume `accbb81f-3027-47bb-8506-7802dcd87c4e`；#2 Move `74b3566b-e04c-4d78-952d-797c9291dba6` 于23637299→23638580到煤308成功、Walk0/约286.3MJ；#3正常save `0abc60da-8ad0-4d86-a131-f71a133cf3eb` 成功落23725814。之后fresh owned/和平/非沙盒/1×/healthy/blockers0/checkpoint无/resume可用，J55/55durable无pending，Walk0/400MJ/3idle/手搓空，23页2267built/0prebuild、三网50990/50990和容量191000。108→115仅输入端/缓存113，113→116→114；115空载，背包实际2011×4、2012×2、2201×1（736复核原始库存纠正旧摘要筛选漏项，非手搓或不明增量），设备均在约9–12m。修复前23720174→23720783为609tick库存观察（113煤0→1、石墨0→0、工作true→false），不是固定600tick产量报告。拆除prepare拒绝不计写，无拆建/unknown；本审计及日记落盘后3写归零，冻结到同批冷部署，仅续读23725814。
+
+- 2026-09-06：新增EXP-210/211，Foundry显式布局组合42项、sorter拆除21项与MCP1项增量，最新Release736项（21/679/36）及完整Release零警告错误。0.4仍缺完整实机建厂/扩产/出发准备/最终包，不推断异机通过，不push/tag/release。
+
+- 2026-09-06：672同批4/4冷部署后，protected resume `accbb81f-3027-47bb-8506-7802dcd87c4e` 正常完成并重存23604320。fresh23612476 owned104/和平/非沙盒/1×/rev1/healthy/无checkpoint，J55/55durable，Walk0/274.193MJ/燃料空。目录补能资格及独立缺电分支读回见EXP-208/209与研究文档；EXP-207目标链锁定尚待正例。新审计窗只累计#1 resume，不因只读复验再归零；继续115普通修复，保留原审计、所有失败终态和不重放边界。
+
+- 2026-09-06：617安装态提前9写完整审计结束。#1 resume自动存23398654；#2/#3各180tick位置stall、#4短切向成功、#5距离终态后Drift、#6低能量执行偏差导致636tick动作内的600tick断能终止；六项原始actionId/终态见同批存档日记，均无unknown或重放。新增#7 `225f9d3a-f5a5-4b74-a110-56f48bdfd0b3` 于23597936氢907:22→2/玩家0→20；#8 `527e84d1-c015-41d5-aaee-24b0382b2b23` 于23600166玩家20→0/燃料舱0→20；#9 `62ffe409-5a36-416b-961e-6121c10bcc1e` 普通保存23604289。补能600tick燃料15→14、核心117.638→134.438MJ；fresh23609444 owned104/和平/非沙盒/1×/rev11/healthy/saved/resume可用/blockers0/无checkpoint，J55/55durable无pending/error，Walk0/约270.150MJ/燃料已耗尽/3idle/手搓空；23页2267built/0prebuild，三网59721/6078/1800均满供电，907氢2、114石墨191、113煤1/无产物、115仍缺113返回边。没有拆建/蓝图/隔离。EXP-209补上旧安装态原生氢资格/转移/补能正例，公开目录新字段仍待672冷部署；本条及日记落盘后完整9写审计归零，冻结游戏commit至同批正常重启，接续仅同档23604289。
+
+- 2026-09-06：672同批Debug测试也已通过（21Contracts/616Core/35MCP），与Release计数一致；完整Release、64工具/1resource/20838字符指南/协议纯净及29包策略均通过。当前DLL哈希复读与基线一致，仍非最终ZIP/跨电脑live。EXP-207/208/209及IFX-036/037的源码/现场边界分别保留。
+
+- 2026-09-06：最新源码Release672项通过（21Contracts/616Core/35MCP）；完整当前DSP Release零警告错误，真实源码MCP64tools/1resource、20838字符指南逐字一致、exit0/额外stdout0，包策略29项通过。功率新增39策略+2hash隔离、Governor范围6项、原生燃料资格8项；Debug构建通过待同批test。现网prebuild未完成时功率预算明确unavailable，不遗漏将来负载。未打新ZIP，未commit/push/tag/release，617实机仍是另一安装批。
+
+- 2026-09-06：复验EXP-039/041/053。617窗口两次位置停滞分别在180tick终止，4m正交恢复成功；长段终态后Drift等待导致能源流失，随后在已Walk/低能量时错误执行返岸Move，600tick能量看门狗明确失败。玩家最终Walk0，23552576→23553311的735ticks核心14,325,833→15,305,833，净增980,000，符合原生80kW被动恢复；不把被动等候算作无线充电。窗口accepted6、尚无完整审计/归零，补能来源正按原生资格核验。
+
+- 2026-09-06：新增EXP-207/208，复核EXP-196/198/204/206。617冷部署后首次observer锁定因全局告警范围错误拒绝，无写入；真实煤/石墨缺口另诊断。源码范围修复6项与新增功率39项使Release总数至662，尚未冷部署。新鲜endpoint/state hash和正常Move/watchdog/幂等语义未放宽；现场岸边Drift正在按正常原语补能/返岸，未把等待或源码测试当作完成。
+
+- 2026-09-06：617-test最终Debug/Release回归通过（21Contracts/561Core/35MCP），完整Release零警告错误；新增源码MCP独立元数据探针，真实64工具/1resource/指南18565字符完全一致、stdin关闭后exit0、额外stdout0，无游戏请求。包策略现在29项，补上实验声明参数、端点诊断指南与合法nullable string schema；实测SDK把可空字符串表达为[string,null]，不能误判为缺参数。PowerShell条件/数组赋值在本地策略测试发现并修正，失败阶段未接触游戏/ZIP。复核EXP-200/202/206，仍不是新包或实机吞吐通过。
+
+- 2026-09-06：582-test窗口共2accepted全部成功：#1 protected resume `e0cfcc1a-9d2b-4cb5-942b-5218b606365f` 自动重存23355394，首次prepare只因未ready拒绝、未commit；#2 save `f025f0c1-3cd7-4165-8d37-aff2a24513a8` 于23398622终态completed/succeeded。fresh玩家23402509/Journal23402515，rev2/owned/和平/非沙盒/1×/saved/healthy/blockers0/resume可用/无checkpoint，Walk0/400MJ/3idle/手搓空，J55/55无pending/error，23页2267built/0prebuild，三网required=served73506/capacity191000。715/716/717/719/720双向与配置均保持，717有2040钻石；建设预算2302×1/2101×2/2011×4/2012×2/铁2。原生负dot与稳定30/min基线已分别复验EXP-204/205，新增EXP-206；0蓝图施工，无unknown/隔离/重放。完整两写审计及日记落盘后计数清零，冻结至617-test正常冷部署；只续同档23398622，不沿用旧非durable基线。
+
+- 2026-09-06：554-test窗口#4普通保存 `18bdb49c-8a2b-40ff-a282-e9fc0966ec3e` 于23355362终态completed/succeeded，四项accepted全核销（resume、石材8转移、手搓仓储2、save）。fresh审计rev5/owned/和平/非沙盒/healthy/resume可用、J55/55durable无pending/error、Walk0/400MJ/buildArea80/3idle、23页2267built/0prebuild、三网required=served62416/capacity191000。库存2302×1、2101×2、2011×4、2012×2、铁2；2701解锁，队列[3402,1202]仍未完成。五对象export与两仓配置通过，两处site的占位和旧sorter ErrorInserterData仍拒绝，无blueprint/Governor写入、unknown、隔离或重放。复核EXP-037/039/195/203/204，新增EXP-205；本条及日记落盘后提前完整审计清零，冻结至下一正常冷部署。恢复点只准同档23355362。
+
+- 2026-09-06：567-test最终源码MCP真实stdio复验通过，0.4.0.0/64工具/1resource，内嵌指南16807字符与仓库原文一致，包含仓储及静态基线绑定规则；同一包策略通过，stdin关闭后exit0/额外stdout0。26项包策略继续通过。只发initialize/list/resources读取，无游戏请求，不冒充新ZIP/异机/线上CI通过。
+
+- 2026-09-06：554-test同档protected resume `21521cba-6cec-494f-9516-18dd2cd04ebe` 终态成功并自动重存23304941；新窗#1。fresh23308195–23308224 owned/healthy/J55/55/Walk0/400MJ/3idle；716/717首次真实storageConfiguration均30格/禁用0/default/30个0过滤，独立证明12物理口≠库存容量，仍未施工。EXP-203补上读取正例但保持施工live pending。新增EXP-204/IFX-034，暂停有缺陷的Governor绑定采样，未形成或伪造执行前基线；目标仍仅0.4。
+
+- 2026-09-06：四写审计23304910后正常关闭DSP，进程/descriptor均0；554-test的Plugin/Contracts/Core/Newtonsoft同批安装并逐文件SHA-256全匹配（完整哈希见Foundry研究记录）。安装脚本已输出成功对象，但包装命令错用PowerShell脚本后遗留的LASTEXITCODE而报错；没有重跑安装，改用只读4/4哈希与进程0证明实际状态，按EXP-200复核“显示失败≠业务失败”。新窗口仍0，下一动作仅同档protected resume；仓储施工仍待live。
+
+- 2026-09-06：521-test窗口#4唯一save `e91265c5-effa-4663-91f9-64376408216b` 于23304910 terminal/completed/succeeded。fresh23312136–23315775严格审计为同档owned/healthy/rev4、和平/非沙盒/1×、blockers0、protected resume available、J55/55无pending/error、Walk0/400MJ/3idle/无手搓/无待施工、23页2267built/显式prebuild0，三网required=served73699/capacity191000。715仍recipe60运行、720/719与716/717双向连接保持；717货物为1289钻石（12×100+89，仅货物buffers，不据此猜容量）。本窗口共4accepted（3成功+1明确Move失败），全收据核销，无unknown/重放/蓝图施工。EXP-037/039/061/195/201/203复核：旧失败目标禁止重放，仓储扩展未实测。本条及日记落盘后提前完整审计归零，冻结至正常关闭及554-test同批冷部署。
+
+- 2026-09-06：新增EXP-203，撤销把716叫作生产机或把仓库12个connection slot叫12库存格的表述。本窗口#2 Move `cc66d4d4-8494-4a05-9587-56caca43f6d1` 于23227652–23227902 terminal/action_failed，受保护receipt实证position_stalled/180tick/余126.76158142089844m/doNotRetrySameTarget=true/推荐5m及最多四向4m，无重放；#3 save `b31cd462-8181-483b-88cb-38bf8b36a2f2` 于23234025成功。fresh23240332–23240534同档owned/healthy/J55/55无pending/error/Walk0/400MJ/3idle/2267built0prebuild/三网62590满供电，未有blueprint commit。原始三写计数仍保留，等待下次冷部署边界最终保存审计。
+
+- 2026-09-06：23213258五写审计后主会话正常关闭，进程/descriptor清零，521-test cohort四DLL冷部署/哈希一致。新窗#1唯一protected resume `d829f535-047f-4bc9-8e49-6ee09f5a7857` 终态成功并自动重存23213289；action tick字段省略。fresh23215523–38同档owned/healthy/rev1/J55/55/Walk0/3idle；第一次prepare超时无commit/action，fresh第二次prepare成功后才提交，不把超时当加载已开始。新增EXP-202包策略26项与source MCP64元数据复验通过，不冒充ZIP或线上CI验证。
+
+- 2026-09-06：新窗口提前五写审计完成；#5 save `9fd78840-7336-4f7c-936f-5bd65835fda1` 于23213258终态成功。fresh23219367–23219553同档owned/healthy、J55/55无pending/error、Walk0/391.93MJ/3idle、2267 built/0 prebuild、三网required=served62932/capacity191000。2701确已解锁，3402/1202仍待正常研究；115缺113回链及724缺铁仍保留未解决。旧五对象site的nativeLimit150/科技/库存通过，但ErrorInserterData/2:3碰撞/占位拒绝，0蓝图提交。EXP-198/199/201分别复核只读负例、真实科研排序与未部署投影修复。本条和日记落盘后提前审计归零，冻结至正常关闭/521-test冷部署；不以部署前代码或只读检查冒充新产线完成。
+
+- 2026-09-06：新增EXP-201/IFX-033并保持首个blueprint commit冻结至修复冷部署。新窗口#1恢复自动重存23140390；#2原生科研排序、#3唯一Move、#4取100电路板均terminal成功，2701随后正常解锁于23177285，J55连续。EXP-199更新为当前DLL限定实机通过；详细action/tick见同档日记。此窗口累计4/10，尚不提前清零或宣称新产线完成。
+
+- 2026-09-06：十写审计后的510-test cohort已在游戏关闭状态同批部署、4/4哈希一致（精确值见Foundry API研究），没有热替换。actual source MCP64/1与新短playbook发现通过；新窗口Luna Max仅获准精确恢复、2701优先级/最低正常材料与只读Governor/site验证，尚未授权本小片blueprint commit。已部署不代表运行模块正例通过。
+
+- 2026-09-06：本窗口十写审计完成，#7排2701、#8手搓2012×2、#9手搓2302×1、#10普通保存23140359均terminal成功；J55/55无pending/error、fresh23140403–14 owned/healthy/rev8/Walk0/满核心/3idle/无待施工。完整factory23页2267 built/0 prebuild、三网required=served79090。749双端与795双端保持，115缺113真实回链仍是未解决旧问题，未扩矿或蓝图施工。EXP-193/196/199复验前提保留，#1–6跨进程receipt独立核销；EXP-200的本地显示错误已按IFX-032修正后完成审计。随后正常CloseMainWindow/进程descriptor清零。账本落盘后归零，新窗口首项仅恢复该精确主档；本批不push/tag/发布。
+
+- 2026-09-06：新增EXP-200、IFX-031/032，分别记录有限进度嵌套数据拒绝与客户端范围表达式异常；未丢弃原始receipt或重放游戏动作。实际源码MCP stdio握手0.4.0.0、64工具/1resource、priority字段/Gov只读标记/15609字符playbook均通过并正常退出；这是源码工具发现，不是新Plugin已实装或发行包验收。
+
+- 2026-09-06：新增EXP-199并复验EXP-195存储失败边界：NULL嵌套连接/预算先拒绝为数据错误，避免在hash过程中抛未归类空引用；参数/连接索引保持有界。原生科研priority不改变既有默认enqueue，精确保留队列其余顺序/全部科技进度/库存，新参数须实机验收。完整Debug/Release510项通过，仍无push/tag/发布。
+
+- 2026-09-06：新增EXP-197/198与IFX-030；#6同档protected resume已成功并重存22943509，J54/54/healthy，运行458-test Plugin/实际63-tool MCP通过只读发现。首次5对象site因blueprintLimit0、2012/2302各缺1、占位/范围及原生sorter几何拒绝，没有blueprint commit。487-test源码新增Governor只读提案与collider公式修正，仍未部署；本机、离线和包状态分开记录。EXP-194/195的历史“待部署”由本条更新为已部署但正例施工仍待验证。
+
+- 2026-09-06：新增EXP-194/195/196并复验EXP-193（115 cached insert113缺真实factory回链），客户端误推断未转化为扩矿写入。新窗口5项accepted全部terminal成功，石墨114→金刚石716新自动连接与短30/min产量已保存22943478；详细ID/实际窗见同档日记。后续正常关闭进程与descriptor清理；冷部署前完整Release458测试0警告错误，新增有限施工仍无live声明。目标纠正仅完成0.4.0+打包+本地验收，不提前实施0.5。
+
+- 2026-09-06：第10 accepted 为普通保存 `0377ef4f-0312-4838-8d03-a0cfc3620601` / tick22792469；此前9项见同档日记，10项收据全部terminal/completed/succeeded、无replay/unknown。冻结写入后完成fresh22827459–22827558严格审计：同档owned/healthy/和平/非沙盒/1×、无blocker/checkpoint，Journal54/54 durable，Walk/0/400MJ/3idle，完整23页2255 built/0 prebuild、三网满供电。复验EXP-185/190/193：749升级保持，724缺铁、114→716缺自动供给，当前0/min不可作Governor基线；不把静态存量设备当作新增建厂验收。证据先在current-user-only本地保存，本条和日记更新后新窗口归零。
 - 2026-09-06：IFX-028最终部署4/4匹配（Plugin3FB233…/Core7199C2…），窗口#5–9分别为protected resume、749单实体升级、保存/正常关闭、protected resume、最终保存，完整action表见当档日记；未提供resume action tick不补造。修复版23一端负例无commit；749消耗2012 1→0/返2011 7→8、双端及filter1101保留，同步cargo空明确披露。恢复后新选区蓝图含3×2011/1×2012/1×2303，5对象/1区域、native signature及code往返hash一致、4条源边界，证明IFX-027白名单解耦未因实际升级回退。MCP58 tools/1 resource与必需双端playbook通过。最终保存22221235，fresh session22224301 revision2/owned/healthy/no blockers、player22224313 Walk/0/3idle/2011=8/2012=0、Journal22224316 54/54/no pending/error、749及723/724在22224323–32双向正确、power22224335 required=served49804。EXP-189/190/193获得限定范围live证据，EXP-027/028缩窄，存档日记索引按账本同步过期状态且不另维护易过时汇总。当前窗口9项accepted，无额外commit；下一项后必须严格十写审计。没有运行模块复制、Governor产量翻倍、新包/异机声明或push/tag/release。
 
 - 2026-09-06：新窗口#1保存22139771后正常关窗部署393-test cohort；#2 protected resume `d8eaab78-3a8a-4839-be0a-646d051320d9` 自动重存22139802、Journal54/54；#3首次27携货升级及同键幂等回放成功，完整ID/守恒见EXP-193和当档日记。复核时发现 `verifiedConnectionCount=1`，主动撤销“两端完整”的外推，追加IFX-028/EXP-193并收窄EXP-027/028；没有重新升级27、改线、注入或回滚。fresh显式蓝图导出/inspect仍为5对象/1区域、签名及hash一致、filter1101保持、4条源边界，MCP58 tools/1 resource及expectedFilterItemId均可发现。下一步仅正常保存/退出后部署完整连接守卫；不把尚未进行的保存恢复写成通过。

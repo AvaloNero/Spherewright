@@ -1,3 +1,4 @@
+using Spherewright.Bridge.Core.Factory;
 using Spherewright.Bridge.Core.Safety;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Errors;
@@ -76,7 +77,7 @@ internal sealed partial class NormalGameActionCoordinator
             payload,
             common.Session!,
             1,
-            "DSP's normal PlayerAction_Build.DoDismantleObject removes the exact resource miner, returns its building item and live internal cargo, and readback proves both recovery and disappearance.");
+            "DSP's normal PlayerAction_Build.DoDismantleObject removes the exact supported miner or basic sorter, returns its building item and recoverable live cargo, and readback proves recovery and disappearance. Present sorter links must be reciprocal; missing ends may be repaired by normal dismantle/rebuild, never by slot writes.");
         if (prepared.Success && prepared.Value is not null)
         {
             prepared.Value.TargetObjectId = target.ObjectId;
@@ -123,7 +124,7 @@ internal sealed partial class NormalGameActionCoordinator
         return ValidateDismantleTarget(playerResult.Value, targetResult.Value, plan.FactoryStateHash);
     }
 
-    private static BridgeError? ValidateDismantleTarget(
+    private BridgeError? ValidateDismantleTarget(
         PlayerStateSnapshot player,
         FactoryEntitySnapshot target,
         string expectedEndpointStateHash)
@@ -131,35 +132,42 @@ internal sealed partial class NormalGameActionCoordinator
         if (target.ObjectKind != FactoryObjectKinds.Entity
             || target.ObjectId <= 0
             || target.ItemId <= 0
-            || !string.Equals(target.ComponentKind, "miner", StringComparison.Ordinal))
+            || !(target.ComponentKind == "miner" || target.ComponentKind == "inserter" && SorterDismantlePolicy.Supports(target.ItemId)))
         {
             return BridgeError.Create(
                 BridgeErrorCodes.InvalidRequest,
-                "The current dismantle slice accepts only a completed resource-miner entity.",
+                "Dismantle accepts a completed resource miner or ordinary2011/2012 sorter only.",
                 false,
-                "Inspect a positive resource-miner entity and prepare again.");
+                "Inspect one supported positive entity and prepare again; other types are not implicitly authorized.");
         }
 
         var item = LDB.items.Select(target.ItemId);
         if (item?.prefabDesc is null
-            || (!item.prefabDesc.veinMiner
+            || (target.ComponentKind == "miner" && !item.prefabDesc.veinMiner
                 && !item.prefabDesc.oilMiner
                 && item.prefabDesc.minerType != EMinerType.Vein
-                && item.prefabDesc.minerType != EMinerType.Oil))
+                && item.prefabDesc.minerType != EMinerType.Oil)
+            || (target.ComponentKind == "inserter" && !item.prefabDesc.isInserter))
         {
             return BridgeError.Create(
                 BridgeErrorCodes.InvalidRequest,
-                "The inspected entity is not a current-version solid-vein miner or oil extractor.",
+                "The inspected entity is not a supported current-version resource miner or basic sorter.",
                 false,
-                "Use a supported resource-miner entity.");
+                "Use one supported resource miner or basic sorter.");
         }
+
+        if (GameMain.sandboxToolsEnabled && GameMain.preferences.instantDismantle)
+            return BridgeError.Create(BridgeErrorCodes.InvalidRequest,
+                "Native instant-dismantle would discard cargo; this path requires ordinary recovery.", false,
+                "Disable the native instant-dismantle option manually before preparing; Spherewright never toggles or invokes it.");
 
         if (!string.Equals(target.EndpointStateHash, expectedEndpointStateHash, StringComparison.Ordinal))
         {
             return Stale("Dismantle target identity, pose, or connections changed after inspection.");
         }
 
-        if (!player.IsAlive || !player.IsOnPlanet || player.MovementState != "Walk" || player.Speed > 0.1f)
+        if (!player.IsAlive || !player.IsOnPlanet || player.MovementState != "Walk" || player.Speed > 0.1f
+            || !BuildUiIsIdle(GameMain.mainPlayer))
         {
             return BridgeError.Create(
                 BridgeErrorCodes.PlayerBusy,
@@ -176,6 +184,16 @@ internal sealed partial class NormalGameActionCoordinator
                 $"The dismantle target is {distance:F2} metres away, outside the player's {player.BuildArea:F2}-metre build area.",
                 true,
                 "Move into normal construction range and prepare again.");
+        }
+
+        if (target.ComponentKind == "inserter")
+        {
+            try { CaptureSorterDismantleNeighbors(target); CaptureDismantleInventoryInc(GameMain.mainPlayer); }
+            catch (InvalidOperationException error)
+            {
+                return BridgeError.Create(BridgeErrorCodes.BuildConnectionInvalid, error.Message, false,
+                    "Fresh inspect the exact sorter and endpoints; no malformed present connection or unrecoverable cargo may be removed.");
+            }
         }
 
         var requiredSlots = CountConservativeRecoverySlots(target);
@@ -229,9 +247,29 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         var expectedRecovery = CaptureExpectedDismantleRecovery(targetResult.Value);
+        var sorter = targetResult.Value.ComponentKind == "inserter";
+        var survivors = sorter ? CaptureSorterDismantleNeighbors(targetResult.Value) : new List<FactoryEntitySnapshot>();
+        var beforeInc = sorter ? CaptureDismantleInventoryInc(player) : null;
+        var cargo = targetResult.Value.Buffers.SingleOrDefault(b => b.Role == "inserter-held");
+        foreach (var survivor in survivors)
+            survivor.Connections.RemoveAll(e => e.OtherObjectId == action.Plan.EntityId);
         if (!player.controller.actionBuild.DoDismantleObject(action.Plan.EntityId))
         {
             throw new InvalidOperationException("DSP's normal dismantle path rejected the exact entity.");
+        }
+
+        if (sorter)
+        {
+            foreach (var survivor in survivors)
+            {
+                var fresh = _reader.InspectFactoryEntityOnMainThread(action.SessionId,
+                    new InspectFactoryEntityRequest { PlanetId = action.PlanetId, ObjectId = survivor.ObjectId });
+                if (!fresh.Success || fresh.Value is null || !SorterDismantlePolicy.SurvivorMatches(survivor, fresh.Value))
+                    throw new InvalidOperationException("Sorter removal changed an unrelated surviving pose/configuration/connection.");
+            }
+            if (!SorterDismantlePolicy.ProvesIncRecovery(beforeInc!, CaptureDismantleInventoryInc(player),
+                cargo?.ItemId ?? 0, cargo?.Inc ?? 0))
+                throw new InvalidOperationException("Native sorter removal did not preserve the exact cargo proliferation points.");
         }
 
         var afterTarget = _reader.InspectFactoryEntityOnMainThread(
@@ -262,7 +300,79 @@ internal sealed partial class NormalGameActionCoordinator
         action.TargetObjectId = action.Plan.EntityId;
         action.TargetItemId = action.Plan.BuildingItemId;
         Complete(action,
-            $"DSP's normal dismantle path removed resource miner {action.Plan.EntityId} and returned its building item plus all live internal cargo with exact inventory conservation.");
+            $"DSP's normal dismantle path removed {targetResult.Value.ComponentKind} {action.Plan.EntityId} and returned its building item plus live recoverable cargo with exact inventory conservation."
+            + (sorter ? $" Cargo inc and {survivors.Count} surviving endpoint configurations/connections were verified; no slot write or automatic rebuild occurred." : ""));
+    }
+
+    private List<FactoryEntitySnapshot> CaptureSorterDismantleNeighbors(FactoryEntitySnapshot target)
+    {
+        var factory = GameMain.data.localLoadedPlanetFactory;
+        if (factory?.factorySystem is null || factory.entityCursor > 8192 || factory.prebuildCursor > 8192
+            || factory.entityCursor > factory.entityPool.Length || factory.prebuildCursor > factory.prebuildPool.Length
+            || target.ObjectId >= factory.entityCursor)
+            throw new InvalidOperationException("Sorter dismantle requires a bounded current local factory (at most8192 pool entries).");
+        var id = factory.entityPool[target.ObjectId].inserterId;
+        if (id <= 0 || id >= factory.factorySystem.inserterCursor || id >= factory.factorySystem.inserterPool.Length)
+            throw new InvalidOperationException("Sorter component identity is unavailable.");
+        var native = factory.factorySystem.inserterPool[id];
+        if (native.id != id || native.entityId != target.ObjectId
+            || native.itemCount > 0 && LDB.items.Select(native.itemId) is null
+            || !SorterDismantlePolicy.NativeCargoRecoverable(target.ItemId, native.grade, native.canStack,
+                native.bidirectional, native.stackInput, native.stackOutput, native.itemId, native.itemCount, native.itemInc, native.stackCount))
+            throw new InvalidOperationException("Sorter grade/stack mode/cargo does not prove ordinary native recovery.");
+        var ids = new HashSet<int>(target.Connections.Select(e => e.OtherObjectId));
+        if (native.pickTarget > 0) ids.Add(native.pickTarget);
+        if (native.insertTarget > 0) ids.Add(native.insertTarget);
+        if (native.pickTarget < 0 || native.insertTarget < 0 || ids.Any(n => n <= 0 || n == target.ObjectId))
+            throw new InvalidOperationException("Sorter dismantle cannot target prebuild or self-referential endpoints.");
+        // Native ClearObjectConn clears the referenced neighbor slot unconditionally.
+        // Prove every present/inbound edge first; missing ends are safe, mismatches are not.
+        for (var objectId = 1; objectId < factory.entityCursor; objectId++)
+        {
+            if (factory.entityPool[objectId].id != objectId || objectId == target.ObjectId) continue;
+            for (var slot = 0; slot < 16; slot++)
+            {
+                factory.ReadObjectConn(objectId, slot, out _, out var other, out _);
+                if (other == target.ObjectId) ids.Add(objectId);
+            }
+        }
+        for (var prebuild = 1; prebuild < factory.prebuildCursor; prebuild++)
+        {
+            if (prebuild >= factory.prebuildPool.Length || factory.prebuildPool[prebuild].id != prebuild) continue;
+            for (var slot = 0; slot < 16; slot++)
+            {
+                factory.ReadObjectConn(-prebuild, slot, out _, out var other, out _);
+                if (other == target.ObjectId) throw new InvalidOperationException("A pending prebuild references the sorter; wait for ordinary completion before dismantling.");
+            }
+        }
+        if (ids.Count > 4) throw new InvalidOperationException("Sorter has more neighbors than the bounded recovery subset.");
+        var neighbors = new List<FactoryEntitySnapshot>();
+        foreach (var objectId in ids.OrderBy(n => n))
+        {
+            var read = _reader.InspectFactoryEntityOnMainThread(target.SessionId,
+                new InspectFactoryEntityRequest { PlanetId = target.PlanetId, ObjectId = objectId });
+            if (!read.Success || read.Value is null) throw new InvalidOperationException("A present or cached sorter endpoint is not a proven completed entity.");
+            neighbors.Add(read.Value);
+        }
+        if (!SorterDismantlePolicy.PresentConnectionsAreReciprocal(target, neighbors))
+            throw new InvalidOperationException("A present sorter connection is nonreciprocal; native deletion could clear an unrelated slot.");
+        return neighbors;
+    }
+
+    private static Dictionary<int, int> CaptureDismantleInventoryInc(Player player)
+    {
+        var result = new Dictionary<int, int>();
+        if (player.package?.grids is null || player.package.size < 0 || player.package.size > 1024
+            || player.package.size > player.package.grids.Length)
+            throw new InvalidOperationException("Bounded exact package inc readback is unavailable.");
+        for (var i = 0; i < player.package.size; i++)
+        {
+            var grid = player.package.grids[i];
+            if (grid.itemId > 0 && grid.count > 0) result[grid.itemId] = checked(GetCount(result, grid.itemId) + grid.inc);
+        }
+        if (player.inhandItemId > 0 && player.inhandItemCount > 0)
+            result[player.inhandItemId] = checked(GetCount(result, player.inhandItemId) + player.inhandItemInc);
+        return result;
     }
 
     private sealed partial class NormalActionPlanPayload

@@ -2,12 +2,12 @@
 
 更新时间：2026-09-06（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 最后正常保存22221235，游戏保持运行。fresh22224301–22224335为owned/healthy、Journal54/54 durable、Walk/0、3施工机idle、三网满供电，背包2011=8/2012=0。修复版先拒绝一端分拣器23，再实机升级749为2012，filter1101/两条reciprocal/原生扣料返还均验证，保存、正常退出与protected resume后仍保持。首次27升级的铜块1件与幂等证据保留，但其原有单边没有擅自修复；IFX-028防止再把缺边设备当完整候选。升级后的5对象蓝图数据再次往返成功，仍 `executable=false`；真实MCP58 tools/1 resource、404项Debug/Release测试与完整Release零警告错误。本窗口累计9项accepted，下一项完成后须严格十写审计。蓝图施工/部分成功/取消/逐对象续建、Governor十分钟两倍吞吐和此前产线缺口仍未完成。
+当前截面：同一 `owned-world-001` 的736安装态又完成5写提前审计，正常保存23827812、owned/healthy/J55/55、2267built/0prebuild、Walk0/400MJ/3idle。115缺端及719/720背向端点分别通过正常拆除和无人机重建修复；本批还证明719携带的1件金刚石正常返还。两根新sorter的蓝图几何错误已消失，但所选候选地点仍占位，未执行完整native放置检查。三个独立600tick窗口金刚石均0/min、715输出100/100堵塞，不能把几何修复称作配平。源码767项Release及完整Release零警告错误通过，新增物料/输送规则续建守卫尚未部署。尚无blueprint commit/两倍十分钟验收；完整Foundry/Governor、准备清单和最终包仍未完成。artifacts中的两个0.4.0 ZIP是9月5日旧构建，不是本轮完成包。
 
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 最新为 `54/54` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留193条结论及各自状态、证据和复验条件。科技1202选择与首次手搓电机均已从Journal按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
+- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留212条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -16,6 +16,56 @@
 - 本文使用四种证据：`J` = 持久化运行时 Journal；`R` = 当前存档运行态；`M` = 产线读回、普通保存与 Git 里程碑；`D` = 经验账本。首次问题及代码修复另见 [incident-fix-log.md](./incident-fix-log.md)，现行规则与复验证据见 [experience-ledger.md](./experience-ledger.md)，版本门见 [ROADMAP.md](../ROADMAP.md)。
 
 ## 从落地到当前的主时间线
+
+2026-09-06 / 736五写提前审计（本地审计记录时间22:10:21，Asia/Singapore）：
+
+| # | actionId | tick / 终态与守恒 |
+|---|---|---|
+| 1 | `cd0bd811-fc86-4490-a6f9-920fb230552a` | 23809328，正常拆除719成功，2011为4→5，原携带金刚石1件返还玩家0→1；邻居剩余连接保留。 |
+| 2 | `9a1ae940-e0c2-4a6d-a014-70149551289e` | 23812093→23812216，原生无人机重建成功，2011为5→4；新ID复读为719。 |
+| 3 | `5711428f-030e-42d6-b965-1b1f6924faf4` | 23814714，空载720正常拆除成功，2011为4→5。 |
+| 4 | `642a2238-871b-4ca6-bf8e-da64049abe6c` | 23817357→23817504，原生无人机重建成功，2011为5→4；新ID复读为720。 |
+| 5 | `304e46eb-d66e-407a-a1ab-b207bf80f5da` | 23827812，正常保存成功，protected resume可用。 |
+
+业务预检已在范围内通过，没有额外Move。fresh核实715:0↔719:1、719:0↔717:7、716:3↔720:1、720:0↔715:9；716原718/2267边、717原1212边、715 recipe60及两个30格default/无过滤仓设置保留。玩家最终2011×4、回收金刚石×1，无无法解释的库存变化。23819363蓝图只读候选的719 facing dots为0.997947454/0.9982711，720为0.9793151/0.984285235，两者nativeCondition=Ok、原ErrorInserterData消失；但五对象占位使nativeCheckPerformed/nativeCheckPassed均false，独立功率预算仍有full_base_load_generation_deficit，executable=false。没有blueprint commit，不能称整图预检或复制通过。
+
+真正的三窗为23823818–23824417、23824491–23825090、23825160–23825759；煤均30/min，石墨12/18/18/min，金刚石均0/min且output_blocked/715输出100/100。73/69tick间隔不能算连续覆盖。原始证据绑定run `7b8f026bdd0940528ea0f6e16714c4b9` 的get_overseer_production ordinal3/5/7；4/6/8为重复记录，不另算窗口。曾误引用的post-repair-production-window文件属于上次115修复，已核对并排除。最终审计23832977（工厂快照23833014）为owned104/和平/非沙盒/1×/revision15/healthy/blockers0，J55/55无pending/error，Walk0/400MJ/手搓空/3idle，23页2267built/0prebuild；三网需求=供应51656、容量191000。五项accepted全部terminal成功，无重放/unknown/新档/基线锁定；本条及账本落盘后提前审计归零，仍续同档。此次修复的保存后恢复和持续产出尚待。
+
+2026-09-06 / 源码767切片：主会话在游戏保持736构建运行期间，补上Foundry原生带速、普通分拣器跨格周期和有限流量分配预算（EXP-212），Release767项与完整Release零警告错误通过。未热替换或新增游戏写入；理论预算不证明持续生产，游戏修复和源码验证分别记账。
+
+2026-09-06 / 736四写提前审计：#1 protected resume `e85fa1d9-a16d-4c46-96ae-beaabecaa344` 成功；首次prepare主线程REQUEST_TIMEOUT没有commit/action，不计写。#2拆除 `53e71a7f-b27c-4a2a-9cee-05e97eb4402c` 于23729227成功，空载115消失、2011为4→5；#3重建 `1b4b8246-6e52-4f7b-ab89-2b1e6e77f764` 于23738747→23738879成功、2011为5→4。新实体复读确为115，不假定ID复用；108:4↔115:1、115:0↔113:10完整，108原107/109边、113 recipe17及113→116→114均保留。#4普通保存 `d4dc63eb-915c-48c9-9eae-4690b4262e71` 成功落23753687。三段互不重叠的600tick窗口23747613–23748212、23749387–23749986、23751074–23751673分别为煤P/C=30/24、30/36、30/36，石墨P/C=18/0、12/0、12/0每分钟；有采样间隔，不是连续覆盖。第一窗115携煤1，后两窗113输入0，不宣称亏供消除或Governor配平。最终owned/和平/非沙盒/1×/healthy/blockers0/无checkpoint/resume可用，J55/55无pending/error，Walk0/400MJ/手搓空/3idle，23页2267built/0prebuild，三网满供电，关键network2需求/供应6402/6402。672原始审计库存经再次复核实际已有2011×4、2012×2；此前“未见”是摘要筛选漏项，非游戏增量，已纠正文档，不能用摘要缺项推断零库存。4写全部terminal成功；本条及账本落盘后计数归零。游戏保持运行，无蓝图施工、基线锁定、重放、unknown或新档。
+
+2026-09-06 / 672三写提前审计：#1 resume `accbb81f-3027-47bb-8506-7802dcd87c4e` 成功；#2 Move `74b3566b-e04c-4d78-952d-797c9291dba6` 于23637299→23638580正常到煤308附近，fresh Walk0/约286.3MJ；#3 save `0abc60da-8ad0-4d86-a131-f71a133cf3eb` 成功落23725814。保存后owned/和平/非沙盒/1×/healthy，无blocker/checkpoint且resume可用，J55/55durable无pending，Walk0/400MJ/3idle/手搓空。23页2267built/0prebuild，三网合计50990/50990、容量191000。108:4→115:1、115缓存113却无实际返回边；113:0→116:1→114，114另有3输出。115无held buffer/filter，背包实际2011×4、2012×2、2201×1（736复读原始审计纠正旧摘要漏项，非新增物品）。23720174→23720783为609tick库存观察，113煤0→1/石墨0→0/working true→false，不能直接当600tick统计或断言缺边是唯一原因。拆除prepare因旧矿机白名单拒绝，无accepted；首次问题IFX-038及经验EXP-211已另存。3写全部核销，日记/账本落盘后归零，冻结待新构建正常重启；没有新建档、拆建、blueprint、unknown或强关。
+
+2026-09-06 / 672-test冷部署：完成上一617九写审计后正常关闭游戏，进程/descriptor清零才安装同批4/4程序集。新窗#1 protected resume `accbb81f-3027-47bb-8506-7802dcd87c4e` 成功并重存23604320，revision1/healthy/owned104/和平/非沙盒/1×，J55/55无pending/error。fresh23612476为Walk0/274.193MJ/燃料空；目录真实公开精炼油1114和氢1120的原生可燃资格。当前位置的金刚石单炉30/min native占位预览通过，但电力评估明确报无覆盖/新增360kW；不是产线建成。此次恢复后尚无Move/拆建/蓝图/基线锁定写入；115修复和完整Foundry计划仍继续。
+
+2026-09-06 / 617-test九写审计与补能：
+
+| # | actionId | tick / 终态与守恒 |
+|---|---|---|
+| 1 | `08eeb797-fe98-4add-b9b0-673a0901fa2a` | protected resume成功，自动普通重存23398654；receipt未给动作起止tick，不补造。 |
+| 2 | `298a1b40-4942-48eb-8d64-16ece4ac2c4e` | 23487645→23487825，position_stalled，180tick终止。 |
+| 3 | `c211682b-f9dd-4d78-ba85-55c8d833546f` | 23491303→23491483，position_stalled，未重放相同目标。 |
+| 4 | `991eefe3-47c3-4222-90a8-db417ae71d89` | 23495413→23495460，4m反切向Move成功，fresh Walk0。 |
+| 5 | `fd22bab1-2b7a-4630-9d5e-e3eed8f99dc5` | 23504293→23504693，距离终态成功，但后续Drift；不冒充安全落地。 |
+| 6 | `14a9af65-296a-4a98-b8f6-27d3050b8afc` | 23541187→23541823，600tick断能watchdog失败；fresh已Walk/仅0.185MJ仍提交是执行策略失误，不是unknown，禁止重放。 |
+| 7 | `225f9d3a-f5a5-4b74-a110-56f48bdfd0b3` | 23597936，907氢22→2、玩家0→20，正常transfer成功。 |
+| 8 | `527e84d1-c015-41d5-aaee-24b0382b2b23` | 23600166，玩家氢20→0、燃料舱0→20，正常refuel成功。 |
+| 9 | `62ffe409-5a36-416b-961e-6121c10bcc1e` | 23604289，正常save成功、protected resume可用。 |
+
+本窗最早三个独立600tick金刚石窗口23406387–23406986、23407062–23407661、23407732–23408331全为30/min，但617的observer把14/263/796未归因矿竭也计入目标阻断，首次锁定无accepted/action拒绝。库存23407661→23408331的670tick间隔不是生产600tick窗口。真实115只有108:4→115:1；缓存target113不替代factory双边证据，但尚无修复前后对照来断言它是亏供唯一根因。
+
+静止Walk被动恢复23552576→23553311（735ticks）净增980,000能量，符合80kW而非无线充电。907距69.921m的氢先用原生prepare_refuel得到INVENTORY_INSUFFICIENT而非燃料资格拒绝，再按上述两步正常补入；600ticks燃料15→14、核心117.638→134.438MJ。最终fresh23609444，owned104/peaceful/non-sandbox/1×/rev11/healthy/blockers0/checkpoint无，J55/55durable无pending/error，Walk0/270.150MJ/燃料耗尽/3idle/手搓空；23页2267built/0prebuild（belt1883、sorter202、storage54、node39、generator33、assembler36、miner10、lab6、station3、tank1），三网59721/6078/1800均required=served。907余氢2，114石墨191，113 recipe17煤1/输出0且未工作；0蓝图提交、0拆建、0unknown/隔离。9accepted全部核销，经验/日记落盘后提前审计归零；仅以同一主档23604289为下一冷部署接续点。
+
+2026-09-06 / 582-test两写审计：#1 resume `e0cfcc1a-9d2b-4cb5-942b-5218b606365f` 终态成功并自动重存23355394；首次prepare因未ready拒绝，没有重复加载。五对象只读site新增facing证据：720/719输出为-0.174369559/-0.18947494，输入0.9832634/0.982118845，原生ErrorInserterData及965占位均保留。715为本星球唯一金刚石生产者，三个独立窗口23376124–23376723、23376797–23377396、23377465–23378064均实测30/min，baseline ready、归因完整、findings0；窗口小间隔不冒充连续验收。#2 save `f025f0c1-3cd7-4165-8d37-aff2a24513a8` 于23398622终态成功。fresh玩家23402509/Journal23402515，rev2/owned/和平/非沙盒/1×/saved/healthy/blockers0/resume可用/无checkpoint，Walk0/400MJ/buildArea80/3idle/手搓空，J55/55无pending/error，23页2267built/0prebuild，三网required=served73506/capacity191000。715与两仓/两sorter双向、配置不变，717钻石2040；材料预算仍2302×1/2101×2/2011×4/2012×2/铁2。全2accepted已核销、无blueprint/unknown/隔离；本条与账本落盘后提前审计归零，待下一冷部署只恢复同档23398622，不复用非durable基线。
+
+2026-09-06 / 554-test最终保存与提前四写审计：#4 save `18bdb49c-8a2b-40ff-a282-e9fc0966ec3e` 在23355362 terminal/completed/succeeded；同窗前三项resume、石材转移与手搓仓储均已核销。保存后fresh为rev5/owned/peaceful/sandbox disabled/healthy、resume可用、J55/55 durable无pending/error、Walk0/400MJ/buildArea80/3idle，23页2267built/0prebuild，三网required=served62416/capacity191000（42788、17828、1800）。2701已解锁，队列[3402,1202]未变；库存2302×1、2101×2、2011×4、2012×2、铁2。此前23348926与23348937的两处只读site均拒绝旧sorter720/719的ErrorInserterData，并分别披露965及298/304占位；库存/科技通过不是现场通过。没有blueprint/Governor提交、unknown或隔离。原始证据保存在受保护本地；本条和账本落盘后提前完整审计归零，冻结至正常关闭/下一同批冷部署，继续点仅为同一主档23355362。
+
+2026-09-06 / 554-test恢复与备料：#1 protected resume `21521cba-6cec-494f-9516-18dd2cd04ebe` 终态成功/自动重存23304941，fresh23308195–23308224同档owned/healthy/J55/55/Walk0/400MJ/3idle。716/717首次公开实际仓储配置：各30格、禁用0、default、30个0过滤；未复制货物。#2取石材1108×8 `baf3c1dd-823d-4c95-a77d-1a9e24104f96` 于23330086成功，玩家0→8/源仓1900→1892。#3普通手搓recipe86仓储2101×2 `0c2ba4d9-2583-4d46-94d5-62592ac941b4` 于23331772–23332012成功，铁10→2、石材8→0、仓储0→2；整图1熔炉/2仓/2sorter库存齐备，未移动/未施工。同期发现IFX-034正常库存流动重置Governor基线；暂停旧绑定采样，源码567项及新指南通过，待正常保存/冷部署。此时本窗accepted3，不提前清零。
+
+2026-09-06 / 521-test最终保存和提前四写审计：#4 `e91265c5-effa-4663-91f9-64376408216b` 于23304910 terminal/completed/succeeded；fresh23312136–23315775为owned/healthy/rev4/和平/非沙盒/1×/resume available/blockers0/J55/55durable无pending/error，Walk0/400MJ/3idle/手搓0、23页2267built/显式prebuild0、三网73699满供电/容量191000。715 recipe60仍工作，720/719/716/717 reciprocal保持；717货物1289钻石，仅代表当时库存。队列[3402,1202]仍待正常研究。四项accepted全部核销（3成功+1Move失败），无蓝图施工、重放或unknown。提前审计落盘后归零，冻结至正常关闭/554-test仓储扩展冷部署；同一个主档23304910是下一接续点。
+
+2026-09-06 / 521-test窗口追加：#2 Move `cc66d4d4-8494-4a05-9587-56caca43f6d1`（23227652–23227902）明确terminal/action_failed，position_stalled=180tick、余126.76158142089844m、禁止相同目标重试；推荐短移5m/四向4m规则随结果返回，未重放。#3 save `b31cd462-8181-483b-88cb-38bf8b36a2f2` 成功23234025。fresh23240332–23240534审计为同档planet104/和平/非沙盒/1×/rev3/healthy/blockers0/J55/55无pending/error、Walk0/400MJ/3idle、23页2267built/0prebuild，三网required=served62590/capacity191000。真实运行模块为716(input storage)→720→715(recipe60)→719→717(output storage，648钻石)；715slot8←720、slot0→719，720↔716slot3、719↔717slot4均双向核对。两仓的12是物理端口数，库存容量在该cohort尚未公开。五对象与去仓三对象的蓝图只读拒绝均不是accepted action；0蓝图施工，计数仍3，待下一次完整部署审计。
 
 计数订正（2026-09-06）：下列 9 月 5 日两批施工准备记录把失败 Move 排除在 accepted 计数之外，这是客户端审计错误；terminal failed 仍是已接受动作。历史表保留当时编号，但 recipe-123 准备窗口为 10 成功+2 失败，后一窗口到本次恢复为 10 成功+2 失败；恢复后审计覆盖整个窗口。以后每十项统计所有不同 accepted action，明确未接受与幂等回放不计。
 
@@ -165,6 +215,74 @@
 #3回读 `verifiedConnectionCount=1`，只能证明27:1↔10:1与原有cached pick10/insert26保持。fresh22180857–22180876的仓26七条连接没有27，不能称双端完整或猜断边时间；暂停后续升级并修复预检真空通过漏洞（IFX-028/EXP-193），没有拆改原线、重放升级或回滚存档。旧EXP-027/028现行结论也收窄为“运行物料流与持久拓扑分开验证”。备用749在22187146–22187170确有749:1↔723:3、749:0↔724:8两条，filter1101，随后才由修复版升级。修复版对一端23的正确fresh prepare返回BUILD_CONNECTION_INVALID、0commit；#6同步verifiedConnectionCount=2，周期600000→300000，buffers空不能冒充非零携货样本。#8恢复后双方反向槽均保持，749 network1/serve1；#9后最终三网总required=served49804。
 
 同部署批次只读蓝图5对象/1区域、签名/往返hash一致、filter1101和4条源边界保持；升级后再export/inspect得到1×2303/recipe97、3×2011、1×2012/filter1101，模型与新code自身hash均一致。预算为2011需3/包8、2012需1/缺1、2303需1/缺1，不声称可施工。MCP真实58 tools/1 resource，升级schema包含expectedFilterItemId，描述/playbook明确必需双端，Host已正常退出。没有蓝图施工或新增产物流水线。
+
+### 2026-09-06 石墨到金刚石自动连接（新窗口5/10）
+
+前窗#10普通保存22792469及严格审计已落盘后归零。以下均不同accepted、terminal/completed/succeeded，未重放。
+
+| # | 动作 | 游戏tick | actionId | 证据 |
+| --- | --- | --- | --- | --- |
+| 1 | 到114/716业务中点 | 22875315→22876638 | `a1f03f52-3271-44f4-95e4-6b1fcaf9cfe1` | Walk/低速到达，不撞仓中心 |
+| 2 | 10格自由带 | 22897974→22898378 | `57f0191f-29e5-49b0-8c9f-4ff8e6bed979` | belt67→57，顺序2265/2264/2263/2261/2259/2258/2256/2257/2260/2262 |
+| 3 | 源sorter2266 | 22906570→22906705 | `bd0bb373-2d2f-4f72-8afb-6df7629bf9b8` | 2011 8→7，114:7↔2266:1，2266:0↔2265:4 |
+| 4 | 目的sorter2267 | 22911456→22911533 | `7d8cf0b6-4ffe-4c67-8c57-d2f071e25bd0` | 2011 7→6，2262:4↔2267:1，2267:0↔716:4，旧718/720槽保留 |
+| 5 | 正常保存 | 22943478 | `a54e0b23-9d83-497d-bebe-7e49186ff93f` | saved同tick，revision12/healthy/J54/54 |
+
+最初storage114→716直连belt prepare因没有原生直连端口拒绝，未重复；后用自由belt+两sorter，正常材料和无人机完成。三个独立600tick窗分别22936920–22937519、22937654–22938253、22938368–22938967，金刚石均produced5/consumed0=30/min，石墨分别3/2/3件=18/12/18/min而消耗均5。114仓2994→2991→2988；715/719/720/2266/2267满供电并自然携货，717物料被下游取走，不伪造仓内增长。此处证明自动接线及短窗产量，不是Governor十分钟稳态。
+
+随后纯只读补查煤矿机106积货47/48，不能直接归因采矿不足。初次依据115缓存insert113推断“完整煤链”被EXP-193反证撤回：fresh23001130–57，108:4↔115:1成立，但115无slot0、113无115回链；仍working不代表持久拓扑完整。54仓及玩家没有2012可用库存。未新增矿机、未升级/改旧线路；以#5保存为边界正常CloseMainWindow成功、进程和descriptor清理，等待新代码冷部署。同步增加EXP-194/195/196和IFX-029；新代码458离线测试通过，不补造live蓝图施工。
+
+### 2026-09-06 有限施工冷部署后的第6项恢复与预检
+
+动作`80d4ccea-35a4-4876-82c2-1a53f45a7f4a`为本窗口#6 accepted、terminal/completed/succeeded，未幂等重放；action tick字段省略，不补造。其自动普通保存22943509，随后22954916–38复读owned/healthy/revision1、planet104、Journal54/54无pending/error、Walk/0、400MJ和三无人机idle。初次准备因加载未ready拒绝，没有accepted action；之后fresh准备成功。精确主档恢复未把#5之后未保存的只读时间冒充落盘进度。
+
+source MCP真实63 tools/1 resource，playbook/status/session/资源读取通过。显式选区20/21/795/840/832导出5对象、8条源边界，均不是本次观察时运行的模块；预算2001×2（玩家57）、2011×1（玩家6）、2012×1/2302×1各缺1。位置选21现址的site读到blueprintLimit0、TechnologySatisfied/InventorySufficient均false，nativeCheckPerformed/Passed均false，另有占位、范围、内部2:3碰撞及object2 ErrorInserterData。没有施工或产出验收。下一步先依运行时目录补正常蓝图科技/最低材料，并独立核对源sorter几何；不为通过预检清除native错误。主会话新增IFX-030、EXP-197/198与Governor提案源码，487测试离线通过，未热替换当前Plugin。
+
+### 2026-09-06 科研/蓝图备料与第10写审计
+
+以下承接本窗口#1–6，均accepted、terminal/completed/succeeded且无重放：
+
+| # | 动作 | 游戏tick | actionId | 守恒/结果 |
+| --- | --- | --- | --- | --- |
+| 7 | 正常排入2701批量建造 | 23042559 | `78a58d6b-db22-412b-b501-457af940a2a0` | 队列3402/1202/2701；不等于科技完成 |
+| 8 | recipe88一次，产出高速分拣器2 | 23059098→23059338 | `ea374e1c-88e4-498a-94c6-98de678f0408` | 1101 17→14、1202 3→2、2011 6→4、2012 0→2 |
+| 9 | recipe56一次，产出熔炉1 | 23065047→23065228 | `9b79ad17-dfb2-4d0e-9954-21703dc9c157` | 1101 14→10、1108 2→0、1202 2→0、1301 4→0、2302 0→1 |
+| 10 | 正常保存 | 23140359 | `509ab597-66c4-4636-956e-6144ccdd6d72` | 主档同tick、revision8、healthy、重签protected resume |
+
+Journal sequence55原样为`upgrade_first_selected`、tech2701“批量建造”、source`normal-research-queue`；实际时间2026-09-06T17:03:25.5065612+08:00，gameTick23042560，本局`004d 10:40:42`。不因名称像科技而改写Journal的原生升级分类。2701运行时前置2101已解锁，要求12000 hash/电路板1301×100，非矩阵；2702前置2101/2701、蓝矩阵×300。本轮只排2701。
+
+保存前完整审计：同一factory snapshot tick23101833，23页/2267 built、0 prebuild、4426有向connection records，290实体有powerNetworkId。动力tick23101767，required=served79090，N1=59138/151000容量，N2=18152/30000，N4=1800/10000，三网均满供电。749仍2012/filter1101，749:0→724:8、749:1←723:3与对侧均在；源795亦有20:6↔795:1、795:0↔21:1。煤链115仅有108:4↔115:1而无113回链，106煤缓存48、113仅输出116；继续标为未证明/缺边，不擅自扩矿或把cached insert当完整连接。724输入铁1/齿轮2/线圈2、输出电机0；不能据此宣称完整电机扩产。
+
+科研tick23101690：3402运输船引擎83340/108000，1202高速制造0/108000，2701在第三位0/12000。玩家研究buffer蓝277200 points=77 whole、黄144000=40 whole，未出现红buffer；这不是全世界矩阵库存。已装接口只能追加，未伪用新优先级参数。保存后fresh23140403/408/414分别确认同档planet104、和平/非沙盒/1×、owned/healthy、0 blocker、resume可用、J55/55无pending/error、Walk0满核心、3/3无人机idle和0施工/维修。#1–6按跨进程既有受保护receipt核销，#7–10明确终态；全部十项审计后冻结。
+
+汇总曾因`@(1,2,3,4,5,6,7..41)`范围优先级错误失败（IFX-032），原始Bridge响应已持久，未重读整套世界或重放动作。主会话最小复现并给出`@(1..41)`修正，Luna随后完成摘要/保存。最终正常关闭已确认无进程/descriptor；本审计落盘后计数归零，下一恢复算新窗口#1，只恢复23140359对应精确主档。
+
+### 2026-09-06 原生科研优先级与正常解锁蓝图
+
+510-test四DLL冷部署后新窗口累计4项accepted，均terminal/completed/succeeded；尚未满十写，不清零：
+
+| # | 动作 | 游戏tick | actionId | 结果 |
+| --- | --- | --- | --- | --- |
+| 1 | exact-primary protected resume | action字段省略；自动save23140390 | `d21617fd-3507-41df-9f47-aaf3f06ded1f` | 同档planet104/owned/healthy，J55/55、Walk0、3idle；一次先前BRIDGE_NOT_READY prepare无action |
+| 2 | 将已排队2701移到首位 | 23147953 | `446d7daa-4f00-4620-8b84-c273cf1fba5a` | [3402,1202,2701]→[2701,3402,1202]，即时全部研究进度/库存保持 |
+| 3 | 走近仓26 | 23161773→23163174 | `df40d2e8-5126-43b4-9bdd-da4a81b34f3a` | Walk0、距目标4.41m；原transfer距离136.85m拒绝无action，只提交这一个Move |
+| 4 | 仓26取100电路板 | 23165285 | `fb888ef0-ecce-4717-8f23-f5e54e6a5d80` | 即时玩家0→100、仓400→300；无重放 |
+
+后读玩家电路板不再列于inventory是AutoManageResearchItems正常搬入research buffer：200820 points=55 whole+2820余点；不是100件丢失。仓在生产中后读317与动作即时300不矛盾，守恒以动作内before/after为准。fresh progression23178354证明2701 hash12000/12000、unlocked=true、unlockTick23177285、不再排队，current回到3402、queue=[3402,1202]。这次完成不是新的Journal首次选择事件，保持原sequence55时间。
+
+主会话在首次蓝图施工前发现IFX-033全图边投影缺陷并完成11项新增回归，Debug/Release521通过。此修复尚未冷部署，Luna继续只读Governor、源姿态和site；没有为预览成功绕过原生几何，也没有提交整图施工。
+
+后续只读Governor以724为唯一直接电机生产者、1203@30/min：600tick窗23201207–23201806 ready，但baseline warming_up/0独立窗口、balanced=false，阻断为需要三个独立稳定非零窗。整条需求仍为铁矿120/铜矿15、铁块90/磁铁30/铜块15/齿轮30/线圈30、电机30每分钟；当窗实际产消均0，选择设备缓存仅铁1/齿轮2/线圈2。三网有余电不改变缺料事实。旧蓝图5对象/8源边界再次导出，nativeSignatureVerified=true；nativeLimit150且整图材料和科技已足，已知原址site仍因全部占位、2:3内部碰撞、795的ErrorInserterData拒绝，nativeCheckPerformed/Passed=false。源端点姿态与翻译后姿态已完整留存，不清除native错误。
+
+#5正常保存`9fd78840-7336-4f7c-936f-5bd65835fda1`于23213258即时完成，随后提前五写审计：session23219367/rev7同档planet104/owned/healthy、和平/非沙盒、0 blocker、resume可用、主档tick23213258；Journal23219382为55/55、pending=false/error=null。player23219391为Walk0、391931049J、3/3idle、0施工/维修，包1001×1/1101×10/1102×19/2001×57/2011×4/2012×2/2302×1；研究buffer蓝77whole、黄40whole，非整个世界库存。progression23219396仍3402 83340/108000、1202 0/108000队列，2701解锁12000/12000。power23219546三网required=served62932/cap191000，N1/2/4分别43304/17828/1800，全ratio1。
+
+factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembler/10miner/6lab/54storage/3station/1tank/33generator/39node。749与723/724双端保持；27仍只有输入回链/铜1；115仍缺实际113端，cached insert113不作为证明。五个accepted均有原始terminal凭据，无重放/unknown/新蓝图；本日记与账本落盘后提前归零并冻结，下一次只在正常关闭/521-test冷部署后恢复23213258精确主档。
+
+### 2026-09-06 521-test修复冷部署与新窗口恢复
+
+上一五写审计落盘后主会话正常CloseMainWindow，进程/descriptor均清零，四DLL同批部署且4/4哈希一致（精确值见Foundry API研究）。新窗口#1动作`d829f535-047f-4bc9-8e49-6ee09f5a7857` terminal/completed/succeeded，自动正常重存23213289；action tick未返回，不补造。fresh23215523–38同档104/owned/healthy/rev1、0 blockers、J55/55无pending/error、Walk0/3idle、库存与2701解锁保持。初次prepare曾REQUEST_TIMEOUT但无commit/action，第二次fresh prepare成功后才唯一commit；未把纯prepare超时误当恢复已经启动，也未启动第二游戏。
+
+本窗口下一步只在已知近期金刚石设备里选择真实运行的有界源模块，先做原生空地预检；通过时首个blueprint action仅允许maximumObjectsToSubmit=1，核销后保存/审计，供后续取消与重启续建验证。不重试旧795原址负例，不把预计产能写成实际产量。主会话另外为最终双包补了26项离线能力/指南一致性策略，source MCP64工具已过同一检查；未生成最终包或宣称新GitHub CI已运行。
 
 ## 科技树与升级
 
@@ -504,9 +622,14 @@
 | EXP-191 | validated | 科研matrixServed是3600点/矩阵，不是原始物品库存 |
 | EXP-192 | observed | 原生蓝图paste会处理缺料与cover对象，不能当作原子整图事务 |
 | EXP-193 | validated | 缓存目标/携货不能代替必需双端factory连接；升级前先检查完整性 |
+| EXP-194 | observed | 原生蓝图预检也可能触碰覆盖对象，先排除覆盖/开放端点再调用 |
+| EXP-195 | validated | 有限施工恢复逐对象证据而非旧token；离线续建/取消与live分开 |
+| EXP-196 | observed | 短窗满产/无finding不能证明配平，库存下降和真实回链需单独核验 |
 
 ## 当前短期任务与关机续玩边界
 
-- 最后主档保存22221235、planet104；只走当前protected resume，不加载旧checkpoint/其他存档。fresh22224301–22224335为revision2/healthy、Journal54/54、749已升级/双端完整。当前窗口9个accepted均成功，下一accepted完成后先冻结并完整审计；幂等回放和未接受prepare不重复计数，failed accepted仍计数。游戏保持运行，下一业务动作先fresh read。
+- 最新边界覆盖以下历史审计截面：510-test窗口五写已审计，主档23213258/J55/55/healthy。科研priority已实测、2701已正常解锁于23177285，Governor已读到明确warming_up零产负例。提前审计后计数归零并冻结，首次blueprint写须等待IFX-033修复正常关机冷部署；之后只恢复该精确主档。依次完成运行模块复制/部分成功/取消/续建、完整三级链、Governor完整方案和2×十分钟，以及准备物资/最终包；仅0.4，不提前0.5。
+
+- 最后主档保存22792469、planet104；只走当前protected resume，不加载旧checkpoint/其他存档。第10动作正常保存 `0377ef4f-0312-4838-8d03-a0cfc3620601` 同tick完成；fresh22827459–22827558为revision3/owned/healthy、和平/非沙盒/1×、无blocker/checkpoint、Journal54/54 durable且无pending/error。玩家Walk/0、400/400MJ、3只施工无人机全部idle；同一factory快照23页完整2255 built/0 prebuild，三网均consumerRatio1.0（required=served=49804，capacity191000）。关键升级749仍2012/双端，电机724缺铁、石墨114→716尚无自动连接；当前Overseer实际0/min不能作扩产基线。10个不同accepted均有terminal/completed/succeeded收据，无重放、unknown或不明增量；本审计落盘后写计数归零。游戏保持运行，下一业务动作先fresh read。
 - `v0.3.3` 已由 clean release commit `f0cd111` 正式发布；0.3.x release 分支不混入 v0.4 Overseer，后续 0.4 发布仍以 owner 审核后的最新 clean `main` 为唯一来源。
-- 当前主线：0.4合并Overseer/Foundry/Governor，主会话实现接口、Luna Max实操。蓝图数据复读和基本sorter升级/保存恢复首切片已验证；最早未完成项是整图原生场地/外部端点绑定、有限施工的逐对象进度/取消/持久化续建，然后完成运行模块复制。制造台正例、belt/高阶sorter升级及Governor扩产仍未验。Governor必须先获得稳定非零实际基线，提前声明2倍目标/误差/十分钟窗口；724此前0/min不能作基线。0.5才实际跨星系；本批只做本地验收后commit，不push/tag/release。
+- 当前主线：0.4合并Overseer/Foundry/Governor，主会话实现接口、Luna Max实操。蓝图数据与基本sorter升级/保存恢复已验证；整图site和有限执行/取消/受保护进度已实现，但最早缺口仍是原生预检正例、运行模块复制与中途重启续建实机。Governor已有只读三方案/有界基线源码，完整物流/电力/换源方案及实际2×十分钟未完成；724的0/min不得作基线。制造台正例、belt/高阶sorter升级仍未验。0.5才实际跨星系；本批只做本地验收后commit，不push/tag/release。

@@ -14,7 +14,9 @@ Spherewright 是《戴森球计划》的 MCP 控制桥。它让外部 AI 智能�
 
 当前开发版本为 **v0.4.0 — Overseer, Foundry & Governor**：合并诊断、确定性建厂/续建和存量产线配平/扩产，整体目标是**为跨星系扩张做准备**，补齐关键科技、翘曲器/燃料供应、运输能力和远征备料。建厂与扩产部分仍在开发，合并版尚未进入发布审核。后续依次为 **0.5 跨星系（Voyager）→ 0.6 戴森系统（Ascension）→ 0.7 发布候选 → 1.0 正式版**；实际跨恒星飞行和曲速物流留到 0.5。
 
-main 已增加只读 `spherewright_get_foundry_plan`：从目标产量计算多级配方、共享原料需求、设备数量和基础功率，明确外供与副产物。可选 `site` 为最多 32 台机器生成球面网格候选，返回吸附后净空、原生建造条件和整份机器库存缺口；不提供写 token。两种结果均不可执行，完整物流/供电预算、动作图、逐步施工和重启续建仍在开发，不代表 Foundry 验收完成。
+main 已增加只读 `spherewright_get_foundry_plan`：从目标产量计算多级配方、共享原料需求、设备数量和基础功率，明确外供与副产物。可选 `site` 为最多 32 台机器生成球面网格候选，返回吸附后净空、原生建造条件和整份机器库存缺口；不提供写 token。现场另有独立的原生电网覆盖/满基础负载预算，计入既有设备、充电塔和新接通负载；这是当次容量证据，不证明燃料持续供应。两种结果均不可执行，完整物流/电力施工计划和三级链验收仍在开发。有限蓝图另走独立的准备/提交/逐对象进度/取消/恢复接口，预览不冒充该执行能力。
+
+源码另有只读 `spherewright_get_governor_plan`，复用 Foundry 和 Overseer，对明确选定的存量设备比较升级、增建和复制模块，分别列出实际产消、目标需求、库存变化及供给缺口。三个独立非零窗口形成候选基线，须在施工前锁定目标/误差/时长，后续只累计有效游戏时间窗口的并集；重启不能复活未持久声明。目标链告警与尚未归因的全星球告警分开保留。它不签发施工权限、不内置自主扩产，也不把预测容量或缺料时“产出=消耗”当作配平。完整供电/物流扩建、换源方案和两倍产量十分钟实测仍是未完成门。
 
 ### 支持范围
 
@@ -28,9 +30,17 @@ main 已增加只读 `spherewright_get_foundry_plan`：从目标产量计算多�
 
 ### 0.4 开发中的蓝图与升级
 
-本地开发版新增 `spherewright_inspect_blueprint` / `spherewright_export_blueprint`：只解析用户明确提供的代码，或导出当前 owned world 明确选定的最多 64 个建筑；不扫描文件。仅支持已列明的基础设备/配置，超限或不支持内容整份拒绝。当前结果是**只读数据，`executable=false`**，不能当作蓝图施工能力；完整批量施工、取消和按对象续建仍在开发。
+新增的显式蓝图布局可与Foundry物料意图组合为含全部建材、内部流向和逐对象步骤的有限计划，并复用原来的施工/取消/续建入口。输送预算使用原生带速与普通2011/2012分拣器的跨格往返时间约束流量；未知速率和高级堆叠分拣器阻止此组合计划通过，但不缩减普通蓝图的独立支持范围。它不是任意自动布局，也不把满电单件理论预算当作公平分流或实测吞吐。普通2011/2012分拣器另有受控正常拆除，允许缺端修复但拒绝错配的存在边，核对货物count/inc及其他连接。空载和携1件金刚石的2011拆除、分别重建及普通保存已在本机验证；2012拆除、非零inc货物、修复后恢复、新输送预算和完整模块施工仍待同批实机验收。
+
+蓝图支持普通未堆叠仓储箱2101，完整保留禁用格数、默认/过滤模式和逐格过滤；**不复制库存**。实体详情区分仓储格子与建筑连接口，设置变化会使旧选择哈希失效。该仓储施工扩展仍待本机复制验收，不代表已发布包具有该能力。
+
+本地开发版新增 `spherewright_inspect_blueprint` / `spherewright_export_blueprint`：只解析用户明确提供的代码，或导出当前 owned world 明确选定的最多 64 个建筑；不扫描文件。仅支持已列明的基础设备/配置，超限或不支持内容整份拒绝。两个读取工具始终是**只读数据/预览，`executable=false`**。可选位置和方向进行最多32对象的原生现场、科技和整图材料预检。
+
+源码另已加入 `prepare/commit_blueprint_build`、`get_blueprint_builds` 与 `prepare/commit_cancel_blueprint`：执行已批准的有限模块，保留正常材料、无人机和耗时，逐对象记录部分成功；取消不拆已建对象，重启后用新预检只继续未提交部分。当前只支持闭合内部输送端点，不自动猜外部接线。**新增施工路径尚待本机复制、取消和重启续建验收**，不代表0.4已完成，也不在0.3.x发行包中。详见[包内Agent playbook](./docs/agent-playbook.md)。
 
 `spherewright_prepare_upgrade` / `spherewright_commit_upgrade` 已实现普通制造台 Mk.I/II/III 同族高阶升级，以及普通分拣器2011→高速分拣器2012：需要已解锁的完整高阶设备和一个退款空格，正常扣新设备、返还旧设备，核对配置、货物与连接。制造台重置原生加工进度；基本分拣器保留周期比例并按原生规则改变速度。传送带/高阶堆叠分拣器升级、复制模块实机和 Governor 连续十分钟两倍实测验收尚未完成。以上是未发布的 0.4 切片，不代表现有 0.3.x 包已有这些工具。
+
+科研选择新增可选 `prioritizeQueued=true`，仅通过原生研究队列排序把指定的、已排队且前置已完成的科技前移；保留其他顺序、已投入研究和库存，并读回核对。它不增加科技进度，也不替代研究材料和耗时。默认仍为追加排队。
 
 ### 安装与连接
 
@@ -100,6 +110,10 @@ Runtime evidence currently targets DSP `0.10.34.28529` and single-player peacefu
 - Readback, state hashes, short-lived plans, idempotency, single-flight execution, and write quarantine when a result cannot be proved.
 
 Spherewright is a control layer, not an autonomous planner. The external Agent decides what to do; Spherewright supplies typed state, legal primitives, and evidence-backed results.
+
+Unreleased v0.4 development also includes bounded native blueprint inspection/export/site assessment and a separate prepare/commit executor with per-object material receipts, cancellation and fresh restart reconciliation. Data/site reads remain `executable=false`; live module-copy, partial-build/restart and sustained-output acceptance are still pending. The read-only `spherewright_get_governor_plan` reuses Foundry and Overseer to compare supported upgrades, added machines and module copies, while separating measured production/consumption, target demand, selected-buffer changes and supply shortfalls. It neither executes an expansion nor certifies balance. Full infrastructure plans and predeclared 2× output sustained for ten game minutes remain release gates. These tools are not present in released v0.3.x packages.
+
+Development site previews also expose an independent advisory native-coverage/full-base-load power assessment, including existing peak loads and newly energized consumers; it is not sustainable fuel proof or permission to build. Governor can retain a pre-execution declaration in the current session and measure the union of valid game-tick windows afterward. It keeps target-chain findings separate from unattributed planet warnings and never turns an inventory observation interval into a production window. Neither helper's offline tests replace the outstanding local acceptance gates.
 
 ## Architecture
 
@@ -230,6 +244,8 @@ The prefixes are labels, not ownership proofs. A manually loaded save is restric
 Repository evidence distinguishes offline build/test and package checks from local live and cross-computer live validation. v0.3.3 has local end-to-end import evidence for both sandbox and non-1× fixtures; this does not claim a separate cross-computer run.
 
 ## Development status
+
+The development source now composes an explicitly chosen blueprint layout with Foundry intent, complete object costs, directed flow allocations and finite dependency steps, using the existing protected build/cancel/resume executor. Flow allocation is constrained by native belt speed and basic2011/2012 sorter round-trip/span under full-power single-item assumptions; unknown or advanced stacking capacity blocks this composition without narrowing ordinary blueprint support. It is not arbitrary auto-layout, fair splitting or measured throughput. Guarded ordinary2011/2012 sorter removal supports missing-end repair while preserving cargo count/inc and unrelated connections; mismatched present links reject. Empty and one-item-carrying2011 removal, separate rebuilds and normal saves have local live evidence;2012 removal, nonzero-inc cargo, post-repair resume, the new transport budget and complete module construction still need matching-build live validation.
 
 The release gates live in [ROADMAP.md](./ROADMAP.md). The current save's complete decision, research, upgrade, and first-output chronology lives in its [save diary](./docs/gameplay-timeline.md), indexed with every owned save in [docs/save-diaries/](./docs/save-diaries/README.md). The short version:
 

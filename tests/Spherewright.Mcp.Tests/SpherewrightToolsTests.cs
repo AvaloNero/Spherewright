@@ -25,6 +25,19 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void ExactObjectReadParameterAndPlaybookDiscloseDirectBridgeSchema()
+    {
+        var parameter = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.InspectFactoryEntityAsync))!
+            .GetParameters().Single(value => value.Name == "objectId");
+        var description = (System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(parameter,
+            typeof(System.ComponentModel.DescriptionAttribute))!;
+        Assert.Contains("objectId, not entityId", description.Description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("objectId, not entityId", guide);
+        Assert.Contains("first100", guide);
+    }
+
+    [Fact]
     public void SorterEndpointGeometryIsDiscoverableAsReadOnlyNotPlacementAuthority()
     {
         var services = new ServiceCollection();

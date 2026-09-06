@@ -467,3 +467,11 @@
 - 修复：用户授权连续失败后由主会话接手规划、Luna负责有界执行，保持同一accepted计数与fresh prepare。新增只读detail `sorterEndpoints`，最多16原生槽位或4传送带虚拟姿态；世界坐标/朝向/占用深复制，未知不猜空闲，固定16连接池步长先验界，不改写/扩大建造规则。指南同时纠正共享带归因和直接Bridge传 `itemId=0` 导致空页的调用方错误。
 - 验证：25 Core、1 Contracts、1 MCP新增回归，Debug/Release1018项通过、完整Release零警告错误；源码MCP64工具/1资源、正文28415字符一致、stdout/退出检查通过。正常保存24473406与全厂审计另记入日记，仍未接通760。
 - 状态：`endpoint_observation_locally_verified_repair_pending`；1018同批冷部署/同档恢复后22对象原始详情已核对，支持对象的槽位/带姿态和不支持对象的unavailable均实测返回。主会话几何计算排除已选现成直连候选，转而按EXP-219核对复用既有输入sorter的按需取货与一格守恒腾位方案。供水仍未修复；不新增第三仓、不清除物品制造产量，不把观察或预检当施工成功。
+
+## IFX-043 — 详情读取字段误名被报告成建筑消失，导致无效诊断扩散
+
+- 首见：2026-09-07，1066安装态有界预约批次第8项之前，Luna把`inspect_factory_entity`的payload写为`entityId=761`，实际契约是`objectId`。未知字段被忽略后ObjectId默认为0，旧读取器统一报`INVALID_ENTITY`/no longer exists；又只查首100实体且尚有nextCursor，用has761=false继续寻找“消失”的原因。
+- 主会话处置：从实际请求和当前契约定位字段错误，通知Luna只修正读取字段、沿原accepted计数继续原有计划，不重新执行已accepted的氢转移、不换档、不增建。configure/transfer的entityId属于其它方法，不机械改名。后续第8项原始核销由Luna继续，整批终态/仓格审计另记日记。
+- 产品修复：保留owned访问门在前，对读取的0/缺失和Int32.MinValue返回带正确字段/恢复建议的`INVALID_REQUEST`；合法正负ID继续原来的native存在性检查。MCP参数说明和内嵌playbook明确逐方法schema、第一页不足以证明不存在、多次本地字段错误应交主会话处理。
+- 验证：9 Core/1 MCP新增回归；Debug/Release1115项（30 Contracts/1035 Core/50 MCP）、完整Release零警告错误通过。真实源码MCP64 tools/1 resource、31150字符指南一致、退出0/stdout纯净。当前游戏仍1066；新错误码分支尚未冷部署/live，不冒充存档或游戏数据修复。
+- 状态：`request_validation_offline_verified_caller_corrected`；关联EXP-223。

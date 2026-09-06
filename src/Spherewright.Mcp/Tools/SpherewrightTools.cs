@@ -280,7 +280,7 @@ public static partial class SpherewrightTools
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,
         [Description("Current local planet ID returned by spherewright_get_session_state.")] int planetId,
-        [Description("Positive entity ID or negative prebuild ID returned by spherewright_list_factory_entities.")] int objectId,
+        [Description("Required nonzero positive entity ID or negative prebuild ID returned by spherewright_list_factory_entities. This read's Bridge field is objectId, not entityId; a first page lacking an ID does not prove absence.")] int objectId,
         [Description("Cancellation token supplied by the MCP host.")] CancellationToken cancellationToken = default)
     {
         var result = await bridgeClient.InspectFactoryEntityAsync(

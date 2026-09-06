@@ -2804,7 +2804,22 @@
 - 关联：EXP-216、BeltUpgradePathPolicy、NativeBeltPathCapture、game-api-foundry研究。
 - 最近复验：2026-09-07（同DLL研究和1105离线回归，公开接入/实机待验）。
 
+### EXP-223 — 读取参数错误和未完成分页都不能证明实体消失
+
+- 状态：`observed`
+- 日期：2026-09-07
+- 适用范围：普通MCP/直接Bridge对象详情与外部Agent调用脚本；不改变游戏写入或所有权规则。
+- 当前结论：`inspect_factory_entity`使用objectId，configure/transfer等方法可能使用entityId；不能套用一个通用键。旧服务将缺失/误名ID默认成0并报不存在，调用者必须先检查请求结构，不能转而推断拆除/坏档。首100条有nextCursor更不是完整工厂证据。
+- 直接证据：Luna在第8项前的实际请求使用entityId=761，GameStateReader读取ObjectId并落入null分支；首屏只含1–100且hasNext=true。主会话定位后交回正确字段和既定有界计划，未重新提交之前accepted动作。
+- 实现/验证：Core只读ID策略及Plugin owned guard后的INVALID_REQUEST、MCP参数说明与包内指南，新增9 Core/1 MCP；1115项Debug/Release、完整Release零警告错误，源码MCP64 tools/1 resource/31150字符正文一致/stdout0额外字符。安装态仍1066，代码分支实机待验。
+- 限制或反例：该修复不证明任意非零ID存在；native范围/生命周期仍须fresh验证，原有合法正实体/负prebuild语义不变。测试中的JSON DTO样例不冒充真实Plugin的错误码live回归。
+- 复验触发：请求契约、序列化策略、MCP参数、分页条件或重复本地脚本错误。
+- 关联：IFX-043、FactoryObjectReadPolicy、agent-playbook。
+- 最近复验：2026-09-07（实际调用错误/源码与1115离线验证；新Plugin分支live待验）。
+
 ## 修订记录
+
+- 2026-09-07：新增EXP-223/IFX-043，主会话纠正重复详情读取误名及首屏缺项误判，正常游戏动作计数不变。新增请求验证/指南切片通过1115项Debug/Release、完整Release及真实MCP元数据；前一56e0710带头捕获准备切片的Windows CI34055648929成功。两项源码改动均不等于已安装/已开放带升级或当前仓格恢复成功。
 
 - 2026-09-07：新增EXP-222，带路径固定头预检/托管捕获准备切片通过1105项Debug/Release和完整Release。未接公开工具/升级白名单，没有冷部署或游戏写；当前1066游戏由Luna继续主会话规划的有界预约，双方accepted计数不因代码测试重置。
 

@@ -628,6 +628,11 @@ internal sealed partial class GameStateReader
             return GameCallResult<FactoryEntitySnapshot>.Failed(accessError);
         }
 
+        // Keep the owned boundary first. A missing/incorrectly named ID is an
+        // invalid request, not evidence that a previously observed building vanished.
+        var idError = FactoryObjectReadPolicy.ValidateObjectId(request.ObjectId);
+        if (idError is not null) return GameCallResult<FactoryEntitySnapshot>.Failed(idError);
+
         FactoryEntitySnapshot? snapshot = null;
         if (request.ObjectId > 0 && request.ObjectId < factory!.entityCursor)
         {

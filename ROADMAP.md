@@ -183,6 +183,8 @@ Overseer 部分保留的 live 覆盖缺口是真实 carrier 连续 600 game tick
 
 ### Governor 验收门
 
+2026-09-07 带升级准备切片：完成Core完整受影响CargoPath导出解析/静态绑定/即时货物与速度变化证明，76项合成回归、955项Debug/Release和完整Release构建通过。仍未接入Plugin或开放belt升级；不能以这项离线证明替代原生材料/连接读回及实机验收。
+
 2026-09-06 增建成本补充：可选显式 `parallelExpansionBlueprint` 在稳定非零基线后按目标减基线复用Foundry全部模块建材、native场地、满基础负载供电和额定输送预算；成本范围与外部基础设施排除项单列，意图/整图哈希复用现有有限执行器。806项Release离线及完整Release零警告错误通过，此新增比较尚未安装/live验证；专用补电/物流/换源、真实复制/续建和两倍十分钟门未缩减。
 
 2026-09-06 进度：新增只读 `spherewright_get_governor_plan`，复用Foundry规模计算和同tick Overseer，比较同族升级/增建/复制的成本、返还与理论增益；实际增益仍unknown、balanced=false。八个有界选区序列各需三段独立非零600tick基线，跨session/现场/规模变化和采样缺口不能沿用；区分目标需求、实际产消、当地可分配余量、选区库存差与缺口，不把行星计数冒充逐机器统计。初始487项离线切片随后进入510-test冷部署，首个live电机30/min提案如实返回零产、warming_up/0样本而非已配平。完整供电/物流/换源方案、可核销的十分钟扩产和下列验收仍未完成。

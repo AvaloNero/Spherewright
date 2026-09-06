@@ -2709,7 +2709,21 @@
 - 关联：EXP-214、IFX-039、BeltCargoObservationPolicy、GameStateReader.BeltCargo、包内playbook。
 - 最近复验：2026-09-07（Debug/Release879项：23Contracts/819Core/37MCP，完整Release构建零警告错误；源码MCP0.4.0.0、64tools/1resource、26107字符指南完全匹配、退出0/额外stdout0。尚无新读数live声明）。
 
+### EXP-216 — 带升级必须证明完整受影响路径，静态绑定与即时货物证据分离
+
+- 状态：`observed`
+- 日期：2026-09-07
+- 适用范围：当前DLL的原生带升级API研究和Core离线证明；尚未接入Plugin或开放belt升级。
+- 当前结论：普通升级会改写带的速度及路径chunk，末成员影响segIndex到path末尾；闭环首段的尾9cell使用原生rear速度分支。prepare绑定静态路径/几何/成员/拓扑，不能绑定持续移动的货物；同步写前后则必须完整核对受影响路径全部货物帧及item/stack/inc/pose、成员连接和允许的速度变化。单段beltCargo不够，缺失、超限、损坏或不明结果不能猜测通过。
+- 直接证据：相同DLL哈希的Export/DoUpgradeObject/UpgradeBeltComponent/InsertChunk/SyncBuckleSpeed研究见game-api-foundry。Core限制8192cell/512belt/128input/1MiB；76项合成回归含边界、逐长度截断、512随机输入、跨512cell重复引用、cargo0、完整最大路径、闭环rear分支、邻居变化及可证明的目标ID替换。
+- 限制或反例：尚无Plugin Export捕获和原生升级调用；UnsafeIO原生导出不检查源数组长度，未来适配器须先验证逻辑长度/后备数组/共享scratch容量并限制输出。普通材料扣除/增产点返还、实时主线程前后读回及实机均未完成，现有升级白名单不变。
+- 复验触发：DLL导出格式/闭环/速度chunk/货物编码、适配器落地、材料证明、同批部署或新升级类型。
+- 关联：EXP-190/215、BeltUpgradePathPolicy、game-api-foundry。
+- 最近复验：2026-09-07（76项新Core定向回归及955项Debug/Release通过，完整Release零警告错误；运行游戏仍767，未热装、未宣称可执行或live通过）。
+
 ## 修订记录
+
+- 2026-09-07：新增EXP-216及有界完整带路离线证明，76项新Core回归。此切片仅完成安全证明的纯逻辑，未新增MCP工具、未改现有写入/hash/升级白名单，也未混入原第十项打包/CI。
 
 - 2026-09-07：新增EXP-215及单段beltCargo详情读取，补充IFX-039、公共工具描述/协议/指南；70项新Core与2项契约回归后Debug/Release879通过，完整Release0警告错误，真实源码MCP64tools/1resource/26107字符指南一致。该切片不改变游戏写入、hash、现有升级白名单或运行767安装态，不计作全路径货物证明、实测吞吐或最终包。
 

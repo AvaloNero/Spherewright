@@ -7,7 +7,7 @@
 ## 结论与证据边界
 
 - 这里的“存档日记”是仓库内的人类可读整理；“运行时 Journal”是逐存档自动落盘的机器可读原始首次事件，两者不是同一个文件。逐档约定与登记见 [save-diaries/README.md](./save-diaries/README.md)。
-- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留215条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
+- 记录仍在。本局受保护 Journal 本次已复读到 `55/55` durable，`persistencePending=false`、`persistenceError=null`；经验账本保留216条结论及各自状态、证据和复验条件。科技1202选择、首次手搓电机及2701批量建造首次选择均已按真实时间/tick复读；Journal落盘不等于世界也已保存到该tick。
 - 这是 Spherewright 在这台机器上从普通新档创建并从落地开始推进的同一世界，不是接手或枚举得到的既有存档。后来更换 Steam 账号不改变归属证明；Steam/Windows 身份从未被当作存档所有权依据。
 - 首次事件日记是在既有世界运行到 tick `4428079`、本局 `000d 20:30:01` 时挂接的，字段明确为 `historicalCoverageComplete=false`。因此：
   - 从 sequence `1` 起的首次手搓、首次流水线产出、首次点科技/升级，拥有精确实际时间、tick 和本局时间；
@@ -16,6 +16,8 @@
 - 本文使用四种证据：`J` = 持久化运行时 Journal；`R` = 当前存档运行态；`M` = 产线读回、普通保存与 Git 里程碑；`D` = 经验账本。首次问题及代码修复另见 [incident-fix-log.md](./incident-fix-log.md)，现行规则与复验证据见 [experience-ledger.md](./experience-ledger.md)，版本门见 [ROADMAP.md](../ROADMAP.md)。
 
 ## 从落地到当前的主时间线
+
+2026-09-07 / 955-test带升级纯逻辑切片：新增有界完整CargoPath解析、静态绑定与即时before/after证明，76项新Core回归后Debug/Release955通过，完整Release零警告错误。此时没有Plugin适配器、没有开放或执行belt升级；游戏仍运行767。EXP-216保留整条带路而非局部货物读数的边界，不能用离线测试替代实机。
 
 2026-09-07 / 879-test单段带货物源码：为现有inspect详情增加单tick、至多512cell的独立beltCargo，区分观察到的数量与unknown，不改变分页buffers、动作hash或升级范围。Debug/Release879通过，完整Release零警告错误，真实MCP64tools/1resource/26107字符指南一致。尚未安装，游戏继续767；这是观察缺口的代码切片，不是水路修复、产线扩产或最终包完成。
 

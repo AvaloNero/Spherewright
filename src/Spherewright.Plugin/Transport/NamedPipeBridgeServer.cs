@@ -310,6 +310,19 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             cancellationToken).ConfigureAwait(false);
                         break;
                     }
+                case BridgeMethods.GetGovernorPlan:
+                    {
+                        var request = PluginJson.Deserialize<BridgeRequestEnvelope<GetGovernorPlanRequest>>(requestJson);
+                        if (request?.Payload is null)
+                        {
+                            await WriteInvalidPayloadAsync(pipe, header.RequestId, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
+                        await DispatchAndWriteAsync(pipe, header.RequestId, header.SessionId,
+                            () => _gameStateReader.GetGovernorPlanOnMainThread(header.SessionId, request.Payload),
+                            cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
                 case BridgeMethods.InspectBlueprint:
                     {
                         var request = PluginJson.Deserialize<BridgeRequestEnvelope<InspectBlueprintRequest>>(requestJson);

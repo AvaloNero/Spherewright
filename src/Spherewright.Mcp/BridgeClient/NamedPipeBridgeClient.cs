@@ -49,6 +49,9 @@ internal sealed class NamedPipeBridgeClient : IBridgeClient
         string sessionId, ExportBlueprintRequest request, CancellationToken cancellationToken) =>
         CallAsync<ExportBlueprintRequest, BlueprintInspection>(BridgeMethods.ExportBlueprint, sessionId, request, cancellationToken);
 
+    public Task<BridgeCallResult<GovernorPlanSnapshot>> GetGovernorPlanAsync(string sessionId, GetGovernorPlanRequest request, CancellationToken cancellationToken) =>
+        CallAsync<GetGovernorPlanRequest, GovernorPlanSnapshot>(BridgeMethods.GetGovernorPlan, sessionId, request, cancellationToken);
+
     public Task<BridgeCallResult<FoundryPlanSnapshot>> GetFoundryPlanAsync(
         string sessionId, GetFoundryPlanRequest request, CancellationToken cancellationToken) =>
         CallAsync<GetFoundryPlanRequest, FoundryPlanSnapshot>(BridgeMethods.GetFoundryPlan, sessionId, request, cancellationToken);

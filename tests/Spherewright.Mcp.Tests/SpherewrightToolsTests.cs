@@ -24,6 +24,31 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public async Task GovernorExposesReadOnlyDeclaredTargetAndExplicitSource()
+    {
+        var client = new FakeBridgeClient(SuccessResult());
+        var source = new BlueprintSelectedEntity { ObjectId = 715, ExpectedRecipeId = 60, ExpectedEndpointStateHash = "fresh" };
+        var result = await SpherewrightTools.GetGovernorPlanAsync(client, "session", 104, 1112, 60, new[] { source }, .1m, 36000,
+            validationBaselineProposalHash: "retained-pre-execution-proposal");
+        Assert.False(result.IsError); Assert.Equal("session", client.LastSessionId);
+        Assert.Same(source, Assert.Single(client.LastGovernorRequest!.SourceEntities));
+        Assert.Equal(36000, client.LastGovernorRequest.ValidationGameTicks);
+        Assert.Equal(.1m, client.LastGovernorRequest.ToleranceFraction);
+        Assert.Equal(60, client.LastGovernorRequest.TargetRatePerMinute);
+        Assert.Equal("retained-pre-execution-proposal", client.LastGovernorRequest.ValidationBaselineProposalHash);
+        var services = new ServiceCollection(); services.AddSingleton<IBridgeClient>(client);
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tool = provider.GetServices<McpServerTool>().Single(t => t.ProtocolTool.Name == "spherewright_get_governor_plan").ProtocolTool;
+        Assert.True(tool.Annotations!.ReadOnlyHint);
+        Assert.Contains("baseline", tool.Description);
+        Assert.Contains("consumption", tool.Description);
+        Assert.Contains("sourceEntities", tool.InputSchema.ToString());
+        Assert.Contains("validationBaselineProposalHash", tool.InputSchema.ToString());
+        Assert.Contains("validationBaselineProposalHash", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
+    }
+
+    [Fact]
     public void AssemblyRegistration_ExposesOnlySafeCurrentGateTools()
     {
         var services = new ServiceCollection();
@@ -59,6 +84,7 @@ public sealed class SpherewrightToolsTests
                 "spherewright_get_build_catalog",
                 "spherewright_get_foundry_plan",
                 "spherewright_get_gameplay_journal",
+                "spherewright_get_governor_plan",
                 "spherewright_get_local_star_system",
                 "spherewright_get_overseer_diagnostic_bundle",
                 "spherewright_get_overseer_production",
@@ -1161,6 +1187,13 @@ public sealed class SpherewrightToolsTests
         }
 
         public GetFoundryPlanRequest? LastFoundryRequest { get; private set; }
+        public GetGovernorPlanRequest? LastGovernorRequest { get; private set; }
+        public Task<BridgeCallResult<GovernorPlanSnapshot>> GetGovernorPlanAsync(string sessionId, GetGovernorPlanRequest request, CancellationToken cancellationToken)
+        {
+            LastSessionId = sessionId; LastGovernorRequest = request;
+            return Task.FromResult(BridgeCallResult<GovernorPlanSnapshot>.Succeeded(new GovernorPlanSnapshot
+            { SessionId = sessionId, PlanetId = request.PlanetId, TargetItemId = request.TargetItemId, TargetRatePerMinute = request.TargetRatePerMinute }));
+        }
 
         public Task<BridgeCallResult<BuildCatalog>> GetBuildCatalogAsync(
             string sessionId,

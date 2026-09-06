@@ -2536,6 +2536,18 @@
 - 关联：EXP-196/198/206、IFX-036、GovernorPlanCompiler/GovernorThroughputValidation。
 - 最近复验：2026-09-06（672修复版已冷部署并同档恢复，尚未重做目标锁定；617首次拒绝无accepted/action）。
 
+### EXP-206 — 吞吐验收必须先锁基线，连续覆盖不能靠等待或重叠样本凑时长
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：Governor只读提案上的有限吞吐观察，不是完整配平/发行认证。
+- 当前结论：服务端保留真实ready提案，Agent须在后续任何accepted写之前以精确hash锁定相同revision/source的基线（3600tick内）。目标、误差、窗口和recipe scale复制后不可改；用户不能上传声称的历史速率。有效600tick窗口只累计并集，重复不增长、哪怕1tick采样缺口也重新计段；源变化需完整后置窗口，断流/失去归因/采样健康异常均重置观测而非声明。
+- 直接证据：35项Core回归覆盖真正36000tick门、重叠/重复/gap、零产/超误差、七种声明篡改、事后锁定、源变更、六类健康失效、失真窗口、基线非法、DTO修改和非2×目标。Debug/Release617项及完整Release零警告错误；真实源码MCP64tools/1resource、18565字符同批指南和stdin关闭后exit0/额外stdout0通过。
+- 限制或反例：当前582-test实机只有三窗30/min基线，尚无新observer实读/2×验收。最多8候选选区/8锁定声明；仅当前session内存，重启不能复活旧hash。健康是采样不是逐tick连续证明，throughput target observed不等于供需已配平、完整上游自动化或版本完成。实验期间不要安排会丢失声明的重启。
+- 复验触发：Overseer窗口边界、采样调度、声明/源绑定、重启、原生速率字段或验收窗口变化。
+- 关联：EXP-198/204、GovernorThroughputValidation、get_governor_plan、包内playbook。
+- 最近复验：2026-09-06（617已正常冷部署并同档恢复23398654；三个独立30/min窗口形成基线，但首次锁定被全局矿机告警误阻断，0锁定/0blueprint commit。EXP-207记录范围修复，离线测试不冒充实机2×）。
+
 ## 修订记录
 
 - 2026-09-06：IFX-028最终部署4/4匹配（Plugin3FB233…/Core7199C2…），窗口#5–9分别为protected resume、749单实体升级、保存/正常关闭、protected resume、最终保存，完整action表见当档日记；未提供resume action tick不补造。修复版23一端负例无commit；749消耗2012 1→0/返2011 7→8、双端及filter1101保留，同步cargo空明确披露。恢复后新选区蓝图含3×2011/1×2012/1×2303，5对象/1区域、native signature及code往返hash一致、4条源边界，证明IFX-027白名单解耦未因实际升级回退。MCP58 tools/1 resource与必需双端playbook通过。最终保存22221235，fresh session22224301 revision2/owned/healthy/no blockers、player22224313 Walk/0/3idle/2011=8/2012=0、Journal22224316 54/54/no pending/error、749及723/724在22224323–32双向正确、power22224335 required=served49804。EXP-189/190/193获得限定范围live证据，EXP-027/028缩窄，存档日记索引按账本同步过期状态且不另维护易过时汇总。当前窗口9项accepted，无额外commit；下一项后必须严格十写审计。没有运行模块复制、Governor产量翻倍、新包/异机声明或push/tag/release。

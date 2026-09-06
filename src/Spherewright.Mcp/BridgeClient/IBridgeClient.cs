@@ -274,4 +274,5 @@ public interface IBridgeClient
     Task<BridgeCallResult<FlightCheckpointReloadResult>> CommitFlightCheckpointReloadAsync(
         CommitFlightCheckpointReloadRequest request,
         CancellationToken cancellationToken);
+    Task<BridgeCallResult<GovernorPlanSnapshot>> GetGovernorPlanAsync(string sessionId, GetGovernorPlanRequest request, CancellationToken cancellationToken);
 }

@@ -2878,6 +2878,8 @@
 
 ## 修订记录
 
+- 2026-09-07：第10写8ffa3c29正常保存25328373后冻结，主会话逐raw核销本窗10个唯一terminal/completed/succeeded（3save、2resume、4configure、1Move）。25336801/rev2 healthy/owned104/和平/非沙盒/1×、0blocker/checkpoint；J55/55 durable无pending/error、Walk0/400MJ/3idle/空手搓、三网ratio1；25336830同snapshot23页2280唯一built的全部身份/位置/旋转/连接与第4写后相同，独立25337409 prebuild0，33详情通过。复验EXP-001/002/072/220/221/224/225/226：761设置持久、775/2268禁入仍有效，库存流动没有被配置证据伪装为持续供给；760水0/774黄糖0，模块施工和Governor稳态仍未验。日记与本条落盘后accepted10→0；下一次冷部署/恢复从新窗第1写计。1217源码5834edc的Windows CI34063130914成功，EXP-227的新失败阶段尚待安装/live。
+
 - 2026-09-07：新增EXP-226/IFX-046，主会话将原生单belt微调接点做成有界适配，1201离线/完整Release/源码MCP通过。Luna第8写a952a0b4普通保存25258840，主会话核全部8个唯一terminal及25262011/rev6 healthy/J55/55/Walk0/400MJ/3idle；23页2280built的全部身份/位置/旋转/连接与前次一致，独立prebuild0、三网ratio1、29对象详情通过，775/2268禁入和761预约保留。accepted8跨后续冷重启保留，不在提前审计时归零。e08f705文档切片Windows CI34060411739成功。
 
 - 2026-09-07：1144同批四DLL冷部署、Steam单次启动及同档恢复52d30c80/重存25092923完成，复验EXP-001/002/072及EXP-221的设置持久性。EXP-224新即时DTO和EXP-225错误域拒绝均有原始本机证据，详情见日记；源码CI34058567844和四写审计文档CI34058678750成功。第6写775禁入与第7写15m Move均terminal成功，accepted7保留。外侧20段水带仅prepare通过，尚无端点分拣器闭环或build commit；继续复用EXP-218边界，不以局部放置批准替代完整物流方案。

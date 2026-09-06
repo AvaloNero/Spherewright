@@ -29,13 +29,32 @@ public sealed class BoundedBlueprintReaderTests
         Assert.Equal("blueprint_object_limit", Reject(Code(Payload(count, writeObjects: false))));
 
     [Theory]
-    [InlineData(2101)] [InlineData(2103)] [InlineData(2301)] [InlineData(9999)]
+    [InlineData(2102)] [InlineData(2103)] [InlineData(2301)] [InlineData(9999)]
     public void RejectsUnsupportedTypes(int item) =>
         Assert.Equal("blueprint_type_unsupported", Reject(Code(Payload(1, item: item))));
 
     [Fact]
     public void RejectsUnsupportedParameters() =>
         Assert.Equal("blueprint_configuration_unsupported", Reject(Code(Payload(1, parameters: new[] { 7 }))));
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void OrdinaryStoragePreservesNativeConfigurationWithoutCargo(bool filtered)
+    {
+        var parameters = new int[110]; parameters[0] = 2;
+        if (filtered) { parameters[1] = 9; parameters[10] = 1109; }
+        var obj = BoundedBlueprintReader.Read(Code(Payload(1, item: 2101, parameters: parameters, recipe: 0)))
+            .Inspection.Objects.Single();
+        Assert.Equal(parameters, obj.Parameters);
+        Assert.Equal(0, obj.RecipeId); Assert.Equal(0, obj.FilterItemId);
+    }
+
+    [Theory]
+    [InlineData(0, 0)] [InlineData(2, 0)] [InlineData(109, 0)] [InlineData(111, 0)]
+    [InlineData(110, 97)]
+    public void StorageRejectsUnknownLayoutOrMachineRecipe(int length, int recipe) =>
+        Assert.Equal("blueprint_configuration_unsupported", Reject(Code(Payload(1, item: 2101,
+            parameters: new int[length], recipe: recipe))));
 
     [Theory]
     [InlineData("not a blueprint")] [InlineData("BLUEPRINT:1,broken\"data\"000")]

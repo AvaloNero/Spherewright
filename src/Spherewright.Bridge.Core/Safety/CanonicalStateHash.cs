@@ -159,6 +159,8 @@ public static class CanonicalStateHash
             Append(value, "node", nodeId);
         }
 
+        AppendStorageConfiguration(value, snapshot.StorageConfiguration);
+        AppendBlueprintSettings(value, snapshot);
         return Hash(value);
     }
 
@@ -176,6 +178,8 @@ public static class CanonicalStateHash
                 connection.OtherObjectId, connection.OtherSlot);
         }
 
+        AppendStorageConfiguration(value, snapshot.StorageConfiguration);
+        AppendBlueprintSettings(value, snapshot);
         return Hash(value);
     }
 
@@ -201,7 +205,25 @@ public static class CanonicalStateHash
             Append(value, "buffer", buffer.Role, buffer.ItemId, buffer.Count, buffer.Inc);
         }
 
+        AppendStorageConfiguration(value, snapshot.StorageConfiguration);
+        AppendBlueprintSettings(value, snapshot);
         return Hash(value);
+    }
+
+    private static void AppendBlueprintSettings(StringBuilder value, FactoryEntitySnapshot snapshot)
+    {
+        if (snapshot.ForceAccelerationMode.HasValue)
+            Append(value, "assembler-acceleration-v1", snapshot.ForceAccelerationMode.Value);
+        if (snapshot.ComponentKind == "inserter")
+            Append(value, "inserter-filter-v1", snapshot.FilterItemId.GetValueOrDefault());
+    }
+
+    private static void AppendStorageConfiguration(StringBuilder value, StorageConfigurationSnapshot? storage)
+    {
+        if (storage is null) return; // Preserve the existing non-storage encoding.
+        Append(value, "storage-configuration-v1", storage.GridCount, storage.BannedGridCount, storage.Mode);
+        for (var i = 0; i < storage.GridFilterItemIds.Count; i++)
+            Append(value, "storage-filter", i, storage.GridFilterItemIds[i]);
     }
 
     public static string ProgressionSelection(ProgressionStateSnapshot snapshot)

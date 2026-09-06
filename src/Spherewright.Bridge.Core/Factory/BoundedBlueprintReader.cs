@@ -140,7 +140,7 @@ public static class BoundedBlueprintReader
 
     // Blueprint shape/parameter support must not broaden when the separate upgrade allowlist grows.
     public static bool SupportsItem(int id) => (id >= 2302 && id <= 2305)
-        || (id >= 2001 && id <= 2003) || (id >= 2011 && id <= 2013) || id == 2201 || id == 2203;
+        || (id >= 2001 && id <= 2003) || (id >= 2011 && id <= 2013) || id == 2101 || id == 2201 || id == 2203;
 
     private static void ValidateSupportedObject(BlueprintObjectSnapshot obj)
     {
@@ -149,6 +149,7 @@ public static class BoundedBlueprintReader
         var inserter = obj.ItemId >= 2011 && obj.ItemId <= 2013;
         var parametersOk = assembler ? obj.Parameters.Length <= 1 && obj.Parameters.All(p => p == 0 || p == 1)
             : inserter ? obj.Parameters.Length == 1 && obj.Parameters[0] >= 1 && obj.Parameters[0] <= 3
+            : obj.ItemId == 2101 ? BlueprintStoragePolicy.IsSupportedShape(obj.Parameters)
             : obj.Parameters.Length == 0;
         if (!parametersOk || (!assembler && obj.RecipeId != 0) || (!inserter && obj.FilterItemId != 0))
             throw Invalid("blueprint_configuration_unsupported");

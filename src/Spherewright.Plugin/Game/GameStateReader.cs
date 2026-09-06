@@ -4,6 +4,7 @@ using Spherewright.Bridge.Core.Diagnostics;
 using Spherewright.Bridge.Core.Logistics;
 using Spherewright.Bridge.Core.Progression;
 using Spherewright.Bridge.Core.Safety;
+using Spherewright.Bridge.Core.Factory;
 using Spherewright.Bridge.Core.Snapshots;
 using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Diagnostics;
@@ -3178,6 +3179,7 @@ internal sealed partial class GameStateReader
         }
 
         snapshot.RecipeId = assembler.recipeId;
+        snapshot.ForceAccelerationMode = assembler.forceAccMode;
         snapshot.RecipeName = assembler.recipeId > 0 ? LDB.recipes.Select(assembler.recipeId)?.name : null;
         snapshot.IsWorking = assembler.replicating;
         snapshot.Progress = assembler.time;
@@ -3294,6 +3296,7 @@ internal sealed partial class GameStateReader
 
         var storageGrids = storage.grids ?? Array.Empty<StorageComponent.GRID>();
         var gridCount = Math.Min(storage.size, storageGrids.Length);
+        snapshot.StorageConfiguration = CaptureStorageConfiguration(storage);
         for (var index = 0; index < gridCount; index++)
         {
             var grid = storageGrids[index];
@@ -3311,6 +3314,20 @@ internal sealed partial class GameStateReader
                 Inc = grid.inc,
             });
         }
+    }
+
+    internal static StorageConfigurationSnapshot? CaptureStorageConfiguration(StorageComponent storage)
+    {
+        if (storage.size < 1 || storage.size > BlueprintStoragePolicy.MaximumGridCount
+            || storage.grids is null || storage.grids.Length < storage.size
+            || storage.bans < 0 || storage.bans > storage.size
+            || (storage.type != EStorageType.Default && storage.type != EStorageType.Filtered)) return null;
+        return new StorageConfigurationSnapshot
+        {
+            GridCount = storage.size, BannedGridCount = storage.bans,
+            Mode = storage.type == EStorageType.Default ? "default" : "filtered",
+            GridFilterItemIds = storage.grids.Take(storage.size).Select(grid => grid.filter).ToList(),
+        };
     }
 
     private void CaptureLogisticsStation(

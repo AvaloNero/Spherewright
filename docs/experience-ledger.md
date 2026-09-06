@@ -2463,6 +2463,18 @@
 - 关联：EXP-195/203、IFX-035、NativeInserterEndpointGeometry、game-api-foundry.md。
 - 最近复验：2026-09-06（582 Debug/Release和完整Release全过，4/4冷部署并同档恢复；负output dot诊断实读通过，未改原生条件或旧对象，修正后施工待live）。
 
+### EXP-203 — 闭合生产模块需要仓储配置，但仓库连接口不等于容量
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：当前DLL普通未堆叠仓储箱2101的有限蓝图，库存与连接证据的解释。
+- 当前结论：复制输入仓→生产设备→输出仓模块必须完整支持仓储配置，不能删去仓库后放宽开放分拣器检查。原生110-int参数包含禁用格数、模式、逐格过滤而不含货物；12个物理slot不代表12个库存格。未支持的类型、堆叠、过滤项/尾部、被原生clamp或忽略的设置均明确拒绝。
+- 直接证据：521-test实机五对象716/720/715/719/717中715才是recipe60生产设备；含仓导出被type_unsupported拒绝，去仓三对象被open_sorter_unsupported拒绝，均未commit。DLL的BuildingParameters/StorageComponent/PrefabDesc已核实；Core扩展形状/容量/过滤策略，配置深复制公开并绑定三种factory hash，source roundtrip、逐帧剩余参数/科技检查及completed配置复读保持严格。库存不进入导出，也不冻结其后正常货物流动。
+- 限制或反例：该扩展33项新Core回归及MCP描述/playbook发现断言已过，完整Release554测试无警告错误；尚无新仓储蓝图实机施工，不把只读/离线证据冒充正例。只支持2101、至多100原生格，不支持2102/堆叠/仓储增容Mod。
+- 复验触发：DSP/DLL、storage类型/容量/参数、空格过滤、手工更改设置、建设及重启续建路径变化。
+- 关联：EXP-195/201、`BlueprintStoragePolicy`、`FactoryEntitySnapshot.StorageConfiguration`、`game-api-foundry.md`。
+- 最近复验：2026-09-06（554-test冷部署后716/717均30格/default/禁用0/30个0过滤，读回正例成立；567源码延续配置绑定，仓储施工仍待live）。
+
 ## 修订记录
 
 - 2026-09-06：IFX-028最终部署4/4匹配（Plugin3FB233…/Core7199C2…），窗口#5–9分别为protected resume、749单实体升级、保存/正常关闭、protected resume、最终保存，完整action表见当档日记；未提供resume action tick不补造。修复版23一端负例无commit；749消耗2012 1→0/返2011 7→8、双端及filter1101保留，同步cargo空明确披露。恢复后新选区蓝图含3×2011/1×2012/1×2303，5对象/1区域、native signature及code往返hash一致、4条源边界，证明IFX-027白名单解耦未因实际升级回退。MCP58 tools/1 resource与必需双端playbook通过。最终保存22221235，fresh session22224301 revision2/owned/healthy/no blockers、player22224313 Walk/0/3idle/2011=8/2012=0、Journal22224316 54/54/no pending/error、749及723/724在22224323–32双向正确、power22224335 required=served49804。EXP-189/190/193获得限定范围live证据，EXP-027/028缩窄，存档日记索引按账本同步过期状态且不另维护易过时汇总。当前窗口9项accepted，无额外commit；下一项后必须严格十写审计。没有运行模块复制、Governor产量翻倍、新包/异机声明或push/tag/release。

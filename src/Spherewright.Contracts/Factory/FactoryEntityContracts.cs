@@ -71,6 +71,8 @@ public sealed class FactoryEntitySnapshot
 
     public string? RecipeName { get; set; }
 
+    public bool? ForceAccelerationMode { get; set; }
+
     public bool IsWorking { get; set; }
 
     public int Progress { get; set; }
@@ -90,6 +92,10 @@ public sealed class FactoryEntitySnapshot
     public List<int> ResourceNodeIds { get; set; } = new List<int>();
 
     public LogisticsStationSnapshot? LogisticsStation { get; set; }
+
+    // Inventory grids, NOT the physical connection ports in build-catalog SlotCount.
+    // Null means not a storage or configuration could not be captured within the bound.
+    public StorageConfigurationSnapshot? StorageConfiguration { get; set; }
 
     public int? PickTargetObjectId { get; set; }
 
@@ -120,6 +126,17 @@ public sealed class FactoryEntitySnapshot
     public string EndpointStateHash { get; set; } = string.Empty;
 
     public int EndpointStateHashVersion { get; set; } = 1;
+}
+
+public sealed class StorageConfigurationSnapshot
+{
+    public int GridCount { get; set; }
+
+    public int BannedGridCount { get; set; }
+
+    public string Mode { get; set; } = string.Empty;
+
+    public List<int> GridFilterItemIds { get; set; } = new List<int>();
 }
 
 public sealed class QuaternionSnapshot

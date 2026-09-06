@@ -36,6 +36,11 @@ internal sealed partial class GameStateReader
                     return GameCallResult<BlueprintInspection>.Failed(BridgeError.Create(BridgeErrorCodes.StaleState,
                         "An explicitly selected blueprint entity, endpoint or recipe changed.", false, "Fresh inspect the entire explicit selection."));
                 if (!BoundedBlueprintReader.SupportsItem(entity.ItemId)) return BlueprintRejected("blueprint_type_unsupported");
+                // Bound native FromFactoryObject before it allocates/copies storage parameters.
+                if (entity.ItemId == 2101 && entity.StorageConfiguration is null)
+                    return BlueprintRejected("blueprint_storage_configuration_unavailable");
+                if (entity.ItemId == 2101 && entity.Connections.Any(c => c.Slot >= 12))
+                    return BlueprintRejected("blueprint_storage_stacking_unsupported");
                 if (snapshots.Count > 0 && Vector3.Distance(ToBlueprintVector(snapshots[0].Position), ToBlueprintVector(entity.Position)) > 64f)
                     return BlueprintRejected("blueprint_selection_span_limit");
                 snapshots.Add(entity);
@@ -61,6 +66,12 @@ internal sealed partial class GameStateReader
                 if (result.Objects[i].ItemId != snapshots[i].ItemId || result.Objects[i].RecipeId != snapshots[i].RecipeId
                     || result.Objects[i].FilterItemId != (snapshots[i].FilterItemId ?? 0))
                     return BlueprintRejected("blueprint_selection_readback_mismatch");
+                if (snapshots[i].ItemId == 2101 && !BlueprintStoragePolicy.MatchesConfiguration(
+                        result.Objects[i].Parameters, snapshots[i].StorageConfiguration))
+                    return BlueprintRejected("blueprint_storage_export_readback_mismatch");
+                if (snapshots[i].ForceAccelerationMode is bool accelerationMode
+                    && accelerationMode != (result.Objects[i].Parameters.Length > 0 && result.Objects[i].Parameters[0] != 0))
+                    return BlueprintRejected("blueprint_acceleration_export_readback_mismatch");
                 foreach (var connection in snapshots[i].Connections.Where(c => !ids.Contains(c.OtherObjectId)))
                     result.SourceBoundaryConnections.Add(new BlueprintBoundaryConnection
                     {
@@ -110,6 +121,8 @@ internal sealed partial class GameStateReader
             obj.RecipeUnlocked = obj.RecipeId == 0 || GameMain.history.RecipeUnlocked(obj.RecipeId);
             if (obj.FilterItemId > 0 && LDB.items.Select(obj.FilterItemId) is null)
                 throw new BlueprintReadException("blueprint_native_filter_invalid");
+            if (obj.ItemId == 2101 && !BlueprintStorageParametersMatchNative(obj.ItemId, obj.Parameters))
+                throw new BlueprintReadException("blueprint_native_storage_configuration_invalid");
         }
         var player = GameMain.mainPlayer;
         foreach (var group in result.Objects.GroupBy(o => o.ItemId).OrderBy(g => g.Key))
@@ -119,6 +132,17 @@ internal sealed partial class GameStateReader
             { ItemId = group.Key, RequiredCount = group.Count(), PackageCount = available, MissingCount = Math.Max(0, group.Count() - available) });
         }
         return result;
+    }
+
+    internal static bool BlueprintStorageParametersMatchNative(int itemId, int[] parameters)
+    {
+        var desc = LDB.items.Select(itemId)?.prefabDesc;
+        if (itemId != 2101 || desc is null || !desc.isStorage) return false;
+        var gridCount = (long)desc.storageCol * desc.storageRow;
+        return gridCount >= 1 && gridCount <= BlueprintStoragePolicy.MaximumGridCount
+            && BlueprintStoragePolicy.FitsNativeStorage(parameters, (int)gridCount,
+                id => LDB.items.Select(id) is not null && id < StorageComponent.itemStackCount.Length
+                    && StorageComponent.itemStackCount[id] > 0);
     }
 
     private static Vector3 ToBlueprintVector(Vector3Snapshot v) => new Vector3(v.X, v.Y, v.Z);

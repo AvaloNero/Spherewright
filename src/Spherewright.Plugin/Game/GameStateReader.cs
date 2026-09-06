@@ -390,6 +390,10 @@ internal sealed partial class GameStateReader
                 CanBuild = item.CanBuild,
                 Unlocked = history.ItemUnlocked(item.ID),
                 HandcraftRecipeId = item.handcraft?.ID,
+                FuelHeatValueJoules = item.HeatValue >= 0 ? (long?)item.HeatValue : null,
+                FuelType = item.FuelType >= 0 ? (int?)item.FuelType : null,
+                AcceptedAsMechaFuel = StorageComponent.itemIsFuel is not null && item.ID > 0 && item.ID < StorageComponent.itemIsFuel.Length
+                    ? (bool?)OrdinaryMechaFuelPolicy.IsAccepted(item.HeatValue, item.FuelType, StorageComponent.itemIsFuel[item.ID]) : null,
             });
         }
 

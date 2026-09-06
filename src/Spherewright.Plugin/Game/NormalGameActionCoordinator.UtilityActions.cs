@@ -43,16 +43,15 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         if (item is null
-            || item.HeatValue <= 0L
-            || item.FuelType <= 0
+            || StorageComponent.itemIsFuel is null
             || request.ItemId >= StorageComponent.itemIsFuel.Length
-            || !StorageComponent.itemIsFuel[request.ItemId])
+            || !OrdinaryMechaFuelPolicy.IsAccepted(item.HeatValue, item.FuelType, StorageComponent.itemIsFuel[request.ItemId]))
         {
             return GameCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
                 BridgeErrorCodes.InvalidRequest,
                 "The requested runtime item is not accepted as ordinary mecha fuel.",
                 false,
-                "Inspect player inventory and choose an item whose current ItemProto has positive HeatValue and FuelType."));
+                "Inspect the current recipe catalog for acceptedAsMechaFuel=true, acquire a real stack and prepare its exact native transfer count."));
         }
 
         if (!TryResolveRefuelTransfer(player, request.ItemId, out var grid, out var exactCount, out var rejection))

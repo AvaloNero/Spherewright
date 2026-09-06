@@ -30,6 +30,11 @@ public sealed class ItemCatalogEntry
     public bool Unlocked { get; set; }
 
     public int? HandcraftRecipeId { get; set; }
+
+    public long? FuelHeatValueJoules { get; set; }
+    public int? FuelType { get; set; }
+    // Null is unavailable runtime fuel-table evidence, never assumed permission.
+    public bool? AcceptedAsMechaFuel { get; set; }
 }
 
 public sealed class RecipeCatalogEntry

@@ -2561,6 +2561,18 @@
 - 关联：EXP-063/189、`ResearchQueuePolicy`、`NormalGameActionCoordinator.ResearchPriority`。
 - 最近复验：2026-09-06（同档priority终态、正常电路板转移与2701实际unlockTick均已观察）。
 
+### EXP-209 — 燃料资格必须来自原生目录，不能只按“燃料棒”名称搜索
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：机甲普通补能、0.4燃料准备和只读运行时目录。
+- 当前结论：recipe catalog公开FuelHeatValueJoules/FuelType/nullable AcceptedAsMechaFuel，与既有refuel相同地要求HeatValue>0、FuelType>0和当前原生itemIsFuel；没有表证据返回unknown。名称/解锁不替代资格，热值不等于燃烧速度/移动航程，持有燃料还须正常exact-stack补入反应室。
+- 直接证据：当前DLL ItemProto字段与原有UtilityActions.refuel三条件已核验，新增共享纯策略和8个回归保留全部原有条件。617实机搜索只盯燃料棒，遗漏69.921m处907里的氢/精炼油候选；其当前可燃性先由native prepare诊断和正常操作验证，不提前假定。
+- 限制或反例：原目录没有公开这些字段，不能声称旧包已提供。补能失败/低核心不准通过目录读数伪造燃料、瞬充或扩大移动授权；燃料产线、稳定补给与最终0.4仍需独立验证。
+- 复验触发：DLL燃料表、refuel原生入口、fuel字段、目录未知值、自动补充/堆栈守恒和0.4出发清单变化。
+- 关联：EXP-035/041/053、IFX-037、OrdinaryMechaFuelPolicy、game-api-foundry.md。
+- 最近复验：2026-09-06（672 Debug/Release通过并冷部署；live目录1114=4500000J/type1/true，1120=9000000J/type1/true。617普通氢20转移/refuel已验；不外推持续燃料产线）。
+
 ## 修订记录
 
 - 2026-09-06：IFX-028最终部署4/4匹配（Plugin3FB233…/Core7199C2…），窗口#5–9分别为protected resume、749单实体升级、保存/正常关闭、protected resume、最终保存，完整action表见当档日记；未提供resume action tick不补造。修复版23一端负例无commit；749消耗2012 1→0/返2011 7→8、双端及filter1101保留，同步cargo空明确披露。恢复后新选区蓝图含3×2011/1×2012/1×2303，5对象/1区域、native signature及code往返hash一致、4条源边界，证明IFX-027白名单解耦未因实际升级回退。MCP58 tools/1 resource与必需双端playbook通过。最终保存22221235，fresh session22224301 revision2/owned/healthy/no blockers、player22224313 Walk/0/3idle/2011=8/2012=0、Journal22224316 54/54/no pending/error、749及723/724在22224323–32双向正确、power22224335 required=served49804。EXP-189/190/193获得限定范围live证据，EXP-027/028缩窄，存档日记索引按账本同步过期状态且不另维护易过时汇总。当前窗口9项accepted，无额外commit；下一项后必须严格十写审计。没有运行模块复制、Governor产量翻倍、新包/异机声明或push/tag/release。

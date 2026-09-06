@@ -162,7 +162,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns current LDB item and recipe identities, unlock state, inputs and outputs, plus a deterministic runtime dependency graph rooted at the first red matrix.")]
+    [Description("Returns current LDB item and recipe identities, unlock state, inputs and outputs, plus a deterministic runtime dependency graph rooted at the first red matrix. Item fuelHeatValueJoules/fuelType and nullable acceptedAsMechaFuel use the same current native eligibility as normal refuel preparation: fuels are not limited to names containing fuel rod. Null is unknown. Item heat is not burn-rate, movement-range or automatic-supply proof; acquire a real stack and use fresh prepare_refuel/commit_refuel with the native exact transfer count.")]
     public static async Task<CallToolResult> GetRecipeCatalogAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,

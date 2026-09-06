@@ -377,3 +377,11 @@
 - 修复：保留全部Findings，明确TargetChainFindings与UnattributedPlanetFindingCount，只有目标诊断/选中根/选中上游路径才归因；截断仍拒绝。候选、observer与提案哈希同批更新，不靠删告警过关。
 - 验证：6项新范围/哈希/健康回归，623 Release测试与完整Release零警告错误；修复仍源码态。另查出115→113真实缺边和石墨亏供，不能把范围修复当作现场修复或十分钟吞吐通过。
 - 关联：EXP-207、GovernorPlanCompiler、GovernorThroughputValidation；状态：`fixed_offline_live_pending`。
+
+## IFX-037 — 把Move距离终态后的Drift等待和低能量返岸当作安全交接
+
+- 首见：2026-09-06，617-test验收移动fd22bab1已达坐标，但fresh持续Drift；等待稳定耗能，旧指南缺少明确的有界返岸分支。
+- 执行偏差：后续14a9af65在fresh已经Walk、核心仅约0.185MJ且无燃料时仍提交返岸。它600tick后因原生能量全空明确失败，没有unknown或重复提交。prepare目标合法不等于足够能量；此错误不归咎为state hash缺陷。
+- 修复：指南明确普通业务必须Walk/低速/能源充分；Drift不无限等候，只在能源充足时用已验证Walk锚点做有界正常Move，已自然Walk就不再返岸；只有未accepted stale可最多3次紧邻fresh/prepare，不改变Move/hash/watchdog/幂等/精确订单中止。另为燃料选择公开与既有refuel一致的原生资格，不能只搜索“燃料棒”名称。
+- 验证：两次180tick位置停滞和一次600tick断能终态均如实保留。Walk静止735ticks净增980,000能量符合80kW被动补能，不冒充无线塔；正常补给/回充和新指南实机成功仍待。
+- 关联：EXP-039/041/053、包内playbook、OrdinaryMechaFuelPolicy；状态：`guidance_corrected_revalidation_pending`。

@@ -192,6 +192,17 @@ public sealed class FoundrySitePlannerTests
     }
 
     [Fact]
+    public void SeparateAdvisoryPowerCaptureDoesNotReplaceNativePlacementEvidence()
+    {
+        var site = ClearNative(); Complete(site); var before = site.AssessmentHash;
+        site.Power = new FoundryPowerAssessment { CapturedAtGameTick = 900, AssessmentHash = "power-only", State = "unavailable" };
+        Complete(site);
+        Assert.Equal(before, site.AssessmentHash);
+        Assert.True(site.MachinePreviewsClear);
+        Assert.False(site.Power.FullBaseLoadBudgetSatisfied);
+    }
+
+    [Fact]
     public void PoseFootprintConditionAndBudgetEachChangeAssessmentHash()
     {
         var baseline = ClearNative(); Complete(baseline);

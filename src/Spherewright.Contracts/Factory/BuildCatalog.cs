@@ -53,7 +53,21 @@ public sealed class BuildCatalogItem
 
     public int? ProductionSpeedRaw { get; set; }
 
+    // Native catalog values, not measured rates. Null is unavailable, never zero-cost capacity.
+    public int? BeltSpeedRaw { get; set; }
+    public int? InserterSttRaw { get; set; }
+    public int? InserterGrade { get; set; }
+
     public long? WorkEnergyPerTick { get; set; }
+
+    public long? IdleEnergyPerTick { get; set; }
+    public bool NativePowerProfileKnown { get; set; }
+    public bool IsPowerConsumer { get; set; }
+    public bool IsPowerNode { get; set; }
+    public bool IsPowerCharger { get; set; }
+    // Only native wind-forced generation is predictable from this local planet.
+    // Null is unknown, not free generating capacity.
+    public long? WindGenerationAtCurrentPlanetPerTick { get; set; }
 }
 
 public sealed class BuildCatalogRecipe

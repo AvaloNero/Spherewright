@@ -2475,6 +2475,18 @@
 - 关联：EXP-195/201、`BlueprintStoragePolicy`、`FactoryEntitySnapshot.StorageConfiguration`、`game-api-foundry.md`。
 - 最近复验：2026-09-06（554-test冷部署后716/717均30格/default/禁用0/30个0过滤，读回正例成立；567源码延续配置绑定，仓储施工仍待live）。
 
+### EXP-208 — 电网余量必须计满基础负载、接网几何和新接通的旧设备
+
+- 状态：`observed`
+- 日期：2026-09-06
+- 适用范围：Foundry/有限蓝图只读现场的基础功率预算，非施工许可。
+- 当前结论：原生网络几何用壳面投影和两塔连接半径最大值，不用视觉powerPoint或半径和。现网预留consumer/charger的work、idle、current最大值，加上出口、新设备和新塔接通的原net0设备；近边界或多网覆盖不明确时不能宣布余量充足。新发电只贷记当前原生风能，燃料持续性另验。
+- 直接证据：当前DLL OnNodeAdded/OnConsumerAdded/NewConsumerComponent/电力tick和EnergyCap_Wind已核验并落研究文档。39项Core测试覆盖覆盖/功率分别不足、网络合并、半径最大值、未知发电、充电、旧未供电负载、边界、哈希和非法/超限；662 Release测试与完整DLL构建通过。
+- 限制或反例：本切片不自动布电塔、不选择或建设完整物流，不证明将来增产剂/天气/燃料或持续吞吐；实机目前只验证机器占位通过而无电覆盖的否定分支。独立power capture hash含tick，但不进入原生建设assessment hash，避免每tick误作陈旧施工计划。
+- 复验触发：DLL电网/发电公式、地形尺度、叠层/add-on支持、load来源、网络membership及完整计划适配变化。
+- 关联：FoundryPowerPlanner、GameStateReader.FoundryPower、game-api-foundry.md、包内playbook。
+- 最近复验：2026-09-06（672 Debug/Release回归含两个hash隔离测试全通过；同批冷部署后单炉30/min占位通过但power_plan_incomplete/未覆盖/360kW，正确区分两种证据）。
+
 ## 修订记录
 
 - 2026-09-06：IFX-028最终部署4/4匹配（Plugin3FB233…/Core7199C2…），窗口#5–9分别为protected resume、749单实体升级、保存/正常关闭、protected resume、最终保存，完整action表见当档日记；未提供resume action tick不补造。修复版23一端负例无commit；749消耗2012 1→0/返2011 7→8、双端及filter1101保留，同步cargo空明确披露。恢复后新选区蓝图含3×2011/1×2012/1×2303，5对象/1区域、native signature及code往返hash一致、4条源边界，证明IFX-027白名单解耦未因实际升级回退。MCP58 tools/1 resource与必需双端playbook通过。最终保存22221235，fresh session22224301 revision2/owned/healthy/no blockers、player22224313 Walk/0/3idle/2011=8/2012=0、Journal22224316 54/54/no pending/error、749及723/724在22224323–32双向正确、power22224335 required=served49804。EXP-189/190/193获得限定范围live证据，EXP-027/028缩窄，存档日记索引按账本同步过期状态且不另维护易过时汇总。当前窗口9项accepted，无额外commit；下一项后必须严格十写审计。没有运行模块复制、Governor产量翻倍、新包/异机声明或push/tag/release。

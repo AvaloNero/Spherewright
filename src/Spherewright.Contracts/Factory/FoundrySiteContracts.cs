@@ -31,6 +31,7 @@ public sealed class FoundrySiteSnapshot
     public string ClearanceBasis { get; set; } = "build_collider_bounding_spheres_plus_0.5m_v1";
     public List<FoundrySiteMachine> Machines { get; set; } = new List<FoundrySiteMachine>();
     public List<FoundryInventoryBudget> MachineInventory { get; set; } = new List<FoundryInventoryBudget>();
+    public FoundryPowerAssessment? Power { get; set; }
 }
 
 public sealed class FoundrySiteMachine

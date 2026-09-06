@@ -61,10 +61,14 @@ internal sealed partial class GameStateReader
                 FoundrySitePlanner.CompleteAssessment(site,
                     playerResult.Value.Inventory.ToDictionary(i => i.ItemId, i => i.Count),
                     catalog.Value.Revision, playerResult.Value.StateHash);
+                site.Power = AssessFoundryPowerOnMainThread(factory, site.Machines.Select((machine, index) => new BlueprintSiteObject
+                {
+                    Index = index, ItemId = machine.BuildingItemId, Position = machine.Position,
+                }).ToArray(), catalog.Value.Buildings);
                 plan.Site = site;
                 plan.Phase = "site_preview";
                 plan.RemainingChecks[0] = "Machine positions have a one-tick native assessment only; fresh-read and prepare every actual build again. AssessmentHash is not a state hash, write token or restartable plan.";
-                plan.RemainingChecks.Add("This bounded machine grid does not route or validate logistics or power; machine_previews_clear does not mean an executable factory.");
+                plan.RemainingChecks.Add("This bounded machine grid does not route logistics or add power nodes. The separate native-geometry full base-load power assessment is advisory and includes existing peak load, not sustainable fuel proof; machine_previews_clear does not mean an executable factory.");
             }
             return GameCallResult<FoundryPlanSnapshot>.Succeeded(plan);
         }

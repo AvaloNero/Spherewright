@@ -2757,6 +2757,12 @@ internal sealed partial class GameStateReader
                 ProductionSpeedRaw = item.prefabDesc.isAssembler ? item.prefabDesc.assemblerSpeed
                     : item.prefabDesc.isLab ? item.prefabDesc.labAssembleSpeed : (int?)null,
                 WorkEnergyPerTick = item.prefabDesc.workEnergyPerTick,
+                IdleEnergyPerTick = item.prefabDesc.idleEnergyPerTick,
+                NativePowerProfileKnown = true,
+                IsPowerConsumer = item.prefabDesc.isPowerConsumer,
+                IsPowerNode = item.prefabDesc.isPowerNode,
+                IsPowerCharger = item.prefabDesc.isPowerCharger,
+                WindGenerationAtCurrentPlanetPerTick = CaptureFoundryWindGeneration(item.prefabDesc, factory!.planet.windStrength),
             });
         }
 

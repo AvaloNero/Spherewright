@@ -12,6 +12,8 @@
 
 离线实现结果：新增28 Core/5 Contracts/2 MCP回归，1455项Debug/Release和完整当前DSP Release零警告错误通过；真实源码MCP64工具/1资源/45564字符同批指南一致，正常exit0/额外stdout0。既有hash和写面不变；此处仍不宣称新适配live通过，待正常保存、冷部署和同档恢复后复验。
 
+本机复验：1455正常冷部署/同档protected resume27241993后，真实源码MCP raw-ca722021在27249207/304/391分别读取110 rearPickup=observed、marker1509、1003×1/inc0；44三个邻近tick均硅300/max300、钛8/max200、neededItemIds=[1004]、12GJ且110↔44保持。102中段返回not_applicable/selected_segment_is_not_path_rear/null item。184tick跨度只证明该观察区间的具体挡料，不能代替600tick窗或修复吞吐。玩家hash/revision1保持、0游戏写、正常exit0/额外stdout0；未知/closed/畸形分支仍为离线验证，新ZIP/异机未验。
+
 ## 2026-09-07：运输船起送阈值的原生反证（只读研究）
 
 同一当前Assembly-CSharp（SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`）中，`StationComponent.DetermineDispatch(float,float,int,int,StationComponent[],FactoryProductionStat[],PlanetFactory[],GalaxyData,TrafficStatistics)`首先计算整数阈值`(shipCarries-1)*deliveryShips/100`。在本地供给发船和本地需求取货分支中，若供应槽max不大于阈值，会再把阈值夹到`max(0,supply.max-1)`；之后同时要求实际count、remoteSupplyCount、totalSupplyCount大于该阈值，而需求侧remoteDemandCount/totalDemandCount须大于0。因此不能只看到“source.max200小于船舱容量”就认定永远不能起送，更不能据此随意调高限额或降低起送设置。

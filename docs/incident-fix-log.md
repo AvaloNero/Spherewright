@@ -623,7 +623,8 @@
 - 根因：原beltCargo只给item-sorted分段聚合，不能确定原生TryPickItemAtRear正在检查哪个对齐包；直接下“硅挡钛”的已确认结论会越过公开证据。
 - 修复：既有inspect增加可选rearPickup，open path尾段才观察对齐货包；no_aligned_packet/not_applicable/unavailable分开，复用有界副本、完整格式与原生只读核对。MCP描述、协议和包内playbook要求fresh入站拓扑/needs/容量及重复证据，不自动改槽、清库存或宣称持续修复。
 - 验证：28 Core/5 Contracts/2 MCP新增，1455项Debug/Release、完整Release零警告错误、真实源码64工具/1资源/45564字符指南通过。新适配尚未冷部署；实际堵塞物品与供应修复都未宣称通过。
-- 状态：`fixed_offline_live_pending`（只读可观测性，不是产线修复）；关联EXP-241。
+- 实机：1455冷部署后源码MCP三次110尾包为硅1、44硅槽满/needs仅钛且双向端点保持；102中段给not_applicable/null item，player hash/revision与stdout正常。跨度184tick，未冒充长期吞吐；root同档恢复175实体/28配置/库存/Journal审计通过。
+- 状态：`fixed_local_live`（当前只读可观测性，不是产线修复、全场景或异机验证）；关联EXP-241。
 
 ## IFX-058 — 主会话几何方案先建整条带却未证明两个连接
 

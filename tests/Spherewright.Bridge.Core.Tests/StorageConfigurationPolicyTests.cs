@@ -60,6 +60,52 @@ public sealed class StorageConfigurationPolicyTests
     }
 
     [Fact]
+    public void ZeroFilterOnOccupiedGridIsNotAnEmptyReservationCandidate()
+    {
+        var before = new StorageUiState("filtered", 0, new[] { Grid(1114, 20, 8) });
+        var hash = StorageConfigurationPolicy.Fingerprint(before);
+        Assert.Equal(0, before.Grids[0].Filter);
+        var error = Assert.Throws<ArgumentException>(() => Project(before,
+            StorageConfigurationOperations.FilterEmptyOrMatching, filter: 1000));
+        Assert.Equal("storage_configuration_unchanged", error.Message);
+        Assert.Equal(hash, StorageConfigurationPolicy.Fingerprint(before));
+    }
+
+    [Fact]
+    public void DeliveryIntoSpaceLeftByLockChangesFullHashAndInvalidatesTheReservationProjection()
+    {
+        var locked = Project(State(Grid(1114, 20), Grid()), StorageConfigurationOperations.LockOccupied);
+        var previouslyPossible = Project(locked, StorageConfigurationOperations.FilterEmptyOrMatching, filter: 1000);
+        // Two separate observed native states, not a simulated delivery implementation.
+        var delivered = new StorageUiState("filtered", 0, new[] { locked.Grids[0], Grid(1114, 1) });
+        Assert.Equal(locked.Grids.Select(grid => grid.Filter), delivered.Grids.Select(grid => grid.Filter));
+        Assert.NotEqual(StorageConfigurationPolicy.Fingerprint(locked), StorageConfigurationPolicy.Fingerprint(delivered));
+        Assert.Equal(1000, previouslyPossible.Grids[1].Filter);
+        var error = Assert.Throws<ArgumentException>(() => Project(delivered,
+            StorageConfigurationOperations.FilterEmptyOrMatching, filter: 1000));
+        Assert.Equal("storage_configuration_unchanged", error.Message);
+    }
+
+    [Fact]
+    public void ReservingAnActuallyEmptiedEarlierGridPreservesStockAndDeclaredBans()
+    {
+        // A post-transfer fixture: native transfer order/conservation need separate live proof.
+        var afterTransfer = new StorageUiState("filtered", 3,
+            new[] { Grid(1114, filter: 1114), Grid(1115, 50, 10, 1115), Grid(1114, 20, 8) });
+        var reserved = Project(afterTransfer, StorageConfigurationOperations.FilterEmptyOrMatching, filter: 1000);
+        Assert.Equal(3, reserved.Bans);
+        Assert.Equal(new[] { 1000, 1115, 0 }, reserved.Grids.Select(grid => grid.Filter));
+        Assert.Equal(afterTransfer.Grids.Select(grid => grid.Count), reserved.Grids.Select(grid => grid.Count));
+        Assert.Equal(afterTransfer.Grids.Select(grid => grid.Inc), reserved.Grids.Select(grid => grid.Inc));
+        Assert.Same(afterTransfer.Grids[1], reserved.Grids[1]);
+        Assert.Same(afterTransfer.Grids[2], reserved.Grids[2]);
+        var restored = Project(reserved, StorageConfigurationOperations.SetBans, bans: 0);
+        Assert.Equal(0, restored.Bans);
+        Assert.Equal(reserved.Grids, restored.Grids);
+        Assert.Equal("filtered", restored.Mode);
+    }
+
+    [Fact]
     public void ClearFiltersPreservesOccupiedItemsAndClearsOnlyEmptyMetadata()
     {
         var before = new StorageUiState("filtered", 1, new[] { Grid(1114, 10, 4, 1114), Grid(1000, filter: 1000) });

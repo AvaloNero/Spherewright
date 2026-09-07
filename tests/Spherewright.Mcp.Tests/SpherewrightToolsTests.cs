@@ -1026,6 +1026,25 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void WarehouseReservationRaceRecoveryIsDiscoverableInMcpAndPackagedPlaybook()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareConfigureBuildingAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)method.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).Single()).Description;
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        foreach (var phrase in new[] { "filter0 does not prove an empty grid", "lock-occupied does not reserve empty grids", "storage_configuration_unchanged" })
+        {
+            Assert.Contains(phrase, description);
+            Assert.Contains(phrase, guide);
+        }
+        Assert.Contains("TakeItem searches forward", guide);
+        Assert.Contains("original bans to restore", guide);
+        Assert.Contains("not a global inventory freeze", guide);
+        Assert.Contains("plan only the unfinished steps", guide);
+        Assert.Contains("Never repeat stock removal", guide);
+        Assert.Contains("never repeatedly drain stock or relax the full stateHash", description);
+    }
+
+    [Fact]
     public void ConfigureHashParameterExplicitlySeparatesSorterAndWarehouseDomains()
     {
         var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareConfigureBuildingAsync))!;

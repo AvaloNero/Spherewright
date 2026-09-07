@@ -591,5 +591,12 @@
 - 根因：已有Move预检没有公开地表证据；外部规划把几何净空当成可步行。原生Move终态本来只承诺距离，watchdog并非全局地表规划器，不能以延长超时修复。
 - 修复：当前原生双向下射线依据落实为可选surfacePreview，32m/33点/66次硬上限；Core只解释已复制的命中、距离及高度，无自动选路/位置写入。丢失证据仍unknown，采样未发现风险不声称路径无障碍；MCP描述、resource playbook、协议/用户文档同步。恢复准备前再fresh确认，若自然Walk则不提交多余回退。
 - 离线验证：完整Release零警告错误，Debug/Release1405测试，源码64tools/1resource及42052字符指南实际握手一致。补齐PhysicsModule本地编译引用且Private=false，Plugin输出仍仅原四DLL，无游戏程序集进入产物。
-- 实机边界：旧Move失败模式及后来自然Walk已读回，返回计划未commit；新采样尚待冷部署后正负预检和正常Move。未宣称全局寻路、永久供给或0.4版本完成。
-- 状态：`open`（源码和离线修复完成，当前DSP实机待验）；关联EXP-236。
+- 实机边界：0956f6b四DLL正常冷部署/同档恢复后，实际MCP对旧水面/直接铁仓短目标给出6/11风险点，40m为unavailable/unknown；四向短目标N/W有风险、E/S未发现。root指定东北30°/24m候选，Luna fresh prepare后唯一Move55c910d9在26575313完成，26575339 Walk0/398.353MJ，后续取铁在77.214m成功。root完整十写审计保持2299结构/71设置/J55/55/healthy。未宣称全局寻路、所有无风险目标必达、永久供给或0.4版本完成。
+- 状态：`bounded_surface_preview_locally_validated`；关联EXP-236。最终ZIP与异机仍待，旧水面Move不是新代码验证。
+
+## IFX-055 — 开发客户端把MCP参数形状直接传给Bridge
+
+- 首见：2026-09-07，Luna准备固定24mMove时向Bridge传入targetX/Y/Z，未形成DTO的target对象；原生表面坐标检查以INVALID_REQUEST拒绝，raw-91446c19无accepted或commit。
+- 根因：MCP公开参数与Bridge内部DTO并非同一形状；这是开发客户端错误，不是新路线再次卡住。
+- 修复与验证：root提供精确target={x,y,z}及原有hash绑定；Luna fresh预检后55c910d9唯一Move成功，终态和Walk读回齐备。只纠正调用方，没有更改模型/游戏状态准入、重放已接受的动作或改动公共MCP工具。关联EXP-237。
+- 状态：`caller_corrected_and_locally_verified`；通用参数诊断产品化不在此条声称完成。

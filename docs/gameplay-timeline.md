@@ -2,9 +2,17 @@
 
 更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：1370同批DLL运行，同一owned-world-001正常保存26508578。775正常守恒腾位并保留5钛/25金刚石预约、解禁后，四个新独立600tick窗黄糖实际产2/1/1/1、消2/1/1/2，原料均对应消耗；不是长期供应或Governor两倍十分钟。root在26512136完整2299对象/71详情及26512708独立pre0复核，revision21/J55/55 durable/healthy/Walk0/372MJ/三网满服务；本窗accepted6保留不归零。油/钛上游、永久金刚石分流、运行模块复制/续建、三级链、准备清单与最终包仍待，无新ZIP/tag/release。
+当前截面：0956f6b的1405-test同批DLL已正常冷部署，同档protected resume重存26508610。新地表提示经真实MCP只读正负例及Luna一次24m正常Move验证；随后取铁300、原生递归手搓60条带完成。root在26615174完整2299对象/71详情及26615737独立pre0核对十个唯一终态，revision6/J55/55 durable/healthy/Walk0/398.267MJ/三网满服务；本记录落盘后accepted10→0，下一步仍fresh准备。铁242、带88，取料/手搓尚未另存。前组四窗黄糖产2/1/1/1已保存，但油/钛上游、永久金刚石分流、运行模块复制/续建、三级链、Governor两倍十分钟、准备清单与最终双包仍待；无新ZIP/tag/release。
 
 ## 结论与证据边界
+
+2026-09-07 / 第8–10写与完整审计：Move55c910d9在26575070→26575313完成；fresh prepare的surfacePreview为observed/not_detected、26点52射线、unknown0，26575339玩家明确Walk0/398.353MJ。#9 d8020f4b在26597854正常取仓28铁块300，同tick仓3000→2700、玩家2→302。#10 d2ca64e5在26608025→26610425正常递归手搓recipe84二十批，玩家铁302→242、带28→88，齿轮终态0；prepare列的是直接配方40铁+20齿轮/1200tick，不是递归净投入与总耗时，实际为60铁/2400tick。原始49c9654a/6f3b37ba/bc404504中的唯一commit与terminal均由root复核；不存在额外instantConservationProof公共字段，该用语只是调用方对明确before/after差量的摘要。最初本地把1001铁矿误作1101铁块导致客户端停止，无commit；纠正后fresh准备，没有重复手搓。
+
+root raw-1009041c在26615161/rev6确认同一owned104/和平/非沙盒/1×/healthy、无blocker/checkpoint，26615174单snapshot23页2299全部身份/位置/旋转/连接与恢复后相同，71详情配置保持、26615737独立pre0。玩家仅有已证明铁净增240和带增60，其余库存/inc/空手保持；位置与Move后逐值相同、Walk0/398.267MJ/3idle/空手搓、Journal55/55 durable无pending/error、三网ratio1。root复跑前七写审计后核销十个唯一accepted终态，无unknown/重放/不明材料增量；当前BepInEx错误/异常扫描0。日记和EXP-236/237落盘后才把计数10→0。新取料/手搓未普通保存，不能用26508610恢复点声称已持久化。
+
+2026-09-07 / 1405冷部署、恢复和移动方案接管：普通save26508578及六写审计落盘后，精确旧DSP进程正常关闭，0956f6b同批四DLL逐个哈希相等，Steam只启动一次。#7 f2c87cfd的protected resume唯一terminal/completed/succeeded，动作起止tick为null，正常重存26508610；raw-4df0dd51/b1f948c8的完整2299对象/71详情证明保存的水链、1211删除与775预约/全部旧设置保持。玩家库存完全相同；玩家坐标不是逐位相同，y增加0.000030517578125m、z增加0.0000152587890625m（各4/1个float ULP），x相同；明确记录此微差，不改产品hash或将原因猜成已证明。accepted6→7，没有重启清零。
+
+真实源码MCP→安装Plugin的raw-472a3ead发现/读取同批playbook；旧水面目标5.345m为detected/6个风险点，直接向铁仓10m为detected/11点，40m明确unavailable/unknown/零射线，无游戏写。root四个4m正交只读候选N/W发现水风险，E/S未发现（raw-65816a09）；再明确给东北30°/24m单候选，26点52射线无风险/未知（raw-03c1d737），交Luna fresh执行#8。Luna一度把MCP的targetX/Y/Z平铺格式发给Bridge，prepare返回INVALID_REQUEST/零accepted；只纠正为target={x,y,z}，未重放失败Move。新成功只验证该有限方案，不是全局寻路。接下来独立油线两条明确候选因981/987旧带占位拒绝（raw-30f0cc7d/67d0ac60），0commit且player/endpoint hash不变；由主会话复读旧线后重新规划，不删除占位或扩大无界候选。
 
 2026-09-07 / 地表预检源码切片：本档新窗Move跨水反例形成EXP-236/IFX-054，新增有界surfacePreview而非延长超时/自动寻路。1405项Debug/Release、完整Release零警告错误与源码MCP64tools/1resource通过；运行仍1370，新字段冷部署实机另验。此代码切片无游戏写，accepted6不变，不改变油/钛/分流和版本验收门。
 

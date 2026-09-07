@@ -2995,18 +2995,33 @@
 
 ### EXP-236 — 路线净空不证明陆地，移动前只给有界原生地表证据
 
-- 状态：`observed`
+- 状态：`validated`（当前版本有限采样与一次正常Move，不是全局路线保证）
 - 日期：2026-09-07。
 - 适用范围：当前DSP0.10.34.28529、owned world普通Move预检；不扩展飞行或自动寻路。
 - 当前结论：主会话28m方案避开已知建筑却仍在水面到达，证明工厂中心/拓扑检查不能替代地表。新增可选surfacePreview，对明确请求的最长32m球面弧取至多33点/66次原生向下射线；明确observed/partial/unavailable及detected/not_detected/unknown，未知不能填成陆地，未发现风险也不是通路或Walk保证。准入hash、幂等、watchdog与exact-order abort不变；每次到达仍复读玩家，若已自然稳定Walk则撤销过期回退意图。
 - 直接依据：当前Assembly-CSharp的PlayerMove_Drift.DetermineDrift使用30m射线、8704/16掩码及Collide；大于0.4m地水差或低于基准0.8m仅是完整Drift判定的一部分。预览采用名义realRadius+10m起点，不声称复制玩家高度/能量/状态迟滞。QueryModifiedHeight零权重会回退heightData[0]，故不作确定失败证据。PhysicsModule只作Private=false本地编译引用，不分发游戏DLL。
 - 离线证据：1405项Debug/Release（40Contracts/1291Core/74MCP）及完整Release零警告错误；33项新增测试覆盖弧长/点数/非法与对跖坐标、缺失/不一致命中、风险优先、无水星球、深复制、旧DTO缺省、MCP保留及指南发现。源码MCP64tools/1resource、42052字符指南一致、额外stdout0。最初完整编译漏PhysicsModule引用已修复，非游戏运行失败。
-- 限制/反例：只取中心线地表，不能发现所有细小地形、植被/设备障碍或保证原生控制器沿采样弧走。超过范围返回unavailable而不是偷偷缩短；运行1370版本尚无此字段，待正常保存/冷部署/同档恢复后的实机正负例，不把旧Move作为新功能验证。
+- 本机实证：0956f6b同批4DLL冷部署并同档恢复26508610后，实际源码MCP调用在旧水面目标/直接铁仓目标分别给出6/11风险点；40m请求为unavailable/unknown且不取射线。四个4m候选N/W有风险、E/S未发现；root选定东北30°/24m单候选，Luna fresh prepare的26点52射线完整无风险，再正常Move55c910d9于26575313完成，26575339明确Walk0/398.353MJ。原始472a3ead/65816a09/03c1d737/49c9654a可追溯；64工具/1资源/同批playbook可发现，未提交风险候选。
+- 限制/反例：只取中心线地表，不能发现所有细小地形、植被/设备障碍或保证原生控制器沿采样弧走。超过范围返回unavailable而不是偷偷缩短；未发现风险也不是可步行保证。上述是本机开发构建实测，不是新ZIP或异机验证，不以旧Move冒充新功能验证。
 - 复验触发：此次冷部署、首次采样正负例/有界Move、DLL变化、地形修改及任何Move后Drift。
 - 关联：EXP-066/163/235、IFX-054、包内playbook、docs/research/game-api-foundry.md。
-- 最近复验：2026-09-07（当前DLL依据/完整构建/1405离线回归，live待验）。
+- 最近复验：2026-09-07（1405离线/完整Release、同批冷部署和protected resume、真实MCP正负例、一次正常Move及后续业务范围实测；十写完整2299对象/71详情审计healthy/J55/55）。
+
+### EXP-237 — 调用层参数、配方预算和终态证据必须各用自己的契约
+
+- 状态：`observed`
+- 日期：2026-09-07。
+- 适用范围：开发验证用Bridge客户端；正常MCP Host的公开工具参数由MCP层转换，不受此次客户端误用影响。
+- 当前结论：MCP的prepare_move接收targetX/Y/Z，Bridge DTO接收target={x,y,z}；直接混用会让目标解析为默认零向量并被INVALID_REQUEST拒绝。先确认调用层和精确DTO，失败若未accepted才fresh纠正；不是移动终态失败，更不能换幂等键重放已有动作。物品ID同样以目录为准：1001是铁矿、1101才是铁块。
+- 直接证据：raw-91446c19仅有错误Move prepare，无commit；根会话纠正形状后，raw-49c9654a的55c910d9成为唯一实际Move并成功。recipe84二十批prepare显示40铁+20齿轮、输出60带、估计1200tick；原生递归执行d2ca64e5的净投入是60铁，总耗时2400tick，不得将直接配方预算/估时冒充递归总预算。raw-bc404504明确铁302→242、带28→88；动作DTO没有instantConservationProof字段，守恒结论来自同tick before/after与差量，不虚构公开字段。
+- 限制/修复：此次只纠正调用方，不声称Plugin/MCP接口有破坏性变更；后续预算须读取原生目录/计划并核对递归净投入。私有审计首次错用玩家gameTick，改读实际capturedAtGameTick=26575339；离线重读原始证据，无游戏动作重做。
+- 复验触发：更换MCP/Bridge客户端、DTO或配方、摘要字段变化，以及accepted响应后的任何解析异常。
+- 关联：EXP-224/225/236、IFX-055、存档日记001。
+- 最近复验：2026-09-07（原始唯一终态、铁/带差量及完整十写审计通过）。
 
 ## 修订记录
+
+- 2026-09-07：EXP-236经同批部署/恢复、真实MCP正负预检和24m正常Move升级为有限范围validated；EXP-233水链拓扑、EXP-235预约/1211删除已跨26508578保存→26508610恢复保持，持续水流/永久油钛金刚石供给仍需另验。新增EXP-237纠正调用层、物品ID及递归配方估时/材料的证据层级。十个唯一accepted终态经root原始复核，26615174完整2299身份/姿态/拓扑与71配置保持，库存仅预期净铁+240/带+60、pre0/J55/55/healthy/满供电。落盘后计数10→0；未以提前六/七写审计或重启清零，未把无commit的预检拒绝计为游戏写。
 
 - 2026-09-07：EXP-236把本轮跨水反例转为公开有界地表采样；EXP-066的“端点不证明路径”、EXP-001完整构建和EXP-002正常Steam冷启动要求保持，不放宽移动写入或以源码测试声称live。
 

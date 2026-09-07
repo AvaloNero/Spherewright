@@ -649,5 +649,13 @@
 - 首见：2026-09-07，规划氢消耗时183火电公开buffer为item1120/count18686/items，raw-15665ee0/tick27697702；不是18686件氢。
 - 根因：CapturePower将generateCurrentTick写入FactoryBufferSnapshot.Count，却继承默认items/1；curFuelId只描述燃料类型。Governor按默认单位汇总时也可能把发电量和真实物资相加。
 - 修复：共享纯Core语义显式标joules_per_tick/unitsPerItem0，并在Governor当前库存和历史窗口库存统一排除发电role（包括旧版误标items）。保留原计数的int饱和投影和原生字段读取，不新增游戏写入、不改普通物品/研究点或action/hash协议。
-- 验证：当前DLL SHA/PowerSystem.GameTick→GenEnergyByFuel已复核；15Core/1MCP新增，1488项Debug/Release、完整当前DSP Release零警告错误、真实源码64工具/1资源/48248字符指南、stdout纯净通过。当前安装仍1472，修复后live单位读回待冷部署。
-- 状态：`fixed_offline_live_pending`；关联EXP-245、存档日记001。
+- 验证：当前DLL SHA/PowerSystem.GameTick→GenEnergyByFuel已复核；15Core/1MCP新增，1488项Debug/Release、完整当前DSP Release零警告错误、真实源码64工具/1资源/48248字符指南、stdout纯净通过。fa29180同批正常冷部署和protected resume27804980后，raw-4ffacceb真实MCP读风电1/火电183为joules_per_tick/0，普通仓28保持items/1；玩家hash/revision保持、进程exit0。root raw-a7bf4900全2310/387配置与库存/日记恢复对照通过，accepted7不归零。这不是最终包或燃料生产验收。
+- 状态：`fixed_local_live`；关联EXP-245、存档日记001。
+
+## IFX-062 — 本地PowerShell几何辅助脚本把夹角误算为零
+
+- 首见：2026-09-07，入口施工后只读比较三个既有取料点，raw-19ce719e把不同朝向都汇总为0°；未依据该结果commit。
+- 根因：Math.Min/Max传入整数-1/1，PowerShell选中整数重载，余弦发生舍入。此处只影响私有规划helper；C#原生端点规则未改且正确拒绝1583→2311。
+- 修复：边界显式-1.0/1.0、浮点累加，游戏读取前增加60°已知向量自检，并修正另一只读路径helper的同类clamp。
+- 验证：raw-9f49ba0c三对端点得25.959°/1.081°/44.205°；raw-80bc4404独立原生prepare接受1582→2311，1583拒绝保留。没有放宽产品阈值、重放失败commit或执行额外Move。
+- 状态：`fixed_local_helper`；关联EXP-248、存档日记001。辅助结果仍不能代替原生准入。

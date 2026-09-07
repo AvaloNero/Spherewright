@@ -314,6 +314,33 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void PlayerReadDisclosesDroneReadinessIsNotBuildCompletion()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var read = provider.GetServices<McpServerTool>()
+            .Single(t => t.ProtocolTool.Name == "spherewright_get_player_state").ProtocolTool;
+        Assert.True(read.Annotations!.ReadOnlyHint);
+        Assert.Contains("all alive non-idle drones, not unfinished buildings", read.Description);
+        Assert.Contains("must not be replayed", read.Description);
+        Assert.Contains("bounded read-only readiness checks", read.Description);
+    }
+
+    [Fact]
+    public void PackagedBuildReadinessGuidancePreservesCompletedPartsAndFreshIdentity()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("successful build terminal and idle construction drones are different facts", guide);
+        Assert.Contains("at most20 reads separated by500ms", guide);
+        Assert.Contains("Continue only the unsubmitted part with fresh hashes", guide);
+        Assert.Contains("never replay the completed route or whole module", guide);
+        Assert.Contains("Native entity IDs can be reused after removal", guide);
+        Assert.Contains("revalidate item, pose and endpoints", guide);
+    }
+
+    [Fact]
     public async Task GovernorExposesReadOnlyDeclaredTargetAndExplicitSource()
     {
         var client = new FakeBridgeClient(SuccessResult());

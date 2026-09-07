@@ -83,7 +83,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns a main-thread snapshot of position, movement, mecha energy, inventory, handcraft queue, construction drones, autoManageResearchItems and mechaResearchItemBuffer (research points, whole items and remainder points). Compare these buffers with retained inventory and fresh progression when reconciling native research material returns; a backpack increase alone is not a new transfer or production event. It refuses unowned sessions.")]
+    [Description("Returns a main-thread snapshot of position, movement, mecha energy, inventory, handcraft queue, construction drones, autoManageResearchItems and mechaResearchItemBuffer (research points, whole items and remainder points). constructionDrones.working counts all alive non-idle drones, not unfinished buildings; a successful build terminal must not be replayed because this count is still positive. Use bounded read-only readiness checks before the next operation. Compare research buffers with retained inventory and fresh progression when reconciling native research material returns; a backpack increase alone is not a new transfer or production event. It refuses unowned sessions.")]
     public static async Task<CallToolResult> GetPlayerStateAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,

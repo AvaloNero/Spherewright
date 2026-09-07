@@ -14,6 +14,8 @@ Normal dismantle additionally supports ordinary2011/2012 sorters, including a mi
 
 The MCP server also exposes the direct text resource `spherewright://agent/playbooks/opening-movement-v1`. It is available without a live Bridge and gives the Agent the compact core operating rules for session ownership, idempotent terminal polling, energy and harvest approach, production-line proof, saving, flight recovery, and bounded movement-stall escape. The `spherewright_get_status` payload and the session-state, Move, and new-world tool descriptions point clients to this resource before their first gameplay action.
 
+Player `constructionDrones.working` counts alive non-idle drones, not unfinished buildings. A proven successful construction action remains successful if that count is still positive. When the next operation requires idle drones, use bounded read-only checks, retain the completed objects/material receipts, and fresh-prepare only the unsubmitted remainder. Reused native object IDs require fresh item/pose/endpoint identity. The source MCP guide and player description disclose this distinction; no action, hash or completion semantics change.
+
 ```text
 spherewright_get_status
 spherewright_get_session_state

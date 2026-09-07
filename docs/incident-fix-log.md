@@ -24,6 +24,8 @@
   没有发生重放。
 - 关联：EXP-007、EXP-013；状态：`fixed`。
 
+2026-09-07复现与产品化：四带施工terminal成功，外部脚本仅因post-read仍有1台非空闲无人机而停在下一sorter之前，不能据此重做已完成带。GameStateReader的working只是alive-idle；新增公开player说明与包内playbook的有界只读待机、只续未提交对象、fresh核验原生复用ID规则。root完整178→179实体、逐对象材料/连接和Luna两次唯一terminal均通过；新增2项MCP测试后1457项Debug/Release、完整Release零警告错误及真实MCP resource读回通过。未修改Plugin准入、没有新ZIP；关联EXP-242。
+
 ## IFX-002 — 同位置/同设备分拣器被错误归属或覆盖槽位
 
 - 首见：2026-08-31，精炼厂同源输出；2026-09-01 在熔炉上复现槽覆盖。

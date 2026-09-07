@@ -606,8 +606,8 @@
 - 首见：2026-09-07，raw-183242d2的26654934同tick诊断将母星缺钛递归到远端矿机满50/50；它证明局部满缓冲，未展示供应站库存或证明未发货原因。
 - 根因：Plugin已复制匹配供给总库存，但Core对material_shortage不区分中间有/无库存，直接采用更深finding并丢弃当前material evidence；合成有库存200/1的回归证明会错误跨越这道边界。
 - 修复：保留消费者confirmed material_shortage和已有物流证据，以stocked_logistics_boundary停止递归，并明确供给总库存非可分配量、dispatch unproven。不把它改成confirmed logistics_blocked，不改变空/未知源追踪、正常运单/进展、无fleet及600tick stall规则，也不增加游戏读取/写入。
-- 验证：新增11 Core+2 MCP后1418项Debug/Release和完整Release通过，真实源码MCP指南与64工具/1资源一致、stdout纯净。当前运行仍1405，修复部署与同档钛链新读回尚待；不能把测试中的200写成live库存。
-- 状态：`fixed_offline_live_pending`；关联EXP-238。
+- 验证：新增11 Core+2 MCP后1418项Debug/Release和完整Release通过，真实源码MCP指南与64工具/1资源一致、stdout纯净。随后1420同批正常冷部署/同档恢复通过；Bridge26890053及实际源码MCP26949464在完整3工厂/600tick窗口中，对1106/1118/6003保留缺料、聚合stock8、stocked_logistics_boundary及unproven。公开MCP前后player hash/revision不变、exit0/额外stdout0；不能把测试中的200写成live库存，或把8称为精确可分配量。
+- 状态：`fixed_local_live`（诊断停止边界，不是钛供给修复、新ZIP或异机验证）；关联EXP-238。
 
 ## IFX-057 — 背包-only审计漏掉已存在的机甲科研库存
 

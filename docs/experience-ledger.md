@@ -3021,16 +3021,17 @@
 
 ### EXP-238 — 根因追踪到有库存的物流边界应保留缺料与未知发货证据
 
-- 状态：`observed`
+- 状态：`validated`（限当前配置物流源的保守停止边界，不代表供给恢复）
 - 日期：2026-09-07。
 - 适用范围：Overseer现有同tick复制数据、Core根因递归与公开finding；不新增DSP读取/游戏写。
 - 当前结论：供应站存在库存不证明可分配、达到起送量或能立即送达；缺料消费者的上游矿机满仓也可能是运输背压的结果。若configured route的known source stock>0，先保留消费者material_shortage，停止递归并标出stocked_logistics_boundary和unproven dispatch，不能将更上游症状当成已确认因果。
 - 直接依据：raw-183242d2的26654934完整3工厂bundle以102:1的50/50输出满解释104:530/767/774缺钛，未保留中间供给库存/运单；源码ApplyRouteEvidence已有匹配供应总库存，Tracer却可跨过它。此实机结果不证明当前44具体库存，200库存仅用于明确标记的合成回归。
-- 实现/验证：不改直接classifier，不增加延迟/自动动作；只有expected/configured/known positive stock边界停止，上游路径/库存/运单证据保留，source_inventory_scope明确configured_route_supply_total。11 Core新例先4失败后全过，另2 MCP验证JSON透传与包内指南；1418项Debug/Release、完整Release零警告错误、源码64tools/1resource/42693字符指南及纯净stdout通过。新切片尚未冷部署/live。
+- 实现/验证：不改直接classifier，不增加延迟/自动动作；只有expected/configured/known positive stock边界停止，上游路径/库存/运单证据保留，source_inventory_scope明确configured_route_supply_total。11 Core新例先4失败后全过，另2 MCP验证JSON透传与包内指南；1418项Debug/Release、完整Release零警告错误、源码64tools/1resource/42693字符指南及纯净stdout通过。后续1420同批正常冷部署/同档恢复后，Bridge raw-9cbaff8f在26890053、实际源码MCP raw-4cf7d8f8在26949464均取得完整3工厂/600tick窗口；1106/1118/6003缺钛链保留聚合stock8和unproven dispatch，止于104:530→1657→102:44。MCP读前后player hash/revision不变，exit0/额外stdout0、0游戏写。
 - 限制：聚合stock不是所展示primarySupply的精确库存，不扣除预留；无/未知库存仍沿原有边追踪。正常在途/进展、无船和600tick stall原语义保持，不因本切片认定物流损坏或发货阈值已确认。
+- 原生反证：当前DLL的DetermineDispatch在供给发船/需求取货两分支都把起送阈值按供应槽max向下夹到max−1（不低于0），还要求count/remoteSupplyCount/totalSupplyCount同时大于阈值。因此“供应max小于船舱容量就永远不发船”不成立；VesselCapacity只是站内船位数，非GameHistoryData.logisticShipCarries。具体公式与其余条件见game-api-overseer；这次未取得全部瞬时发货条件，不据此调整配额或起送设置。
 - 复验触发：同批冷部署/同档恢复、同一钛链复读、多个供应站/已预留物品/起送量变化及诊断图修改。
 - 关联：IFX-056、ProductionRootCauseTracer、game-api-overseer、包内playbook。
-- 最近复验：2026-09-07（离线1418与源码MCP通过；本机新边界/实际库存及后续供给修复待验）。
+- 最近复验：2026-09-07（离线1418、后续1420同批部署及本机Bridge/真实源码MCP边界正例；供给修复与精确可分配库存仍未证明）。
 
 ### EXP-239 — 背包跨tick守恒核销必须包含机甲科研缓冲
 
@@ -3055,10 +3056,16 @@
 - 进一步拒绝：当前原生BuildTool_Inserter.CheckBuildConditions对belt↔device有5.5m直线和3.499跨格上限，两者独立；到761slot3现有中心距约5.49855m不等于插值端点合法。北向2NEW续接只验带通过，但中心距增至6.16/6.99m，未提交；唯一南向2.6m候选因旧2243占位拒绝（raw-c1eae27a），未继续扩散候选。不能拿中心距计算替代原生检查。
 - 审计：root raw-62c643a9的26723016完整24页2310实体保留全部2299旧身份/姿态/边；79详情加raw-4bf00ba1的3个明确补读，71旧配置均保持，11新带双向链/空载/自由两端一致。26723569独立pre0、J55/55 durable、healthy/Walk0/400MJ/三网满服务。背包科研退回按EXP-239单独核销，不声称库存每个字段都没变；accepted1保留，尚未另存。
 - 复验触发：任何端点失败、路线重设计、ID复用、后续保存恢复；再次施工前必须先落盘本规划反例并fresh核对。
+- 保存前复核：#2 f6fa863b在26879583同步正常保存，root raw-0e870d5b于26882602完整2310实体/82详情、26883158独立pre0核对所有结构/配置、背包/研究缓存保持，rev9/J55/55/healthy/400MJ/满供电。两项唯一accepted终态通过，计数2保留；保存持久化不证明两端可连接，跨冷部署恢复另验。Luna此前内联门禁误判无prepare/commit，精确表达式根因未定位，不把后续fresh保存成功当成客户端缺陷已经修复。
+- 恢复复核：#3 b89b6fbe唯一protected resume成功，原始终态起止gameTick均null，不补造；正常重存26879615。root raw-65bc888b的26890740完整2310对象/82详情及26891422独立pre0保留全部结构/配置和背包，J55/55 durable、rev1/healthy/Walk0/400MJ/空研究缓存。玩家坐标三个分量各负1个float ULP（x/y/z分别约0.000000477/0.000007629/0.000015259m），私有≤4ULP审计明确报告微差而非声称逐位不变，不修改产品hash或猜其原生原因。accepted3保留；油候选保存恢复通过，两端连接和供油仍未完成。
 - 关联：EXP-226/227/233/239、IFX-058、game-api-foundry、存档日记001。
 - 最近复验：2026-09-07（带施工与独立审计通过；两端连接/供油均未完成）。
 
 ## 修订记录
+
+- 2026-09-07：1420同批正常冷部署及同档protected resume#3后，root完整2310实体/82详情、库存/日记审计通过，accepted3保留。EXP-238凭Bridge26890053与实际源码MCP26949464的聚合stock8/发货未证明边界升级为有限范围validated；EXP-240油候选保存恢复通过，不代表连接或供油。当前flight只读预检因400MJ且无燃料低于600MJ预算被拒，无新accepted；先补给再决定正常跨行星排查。
+
+- 2026-09-07：EXP-001/002/239/240在冷部署前复核，1420完整Release/回归和b6757c3的CI34092710946通过；普通保存26879583及两写完整2310实体/82详情审计healthy/J55/55，计数2保留。仅允许正常关闭、同批安装、Steam一次启动和同档fresh protected resume；不把重启当新档或使未完成油候选消失。
 
 - 2026-09-07：新增EXP-239/240。root接管失败方案后核出科研缓存77蓝/40黄在建带前已转入背包，整件总量守恒，确切取回tick未观测；指南/描述与两项测试产品化，1420离线/完整Release/真实源码MCP通过。11带唯一accepted已全厂核销但两端预检均失败，未续铺或宣称供油完成；计数仍1。9419da8的Windows CI34089716513成功，其诊断因果修复仍待冷部署。
 

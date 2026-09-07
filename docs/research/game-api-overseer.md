@@ -2,13 +2,21 @@
 
 本文记录 v0.4 只读多行星监督链路采用的当前《戴森球计划》运行时接口。它补充 [game-api-m0.md](./game-api-m0.md)，不改变 owned-world、Unity 主线程或普通玩法写入边界。
 
+## 2026-09-07：运输船起送阈值的原生反证（只读研究）
+
+同一当前Assembly-CSharp（SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`）中，`StationComponent.DetermineDispatch(float,float,int,int,StationComponent[],FactoryProductionStat[],PlanetFactory[],GalaxyData,TrafficStatistics)`首先计算整数阈值`(shipCarries-1)*deliveryShips/100`。在本地供给发船和本地需求取货分支中，若供应槽max不大于阈值，会再把阈值夹到`max(0,supply.max-1)`；之后同时要求实际count、remoteSupplyCount、totalSupplyCount大于该阈值，而需求侧remoteDemandCount/totalDemandCount须大于0。因此不能只看到“source.max200小于船舱容量”就认定永远不能起送，更不能据此随意调高限额或降低起送设置。
+
+该检查仍受已生成的远端配对、优先锁、路径范围、翘曲/收集器条件、空闲船、站能量及实际行程成本约束；count不是可分配供给的替代。`GameHistoryData.logisticShipCarries`由当前配置初值、升级和存档维护，现有公开`VesselCapacity`只是站内船位数，不是这一载货量。本研究没有新增读取/写入，也没有取得此次远端站的全部瞬时发货条件；不把公式或历史库存写成当前未发货根因。后续先读已部署的新诊断边界与现场事实。
+
 ## 2026-09-07：有库存的物流边界不等于上游根因
 
-当前1405安装态在26654934的同tick bundle（raw-183242d2，完整3工厂、600tick窗口）把530/767/774缺钛链追到102:1矿机50/50输出缓冲，返回其confirmed output_blocked，途中1657→44的物流库存/运单证据却被最终finding替换。这个输出只证明矿机的局部症状，未单独证明44当前库存或未发货原因。
+原1405安装态在26654934的同tick bundle（raw-183242d2，完整3工厂、600tick窗口）把530/767/774缺钛链追到102:1矿机50/50输出缓冲，返回其confirmed output_blocked，途中1657→44的物流库存/运单证据却被最终finding替换。这个输出只证明矿机的局部症状，未单独证明44当前库存或未发货原因。
 
 源码复核：`GameStateReader.OverseerDiagnostics.CreateDiagnosticInputs` 已通过 `ApplyRouteEvidence` 复制 `SourceInventoryKnown/SourceInventoryCount`；后者是同一物料、匹配供需模式的所有候选供应站count之和，公开路径仅展示选中的一个供应站，不能当成该站库存或可分配量。原 `ProductionRootCauseTracer` 只要直接finding为material_shortage就递归，可能跨过已有库存，把其上游的满仓症状当成下游原因。本切片只在Core对“expected/configured/known positive stock”加因果停止边界，保留当前消费者缺料、精确物流端点和原始总库存，并明确dispatch_state=unproven；不读取新增DSP字段、不猜船舱/起送阈值、不新增远端详情或加载工厂。空/未知源、正常运单进展、无fleet和合格stall仍走原规则。
 
-合成回归先复现4个错误分支，再全部通过；新增11 Core+2 MCP后1418项Debug/Release、完整当前DSP Release零警告错误、真实源码stdio64 tools/1 resource/42693字符同批指南、exit0/额外stdout0通过。尚未部署这项修复；不能用此前的live症状或合成的200库存，宣称当前44确有200、发货阈值已确认或钛供应已修好。
+合成回归先复现4个错误分支，再全部通过；新增11 Core+2 MCP后1418项Debug/Release、完整当前DSP Release零警告错误、真实源码stdio64 tools/1 resource/42693字符同批指南、exit0/额外stdout0通过。随后1420同批开发DLL正常冷部署、protected resume重存26879615；Bridge raw-9cbaff8f在26890053取得完整3工厂/600tick窗口。真实源码MCP raw-4cf7d8f8在26949464（窗口26948865–26949464）再次对1106/1118/6003保留confirmed material_shortage、source_inventory=8、stocked_logistics_boundary、configured_route_supply_total及dispatch unproven，路径终止在104:530→1657→102:44；读取前后player hash和revision1保持，0游戏写、exit0/额外stdout0。远端102:1的50/50满缓冲仍是直接局部finding，不再冒充下游缺钛的已证实原因。
+
+以上是源码MCP对已安装开发DLL的本机只读实测，不是新ZIP/异机验证。8是匹配路线供应总库存，未扣预留，仍不等于路径展示的单个44精确库存；不得沿用历史或合成200库存、把阈值公式当成实际发货诊断，或宣称钛供应已经恢复。
 
 ## 验证基线
 

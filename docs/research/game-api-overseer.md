@@ -2,6 +2,14 @@
 
 本文记录 v0.4 只读多行星监督链路采用的当前《戴森球计划》运行时接口。它补充 [game-api-m0.md](./game-api-m0.md)，不改变 owned-world、Unity 主线程或普通玩法写入边界。
 
+## 2026-09-07：有库存的物流边界不等于上游根因
+
+当前1405安装态在26654934的同tick bundle（raw-183242d2，完整3工厂、600tick窗口）把530/767/774缺钛链追到102:1矿机50/50输出缓冲，返回其confirmed output_blocked，途中1657→44的物流库存/运单证据却被最终finding替换。这个输出只证明矿机的局部症状，未单独证明44当前库存或未发货原因。
+
+源码复核：`GameStateReader.OverseerDiagnostics.CreateDiagnosticInputs` 已通过 `ApplyRouteEvidence` 复制 `SourceInventoryKnown/SourceInventoryCount`；后者是同一物料、匹配供需模式的所有候选供应站count之和，公开路径仅展示选中的一个供应站，不能当成该站库存或可分配量。原 `ProductionRootCauseTracer` 只要直接finding为material_shortage就递归，可能跨过已有库存，把其上游的满仓症状当成下游原因。本切片只在Core对“expected/configured/known positive stock”加因果停止边界，保留当前消费者缺料、精确物流端点和原始总库存，并明确dispatch_state=unproven；不读取新增DSP字段、不猜船舱/起送阈值、不新增远端详情或加载工厂。空/未知源、正常运单进展、无fleet和合格stall仍走原规则。
+
+合成回归先复现4个错误分支，再全部通过；新增11 Core+2 MCP后1418项Debug/Release、完整当前DSP Release零警告错误、真实源码stdio64 tools/1 resource/42693字符同批指南、exit0/额外stdout0通过。尚未部署这项修复；不能用此前的live症状或合成的200库存，宣称当前44确有200、发货阈值已确认或钛供应已修好。
+
 ## 验证基线
 
 - 游戏版本：`0.10.34.28529`

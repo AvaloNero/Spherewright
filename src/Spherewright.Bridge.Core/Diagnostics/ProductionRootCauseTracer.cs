@@ -71,7 +71,36 @@ public static class ProductionRootCauseTracer
         var missingMaterial = input.Inputs.FirstOrDefault(material =>
             material.RequiredPerCycle > 0
             && material.AvailableCount < material.RequiredPerCycle);
-        if (missingMaterial is null || missingMaterial.UpstreamProducers.Count == 0)
+        if (missingMaterial is null)
+        {
+            return finding;
+        }
+
+        if (missingMaterial.LogisticsExpected
+            && missingMaterial.LogisticsConfigured
+            && missingMaterial.SourceInventoryKnown
+            && missingMaterial.SourceInventoryCount > 0)
+        {
+            // Stock at a configured supply endpoint is a causal boundary, not
+            // proof that its producer explains the consumer's missing input.
+            // It may be reserved or below a native dispatch threshold. Preserve
+            // the observed shortage and route evidence without inventing a
+            // transport fault or blaming a full upstream extractor buffer.
+            AddTraceStopReason(finding, "stocked_logistics_boundary");
+            finding.Evidence.Add(new OverseerEvidenceSnapshot
+            {
+                Metric = "source_inventory_scope",
+                TextValue = "configured_route_supply_total",
+            });
+            finding.Evidence.Add(new OverseerEvidenceSnapshot
+            {
+                Metric = "logistics_dispatch_state",
+                TextValue = "unproven",
+            });
+            return finding;
+        }
+
+        if (missingMaterial.UpstreamProducers.Count == 0)
         {
             return finding;
         }

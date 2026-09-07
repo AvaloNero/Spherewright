@@ -372,7 +372,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns one cursor-bound, same-game-tick diagnostic bundle that joins bounded production rates and root-cause findings with per-planet power and logistics summaries plus global research. The public allowlist schema excludes save identity, filesystem paths, auth credentials, and action plan credentials. It does not create or load remote factories.")]
+    [Description("Returns one cursor-bound, same-game-tick diagnostic bundle that joins bounded production rates and root-cause findings with per-planet power and logistics summaries plus global research. A stocked_logistics_boundary retains consumer shortage and aggregate source inventory without claiming dispatch failure or an upstream producer cause. The public allowlist schema excludes save identity, filesystem paths, auth credentials, and action plan credentials. It does not create or load remote factories.")]
     public static async Task<CallToolResult> GetOverseerDiagnosticBundleAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,

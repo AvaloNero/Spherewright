@@ -3019,7 +3019,22 @@
 - 关联：EXP-224/225/236、IFX-055、存档日记001。
 - 最近复验：2026-09-07（原始唯一终态、铁/带差量及完整十写审计通过）。
 
+### EXP-238 — 根因追踪到有库存的物流边界应保留缺料与未知发货证据
+
+- 状态：`observed`
+- 日期：2026-09-07。
+- 适用范围：Overseer现有同tick复制数据、Core根因递归与公开finding；不新增DSP读取/游戏写。
+- 当前结论：供应站存在库存不证明可分配、达到起送量或能立即送达；缺料消费者的上游矿机满仓也可能是运输背压的结果。若configured route的known source stock>0，先保留消费者material_shortage，停止递归并标出stocked_logistics_boundary和unproven dispatch，不能将更上游症状当成已确认因果。
+- 直接依据：raw-183242d2的26654934完整3工厂bundle以102:1的50/50输出满解释104:530/767/774缺钛，未保留中间供给库存/运单；源码ApplyRouteEvidence已有匹配供应总库存，Tracer却可跨过它。此实机结果不证明当前44具体库存，200库存仅用于明确标记的合成回归。
+- 实现/验证：不改直接classifier，不增加延迟/自动动作；只有expected/configured/known positive stock边界停止，上游路径/库存/运单证据保留，source_inventory_scope明确configured_route_supply_total。11 Core新例先4失败后全过，另2 MCP验证JSON透传与包内指南；1418项Debug/Release、完整Release零警告错误、源码64tools/1resource/42693字符指南及纯净stdout通过。新切片尚未冷部署/live。
+- 限制：聚合stock不是所展示primarySupply的精确库存，不扣除预留；无/未知库存仍沿原有边追踪。正常在途/进展、无船和600tick stall原语义保持，不因本切片认定物流损坏或发货阈值已确认。
+- 复验触发：同批冷部署/同档恢复、同一钛链复读、多个供应站/已预留物品/起送量变化及诊断图修改。
+- 关联：IFX-056、ProductionRootCauseTracer、game-api-overseer、包内playbook。
+- 最近复验：2026-09-07（离线1418与源码MCP通过；本机新边界/实际库存及后续供给修复待验）。
+
 ## 修订记录
+
+- 2026-09-07：新增EXP-238，复核Overseer物理追踪不等于因果解释；以已有物流库存作保守递归边界，不宣称可分配量、船舱容量/发货原因或新实机成功。当前正常施工与accepted审计另见存档日记，纯Core代码变更不计游戏写。
 
 - 2026-09-07：EXP-236经同批部署/恢复、真实MCP正负预检和24m正常Move升级为有限范围validated；EXP-233水链拓扑、EXP-235预约/1211删除已跨26508578保存→26508610恢复保持，持续水流/永久油钛金刚石供给仍需另验。新增EXP-237纠正调用层、物品ID及递归配方估时/材料的证据层级。十个唯一accepted终态经root原始复核，26615174完整2299身份/姿态/拓扑与71配置保持，库存仅预期净铁+240/带+60、pre0/J55/55/healthy/满供电。落盘后计数10→0；未以提前六/七写审计或重启清零，未把无commit的预检拒绝计为游戏写。
 

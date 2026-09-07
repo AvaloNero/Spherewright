@@ -806,6 +806,68 @@ public sealed class SpherewrightToolsTests
         Assert.Equal("cursor-bundle", bridge.LastOverseerDiagnosticBundleRequest?.Cursor);
     }
 
+    [Fact]
+    public async Task OverseerBundlePreservesStockedLogisticsBoundaryEvidence()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            DiagnosticBundleSnapshot = new OverseerDiagnosticBundleSnapshot
+            {
+                Planets = new List<OverseerDiagnosticBundlePlanetSnapshot>
+                {
+                    new()
+                    {
+                        PlanetId = 104,
+                        Production = new List<ProductionRateSnapshot>
+                        {
+                            new()
+                            {
+                                ItemId = 1106,
+                                Findings = new List<OverseerFindingSnapshot>
+                                {
+                                    new()
+                                    {
+                                        Kind = OverseerFindingKinds.MaterialShortage,
+                                        Evidence = new List<OverseerEvidenceSnapshot>
+                                        {
+                                            new() { Metric = "source_inventory", NumericValue = 200 },
+                                            new() { Metric = "source_inventory_scope", TextValue = "configured_route_supply_total" },
+                                            new() { Metric = "logistics_dispatch_state", TextValue = "unproven" },
+                                            new() { Metric = "upstream_trace_stop_reason", TextValue = "stocked_logistics_boundary" },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        };
+
+        var result = await SpherewrightTools.GetOverseerDiagnosticBundleAsync(bridge, "session-boundary", new[] { 1106 });
+
+        Assert.False(result.IsError);
+        var finding = result.StructuredContent!.Value.GetProperty("result").GetProperty("planets")[0]
+            .GetProperty("production")[0].GetProperty("findings")[0];
+        Assert.Equal(OverseerFindingKinds.MaterialShortage, finding.GetProperty("kind").GetString());
+        var evidence = finding.GetProperty("evidence");
+        Assert.Equal(200, evidence[0].GetProperty("numericValue").GetDouble());
+        Assert.Equal("configured_route_supply_total", evidence[1].GetProperty("textValue").GetString());
+        Assert.Equal("unproven", evidence[2].GetProperty("textValue").GetString());
+        Assert.Equal("stocked_logistics_boundary", evidence[3].GetProperty("textValue").GetString());
+    }
+
+    [Fact]
+    public void PackagedPlaybookDistinguishesStockFromDispatchAndCausalProof()
+    {
+        var playbook = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("stocked_logistics_boundary", playbook, StringComparison.Ordinal);
+        Assert.Contains("configured_route_supply_total", playbook, StringComparison.Ordinal);
+        Assert.Contains("logistics_dispatch_state=unproven", playbook, StringComparison.Ordinal);
+        Assert.Contains("not available/unreserved stock", playbook, StringComparison.Ordinal);
+        Assert.Contains("before changing logistics or expanding a mine", playbook, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public async Task PrepareSelectResearch_MapsDedicatedSelectionHash(bool prioritize)
@@ -1455,6 +1517,8 @@ public sealed class SpherewrightToolsTests
 
         public GetOverseerDiagnosticBundleRequest? LastOverseerDiagnosticBundleRequest { get; private set; }
 
+        public OverseerDiagnosticBundleSnapshot? DiagnosticBundleSnapshot { get; set; }
+
         public Task<BridgeCallResult<BridgeStatus>> GetBridgeStatusAsync(CancellationToken cancellationToken)
         {
             return Task.FromResult(_result);
@@ -1985,7 +2049,7 @@ public sealed class SpherewrightToolsTests
             LastSessionId = sessionId;
             LastOverseerDiagnosticBundleRequest = request;
             return Task.FromResult(BridgeCallResult<OverseerDiagnosticBundleSnapshot>.Succeeded(
-                new OverseerDiagnosticBundleSnapshot
+                DiagnosticBundleSnapshot ?? new OverseerDiagnosticBundleSnapshot
                 {
                     SessionId = sessionId,
                     RequestedItemIds = request.ItemIds.ToList(),

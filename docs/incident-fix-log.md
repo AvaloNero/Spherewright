@@ -600,3 +600,11 @@
 - 根因：MCP公开参数与Bridge内部DTO并非同一形状；这是开发客户端错误，不是新路线再次卡住。
 - 修复与验证：root提供精确target={x,y,z}及原有hash绑定；Luna fresh预检后55c910d9唯一Move成功，终态和Walk读回齐备。只纠正调用方，没有更改模型/游戏状态准入、重放已接受的动作或改动公共MCP工具。关联EXP-237。
 - 状态：`caller_corrected_and_locally_verified`；通用参数诊断产品化不在此条声称完成。
+
+## IFX-056 — 递归根因越过物流库存，丢掉未发货的因果边界
+
+- 首见：2026-09-07，raw-183242d2的26654934同tick诊断将母星缺钛递归到远端矿机满50/50；它证明局部满缓冲，未展示供应站库存或证明未发货原因。
+- 根因：Plugin已复制匹配供给总库存，但Core对material_shortage不区分中间有/无库存，直接采用更深finding并丢弃当前material evidence；合成有库存200/1的回归证明会错误跨越这道边界。
+- 修复：保留消费者confirmed material_shortage和已有物流证据，以stocked_logistics_boundary停止递归，并明确供给总库存非可分配量、dispatch unproven。不把它改成confirmed logistics_blocked，不改变空/未知源追踪、正常运单/进展、无fleet及600tick stall规则，也不增加游戏读取/写入。
+- 验证：新增11 Core+2 MCP后1418项Debug/Release和完整Release通过，真实源码MCP指南与64工具/1资源一致、stdout纯净。当前运行仍1405，修复部署与同档钛链新读回尚待；不能把测试中的200写成live库存。
+- 状态：`fixed_offline_live_pending`；关联EXP-238。

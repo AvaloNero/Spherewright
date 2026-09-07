@@ -3,6 +3,8 @@
 更新时间：2026-09-08（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-08 / 禁止覆盖旧带的负例：6d99f0e已推送/CI成功。主会话仅预检2532向北两NEW的source-cover，raw-249a2a5d于30092989返回belt_path_existing_overlap/object992，无commit。raw-b02a108e在30094568–30094586复读证明992确实处于下一北向格，原992的993→992→991保留；不是2532与992重叠，也不是应忽略的cover源点。直延候选停止，不删掉sourceObjectId绕过检查、不回收旧路、不重试该位置。此前20新带与accepted7/revision23/主档29533533保持。最小blocker现在是旧带横穿了满足760朝向的接续位置；主会话必须结合已有双belt分拣器跨线能力重新制定有界方案，不能在未证明最终连接前继续延长整路。
+
 2026-09-08 / 油路末端朝向负例与规划停止点：fe8fb78已推送、CI成功。raw-57409ec7在30076846起只读检查两实际端点；2532→760被BUILD_CONNECTION_INVALID拒绝，exact TooSkew、native_single_belt搜索为no_finite_projection（20 seeds/4 admitted/0 projections/0 candidateChecks），不是OutOfReach或缺料。707→2551则以exact_slots、源slot6、filter1114、1分拣器预算通过，但没有提交。主会话先前只证明整条带路放置，未把终端朝向纳入完整施工方案；这复现了既有油路反例与包内指南，不是需要放宽原生角度的新Plugin缺陷。
 
 raw-473b8b92于30083158核对revision23/accepted7、5带/3分拣器、J56/56/Walk0/400MJ/healthy保持，无新写。禁止重试2532→760、无源头先行填充或整路重建。下一步交主会话设计明确的最小接续，先用实际槽位/未来原生带点核算朝向、跨度及材料，再fresh完整预检；若需在成功尾端增边，也必须作为独立source-cover计划，保留原实体、旧边、货物和逐对象扣料证据，不能把旧free路径重放。主档仍29533533，炼油/黄糖持续产出未恢复。

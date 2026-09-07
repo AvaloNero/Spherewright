@@ -830,6 +830,60 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("cannot clear a jam", description);
     }
 
+    [Theory]
+    [InlineData(600, 580, 0, 20)]
+    [InlineData(0, 20, 20, 0)]
+    public async Task TransferTerminalPreservesSameTickBilateralEvidence(
+        int storageBefore, int storageAfter, int playerBefore, int playerAfter)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            ActionResult = new ActionResultSnapshot
+            {
+                ActionId = "transfer-proof", ActionKind = NormalActionKinds.Transfer,
+                State = NormalActionStates.Completed, Terminal = true, Succeeded = true,
+                StartedAtGameTick = 100, CompletedAtGameTick = 100,
+                TargetObjectId = 753, TargetItemId = 1000, RequestedCount = 20,
+                BeforeTargetAmount = storageBefore, AfterTargetAmount = storageAfter,
+                ItemDeltas = new List<ActionItemDelta>
+                {
+                    new() { ItemId = 1000, BeforeCount = playerBefore, AfterCount = playerAfter, Delta = playerAfter - playerBefore },
+                },
+            },
+        };
+        var result = await SpherewrightTools.GetActionResultAsync(bridge, "transfer-proof", CancellationToken.None);
+        var proof = result.StructuredContent!.Value.GetProperty("result");
+        Assert.True(proof.GetProperty("terminal").GetBoolean());
+        Assert.True(proof.GetProperty("succeeded").GetBoolean());
+        Assert.Equal(100, proof.GetProperty("completedAtGameTick").GetInt64());
+        Assert.Equal(storageBefore, proof.GetProperty("beforeTargetAmount").GetInt32());
+        Assert.Equal(storageAfter, proof.GetProperty("afterTargetAmount").GetInt32());
+        var player = proof.GetProperty("itemDeltas")[0];
+        Assert.Equal(playerBefore, player.GetProperty("beforeCount").GetInt32());
+        Assert.Equal(playerAfter, player.GetProperty("afterCount").GetInt32());
+        Assert.Equal(0, storageAfter - storageBefore + player.GetProperty("delta").GetInt32());
+    }
+
+    [Fact]
+    public void TransferGuideSeparatesTerminalConservationFromLaterLogistics()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.CommitTransferAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        foreach (var field in new[] { "beforeTargetAmount", "afterTargetAmount", "itemDeltas", "completedAtGameTick" })
+            Assert.Contains(field, description);
+        Assert.Contains("do not require cross-tick equality", description);
+        Assert.Contains("never replay", description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("transfer uses `storageEntityId`", guide);
+        Assert.Contains("ordinary transfer's terminal result", guide);
+        Assert.Contains("600 -> 580", guide);
+        Assert.Contains("later581", guide);
+        Assert.Contains("not a sustained-supply baseline", guide);
+        Assert.Contains("original game-tick deadline", guide);
+        Assert.Contains("later zero-production window does not prove no earlier production", guide);
+    }
+
     [Fact]
     public async Task ConfigureBuildingTool_MapsSorterFilterMode()
     {

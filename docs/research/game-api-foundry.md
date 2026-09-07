@@ -7,6 +7,12 @@
 - Read-only ILSpy inspection of the local assembly; no decompiled code or game binaries are redistributed.
 - Plugin reads occur only on the Unity main thread after the existing exact-owned-session/local-planet check. Core receives copied DTOs, not game objects.
 
+## Existing demand-aware storage input recheck (2026-09-07)
+
+Reverified EXP-219 against the same Assembly-CSharp hash: `FactorySystem.SetInserterInsertTarget(int,int,int)` sets `careNeeds` for an assembler target. `InserterComponent.InternalUpdate(PlanetFactory,int[][],AnimData[],float)` passes that target's six-entry needs array to `PlanetFactory.PickFrom(uint,int,int,int[],out byte,out byte)`. Its storage branch uses `StorageComponent.TakeTailItems(ref int,ref int,int[],out int,bool)`, which accepts a zero filter but still requires the selected item to match a current need. This does not apply to an arbitrary belt/storage destination, and a newly changed filter does not erase already-held cargo.
+
+At ticks25879889–25879930, existing763 is unfiltered and empty on761→760, while764 is empty and oil-filtered. Consumer760 has plastic4/oil2/water0;753 holds600 water and761 has a reserved but empty water slot. Root's normal `prepare_transfer` for20 water753→player succeeds within the actual80m build area (54.2847m), with unchanged player hash at25879937→25879955. The existing adapter uses `StorageComponent.TakeItem` and `AddItemStacked`, checks exact before/after bilateral counts and inc handling, and never fills an assembler directly. A proposed one-time two-transfer seed only diagnoses the last hop; it does not prove sustained water supply or authorize repeated manual replenishment. No new DSP call path or gameplay write is introduced by this recheck.
+
 ## Non-removing source-belt cover reuse (2026-09-07;1309 source, live pending)
 
 Follow-up before any cover commit:1309 is now cold-installed, exact-primary resumef054d5b1 succeeded/resaved25636692, and2269's full native source-cover prepare returned exactly3 NEW points/3 items.754's source-centre ambiguity and752's occupied sole output reject, with unchanged player/endpoints and0 prebuilds. No source-cover construction has been attempted. Current-DLL inspection then identified the completion-rotation issue below;1324 source corrects it before gameplay execution.

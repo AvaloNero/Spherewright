@@ -674,7 +674,7 @@ public static partial class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Moves the prepared exact count through StorageComponent's normal UI business operations and proves equal-and-opposite container deltas.")]
+    [Description("Moves the prepared exact count through StorageComponent's normal UI business operations and proves equal-and-opposite container deltas. Poll the action to terminal. For a successful transfer, beforeTargetAmount/afterTargetAmount are the storage counts and itemDeltas are the player's changes at completedAtGameTick. Check these same-tick deltas, then inspect later logistics separately: an active storage may already have received or sent items, so do not require cross-tick equality. A later stock difference or reporting error does not undo the terminal result; never replay an accepted transfer. Missing proof or an unexplained flow still requires reconciliation, not assumed conservation.")]
     public static async Task<CallToolResult> CommitTransferAsync(
         IBridgeClient bridgeClient,
         string sessionId,
@@ -1183,7 +1183,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns the current or terminal state of an action accepted by this Plugin process. It does not repeat the action.")]
+    [Description("Returns the current or terminal state of an action accepted by this Plugin process. It does not repeat the action. Retain the terminal result before formatting later observations. Transfer beforeTargetAmount/afterTargetAmount and itemDeltas describe the synchronous completedAtGameTick boundary, not a later warehouse inventory after normal logistics. A host reporting error does not authorize replaying an accepted action.")]
     public static async Task<CallToolResult> GetActionResultAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Action ID returned by a Spherewright commit.")] string actionId,

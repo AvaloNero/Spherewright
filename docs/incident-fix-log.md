@@ -479,6 +479,8 @@
 
 ## IFX-044 — 成功解禁后正常投递，被跨tick库存相等断言误判为失败
 
+2026-09-07普通transfer复现及提示补齐：c16e3f7a在25899642的成功终态证明仓水600→580、玩家0→20；晚20tick仓581令Luna本地跨tick断言误停，未重放。root核原始响应后交回执行第二段479a0b57，终态仓0→20/player20→0；晚12tick仓19正确单列为自然取料。原transfer DTO已有即时beforeTargetAmount/afterTargetAmount/itemDeltas，问题是外部脚本未正确使用且工具/指南对此不明确。新增MCP描述、包内说明与直接Bridge的storageEntityId更正，3项回归、1327项Debug/Release及完整Release和实际源码MCP指南握手通过。未修改原生扣料、状态hash或幂等；无新Plugin安装/最终包声明。EXP-224持续复核，不重复创建首次事故编号。
+
 - 首见：2026-09-07，1066安装态761的set-bans0在25011091成功，稍后库存氢1→4、原三只held氢正常入仓，Luna的外部断言却要求库存不变。
 - 根因：Plugin已在原生配置调用内证明逐格保全，但公开terminal没有固定该瞬间的结构化配置/库存；调用者把后续fresh inspect当成同一时刻。已接受动作本身没有失败。
 - 处置：主会话逐raw核对terminal、设置/连接/玩家和三只原持货去向后交回Luna继续，不重放、不把本地异常变成隔离或换档。

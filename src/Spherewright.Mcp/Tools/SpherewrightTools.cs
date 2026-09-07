@@ -67,7 +67,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns a privacy-gated game-session snapshot. Before the first gameplay action in a session, read MCP resource spherewright://agent/playbooks/opening-movement-v1. Save, planet, and factory metadata are returned only for an owned world.")]
+    [Description("Returns a privacy-gated game-session snapshot. Before the first gameplay action in a session, read MCP resource spherewright://agent/playbooks/opening-movement-v1. At the main menu, gameLoaded=false is expected before protected resume. restartResumeAvailable advertises a ticket, not final native menu readiness: fresh prepare_resume_owned_game checks that readiness. Do not wait for a loaded world before calling prepare. Save, planet, and factory metadata are returned only for an owned world.")]
     public static async Task<CallToolResult> GetSessionStateAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Cancellation token supplied by the MCP host.")] CancellationToken cancellationToken)
@@ -1371,7 +1371,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Validates a protected one-time ticket and freshness metadata for DSP's fixed LastExit slot. If a failed shutdown did not refresh LastExit, it can fall back only to the exact fresh primary owned save whose high-entropy name is already sealed inside that ticket. It never enumerates saves, accepts a save name, or loads anything during prepare.")]
+    [Description("Prepare from an idle main menu: gameLoaded=false is expected, not a load failure. Use the current restartResumeAvailable/restartResumeToken, then let prepare verify native preload/menu/no-loader readiness, ticket, source header and durable Journal checkpoint. Do not wait for gameLoaded=true before prepare. Healthy planned restarts select only the exact primary sealed in the ticket; quarantine recovery alone selects a qualifying fixed LastExit. It never enumerates saves, accepts a save name, consumes the ticket or loads anything during prepare.")]
     public static async Task<CallToolResult> PrepareOwnedWorldResumeAsync(
         IBridgeClient bridgeClient,
         string resumeToken,
@@ -1390,7 +1390,7 @@ public static partial class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Loads DSP's fresh fixed LastExit slot, or after a failed shutdown only the exact fresh primary owned save sealed inside the protected ticket, through DSPGame.StartGame. Adoption still requires the ticket's embedded high-entropy owned name, minimum tick, planet, and peaceful state to match; sandbox state and resource multiplier are preserved and reported but do not gate adoption.")]
+    [Description("Healthy planned restarts load only the exact ticket-bound primary through DSPGame.StartGame. Quarantine recovery alone may load the qualifying fixed LastExit. Both revalidate native menu readiness, source header/minimum tick and durable Journal checkpoint before loading; adoption must prove the embedded owned identity, planet, peaceful state and Journal continuity. Sandbox state/resource multiplier are reported, not gates. Poll the unique action to terminal, then fresh-read gameLoaded=true, owned/saved/healthy state, save tick and durable Journal. Never replay an accepted resume or choose another save to satisfy a mistaken readiness wait.")]
     public static async Task<CallToolResult> CommitOwnedWorldResumeAsync(
         IBridgeClient bridgeClient,
         string planToken,

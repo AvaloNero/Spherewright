@@ -109,6 +109,8 @@ All recovery attempts use the existing `prepare_move` / `commit_move` flow. Neve
 
 ## Restart and interplanetary flight
 
+- At the main menu, `gameLoaded=false` is expected; do not wait for `gameLoaded=true` before prepare. `restartResumeAvailable` advertises the protected current ticket, not final native readiness. Use that ticket in fresh `prepare_resume_owned_game`, which checks native preload/menu/no-loader readiness plus the exact header and durable Journal checkpoint without loading or consuming it. Only an actual not-ready rejection calls for bounded waiting. After the accepted resume reaches terminal, require fresh `gameLoaded=true`, owned/saved/healthy state, the saved tick and durable Journal. Do not restart or choose another world because the pre-resume menu is unloaded. Healthy planned restarts use only the ticket-bound primary; quarantine recovery alone uses a qualifying fixed LastExit.
+
 - Protected resume and flight-checkpoint capabilities are not save pickers. Use only the currently advertised token for the exact owned world and flow; never preserve or revive an older capability after newer progress.
 - Before actual interplanetary flight, ensure core energy and normal fuel satisfy prepare, then let the flight commit create and verify its dedicated checkpoint. Poll through stable landing. Reload that checkpoint only when the matching flight reports `recovery_required` or the documented interrupted-flight condition.
 - A failed retry may reload the same matching checkpoint again. After stable arrival, confirm the checkpoint capability disappears and normally save the primary world so retirement is durable before starting unrelated production work.

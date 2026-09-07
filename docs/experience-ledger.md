@@ -2961,7 +2961,22 @@
 - 关联：EXP-228/229/230、IFX-052、BeltPathRoutingPolicy、game-api-foundry。
 - 最近复验：2026-09-07（1370已冷部署并同档恢复；只读live正负例通过，施工待验，当前窗accepted4保留）。
 
+### EXP-234 — 主菜单恢复的前置条件不是已加载世界
+
+- 状态：`validated`
+- 日期：2026-09-07
+- 适用范围：当前 protected resume 的 MCP 调用指引及菜单前置检查；不是自动选择或载入任意存档。
+- 当前结论：菜单 `gameLoaded=false` 正常，`restartResumeAvailable=true` 只表示票据可用；用当前票据 fresh prepare，由 Plugin 检查 preload、菜单、无 loader、精确源 header 和 Journal。仅实际未就绪拒绝后有界等待。accepted 后轮询唯一终态，再要求 fresh `gameLoaded=true`、owned/saved/healthy、保存 tick 与 durable Journal，不能颠倒恢复前后条件。
+- 直接证据：Luna 因错误的 loaded 条件空等90秒，没有 prepare/commit 或票据消费。root 实际 prepare 在菜单通过；Luna 随后 fresh resume11bac49a 成功重存26074553，root 完整2283对象/47详情审计保持。不是游戏启动失败、坏档或需要重开。
+- 实现/验证：session、prepare/commit 的公开工具描述与包内 playbook 同步，且纠正旧 LastExit-first 说明：健康计划重启只用 ticket-bound primary，隔离才走符合条件的 fixed LastExit。未改 Plugin 恢复算法、所有权、哈希、幂等或票据消费。两项新 MCP 回归后1372项 Debug/Release（36/1264/72）通过，完整 Release 零警告/错误；实际源码 MCP64工具/1资源、41250字符同批指南、exit0、额外stdout0。
+- 限制或反例：票据存在不保证菜单/文件/Journal 就绪；不得跳过 fresh prepare、把测试当作新的恢复动作，或将被隔离的世界宣称健康。
+- 复验触发：菜单判定、ticket source selector、恢复 DTO/工具描述或包内指南变更。
+- 关联：EXP-001/002、IFX-006/053、OwnedWorldResumeSourceSelector、TestWorldCoordinator.ValidateMainMenuReady。
+- 最近复验：2026-09-07（真实菜单 prepare/同档恢复正例与1372离线/source-MCP指南核验；无新增玩法写入）。
+
 ## 修订记录
+
+- 2026-09-07：新增EXP-234/IFX-053，将本轮恢复等待错误产品化为恢复前后条件提示，并修正MCP仍残留的LastExit优先文案。1372项离线回归与实际源码MCP指南读取通过；Plugin仍为已验证1370同批运行，不为说明文字热部署或额外重启。accepted4不因指南修改归零。
 
 - 2026-09-07：EXP-233同1370冷部署取得只读live正负例：753/761各free slot2外4m的15NEW geodesic route通过完整stage1且回显匹配；显式增加旧source绑定返回INVALID_REQUEST/无plan。两者前后玩家/仓endpoint hash不变、pre0、rev1，不能当作已施工或持续供水。#4同档resume11bac49a重存26074553；root完整2283/47详情和四个原始终态审计通过，accepted4保留。Luna先前把菜单gameLoaded=false误当作未就绪，未进行prepare；root真实prepare确认允许恢复后纠正再执行，票据未误消费、未重启或换档。说明与包内提示需补恢复前后条件，不能重复等待相反状态。
 

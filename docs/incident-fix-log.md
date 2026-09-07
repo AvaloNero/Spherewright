@@ -573,3 +573,12 @@
 - 验证：43项新增回归后1370 Debug/Release与完整Release零警告错误；实际源码MCP64tools/1resource/40458字符指南和stdout通过。当前1324游戏正常保存26074522并完成root三写/完整2283结构审计，尚待冷部署与有界现场正负例/施工/持续供给验证。
 - 后续实机：1370同批正常冷部署、同档resume11bac49a重存26074553；753/761外侧15NEW方案原生stage1通过，增加source绑定负例INVALID_REQUEST/无plan。两次前后player/endpoint hash和pre0/rev1保持；还没有施工或两端接线/持续供水证据。
 - 状态：`native_geodesic_offline_and_live_prepare_verified_construction_pending`；关联EXP-233。
+
+## IFX-053 — 恢复前等待已加载世界，混淆菜单前置与恢复后证明
+
+- 首见：2026-09-07，1370冷启动后 Luna 在菜单空等90秒；没有 prepare/commit，没有消费票据。该等待错误不是游戏故障或存档损坏。
+- 根因：外部流程错误要求 `gameLoaded=true` 才准备恢复；公开描述没有区分前后阶段，并残留已被实现替换的 LastExit-first/fallback 说明。
+- 修复：session 与恢复工具描述、包内 playbook 明确菜单 `gameLoaded=false` 正常，票据可用不等于 native ready；由 fresh prepare 检查 preload/菜单/无loader/header/Journal。终态后才要求已加载且 owned/saved/healthy。健康重启精确 primary 与隔离 LastExit 分开说明，不改变实际恢复算法或放宽检查。
+- 实机证据：root fresh prepare 通过，Luna 新计划恢复11bac49a成功并重存26074553；完整2283实体/47详情、Journal55/55与库存保持，没有重复恢复、新档或任意选档。
+- 自动验证：两个新MCP测试覆盖未加载菜单可调用prepare及指南的前后阶段/源选择说明，指导文本断言先失败后通过。1372项Debug/Release与完整Release零警告错误；源码64工具/1资源、41250字符指南一致且stdout纯净。此为既有实机原因纠正和新文案离线证明，不冒充再次实机恢复。
+- 状态：`resume_guidance_fixed_offline_with_existing_local_resume_evidence`；关联EXP-234。

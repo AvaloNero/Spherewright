@@ -24,6 +24,45 @@ namespace Spherewright.Mcp.Tests;
 
 public sealed class SpherewrightToolsTests
 {
+    [Fact]
+    public async Task MainMenuResumeIsPreparedBeforeAnyOwnedWorldIsLoaded()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            SessionSnapshot = new SessionState
+            {
+                BridgeConnected = true, GameLoaded = false, RestartResumeAvailable = true, RestartResumeToken = "ticket",
+            },
+        };
+        var state = await SpherewrightTools.GetSessionStateAsync(bridge, CancellationToken.None);
+        Assert.False(state.StructuredContent!.Value.GetProperty("result").GetProperty("gameLoaded").GetBoolean());
+        Assert.True(state.StructuredContent!.Value.GetProperty("result").GetProperty("restartResumeAvailable").GetBoolean());
+        var prepare = await SpherewrightTools.PrepareOwnedWorldResumeAsync(bridge, "ticket", CancellationToken.None);
+        Assert.False(prepare.IsError);
+        Assert.Equal("ticket", bridge.LastResumePrepareRequest!.ResumeToken);
+    }
+
+    [Fact]
+    public void MainMenuGuideSeparatesPreResumeReadinessFromPostAdoptionProof()
+    {
+        foreach (var name in new[] { nameof(SpherewrightTools.GetSessionStateAsync), nameof(SpherewrightTools.PrepareOwnedWorldResumeAsync) })
+        {
+            var method = typeof(SpherewrightTools).GetMethod(name)!;
+            var description = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+                typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+            Assert.Contains("gameLoaded=false", description);
+            Assert.Contains("restartResumeAvailable", description);
+        }
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("do not wait for `gameLoaded=true` before prepare", guide);
+        Assert.Contains("native preload/menu/no-loader", guide);
+        var commit = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.CommitOwnedWorldResumeAsync))!;
+        var commitDescription = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(commit,
+            typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        Assert.Contains("Healthy planned restarts load only the exact ticket-bound primary", commitDescription);
+        Assert.Contains("Quarantine recovery alone", commitDescription);
+    }
+
     [Theory]
     [InlineData(null, true)]
     [InlineData(BeltPathModes.NativeGrid, true)]
@@ -1338,6 +1377,8 @@ public sealed class SpherewrightToolsTests
         public BridgeCallResult<ListAssemblersResult>? ListResult { get; set; }
 
         public ActionResultSnapshot? ActionResult { get; set; }
+        public SessionState? SessionSnapshot { get; set; }
+        public PrepareOwnedWorldResumeRequest? LastResumePrepareRequest { get; private set; }
 
         public string? LastSessionId { get; private set; }
 
@@ -1386,7 +1427,7 @@ public sealed class SpherewrightToolsTests
 
         public Task<BridgeCallResult<SessionState>> GetSessionStateAsync(CancellationToken cancellationToken)
         {
-            return Task.FromResult(BridgeCallResult<SessionState>.Succeeded(new SessionState
+            return Task.FromResult(BridgeCallResult<SessionState>.Succeeded(SessionSnapshot ?? new SessionState
             {
                 BridgeConnected = true,
                 GameVersion = "0.10.34.28529",
@@ -1915,6 +1956,7 @@ public sealed class SpherewrightToolsTests
             PrepareOwnedWorldResumeRequest request,
             CancellationToken cancellationToken)
         {
+            LastResumePrepareRequest = request;
             return Task.FromResult(BridgeCallResult<PreparedOwnedWorldResumePlan>.Succeeded(new PreparedOwnedWorldResumePlan
             {
                 Prepared = true,

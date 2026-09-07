@@ -6,6 +6,8 @@
 
 ## 结论与证据边界
 
+2026-09-07 / 菜单恢复指南修复：EXP-234/IFX-053记录本轮误等loaded状态的原因。主会话把“菜单未加载→fresh prepare检查真实就绪→commit唯一终态→已加载/owned/Journal验证”写进公开MCP与包内指南，同时纠正过期LastExit优先文案。1372项Debug/Release、完整Release零警告错误、源码MCP64tools/1resource/41250字符指南一致通过；没有新增Plugin行为或游戏写，运行态仍1370，accepted4保留。该修复不计入供水或版本玩法验收。
+
 2026-09-07 / #4恢复及原生球面路径正负预检：Luna最初错误等待菜单gameLoaded=true，90秒内无prepare/commit，未消费票据；root fresh显示gameLoaded=false但restartResumeAvailable=true，并实际prepare通过planet104/minimum26074522（raw920b2b5a5d3840b4bf7c5a09b22c80e6），证明不是游戏阻断。纠正外部条件后Luna fresh恢复11bac49a-5caa-4b12-a3b0-d6db49df9c33成功，自动重存26074553，accepted4；raw resume-2b167e4b8875428085ffab38498469f9。root26081669完整23页2283/47详情保持、独立pre0/J55/55/满电（rawb749646313974e9ea479c8f40a1ac789），没有新档或重复恢复。新方案按753/761各自free slot2向外4m后贴地，两端为真正NEW空地而非删掉覆盖对象绑定；26082277–26082350原生stage1准备15点/15条带成功，明确routingMode=native_geodesic，player/两仓endpoint hash保持（raw8ad00d4993d24df996dce59aec7d75d3）。同请求人为增加source753的负例26087884–26087939返回不可重试INVALID_REQUEST，无plan/prebuild，现场hash不变（raw0b239a11479249a69ae0b34eae351e37）。这只证明恢复和新模式只读正负例；路径施工、两只水过滤分拣器和持续供水仍待。固定业务预算15条2001+2只2011，现有43/4足够；不增仓/泵、不抬高、先建一次路径后立即逐端预检，失败交主会话不扩散。
 
 2026-09-07 / 1370正常冷部署：三写保存审计落盘后，精确1324 DSP进程正常退出，未强杀；3b2d9ea提交推送后完整Release与1370测试再次通过。四个新DLL与安装目标逐个SHA相等，随后通过已确认Steam仅启动一次；没有直接启动EXE、热替换、游戏写或新ZIP。accepted3保留，下一步仅当前同档protected resume#4；新模式现场/施工与持续供水仍待验。

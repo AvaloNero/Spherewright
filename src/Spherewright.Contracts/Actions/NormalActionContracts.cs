@@ -373,6 +373,8 @@ public sealed class PreparedNormalAction
 
     public InserterAttachmentPlanSnapshot? PlannedInserterAttachment { get; set; }
 
+    public BeltPathPlanSnapshot? PlannedBeltPath { get; set; }
+
     public int? TargetObjectId { get; set; }
 
     public int? SourceObjectId { get; set; }

@@ -2906,7 +2906,22 @@
 - 关联：EXP-001/002/228、IFX-049、NativePathCommandScope、BeltPathNativeStagePolicy。
 - 最近复验：2026-09-07（离线与当前DLL；安装仍1217，accepted2保留）。
 
+### EXP-230 — 旧源带必须零成本原生复用，并与NEW对象分别证明
+
+- 状态：`observed`
+- 日期：2026-09-07
+- 适用范围：当前DSP源端同族同级2001/2002/2003、水平、出口空闲、最多一条入带、开放且有界的路径；向空地新增至少两段。
+- 当前结论：source cover不是裁剪点，也不是NEW建筑。旧源保留在完整stage1原生preview/creation列表，以non-removing cover复用原ID和零材料；公开plannedPath/itemBudget只含NEW点。所有NEW点仍完整占位检查，旧源中心若与另一已建/预建筑重合也拒绝；不能让旧重复锚点通过此新入口获得合理化。
+- 直接证据：同SHA DeterminePreviews的cover/同级/短路径分支、SnapLine begin_flat、CreatePrebuilds计费/复用/连接循环，以及WriteObjectConn/Direct仅操作连接池的调用链见game-api-foundry。源cover输出与首个NEW逻辑输入重复写同一边不触发货物或业务拆除；适配器本身不直接写连接。
+- 实现/验证：静态绑定整条源path几何/成员/身份和原邻边，货物自然流动不使计划陈旧；原生创建前后同帧全path及cargo完整相等，只允许源空slot0→精确NEW预建筑的新双向边，随后核无人机完工实体。8192cells/512belts/128输入限额或证据未知即拒绝；结果未知沿用隔离且禁止重放。新增51项回归，1309项Debug/Release（33/1217/59）、完整Release零警告错误和真实源码MCP64tools/1resource/同批指南通过。plannedBeltPath echo缺失、stage0、数量/材料/源不一致时MCP不暴露token。
+- 限制或反例：1309源码尚未冷部署/live；原1258只证明无副作用的完整路径prepare，不证明cover施工。目标合流、换级/替换、倾斜/抬高、闭环、超限/缺失路径拒绝。货物跨正常游戏tick变化不能与同步即时证明混为一谈。没有供水/黄糖恢复、完整三级链或Governor验收结论。
+- 复验触发：DSP/Unity或原生路径/计费/连接API变化、bounds/hash/echo变化、冷部署、首个source-cover材料/货物/连接/保存恢复实测、既有同点源负例。
+- 关联：EXP-001/002/007/228/229、IFX-048、BeltSourceReusePolicy、BeltSourceReuse适配与包内playbook。
+- 最近复验：2026-09-07（当前DLL/离线1309；安装仍1258；已核第4写保存，accepted4保留，尚无施工）。
+
 ## 修订记录
+
+- 2026-09-07：新增EXP-230并复核EXP-228/229，防NEW重叠与保留原生cover必须并存。Luna第4写普通保存43281160在25636661同步开始/完成、terminal/completed/succeeded；此前一次STALE_SESSION是envelope/payload session不一致的确定拒绝，无action/accepted，fresh修正后才保存。主会话独立核四个成功终态及原始拒绝，25641130/rev2同档owned104/healthy/和平/非沙盒/1×/0blocker/checkpoint，J55/55 durable、Walk0/400MJ/空手搓/3idle、三网ratio1，独立25641169 prebuild0。25641174单snapshot23页2280全厂身份/姿态/连接与来源快照一致，43详情成功、41旧配置保持。754/755局部货物不是整path库存，不能据此越过EXP-230完整即时证据门。accepted4保留，后续先冷部署/同档恢复，业务施工冻结。
 
 - 2026-09-07：1258安装后第3写234f01df受保护恢复成功、重存25521346，root独立核全部3个终态及25525911/rev1同档healthy、J55/55、Walk0/400MJ/三网ratio1、独立0prebuild、25525961单快照2280全厂结构及41详情设置保持。accepted3保留。EXP-228的754旧源重叠负例与EXP-229的20点自由路径正例均为只读prepare，玩家hash/endpoint无变化，未施工/造货/换档。CI34067373558成功；具体占位错误的通用“走近”recovery提示仍需收窄，不授权失败候选重放。
 

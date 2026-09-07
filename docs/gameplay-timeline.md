@@ -2,9 +2,13 @@
 
 更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 已冷部署1258-test修复，受保护恢复并自动重存25521346，新窗accepted=3保留，Luna冻结施工。主会话审计2280建筑完整身份/姿态/连接未变、41详情/独立0prebuild、J55/55 durable、healthy/Walk0/400MJ/三网ratio1。一个20点自由带路径通过完整原生stage1预检，754旧源点的NEW重叠被拒绝，均未commit；旧belt cover复用尚未实现。主会话接手三料来源及有界方案设计；持续水/钛晶石/黄糖供给、运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。
+当前截面：同一 `owned-world-001` 仍运行1258安装态，已普通保存25636661、新窗accepted=4保留，Luna冻结施工。主会话独立核2280建筑完整身份/姿态/连接未变、43详情/独立0prebuild、J55/55 durable、healthy/Walk0/400MJ/三网ratio1。新1309源码已实现源端同级水平non-removing cover的窄范围复用及完整证据/MCP确认，离线通过，尚待冷部署/只读现场预检和真实施工。主会话继续制定方案再交Luna执行；持续水/钛晶石/黄糖供给、运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。
 
 ## 结论与证据边界
+
+2026-09-07 / 第4写关机前审计与source cover源码：普通save `43281160-bf8b-4dd6-bbed-d2df44aa8340`在25636661同步开始/完成、terminal/completed/succeeded。此前一次commit因envelope/payload session不同返回STALE_SESSION，原始拒绝无action/accepted；fresh修正后唯一成功保存，不重复计算双重日志。主会话独立核前四个终态和25641130/rev2同档owned104/healthy/和平/非沙盒/1×/0blocker/checkpoint，J55/55、Walk0/400MJ/3idle/空手搓、三网ratio1、独立25641169 prebuild0。25641174单snapshot23页2280唯一built全部item/pose/connection与来源快照一致，43详情成功、41已有配置保持。raw为action-a3f74e79cbf34449bb8d1122f5bd5cfd、action-7228257263bf400eb7e5a20055700028；accepted4不归零。
+
+主会话新1309源码把原生旧源cover和NEW对象分别保留/计费/核验，收窄到同等级水平、开放path空出口向空地续接，不开放目标合流/换级/抬高/闭环。完整旧path即时货物、原邻边、源中心唯一和新双向连接均有守卫；MCP缺完整plannedBeltPath确认就不提供token。1309项Debug/Release、完整Release零警告错误及64tools/1resource同批指南检查通过；EXP-230/IFX-048记录当前DLL证据与限制。源码未安装/live，旧1258的20点自由路径prepare不冒充续接施工。754/755新详情只有path23局部水2/3，不能拿局部读数代替整路径货物守恒，也不能以等待或仓储水600宣称恢复持续供水。
 
 2026-09-07 / 新窗第3写与1258只读实测：protected resume `234f01df-c659-4e77-9cee-e773490d1c3e` terminal/completed/succeeded，动作起止tick为null，自动重存25521346。主会话逐raw核25525911/rev1同档owned104/healthy/和平/非沙盒/1×/0blocker/checkpoint，J55/55无pending/error、Walk0/400MJ/3idle、三网ratio1；25525961单snapshot23页2280唯一built全部item/pose/connection与#2及来源快照一致，独立25525953 prebuild0，41详情的配方/过滤/仓设置保持。accepted3保留，不因重启或审计归零。
 

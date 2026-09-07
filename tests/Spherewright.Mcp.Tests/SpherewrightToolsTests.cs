@@ -38,7 +38,7 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
-    public void NewBeltOccupancyBoundaryIsDiscoverableWithoutPromisingAnchorReuse()
+    public void NewBeltOccupancyBoundaryIsDiscoverableWithoutPromisingUnboundedReuse()
     {
         var services = new ServiceCollection();
         services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
@@ -48,12 +48,37 @@ public sealed class SpherewrightToolsTests
             value => value.ProtocolTool.Name == "spherewright_prepare_build").ProtocolTool;
         Assert.Contains("including both ends", tool.Description);
         Assert.Contains("0.25 m", tool.Description);
-        Assert.Contains("anchors are temporarily unsupported", tool.Description);
+        Assert.Contains("source-only non-removing cover reuse", tool.Description);
+        Assert.Contains("plannedBeltPath", tool.Description);
         var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
         Assert.Contains("belt_path_existing_overlap", guide);
         Assert.Contains("Do not omit endpoint IDs", guide);
         Assert.Contains("native cover reuse", guide);
         Assert.Contains("does not automatically repair", guide);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("anchor_only_stage0")]
+    public async Task LegacyBeltValidationCannotExposeAConstructionCapability(string? mode)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult()) { OmitBuildBeltEcho = mode is null, BuildBeltMode = mode ?? string.Empty };
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2001, "player");
+        Assert.True(result.IsError);
+        var content = result.StructuredContent!.Value;
+        Assert.Equal(BridgeErrorCodes.BridgeNotReady, content.GetProperty("error").GetProperty("code").GetString());
+        Assert.Equal(JsonValueKind.Null, content.GetProperty("result").ValueKind);
+    }
+
+    [Fact]
+    public async Task CurrentBeltPlanEchoIsReturnedWithOnlyTheNewObjectBudget()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2001, "player");
+        Assert.False(result.IsError);
+        var echo = result.StructuredContent!.Value.GetProperty("result").GetProperty("plannedBeltPath");
+        Assert.Equal("full_path_stage1", echo.GetProperty("nativeValidationMode").GetString());
+        Assert.Equal(2, echo.GetProperty("newObjectCount").GetInt32());
     }
 
     [Fact]
@@ -1208,6 +1233,8 @@ public sealed class SpherewrightToolsTests
 
         public PrepareBuildRequest? LastBuildRequest { get; private set; }
         public bool OmitBuildFilterEcho { get; set; }
+        public bool OmitBuildBeltEcho { get; set; }
+        public string BuildBeltMode { get; set; } = "full_path_stage1";
         public int? BuildFilterEcho { get; set; }
 
         public PrepareDismantleRequest? LastDismantleRequest { get; private set; }
@@ -1460,11 +1487,23 @@ public sealed class SpherewrightToolsTests
         {
             LastBuildRequest = request;
             LastSessionId = sessionId;
-            return Task.FromResult(BridgeCallResult<PreparedNormalAction>.Succeeded(new PreparedNormalAction
+            var prepared = new PreparedNormalAction
             {
                 Prepared = true, ActionKind = NormalActionKinds.Build, PlanToken = "plan",
                 PlannedSorterFilterItemId = OmitBuildFilterEcho ? null : BuildFilterEcho ?? request.InitialSorterFilterItemId,
-            }));
+            };
+            if (request.BuildingItemId >= 2001 && request.BuildingItemId <= 2003)
+            {
+                prepared.BuildKind = "belt";
+                prepared.SourceObjectId = request.SourceObjectId;
+                prepared.DestinationObjectId = request.DestinationObjectId;
+                prepared.PlannedPath.AddRange(new[] { new Vector3Snapshot { Y = 200 }, new Vector3Snapshot { X = 1, Y = 200 } });
+                prepared.ItemBudget.Add(new ActionItemBudget { ItemId = request.BuildingItemId, Count = 2, Direction = "construction-consumption" });
+                if (!OmitBuildBeltEcho)
+                    prepared.PlannedBeltPath = new BeltPathPlanSnapshot { NativeValidationMode = BuildBeltMode,
+                        SourceBindingMode = request.SourceObjectId.HasValue ? "native_device_port" : "none", NewObjectCount = 2 };
+            }
+            return Task.FromResult(BridgeCallResult<PreparedNormalAction>.Succeeded(prepared));
         }
 
         public Task<BridgeCallResult<NormalActionCommitResult>> CommitBuildAsync(

@@ -29,7 +29,8 @@ public static class BeltBuildOccupancyPolicy
             Add(occupied, obstacle);
         }
         // Zero is used only in this private planned grid, never as an existing ID.
-        // No source/destination exemption: current previews create every node as NEW.
+        // No source/destination exemption within this NEW-object list. A separately
+        // proven native non-removing cover must never be passed as a NEW node.
         var proposed = new Dictionary<(int X, int Y, int Z), List<BeltBuildObstacle>>();
         var checks = 0;
         for (var index = 0; index < planned.Count; index++)

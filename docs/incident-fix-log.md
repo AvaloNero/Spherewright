@@ -517,6 +517,8 @@
 
 ## IFX-048 — 普通续带把既有锚点作为新对象再次建造
 
+2026-09-07后续切片：1258安装态已证明完整stage1自由路径可prepare、754同点NEW拒绝且玩家/端点保持。1309源码加入正确的源端non-removing cover，旧端点留在原生预检/创建、预算只算NEW；完整旧路径即时货物和原邻边保全、同帧源→预建筑及无人机后源→实体双向验证、唯一源中心守卫和MCP兼容echo齐备。仅支持同级水平开放路径的自由出口向空地续接，不开放目标合流/换级/抬高/闭环；51项新增回归、1309全量Debug/Release及完整Release通过。状态为`source_cover_offline_verified_live_pending`；后续仍须冷部署、材料/货物/连接/保存恢复正例。下文是初次遏制时的历史截面，不能覆盖这一窄范围实现或把它当作实机已验。
+
 - 首见：2026-09-07复核供水路径和EXP-149，主会话接手规划；本次未新增belt/blueprint施工。
 - 根因：TryCreateBeltSteps为全部SnapLine点生成NEW BuildStepPlan，首末点强制等于旧端点坐标；CreatePreview保留cover0。原生DeterminePreviews实际上将旧belt作为non-removing cover，CreatePrebuilds不另扣料而复用ID。旧完工归属/有向连接证明不能替代缺少的原生preview形成步骤，EXP-149的“原生转接层”解释撤回，实测物流事实保留。
 - 最小遏制：完整本地实体/预建筑扫描和纯Core有界同中心检查，无source例外；原生预检前/后、commit重验和施工前都检查。稳定reason/点索引/有符号对象ID指导外部Agent停止同点重试，MCP与指南明确既有belt锚点续接暂不支持。旧实体不自动拆除、归档不迁移，不用传送/注入或改玩家cmd绕过。

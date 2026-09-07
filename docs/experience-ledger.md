@@ -16,6 +16,19 @@
 
 ## 当前经验
 
+### EXP-249 — 传送带缺料不是位置错误，也不是放置已通过
+
+- 状态：`validated`（当前原生反例与源码离线策略范围；新诊断部署/live待验）
+- 日期：2026-09-07
+- 适用范围：当前DSP普通带full_path_stage1原生预检与外部Agent恢复指导。
+- 当前结论：NotEnoughItem先要求正常备料，再fresh完整预检同一明确端点；不在库存未变时重试、不据缺料换位置/Move/去端点。原生缺料在部分几何检查之前短路，不能称场地已批准。混合错误、占位、未知条件与非法cover不按单纯缺料处理。
+- 直接证据：raw-4b21e124的磁铁首段仅有2条带，返回NotEnoughItem却被旧适配统一包装为BUILD_LOCATION_INVALID；raw-c399cb08和raw-3186c7a6的另外两个明确候选确实重叠732/730，保持拒绝，均零commit。当前DLL哈希复核及CheckBuildConditions读取见game-api-foundry。
+- 实现：Core纯错误分类接入普通belt prepare，不改变native准入、库存、源cover守卫、state hash或commit的stale语义；MCP描述和包内资源同步正常备料/完整复验规则。新增14 Core/2 MCP回归，Debug/Release各1508项全通过、完整Release零警告错误，真实源码MCP64工具/1资源、50349字符指南相等/stdout纯净；新诊断未部署，不声称live通过。
+- 限制或反例：材料补足仍可能遭遇后续碰撞/范围/地形拒绝；旧Plugin可仍用旧错误码，不能把文案修复当施工或供料修复。
+- 复验触发：原生检查顺序、路径/cover规则、错误映射、库存、现场或安装程序集变化。
+- 关联：EXP-247、IFX-063、存档日记001、game-api-foundry。
+- 最近复验：2026-09-07（安装态原始负例、当前DLL顺序、1508项双配置测试/完整构建/真实源码MCP；冷部署另验）。
+
 ### EXP-247 — 密集旧厂先追踪现有供料带，再确定有限新支路
 
 - 状态：`observed`

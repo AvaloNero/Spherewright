@@ -7,6 +7,14 @@
 - Read-only ILSpy inspection of the local assembly; no decompiled code or game binaries are redistributed.
 - Plugin reads occur only on the Unity main thread after the existing exact-owned-session/local-planet check. Core receives copied DTOs, not game objects.
 
+## Belt material rejection is not a location verdict (2026-09-07)
+
+The current local `Assembly-CSharp.dll` hash above was rechecked. `BuildTool_Path.CheckBuildConditions()` checks the copied in-hand/package budget for each uncovered preview before range and subsequent placement conditions. It consumes only the preview inventory snapshot here. Failure to obtain one belt sets `EBuildCondition.NotEnoughItem` and continues to the next preview, so the missing item's later geometry checks may not run. Normal `CreatePrebuilds` remains a separate write path and is not called by prepare.
+
+Installed1488 live raw `action-4b21e124f98143b28cc85e8530bf7916-` returned `NotEnoughItem` for an explicit magnet-supply candidate with only two belts owned, but the adapter wrapped it as `BUILD_LOCATION_INVALID` with site/endpoint recovery. Two different candidates (`action-c399cb0886af47c88732e0d85df60e1e-` and `action-3186c7a64abf4fa083e19f95dfee99d5-`) genuinely overlapped old iron belts732/730 and remain rejected. None was committed.
+
+The source fix only describes a native shortage as `INVENTORY_INSUFFICIENT` when all bounded preview conditions are exactly Ok/NotEnoughItem with at least one shortage, source cover identity is preserved, and no NEW preview would cover/remove an object. Missing, mixed, unknown or cover-invalid evidence keeps the prior rejection. The advice is normal restocking followed by fresh complete validation of the same explicitly bound request, not placement approval, virtual materials or a token to replay. Commit-time changes still fail through the existing stale-plan path. Fourteen Core and two MCP regressions bring both Debug/Release suites to1508 passed (45 Contracts/1376 Core/87 MCP); the full current-DSP Release build has zero warnings/errors. Real source MCP exposes64 tools/1 resource with an identical50349-character playbook and no extra stdout. This changes error reporting only; new diagnosis deployment/live verification is pending.
+
 ## Oil route counterexample and native inserter span (2026-09-07)
 
 The same current DLL's `BuildTool_Inserter.CheckBuildConditions()` independently limits one-belt/one-device endpoints to5.5m straight-line separation and3.499 native `mainGrid.CalcSegmentsAcross(...)` units. Terrain/radial difference, minimum span, inventory and collision checks still apply. These constants describe this inspected branch, not permission to bypass native checking or a promise based on entity-centre distance.

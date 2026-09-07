@@ -12,6 +12,15 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-063 — 普通带缺料被误导为场地错误
+
+- 首见：2026-09-07，owned-world-001磁铁供料规划，raw-4b21e124；零commit。
+- 状态：`fixed_offline_live_pending`。
+- 症状与根因：原生全路径检查在临时物品预算耗尽时返回NotEnoughItem，适配器却把全部带拒绝统一归为BUILD_LOCATION_INVALID并提示不要重试该位置。原生缺料先于后续范围/几何检查，既不能叫碰撞，也不能反推位置已通过。
+- 修复：新增有界纯错误分类，仅对全部Ok/NotEnoughItem且至少一项缺料、源cover身份匹配、NEW无覆盖/移除的候选返回INVENTORY_INSUFFICIENT；其他错误保持拒绝。MCP/指南明确正常备料后fresh完整复验，旧token、端点和原生规则均不放宽；commit变化仍按stale拒绝。
+- 验证边界：新增14 Core/2 MCP回归后Debug/Release各1508项全通过，完整当前DSP Release零警告错误，真实源码MCP64工具/1资源、50349字符指南一致且stdout纯净。两条另路的真实占位732/730保留为负例；取证期间没有重放/施工或游戏写。新错误码未冷部署/live，不视为铜/磁持续供给已修好。
+- 关联：EXP-249、存档日记001、game-api-foundry。
+
 ## IFX-001 — 已接受动作被客户端展示错误误报为失败
 
 - 首见：2026-08-31，`owned-world-001`。

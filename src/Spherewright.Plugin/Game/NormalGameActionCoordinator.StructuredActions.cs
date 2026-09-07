@@ -512,6 +512,7 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         var last = "DSP rejected every bounded belt path candidate.";
+        BridgeError? lastError = null;
         foreach (var sourcePort in sourcePorts)
         {
             var endCandidates = new List<EndpointPoint>();
@@ -540,6 +541,7 @@ internal sealed partial class NormalGameActionCoordinator
 
             foreach (var endPort in endCandidates)
             {
+                lastError = null;
                 if (!TryCreateBeltSteps(
                         factory,
                         item,
@@ -552,7 +554,7 @@ internal sealed partial class NormalGameActionCoordinator
                     continue;
                 }
 
-                if (TryValidateBeltBuild(factory, player, item, candidate, out var accepted, out last))
+                if (TryValidateBeltBuild(factory, player, item, candidate, out var accepted, out last, out lastError))
                 {
                     var result = BuildPreparation.Succeeded(NormalBuildKinds.Belt, accepted);
                     if (source is not null)
@@ -572,7 +574,8 @@ internal sealed partial class NormalGameActionCoordinator
             }
         }
 
-        return BuildPreparation.Failed(BridgeErrorCodes.BuildLocationInvalid, last, BeltSourceReusePolicy.Recovery);
+        return BuildPreparation.Failed(lastError?.Code ?? BridgeErrorCodes.BuildLocationInvalid,
+            last, lastError?.Recovery ?? BeltSourceReusePolicy.Recovery);
     }
 
     private bool TryReadBuildEndpoint(
@@ -1127,10 +1130,12 @@ internal sealed partial class NormalGameActionCoordinator
         ItemProto item,
         IReadOnlyList<BuildStepPlan> candidates,
         out List<BuildStepPlan> accepted,
-        out string rejection)
+        out string rejection,
+        out BridgeError? rejectionError)
     {
         accepted = new List<BuildStepPlan>();
         rejection = string.Empty;
+        rejectionError = null;
         if (candidates.Count < 2 || candidates.Any(step => step.BeltPathMode != candidates[0].BeltPathMode)
             || (candidates[0].BeltPathMode != BeltPathModes.NativeGrid && candidates[0].BeltPathMode != BeltPathModes.NativeGeodesic))
         {
@@ -1178,7 +1183,15 @@ internal sealed partial class NormalGameActionCoordinator
                 ?? (cover is not null && cover.condition != EBuildCondition.Ok ? cover : null);
             if (!valid || rejected is not null || !SourceCoverMatches(cover, candidates[0].SourceBeltAnchor))
             {
-                rejection = $"DSP belt-path validation returned {rejected?.condition.ToString() ?? "rejected"}.";
+                // Material checking precedes other native conditions. Describe a pure
+                // shortage without asserting that unchecked geometry would be valid.
+                var conditions = previews.Select(preview => preview.condition.ToString()).ToList();
+                if (cover is not null) conditions.Add(cover.condition.ToString());
+                rejectionError = BeltBuildRejectionPolicy.DescribeInventoryShortage(conditions,
+                    SourceCoverMatches(cover, candidates[0].SourceBeltAnchor),
+                    previews.Any(preview => preview.coverObjId != 0 || preview.willRemoveCover));
+                rejection = rejectionError?.Message
+                    ?? $"DSP belt-path validation returned {rejected?.condition.ToString() ?? "rejected"}.";
                 return false;
             }
 
@@ -1253,7 +1266,7 @@ internal sealed partial class NormalGameActionCoordinator
         string rejection;
         if (plan.BuildKind == NormalBuildKinds.Belt)
         {
-            valid = TryValidateBeltBuild(factory, player, item, plan.BuildSteps, out var accepted, out rejection)
+            valid = TryValidateBeltBuild(factory, player, item, plan.BuildSteps, out var accepted, out rejection, out _)
                 && BuildStepsEqual(plan.BuildSteps, accepted);
         }
         else if (plan.BuildKind == NormalBuildKinds.Inserter)

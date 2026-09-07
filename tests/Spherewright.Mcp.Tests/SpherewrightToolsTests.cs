@@ -25,6 +25,41 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void BeltShortageRecoveryIsDiscoverableWithoutClaimingPlacementApproval()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareBuildAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        foreach (var text in new[] { description, guide })
+        {
+            Assert.Contains("INVENTORY_INSUFFICIENT", text);
+            Assert.Contains("do not retry with unchanged inventory", text);
+            Assert.Contains("normal handcraft or transfer", text);
+            Assert.Contains("revalidate the complete path", text);
+            Assert.Contains("same explicit endpoint bindings", text);
+            Assert.Contains("does not prove placement", text);
+        }
+        Assert.Contains("Older Plugin versions", guide);
+        Assert.Contains("Mixed, unknown, occupancy and cover failures", guide);
+    }
+
+    [Fact]
+    public async Task BeltShortageErrorReachesMcpWithoutAPlanOrConstructionToken()
+    {
+        var error = Spherewright.Bridge.Core.Factory.BeltBuildRejectionPolicy.DescribeInventoryShortage(
+            new[] { "Ok", "NotEnoughItem" }, true, false)!;
+        var bridge = new FakeBridgeClient(SuccessResult()) { BuildPrepareError = error };
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2001, "player");
+        Assert.True(result.IsError);
+        var content = result.StructuredContent!.Value;
+        Assert.Equal(JsonValueKind.Null, content.GetProperty("result").ValueKind);
+        Assert.Equal(error.Code, content.GetProperty("error").GetProperty("code").GetString());
+        Assert.Equal(error.Recovery, content.GetProperty("error").GetProperty("recovery").GetString());
+        Assert.DoesNotContain("planToken", content.GetRawText());
+    }
+
+    [Fact]
     public async Task MainMenuResumeIsPreparedBeforeAnyOwnedWorldIsLoaded()
     {
         var bridge = new FakeBridgeClient(SuccessResult())
@@ -1602,6 +1637,7 @@ public sealed class SpherewrightToolsTests
         public bool OmitStorageEcho { get; set; }
 
         public PrepareBuildRequest? LastBuildRequest { get; private set; }
+        public BridgeError? BuildPrepareError { get; set; }
         public bool OmitBuildFilterEcho { get; set; }
         public bool OmitBuildBeltEcho { get; set; }
         public string BuildBeltMode { get; set; } = "full_path_stage1";
@@ -1867,6 +1903,8 @@ public sealed class SpherewrightToolsTests
         {
             LastBuildRequest = request;
             LastSessionId = sessionId;
+            if (BuildPrepareError is not null)
+                return Task.FromResult(BridgeCallResult<PreparedNormalAction>.Failed(BuildPrepareError));
             var prepared = new PreparedNormalAction
             {
                 Prepared = true, ActionKind = NormalActionKinds.Build, PlanToken = "plan",

@@ -70,6 +70,18 @@ public sealed class SpherewrightToolsTests
         Assert.Equal(JsonValueKind.Null, content.GetProperty("result").ValueKind);
     }
 
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("whole_path_native_rotation_v1", false)]
+    public async Task SourceCoverRequiresTheNativeCompletionRotationProof(string? mode, bool blocked)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult()) { BuildBeltSourceCover = true, BuildBeltPreservationMode = mode };
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2001, "player", sourceObjectId: 754, expectedSourceStateHash: "source");
+        Assert.Equal(blocked, result.IsError);
+        if (blocked) Assert.Equal(JsonValueKind.Null, result.StructuredContent!.Value.GetProperty("result").ValueKind);
+        else Assert.Equal(mode, result.StructuredContent!.Value.GetProperty("result").GetProperty("plannedBeltPath").GetProperty("sourcePreservationMode").GetString());
+    }
+
     [Fact]
     public async Task CurrentBeltPlanEchoIsReturnedWithOnlyTheNewObjectBudget()
     {
@@ -1235,6 +1247,8 @@ public sealed class SpherewrightToolsTests
         public bool OmitBuildFilterEcho { get; set; }
         public bool OmitBuildBeltEcho { get; set; }
         public string BuildBeltMode { get; set; } = "full_path_stage1";
+        public bool BuildBeltSourceCover { get; set; }
+        public string? BuildBeltPreservationMode { get; set; }
         public int? BuildFilterEcho { get; set; }
 
         public PrepareDismantleRequest? LastDismantleRequest { get; private set; }
@@ -1501,7 +1515,9 @@ public sealed class SpherewrightToolsTests
                 prepared.ItemBudget.Add(new ActionItemBudget { ItemId = request.BuildingItemId, Count = 2, Direction = "construction-consumption" });
                 if (!OmitBuildBeltEcho)
                     prepared.PlannedBeltPath = new BeltPathPlanSnapshot { NativeValidationMode = BuildBeltMode,
-                        SourceBindingMode = request.SourceObjectId.HasValue ? "native_device_port" : "none", NewObjectCount = 2 };
+                        SourceBindingMode = BuildBeltSourceCover ? "non_removing_belt_cover" : request.SourceObjectId.HasValue ? "native_device_port" : "none",
+                        ReusedSourceObjectId = BuildBeltSourceCover ? request.SourceObjectId : null,
+                        SourcePreservationMode = BuildBeltPreservationMode, NewObjectCount = 2 };
             }
             return Task.FromResult(BridgeCallResult<PreparedNormalAction>.Succeeded(prepared));
         }

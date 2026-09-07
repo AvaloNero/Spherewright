@@ -16,6 +16,7 @@ internal sealed partial class NormalGameActionCoordinator
         internal Vector3 Position;
         internal float Tilt;
         internal string TopologyHash = string.Empty;
+        internal string CompletionTopologyHash = string.Empty;
         internal string BindingHash = string.Empty;
         internal string CargoHash = string.Empty;
         internal List<FactoryConnectionSnapshot> Connections = new List<FactoryConnectionSnapshot>();
@@ -27,6 +28,8 @@ internal sealed partial class NormalGameActionCoordinator
         state = null;
         reason = "belt_source_identity_unavailable";
         if (!TryBeltSourceTopology(factory, entityId, out var topology, out var connections)) return false;
+        reason = "belt_source_native_rotation_unproven";
+        if (!TryBeltSourceTopology(factory, entityId, out var completionTopology, out _, nativeCompletionRotation: true)) return false;
         var entity = factory.entityPool[entityId];
         var traffic = factory.cargoTraffic;
         reason = "belt_source_component_unavailable";
@@ -51,7 +54,7 @@ internal sealed partial class NormalGameActionCoordinator
             if (export!.Closed || export.OutputPathId != 0 || export.BeltIds.Last() != belt.id) return false;
             if (!BeltUpgradePathPolicy.TryLocateAllCargo(export, out var references, out var cargoReason))
             { reason = "belt_source_" + cargoReason; return false; }
-            var fields = new List<object?> { topology, export.Id, export.Length, export.OutputPathId, export.OutputIndex,
+            var fields = new List<object?> { topology, completionTopology, export.Id, export.Length, export.OutputPathId, export.OutputIndex,
                 Convert.ToBase64String(export.Geometry), string.Join(",", export.Speeds),
                 string.Join(",", export.BeltIds), string.Join(",", export.InputPathIds) };
             foreach (var id in export.BeltIds)
@@ -83,7 +86,7 @@ internal sealed partial class NormalGameActionCoordinator
                 cargoFields.Add(id); cargoFields.Add(cargo.item); cargoFields.Add(cargo.stack); cargoFields.Add(cargo.inc);
             }
             state = new BeltSourceState { EntityId = entityId, ItemId = entity.protoId, Position = entity.pos, Tilt = entity.tilt,
-                Connections = connections, TopologyHash = topology,
+                Connections = connections, TopologyHash = topology, CompletionTopologyHash = completionTopology,
                 BindingHash = CanonicalStateHash.Combine("belt-source-binding-v1", fields.ToArray()),
                 CargoHash = CanonicalStateHash.Combine("belt-source-cargo-v1", cargoFields.ToArray()) };
             reason = string.Empty;
@@ -95,12 +98,12 @@ internal sealed partial class NormalGameActionCoordinator
     // The source's formerly empty slot0 is checked separately. Preserve all other
     // source slots and every existing reciprocal neighbour, including sorters.
     private static bool TryBeltSourceTopology(PlanetFactory factory, int sourceId,
-        out string hash, out List<FactoryConnectionSnapshot> sourceConnections)
+        out string hash, out List<FactoryConnectionSnapshot> sourceConnections, bool nativeCompletionRotation = false)
     {
         hash = string.Empty;
         sourceConnections = new List<FactoryConnectionSnapshot>();
         var fields = new List<object?>();
-        if (!AppendBeltSourceObject(factory, sourceId, fields)) return false;
+        if (!AppendBeltSourceObject(factory, sourceId, fields, nativeCompletionRotation)) return false;
         for (var slot = 0; slot < 16; slot++)
         {
             factory.ReadObjectConn(sourceId, slot, out var output, out var other, out var otherSlot);
@@ -108,7 +111,7 @@ internal sealed partial class NormalGameActionCoordinator
             if (slot == 0) continue;
             fields.Add(slot); fields.Add(output); fields.Add(other); fields.Add(otherSlot);
             if (other == 0) continue;
-            if (other == sourceId || otherSlot < 0 || otherSlot >= 16 || !AppendBeltSourceObject(factory, other, fields)) return false;
+            if (other == sourceId || otherSlot < 0 || otherSlot >= 16 || !AppendBeltSourceObject(factory, other, fields, nativeCompletionRotation)) return false;
             factory.ReadObjectConn(other, otherSlot, out var reverseOutput, out var reverseId, out var reverseSlot);
             if (reverseOutput == output || reverseId != sourceId || reverseSlot != slot) return false;
             for (var neighbourSlot = 0; neighbourSlot < 16; neighbourSlot++)
@@ -117,11 +120,11 @@ internal sealed partial class NormalGameActionCoordinator
                 fields.Add(neighbourSlot); fields.Add(o); fields.Add(n); fields.Add(s);
             }
         }
-        hash = CanonicalStateHash.Combine("belt-source-neighbourhood-v1", fields.ToArray());
+        hash = CanonicalStateHash.Combine(nativeCompletionRotation ? "belt-source-completion-neighbourhood-v1" : "belt-source-neighbourhood-v1", fields.ToArray());
         return true;
     }
 
-    private static bool AppendBeltSourceObject(PlanetFactory factory, int id, List<object?> fields)
+    private static bool AppendBeltSourceObject(PlanetFactory factory, int id, List<object?> fields, bool nativeCompletionRotation = false)
     {
         if (factory.entityPool is null || factory.entityConnPool is null || id <= 0
             || id > BeltBuildOccupancyPolicy.MaximumFactorySlots || id >= factory.entityCursor || id >= factory.entityPool.Length
@@ -132,7 +135,13 @@ internal sealed partial class NormalGameActionCoordinator
             || !IsFinite(e.rot.x) || !IsFinite(e.rot.y) || !IsFinite(e.rot.z) || !IsFinite(e.rot.w) || !IsFinite(e.tilt)) return false;
         fields.Add(id); fields.Add(e.protoId); fields.Add(e.beltId); fields.Add(e.inserterId);
         fields.Add(e.pos.x); fields.Add(e.pos.y); fields.Add(e.pos.z);
-        fields.Add(e.rot.x); fields.Add(e.rot.y); fields.Add(e.rot.z); fields.Add(e.rot.w); fields.Add(e.tilt);
+        fields.Add(e.tilt);
+        if (nativeCompletionRotation && e.beltId > 0)
+        {
+            if (!ProvesNativeBeltRotation(factory, id)) return false;
+            fields.Add(BeltSourceRotationPolicy.PreservationMode); fields.Add(e.colliderId);
+        }
+        else { fields.Add(e.rot.x); fields.Add(e.rot.y); fields.Add(e.rot.z); fields.Add(e.rot.w); }
         return true;
     }
 

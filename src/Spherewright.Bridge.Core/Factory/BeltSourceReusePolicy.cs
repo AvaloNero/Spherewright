@@ -93,7 +93,8 @@ public static class BeltSourceReusePolicy
         {
             "none" => sourceId == 0 && !echo.ReusedSourceObjectId.HasValue,
             "native_device_port" => sourceId > 0 && !echo.ReusedSourceObjectId.HasValue,
-            "non_removing_belt_cover" => sourceId > 0 && destinationId == 0 && echo.ReusedSourceObjectId == sourceId,
+            "non_removing_belt_cover" => sourceId > 0 && destinationId == 0 && echo.ReusedSourceObjectId == sourceId
+                && echo.SourcePreservationMode == BeltSourceRotationPolicy.PreservationMode,
             _ => false,
         };
     }

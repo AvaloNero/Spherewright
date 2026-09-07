@@ -151,6 +151,7 @@ internal sealed partial class NormalGameActionCoordinator
                     SourceBindingMode = anchor is not null ? "non_removing_belt_cover"
                         : preparation.SourceObjectId > 0 ? "native_device_port" : "none",
                     ReusedSourceObjectId = anchor?.EntityId,
+                    SourcePreservationMode = anchor is null ? null : BeltSourceRotationPolicy.PreservationMode,
                     NewObjectCount = preparation.Steps.Count,
                 };
             }
@@ -1612,8 +1613,8 @@ internal sealed partial class NormalGameActionCoordinator
         if (plan.BuildKind == NormalBuildKinds.Belt)
         {
             var sourceAnchor = plan.BuildSteps[0].SourceBeltAnchor;
-            if (sourceAnchor is not null && (!TryBeltSourceTopology(factory, sourceAnchor.EntityId, out var topology, out var connections)
-                || !BeltSourceReusePolicy.SameEvidence(sourceAnchor.TopologyHash, topology)
+            if (sourceAnchor is not null && (!TryBeltSourceTopology(factory, sourceAnchor.EntityId, out var topology, out var connections, nativeCompletionRotation: true)
+                || !BeltSourceReusePolicy.SameEvidence(sourceAnchor.CompletionTopologyHash, topology)
                 || !ProvesSourceOutput(factory, sourceAnchor, connections, entityIds[0], prebuild: false)))
             {
                 rejection = "The reused source identity, original neighbours or new reciprocal output did not survive construction.";

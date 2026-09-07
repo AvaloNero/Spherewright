@@ -2,9 +2,15 @@
 
 更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 仍运行1258安装态，已普通保存25636661、新窗accepted=4保留，Luna冻结施工。主会话独立核2280建筑完整身份/姿态/连接未变、43详情/独立0prebuild、J55/55 durable、healthy/Walk0/400MJ/三网ratio1。新1309源码已实现源端同级水平non-removing cover的窄范围复用及完整证据/MCP确认，离线通过，尚待冷部署/只读现场预检和真实施工。主会话继续制定方案再交Luna执行；持续水/钛晶石/黄糖供给、运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。
+当前截面：同一 `owned-world-001` 运行1309安装态、同档resume自动重存25636692，新窗accepted=5保留，Luna冻结施工。主会话独立核2280建筑完整身份/姿态/连接未变、43详情/独立0prebuild、J55/55 durable、healthy/Walk0/400MJ/三网ratio1。754与1199同点被拒，752无空闲带口；2269源复用prepare确认3NEW/3材料且无副作用。首个施工前又发现原生完工朝向重算风险，1324源码已补精确几何证明，待冷部署/live。主会话制定方案再交Luna执行；持续水/钛晶石/黄糖供给、运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。
 
 ## 结论与证据边界
+
+2026-09-07 / 第5写与1309准备正负例：resume `f054d5b1-e44e-4941-92dc-31bc70803e9a` terminal/completed/succeeded，动作起止tick为null，自动重存25636692。主会话核全部5终态与25640704/rev1健康同档；独立25640750 prebuild0，25640757同snapshot23页2280全结构和43详情保持。Journal55/55 durable、无pending/error，Walk0/400MJ/3idle、三网ratio1，accepted5保留。raw resume-c1dc4f3bc8ab482eb3e4605a2da9419a与action-6c4df8878ba649a5a6d295fb42edf770保存。
+
+主会话只读现场：754与1199同位置、分别path23水与path32金刚石，固定north4m新候选被source-centre唯一性守卫拒绝；752当前无空闲原生带口；2269沿原forward4m的source-cover prepare返回3个NEW点和3条带预算、可commit但未commit。对应before/after tick25658610/621、25660602/613、25661606/619玩家及源endpoint保持，healthy/rev1/0prebuild。root未把脚本NaN/显示错误当游戏失败或重放候选；坐标脚本修正后才调用prepare。源码审计接着发现AlterBeltRenderer正常完工会重算旧带朝向，1324补精确native几何/碰撞体证明与MCP确认（EXP-231/IFX-050），因此暂不把1309正例交付施工。Luna只读目录确认水泵2306/recipe49已解锁，材料铁8/石材4/电机4/电路2；库存46带/4普通sorter足够30+2，泵仍缺铁6/石材4/电机4/电路2，已查七仓未找到该补料，不据此声称所有仓都无货。CI34069716871成功；无新档、施工、搬料或最终ZIP。
+
+2026-09-07 / 1309冷部署：第4写完整审计落盘后，按EXP-001/002正常关闭已确认的旧DSP进程，四个1309 Release DLL与安装文件逐一哈希相等，Steam仅启动一次，完整哈希见environment。代码ddafe38提交推送、保留排除的打包/CI、不tag/release。accepted4保留，下一步仅允许Luna fresh prepare同档protected resume（计#5）及完整读回；源带施工仍须主会话新现场方案/预检，不复用1258计划。
 
 2026-09-07 / 第4写关机前审计与source cover源码：普通save `43281160-bf8b-4dd6-bbed-d2df44aa8340`在25636661同步开始/完成、terminal/completed/succeeded。此前一次commit因envelope/payload session不同返回STALE_SESSION，原始拒绝无action/accepted；fresh修正后唯一成功保存，不重复计算双重日志。主会话独立核前四个终态和25641130/rev2同档owned104/healthy/和平/非沙盒/1×/0blocker/checkpoint，J55/55、Walk0/400MJ/3idle/空手搓、三网ratio1、独立25641169 prebuild0。25641174单snapshot23页2280唯一built全部item/pose/connection与来源快照一致，43详情成功、41已有配置保持。raw为action-a3f74e79cbf34449bb8d1122f5bd5cfd、action-7228257263bf400eb7e5a20055700028；accepted4不归零。
 

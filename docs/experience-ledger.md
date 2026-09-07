@@ -2919,7 +2919,26 @@
 - 关联：EXP-001/002/007/228/229、IFX-048、BeltSourceReusePolicy、BeltSourceReuse适配与包内playbook。
 - 最近复验：2026-09-07（当前DLL/离线1309；安装仍1258；已核第4写保存，accepted4保留，尚无施工）。
 
+### EXP-231 — 原生完工可改变保留源带朝向，但必须给出几何证明
+
+- 状态：`observed`
+- 日期：2026-09-07
+- 适用范围：当前DSP源端cover续接的无人机完工核验；不开放任意姿态调整。
+- 当前结论：保留entity ID不等于rotation始终不变。不能只放弃旧朝向检查；必须从当前有界CargoPath分段端点按原生AlterBeltRenderer公式推导，并核对entity/collider精确旋转、碰撞体身份与中心。只允许q/-q物理等价，非belt原邻居仍完整保持；prepare静态绑定及同步预建筑创建前后cargo/path证明仍严格使用原旋转。
+- 直接证据：当前同SHA AlterBeltConnections触发源/主入/出邻带renderer；AlterBeltRenderer按首末pointPos的0.50016f中点、0.6f长度分支写entity.rot与collider.q/pos。首轮1309 source-cover prepare已通过，但尚无commit；本问题在提交施工前由主会话DLL审计发现，没有伪造实际失败或先制造隔离。
+- 实现/验证：独立completion topology hash只为有完整本机原生几何/碰撞体证据的belt替换朝向字段，其他身份、位置、tilt、旧边与非belt朝向严格绑定。最多8192cells、有效segment/one-based collider bounds、有限值和当前entity/path匹配；sourcePreservationMode确认缺失的旧cover计划不暴露token。15项新增回归后1324项Release（33/1230/61）、完整Release零警告错误通过；当前DLL证据见game-api-foundry。
+- 限制或反例：新证明尚未冷部署/live，不能据单元测试声称成功施工、跨tick货物守恒或保存恢复。只读source-cover通过只证明预检/NEW预算，现有供水/黄糖及完整0.4门仍未完成。
+- 复验触发：DSP/Unity/原生renderer公式、collider字段、完成哈希或兼容echo变化，首次原生续接/旧邻带旋转变化和保存恢复。
+- 关联：EXP-228/229/230、IFX-048/050、BeltSourceRotationPolicy。
+- 最近复验：2026-09-07（同DLL/1324离线；游戏1309、accepted5保留，无新增施工）。
+
 ## 修订记录
+
+- 2026-09-07：EXP-231最终源码复验补齐locked restore、1324项Debug/Release、完整Release零警告错误和实际MCP64tools/1resource/37804字符同批指南，exit0/额外stdout0。当前仍运行1309，未热替换、未施工；Luna只获下一次正常保存#6及原43详情/完整分页审计授权，为冷部署1324保留同档。
+
+- 2026-09-07：第5写f054d5b1同档protected resume terminal/completed/succeeded（起止tick均null），自动重存25636692。主会话独立核全部5个原始终态，25640704/rev1 healthy/owned104/J55/55/Walk0/400MJ/三网ratio1，独立25640750 prebuild0，25640757单snapshot23页2280全厂身份/姿态/连接及43详情与#4保持；accepted5不归零。1309 fresh只读：752无空闲带口；754与1199的同点分别承载水/金刚石，固定north候选被belt_source_centre_ambiguous拒绝；2269固定forward4m则返回full_path_stage1/non_removing_belt_cover/NEW3和材料3，所有before/after玩家/endpoint保持、0commit/0prebuild/healthy。原始prefix3ca00701/a8433aa2/977cd187保存。只读坐标脚本初版数组运算语法错误，未发送游戏请求；修正且启用fail-fast后才形成候选，不把NaN/脚本显示错误当游戏结果。新增EXP-231限制首个施工必须先具备原生完工朝向证明；不修旧重合带、不扩大失败候选。ddafe38的CI34069716871成功。
+
+- 2026-09-07：复核EXP-001/002/228/229/230并冷部署1309，前提是第4写25636661已成功保存、完整审计已落盘；正常退出后4/4安装哈希与测试Release相等，Steam启动一次。ddafe38已推送；源码MCP64tools/1resource/37119字符同批指南、纯stdout/exit0通过。accepted4不归零，下一protected resume计#5；不把部署当cover live通过，先fresh只读现场验证。
 
 - 2026-09-07：新增EXP-230并复核EXP-228/229，防NEW重叠与保留原生cover必须并存。Luna第4写普通保存43281160在25636661同步开始/完成、terminal/completed/succeeded；此前一次STALE_SESSION是envelope/payload session不一致的确定拒绝，无action/accepted，fresh修正后才保存。主会话独立核四个成功终态及原始拒绝，25641130/rev2同档owned104/healthy/和平/非沙盒/1×/0blocker/checkpoint，J55/55 durable、Walk0/400MJ/空手搓/3idle、三网ratio1，独立25641169 prebuild0。25641174单snapshot23页2280全厂身份/姿态/连接与来源快照一致，43详情成功、41旧配置保持。754/755局部货物不是整path库存，不能据此越过EXP-230完整即时证据门。accepted4保留，后续先冷部署/同档恢复，业务施工冻结。
 

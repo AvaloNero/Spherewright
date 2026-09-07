@@ -117,7 +117,7 @@ public sealed class BeltSourceReusePolicyTests
     }
     [Theory]
     [InlineData("missing")] [InlineData("mode")] [InlineData("source_mode")] [InlineData("source_id")]
-    [InlineData("count")] [InlineData("cost")] [InlineData("path")] [InlineData("null_budget")]
+    [InlineData("count")] [InlineData("cost")] [InlineData("path")] [InlineData("null_budget")] [InlineData("preservation")]
     public void MissingOrInconsistentEchoCannotAuthorizeOldDuplicateAnchorPlans(string mutation)
     {
         var plan=Plan();
@@ -127,6 +127,7 @@ public sealed class BeltSourceReusePolicyTests
             case "mode": plan.PlannedBeltPath!.NativeValidationMode="anchor_only_stage0"; break;
             case "source_mode": plan.PlannedBeltPath!.SourceBindingMode="remove_and_replace"; break;
             case "source_id": plan.PlannedBeltPath!.ReusedSourceObjectId=755; break;
+            case "preservation": plan.PlannedBeltPath!.SourcePreservationMode=null; break;
             case "count": plan.PlannedBeltPath!.NewObjectCount=3; break;
             case "cost": plan.ItemBudget[0].Count=3; break;
             case "path": plan.PlannedPath=null!; break;
@@ -148,7 +149,7 @@ public sealed class BeltSourceReusePolicyTests
     {
         Prepared=true,BuildKind="belt",SourceObjectId=754,PlannedPath=new(){P(1),P(2)},
         ItemBudget=new(){new ActionItemBudget{ItemId=2001,Count=2,Direction="construction-consumption"}},
-        PlannedBeltPath=new(){NativeValidationMode="full_path_stage1",SourceBindingMode="non_removing_belt_cover",ReusedSourceObjectId=754,NewObjectCount=2}
+        PlannedBeltPath=new(){NativeValidationMode="full_path_stage1",SourceBindingMode="non_removing_belt_cover",ReusedSourceObjectId=754,NewObjectCount=2,SourcePreservationMode=BeltSourceRotationPolicy.PreservationMode}
     };
     private static List<FactoryConnectionSnapshot> Connections() => Enumerable.Range(0,16)
         .Select(i=>new FactoryConnectionSnapshot{Slot=i}).ToList();

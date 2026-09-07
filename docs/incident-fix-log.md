@@ -528,6 +528,8 @@
 
 ## IFX-049 — 原生路径检查借用了玩家的锚点预览阶段
 
+后续独立完成阶段风险见IFX-050；它不撤销本条完整stage1无玩家命令副作用的预检证据。
+
 2026-09-07本机补验：1258同档受保护恢复与完整审计通过；20个新点的自由路径完整stage1 prepare成功，754旧源NEW重叠明确拒绝，均无commit，玩家hash和源endpoint保持、无新增prebuild或BepInEx异常。阶段预检的局部live已证明，正常施工和cover复用仍未验；下文offline状态保留初始切片语义。
 
 - 首见：2026-09-07，主会话继续复核IFX-048的原生路径前置条件。
@@ -536,3 +538,11 @@
 - 验证：1258项Debug/Release（32Contracts/1170Core/56MCP），完整Release零警告错误；真实源码MCP64tools/1resource/35797字符指南、exit0且无额外stdout。7项纯策略和1项MCP回归不证明Unity lifecycle或游戏正例；当前DSP/Unity调用证据见game-api-foundry。
 - 未完成：冷部署后只读正/负预检、正常自由路径施工回归、原生旧belt cover复用及其材料/货物/连接/保存恢复证明。该修复不是接线/产线验收完成。
 - 状态：`full_native_path_stage_offline_verified_live_pending`；关联EXP-229/IFX-048。
+
+## IFX-050 — 源带复用的完工验证把原生朝向重算误当成身份变化
+
+- 首见：2026-09-07，在1309源码冷部署/source-cover prepare正例后、首个施工commit前的DLL审计发现；尚未以实机动作触发此失败。
+- 根因：原生AlterBeltConnections/AlterBeltRenderer会在无人机接入后重算旧源/邻带entity.rot和collider.q/pos。1309的原邻域哈希包含旧旋转，可能误拒正常原生结果；不能通过随意忽略旋转来修复。
+- 修复：1324源码分开严格prepare/即时路径货物绑定与completion topology；后者仅允许通过有界当前native分段公式、明确碰撞体身份、精确entity/collider旋转与中心证明的belt朝向变动，非belt、位置、identity、旧边保持原约束。只认同一native计算或q/-q等价，不使用宽松角度容差，不写任何姿态。新增sourcePreservationMode确认，旧cover echo不暴露token。
+- 验证：15项新增Core/MCP回归、1324项Release与完整Release零警告错误；当前DLL签名/公式见game-api-foundry。未冷部署、无cover施工成功/失败及保存恢复实机声明。
+- 状态：`fixed_offline_live_pending`；关联EXP-231/230、IFX-048。

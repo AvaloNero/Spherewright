@@ -617,6 +617,14 @@
 - 验证：2新MCP测试先失败后通过，1420项Debug/Release、完整Release和实际64工具/1资源指南通过；root完整2310实体/82详情审计通过，计数保持1。没有新增游戏写入、ZIP或异机验收。
 - 状态：`mitigated`；关联EXP-239。
 
+## IFX-059 — 分段物品汇总不能定位物流入站的阻塞货包
+
+- 首见：2026-09-07，owned-world-001当前102，站44硅满、钛仅8，110带同时观察到硅/钛。
+- 根因：原beltCargo只给item-sorted分段聚合，不能确定原生TryPickItemAtRear正在检查哪个对齐包；直接下“硅挡钛”的已确认结论会越过公开证据。
+- 修复：既有inspect增加可选rearPickup，open path尾段才观察对齐货包；no_aligned_packet/not_applicable/unavailable分开，复用有界副本、完整格式与原生只读核对。MCP描述、协议和包内playbook要求fresh入站拓扑/needs/容量及重复证据，不自动改槽、清库存或宣称持续修复。
+- 验证：28 Core/5 Contracts/2 MCP新增，1455项Debug/Release、完整Release零警告错误、真实源码64工具/1资源/45564字符指南通过。新适配尚未冷部署；实际堵塞物品与供应修复都未宣称通过。
+- 状态：`fixed_offline_live_pending`（只读可观测性，不是产线修复）；关联EXP-241。
+
 ## IFX-058 — 主会话几何方案先建整条带却未证明两个连接
 
 - 首见：2026-09-07，11条油候选带正常建成，下游no_finite_projection；root复核上游也无<11°配对。Luna按既定边界停在prepare，没有重复commit。

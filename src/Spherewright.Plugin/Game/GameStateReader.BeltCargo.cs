@@ -8,7 +8,12 @@ internal sealed partial class GameStateReader
     // Detail-only: never scan cargo for every entity in a retained pagination snapshot.
     private static BeltCargoSnapshot CaptureBeltCargo(PlanetFactory factory, int entityId)
     {
-        var result = new BeltCargoSnapshot { CapturedAtGameTick = GameMain.gameTick };
+        var result = new BeltCargoSnapshot
+        {
+            CapturedAtGameTick = GameMain.gameTick,
+            RearPickup = new BeltRearPickupSnapshot
+            { CapturedAtGameTick = GameMain.gameTick, ReasonCode = "segment_cargo_unavailable" },
+        };
         result.ReasonCode = "belt_identity_unavailable";
         if (entityId <= 0 || factory.entityPool is null || entityId >= factory.entityCursor
             || entityId >= factory.entityPool.Length || factory.entityPool[entityId].id != entityId)
@@ -84,6 +89,10 @@ internal sealed partial class GameStateReader
             result.ItemCount = items.Sum(item => item.Count);
             result.State = "observed";
             result.ReasonCode = null;
+            result.RearPickup = BeltRearPickupObservationPolicy.Capture(window, start, path.pathLength,
+                belt.segIndex, belt.segLength, path.closed, samples, result.CapturedAtGameTick);
+            if (result.RearPickup.ItemId.HasValue)
+                result.RearPickup.Name = GetItemName(result.RearPickup.ItemId.Value);
             return result;
         }
     }

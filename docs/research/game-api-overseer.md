@@ -2,6 +2,16 @@
 
 本文记录 v0.4 只读多行星监督链路采用的当前《戴森球计划》运行时接口。它补充 [game-api-m0.md](./game-api-m0.md)，不改变 owned-world、Unity 主线程或普通玩法写入边界。
 
+## 2026-09-07：混合入站带的尾端对齐货包观察（实现前证据）
+
+同一当前DLL（0.10.34.28529，Assembly-CSharp SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，本次再次核验）中，`CargoPath.pathLength`直接返回私有`bufferLength`。`StationComponent.UpdateNeeds()`仅在count<max时把槽itemId加入needs；`UpdateInputSlots(CargoTraffic,SignData[],bool)`仅对Input端调用该path的`TryPickItemAtRear(int[],out int,out byte,out byte)`，成功后写storageIdx=needIdx+1（最后接收槽，不是输入过滤配置）。后者只在`buffer[bufferLength-6]==250`时取对齐的十字节货包，按四位base100货物ID读取，只有物品匹配needs才清除货包/RemoveCargo；不会跳过不需要的尾端货物。
+
+采用边界：在既有detail-only beltCargo的同帧、同buffer锁及≤530字节副本内，只有选中段恰好止于open path尾部才报告`rearPickup`。复用完整十字节校验和原生`GetCargoAtIndex(int,out Cargo,out int,out int)`只读核对；匹配cargo pool身份、item/stack/inc并深复制。不调用有副作用的TryPickItemAtRear、不扫描整条路径、不改库存/needs/连接。非尾段和闭环明确not_applicable；没有对齐货包是no_aligned_packet，不是整条带为空；损坏/缺失原生证据为unavailable，不返回猜测货物。与既有分段聚合、实际吞吐和动作hash分开。
+
+触发现场：102:44硅300/max300、钛8/max200、needs仅1004，110尾段聚合含硅和钛。175把硅插入同一钛带是可见拓扑；旧分段聚合没有顺序，因此不足以确认尾端具体物品。本切片只补观察，不把上述推断写成已确认阻塞、不认为腾一次容量就是持续修复。新增适配和测试完成后仍须正常冷部署与实机复读，旧1420安装态不具备该字段。
+
+离线实现结果：新增28 Core/5 Contracts/2 MCP回归，1455项Debug/Release和完整当前DSP Release零警告错误通过；真实源码MCP64工具/1资源/45564字符同批指南一致，正常exit0/额外stdout0。既有hash和写面不变；此处仍不宣称新适配live通过，待正常保存、冷部署和同档恢复后复验。
+
 ## 2026-09-07：运输船起送阈值的原生反证（只读研究）
 
 同一当前Assembly-CSharp（SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`）中，`StationComponent.DetermineDispatch(float,float,int,int,StationComponent[],FactoryProductionStat[],PlanetFactory[],GalaxyData,TrafficStatistics)`首先计算整数阈值`(shipCarries-1)*deliveryShips/100`。在本地供给发船和本地需求取货分支中，若供应槽max不大于阈值，会再把阈值夹到`max(0,supply.max-1)`；之后同时要求实际count、remoteSupplyCount、totalSupplyCount大于该阈值，而需求侧remoteDemandCount/totalDemandCount须大于0。因此不能只看到“source.max200小于船舱容量”就认定永远不能起送，更不能据此随意调高限额或降低起送设置。

@@ -285,6 +285,35 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void RearPickupEvidenceIsDiscoverableButNotQueueOrRepairAuthority()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var inspect = provider.GetServices<McpServerTool>().Single(t => t.ProtocolTool.Name == "spherewright_inspect_factory_entity").ProtocolTool;
+        Assert.True(inspect.Annotations!.ReadOnlyHint);
+        Assert.Contains("beltCargo.rearPickup", inspect.Description);
+        Assert.Contains("no_aligned_packet does not mean an empty belt", inspect.Description);
+        Assert.Contains("not queue order", inspect.Description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("beltCargo.rearPickup", guide);
+        Assert.Contains("aligned native pickup packet", guide);
+        Assert.Contains("cannot skip", guide);
+        Assert.Contains("last received slot, not an input filter", guide);
+        Assert.Contains("never clear stock to manufacture throughput", guide);
+    }
+
+    [Fact]
+    public void SettlingGuidanceDoesNotReplayMovesOrCountRevisionsAsActions()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("bounded read-only settling check", guide);
+        Assert.Contains("not an extra or repeated Move", guide);
+        Assert.Contains("revision is not an accepted-action counter", guide);
+    }
+
+    [Fact]
     public async Task GovernorExposesReadOnlyDeclaredTargetAndExplicitSource()
     {
         var client = new FakeBridgeClient(SuccessResult());

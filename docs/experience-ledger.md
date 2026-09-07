@@ -3062,7 +3062,22 @@
 - 关联：EXP-226/227/233/239、IFX-058、game-api-foundry、存档日记001。
 - 最近复验：2026-09-07（带施工与独立审计通过；两端连接/供油均未完成）。
 
+### EXP-241 — 混合入站带的分段聚合不是原生队首证据
+
+- 状态：`observed`
+- 日期：2026-09-07。
+- 适用范围：当前DSP0.10.34.28529、exact local belt detail和已证明的station Input/needs路径。
+- 当前结论：Items按物品排序，不能据其中硅/钛的排列判断谁挡住谁。新增可选rearPickup只报告open path尾段的对齐十字节货包；非尾段/闭环为not_applicable，没有对齐包不等于空带，缺失/损坏为unavailable。必须结合fresh双向入站口、needs/容量和多次观察，单点只证明当tick状态，不证明持续死锁或吞吐修复。
+- 直接证据：102:44硅300/max300、钛8/max200、needs仅1004，110分段聚合各一堆，175由硅带148插入钛带102。当前DLL的UpdateInputSlots调用TryPickItemAtRear，后者仅看pathLength-6的250标记，不会跳过不匹配needs的尾端包；input storageIdx仅为上次接收槽。只读适配复用当前buffer锁/≤530字节复制、完整帧/base100/零起始cargo ID和GetCargoAtIndex确认，不调用取货/RemoveCargo、不扫描整路径。
+- 验证：新增28 Core、5 Contracts、2 MCP回归后1455项Debug/Release通过，完整当前DSP Release零警告错误；真实源码stdio64 tools/1 resource、45564字符同批playbook、exit0/额外stdout0通过。覆盖聚合非顺序、空/未对齐/非尾/闭环、畸形/缺失、边界/大path小窗口、ID0、只读/深复制和原hash保持。安装态仍1420，新字段live待验。
+- 限制：不是整路径库存或升级保全证据，不自动判断发货/修线，不因一次腾容量宣布持续供给。实际尾包内容必须在新安装态fresh读取，不把单元测试或旧聚合写成实机。
+- 复验触发：冷部署、路径/连接/站容量变化、混料阻塞诊断、DSP版本/货包格式变化。
+- 关联：EXP-238/240、IFX-059、game-api-overseer、存档日记001。
+- 最近复验：2026-09-07（离线/完整构建/MCP资源通过，实机待冷部署）。
+
 ## 修订记录
+
+- 2026-09-07：新增EXP-241；1455源码验证通过，1420安装态第7写单次4m侧向脱困后175业务prepare通过，未重放原停滞目标。#8普通保存27241962；root27244818完整175实体/28详情及27244887pre0保全结构/配置/背包，8项唯一终态核销、J55/55 durable/healthy/Walk0/400MJ，计数8保留。复核EXP-001/002：只在此保存审计落盘后正常关闭、同批冷部署、Steam一次启动与fresh protected resume，不加载旧飞行检查点或用部署归零。
 
 - 2026-09-07：第6写7abc5876在27195922明确position_stalled（180tick/0.75m、余0.60m），失败计accepted6；已终止exact order、无unknown和重放，不能把相邻的0.5m容差直接放宽后重做同目标。root27204107复读Walk0/400MJ/healthy/rev23，业务仍81.51m超80m。EXP-061/077/237边界继续适用：未识别精确障碍时第一方向4m切向探测，fresh原生/地表门通过才交Luna唯一执行，后续候选仍不得自行扩散。root私有只读几何脚本最初漏掉PowerShell数组元素算术括号，错误发生在prepare之前；补括号后才得到有效raw，不涉及游戏写或产品问题修复。
 

@@ -3,6 +3,32 @@ $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'SpherewrightBridgeClient.ps1')
 
+function Get-SpherewrightInventoryCount {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][object]$PlayerState,
+        [Parameter(Mandatory)][ValidateRange(1, [int]::MaxValue)][int]$ItemId
+    )
+
+    # An item absent from a complete inventory is zero. A missing inventory or
+    # malformed entry is unknown, never zero. Do not access Measure-Object.Sum
+    # on an empty pipeline under StrictMode after an already accepted action.
+    if ($null -eq $PlayerState.PSObject.Properties['inventory'] -or $null -eq $PlayerState.inventory) {
+        throw 'A complete player inventory snapshot is required.'
+    }
+    [long]$total = 0
+    foreach ($entry in @($PlayerState.inventory)) {
+        if ($null -eq $entry -or $null -eq $entry.PSObject.Properties['itemId'] -or $null -eq $entry.PSObject.Properties['count'] -or
+            -not ($entry.itemId -is [int] -or $entry.itemId -is [long]) -or $entry.itemId -le 0 -or $entry.itemId -gt [int]::MaxValue -or
+            -not ($entry.count -is [int] -or $entry.count -is [long]) -or $entry.count -lt 0 -or $entry.count -gt [int]::MaxValue) {
+            throw 'Inventory entries require positive integer item IDs and nonnegative integer counts.'
+        }
+        if ($entry.itemId -eq $ItemId) { $total += [long]$entry.count }
+        if ($total -gt [int]::MaxValue) { throw 'Inventory aggregate exceeds the supported count range.' }
+    }
+    return $total
+}
+
 function Get-SpherewrightOwnedSession {
     [CmdletBinding()]
     param()

@@ -26,6 +26,8 @@
 
 2026-09-07复现与产品化：四带施工terminal成功，外部脚本仅因post-read仍有1台非空闲无人机而停在下一sorter之前，不能据此重做已完成带。GameStateReader的working只是alive-idle；新增公开player说明与包内playbook的有界只读待机、只续未提交对象、fresh核验原生复用ID规则。root完整178→179实体、逐对象材料/连接和Luna两次唯一terminal均通过；新增2项MCP测试后1457项Debug/Release、完整Release零警告错误及真实MCP resource读回通过。未修改Plugin准入、没有新ZIP；关联EXP-242。
 
+2026-09-07空库存复现：旧27回收f274a9a9已于28106933成功，后置PowerShell直接访问空Measure-Object的Sum而停止，尚未prepare重建。raw-2010d15c证明2012为2→3、铜为0→1，缺少的是before铜项，不是设备丢失。公共ActionClient新增Get-SpherewrightInventoryCount，完整inventory缺项返回0，缺失/null/畸形条目、非整数/负数和聚合越界拒绝；不改prepare/commit/poll/幂等。独立scripts/test-action-client.ps1有21项离线检查且不访问游戏，本次原始库存再次核算通过；Luna随后只续未提交重建e4cae01f，28135338→28135738、2012为3→2，双端和filter1104正确。root raw-10f35253全2351实体/389配置、五写审计通过，无重复回收/重建。既有1488项Release回归复跑通过，21项PowerShell检查单列，不将两者混称新的.NET测试数量。
+
 ## IFX-002 — 同位置/同设备分拣器被错误归属或覆盖槽位
 
 - 首见：2026-08-31，精炼厂同源输出；2026-09-01 在熔炉上复现槽覆盖。

@@ -42,6 +42,10 @@ internal sealed partial class NormalGameActionCoordinator
         if (filterError is not null)
             return GameCallResult<PreparedNormalAction>.Failed(filterError);
 
+        var routingError = BeltPathRoutingPolicy.ValidateRequest(request, item.prefabDesc.isBelt);
+        if (routingError is not null)
+            return InvalidPlan(routingError + ": " + BeltPathRoutingPolicy.Recovery);
+
         var player = GameMain.mainPlayer;
         var factory = GameMain.localPlanet?.factory;
         if (player?.package is null || factory is null || player.controller?.actionBuild is null)
@@ -153,6 +157,7 @@ internal sealed partial class NormalGameActionCoordinator
                     ReusedSourceObjectId = anchor?.EntityId,
                     SourcePreservationMode = anchor is null ? null : BeltSourceRotationPolicy.PreservationMode,
                     NewObjectCount = preparation.Steps.Count,
+                    RoutingMode = preparation.Steps[0].BeltPathMode,
                 };
             }
             prepared.Value.PlannedSorterFilterItemId = preparation.Kind == NormalBuildKinds.Inserter
@@ -540,6 +545,7 @@ internal sealed partial class NormalGameActionCoordinator
                         item,
                         sourcePort,
                         endPort,
+                        request.BeltPathMode,
                         out var candidate,
                         out last))
                 {
@@ -617,12 +623,21 @@ internal sealed partial class NormalGameActionCoordinator
         ItemProto item,
         EndpointPoint source,
         EndpointPoint destination,
+        string routingMode,
         out List<BuildStepPlan> steps,
         out string rejection)
     {
         steps = new List<BuildStepPlan>();
         rejection = string.Empty;
         BeltSourceState? sourceAnchor = null;
+        var geodesic = routingMode == BeltPathModes.NativeGeodesic;
+        if (geodesic && (source.ObjectId != 0 || destination.ObjectId != 0
+            || !BeltPathRoutingPolicy.ValidGroundEndpoints(Snapshot(source.Pose.position),
+                Snapshot(destination.Pose.position), factory.planet.realRadius + .2f)))
+        {
+            rejection = "belt_geodesic_ground_span_unsupported: requires explicit free ground endpoints, 1.5–30m apart after native snapping, with no raised/tilted route.";
+            return false;
+        }
         var sourceIsBelt = source.ObjectId > 0 && factory.entityPool[source.ObjectId].beltId > 0;
         if (destination.ObjectId > 0 && factory.entityPool[destination.ObjectId].beltId > 0)
         {
@@ -646,7 +661,7 @@ internal sealed partial class NormalGameActionCoordinator
             source.Pose.position,
             destination.Pose.position,
             1,
-            geodesic: false,
+            geodesic: geodesic,
             begin_flat: source.ObjectId == 0 || sourceIsBelt,
             points,
             forceVertical: false,
@@ -655,6 +670,13 @@ internal sealed partial class NormalGameActionCoordinator
         if (count < 2 || count >= points.Length)
         {
             rejection = "DSP's terrain grid did not return a complete, unsaturated bounded belt path.";
+            return false;
+        }
+
+        if (geodesic && !BeltPathRoutingPolicy.CompleteGroundPath(points.Take(count).Select(Snapshot).ToArray(),
+            points.Length, Snapshot(source.Pose.position), Snapshot(destination.Pose.position), factory.planet.realRadius + .2f))
+        {
+            rejection = "belt_geodesic_path_incomplete: native points are saturated, incomplete or not entirely ground-level; no endpoint is replaced to mask truncation.";
             return false;
         }
 
@@ -677,6 +699,7 @@ internal sealed partial class NormalGameActionCoordinator
         for (var index = 0; index < count; index++)
         {
             var step = BuildStepPlan.Belt(item.ID, points[index]);
+            step.BeltPathMode = routingMode;
             step.InputStepIndex = index > 0 ? index - 1 : -1;
             step.OutputStepIndex = index + 1 < count ? index + 1 : -1;
             if (index == 0 && source.ObjectId > 0)
@@ -1108,6 +1131,21 @@ internal sealed partial class NormalGameActionCoordinator
     {
         accepted = new List<BuildStepPlan>();
         rejection = string.Empty;
+        if (candidates.Count < 2 || candidates.Any(step => step.BeltPathMode != candidates[0].BeltPathMode)
+            || (candidates[0].BeltPathMode != BeltPathModes.NativeGrid && candidates[0].BeltPathMode != BeltPathModes.NativeGeodesic))
+        {
+            rejection = "belt_routing_mode_inconsistent";
+            return false;
+        }
+        var geodesic = candidates[0].BeltPathMode == BeltPathModes.NativeGeodesic;
+        if (geodesic && (candidates.Any(step => step.SourceBeltAnchor is not null || step.InputObjectId != 0 || step.OutputObjectId != 0)
+            || !BeltPathRoutingPolicy.CompleteGroundPath(candidates.Select(step => Snapshot(step.Position)).ToArray(),
+                BeltBuildOccupancyPolicy.MaximumPathPoints, Snapshot(candidates[0].Position),
+                Snapshot(candidates[candidates.Count - 1].Position), factory.planet.realRadius + .2f)))
+        {
+            rejection = "belt_geodesic_prepared_ground_path_invalid";
+            return false;
+        }
         if (!BuildUiIsIdle(player))
         {
             rejection = "The player's normal build UI owns preview state.";
@@ -1151,6 +1189,13 @@ internal sealed partial class NormalGameActionCoordinator
 
             // Native checking can adjust heights/poses. Its output is also a NEW-object
             // path, so it must pass the complete occupancy guard after adjustment.
+            if (geodesic && !BeltPathRoutingPolicy.CompleteGroundPath(accepted.Select(step => Snapshot(step.Position)).ToArray(),
+                BeltBuildOccupancyPolicy.MaximumPathPoints, Snapshot(candidates[0].Position),
+                Snapshot(candidates[candidates.Count - 1].Position), factory.planet.realRadius + .2f))
+            {
+                rejection = "belt_geodesic_native_adjustment_unsupported: native checking moved an endpoint or raised the free ground path.";
+                return false;
+            }
             return TryValidateNewBeltOccupancy(factory, accepted, out rejection);
         }
         finally
@@ -3028,7 +3073,8 @@ internal sealed partial class NormalGameActionCoordinator
             step.AppendFingerprint(fields);
         }
 
-        return CanonicalStateHash.Combine("build-steps", fields.ToArray());
+        return BeltPathRoutingPolicy.BindGeometry(preparation.Steps[0].BeltPathMode,
+            CanonicalStateHash.Combine("build-steps", fields.ToArray()));
     }
 
     private static bool BuildStepsEqual(
@@ -3293,6 +3339,7 @@ internal sealed partial class NormalGameActionCoordinator
         public int AttachmentBeltObjectId { get; set; }
         public string? AttachmentGeometryHash { get; set; }
         public BeltSourceState? SourceBeltAnchor { get; set; }
+        public string BeltPathMode { get; set; } = BeltPathModes.NativeGrid;
         public bool IsConnectionNode { get; private set; }
         public List<int> Parameters { get; } = new List<int>();
 
@@ -3366,6 +3413,7 @@ internal sealed partial class NormalGameActionCoordinator
                 AttachmentBeltObjectId = template.AttachmentBeltObjectId,
                 AttachmentGeometryHash = template.AttachmentGeometryHash,
                 SourceBeltAnchor = template.SourceBeltAnchor,
+                BeltPathMode = template.BeltPathMode,
                 IsConnectionNode = preview.isConnNode,
             };
             if (preview.parameters is not null && preview.paramCount > 0)
@@ -3398,6 +3446,7 @@ internal sealed partial class NormalGameActionCoordinator
                    && AttachmentBeltObjectId == other.AttachmentBeltObjectId
                    && string.Equals(AttachmentGeometryHash, other.AttachmentGeometryHash, StringComparison.Ordinal)
                    && string.Equals(SourceBeltAnchor?.BindingHash, other.SourceBeltAnchor?.BindingHash, StringComparison.Ordinal)
+                   && string.Equals(BeltPathMode, other.BeltPathMode, StringComparison.Ordinal)
                    && IsConnectionNode == other.IsConnectionNode
                    && Parameters.SequenceEqual(other.Parameters);
         }

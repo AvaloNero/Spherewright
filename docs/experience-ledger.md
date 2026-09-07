@@ -2948,7 +2948,22 @@
 - 关联：scripts/SpherewrightBridgeClient.ps1、scripts/test-bridge-client.ps1、IFX-051。
 - 最近复验：2026-09-07（9项offline；只读live23页完整同snapshot，0游戏写）。
 
+### EXP-233 — 原生球面直线路径需要显式模式、完整端点和兼容确认
+
+- 状态：`observed`
+- 日期：2026-09-07
+- 适用范围：当前DSP普通新带的原生点生成；不用于任意路径规划、旧带覆盖或高度调整。
+- 当前结论：旧适配器固定path1/geodesic=false，可能把建筑偏移走廊变成网格折线；当前游戏UI原生支持球面直线，可开放明确两端空地、贴地1.5–30m的窄选项，不能忽略原生拒绝或把路径可放等同两端分拣器可接。
+- 直接证据：同SHA BuildTool_Path的native路径切换传入PlanetAuxData.SnapLineNonAlloc；geodesic分支按本地网格尺度球面插值，原生数组预留10点，达到Length−10即可截断。新模式必须在替换端点前验证完整返回，不能只等数组全满。
+- 实现/验证：模式绑定精确路径，默认grid指纹不变；非默认请求需matching routingMode/full-stage1/NEW预算才发token。仅2001/2002/2003、明确自由端，不混cover/设备口/资源绑定/抬高，生成和native调整后均检查地表半径与原端点。34Core/3Contracts/6MCP新增后1370项Debug/Release与完整Release零警告错误；源码MCP64tools/1resource/40458字符指南一致、exit0/extraStdout0。尚未冷部署或实测该路径。
+- 限制或反例：外侧753→761旧网格20点路径虽原生prepare可过，分拣器几何仍未证明；新模式解决表达能力，不保证该走廊成功。不得用新带反复掩盖未验证接线；源cover与旧网格原约束保持，最终供水/版本验收另算。
+- 复验触发：DLL点生成/保留空间/地形、模式/哈希/echo或native预览改变，冷部署与首个geodesic施工。
+- 关联：EXP-228/229/230、IFX-052、BeltPathRoutingPolicy、game-api-foundry。
+- 最近复验：2026-09-07（当前DLL与1370离线/source-MCP；live待验，当前窗accepted3保留）。
+
 ## 修订记录
+
+- 2026-09-07：1370源码切片补显式原生球面路径，沿用完整stage1/占位/成本/施工/哈希和兼容防误提交，不自动寻路。冷部署前Luna普通save cd78d82a在26074522成功；root核本窗三次唯一终态及两次transfer即时守恒，再以26079037单snapshot23页2283证明所有身份/位置/旋转/连接保持，47详情原配置保持，26079619独立pre0，J55/55、Walk0/400MJ/3idle/三网满供电。accepted3不归零，EXP-001/002/007/224/228–233复核后才允许正常关闭/同档恢复；未宣布持续供水或0.4完成。此前transfer指南提交1634845已推送，Windows CI34076978482成功。
 
 - 2026-09-07：补强EXP-219/224与包内指南：新窗两次正常transfer均成功，脚本晚期库存相等断言由root原始终态纠正后交回Luna，未重放。观察阶段原始deadline未被正确检查，首样本错过投料期、整组超过3600tick，保留实际时间戳并拒绝连续验收。指南要求每次采样前检查原始游戏tick截止、错误/分析延迟不得重启计时；晚窗口为零不抹去早期库存增长，推断与实测窗口分开。accepted2保留，无unknown/隔离/额外游戏写，持续供水和所有0.4原验收门不变。
 

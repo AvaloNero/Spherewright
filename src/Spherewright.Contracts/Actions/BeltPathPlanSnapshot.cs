@@ -8,4 +8,12 @@ public sealed class BeltPathPlanSnapshot
     public int? ReusedSourceObjectId { get; set; }
     public string? SourcePreservationMode { get; set; }
     public int NewObjectCount { get; set; }
+    /// <summary>Null in legacy responses; a non-default request requires an exact explicit echo.</summary>
+    public string? RoutingMode { get; set; }
+}
+
+public static class BeltPathModes
+{
+    public const string NativeGrid = "native_grid";
+    public const string NativeGeodesic = "native_geodesic";
 }

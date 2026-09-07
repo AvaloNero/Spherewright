@@ -24,6 +24,57 @@ namespace Spherewright.Mcp.Tests;
 
 public sealed class SpherewrightToolsTests
 {
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData(BeltPathModes.NativeGrid, true)]
+    [InlineData(BeltPathModes.NativeGeodesic, false)]
+    public async Task GeodesicRequestRequiresAnExactPluginEchoBeforeExposingTheToken(string? echo, bool blocked)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult()) { BuildBeltRoutingMode = echo };
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2001, "player",
+            preferredPositionX: 0, preferredPositionY: 200.2f, preferredPositionZ: 0,
+            pathEndX: 10, pathEndY: 199.95f, pathEndZ: 0, beltPathMode: BeltPathModes.NativeGeodesic);
+        Assert.Equal(BeltPathModes.NativeGeodesic, bridge.LastBuildRequest!.BeltPathMode);
+        Assert.Equal(blocked, result.IsError);
+        var content = result.StructuredContent!.Value;
+        if (blocked)
+        {
+            Assert.Equal(BridgeErrorCodes.BridgeNotReady, content.GetProperty("error").GetProperty("code").GetString());
+            Assert.Equal(JsonValueKind.Null, content.GetProperty("result").ValueKind);
+        }
+        else Assert.Equal(echo, content.GetProperty("result").GetProperty("plannedBeltPath").GetProperty("routingMode").GetString());
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(754)]
+    public async Task GeodesicDoesNotNormalizeAnExistingEndpointIntoFreeSpace(int source)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2001, "player",
+            preferredPositionX: 0, preferredPositionY: 200.2f, preferredPositionZ: 0,
+            pathEndX: 10, pathEndY: 199.95f, pathEndZ: 0, sourceObjectId: source, beltPathMode: BeltPathModes.NativeGeodesic);
+        Assert.True(result.IsError);
+        Assert.Null(bridge.LastBuildRequest);
+        Assert.Equal(BridgeErrorCodes.InvalidRequest, result.StructuredContent!.Value.GetProperty("error").GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public void NativeGeodesicSubsetIsDiscoverableInSchemaAndEmbeddedGuide()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tool = Assert.Single(provider.GetServices<McpServerTool>(),
+            value => value.ProtocolTool.Name == "spherewright_prepare_build").ProtocolTool;
+        Assert.Contains("native_geodesic", tool.InputSchema.GetProperty("properties").GetProperty("beltPathMode").GetProperty("description").GetString());
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("beltPathMode=native_geodesic", guide);
+        Assert.Contains("plannedBeltPath.routingMode", guide);
+        Assert.Contains("both sorter attachments", guide);
+    }
+
     [Fact]
     public void FullNativePathStageDoesNotDependOnThePlayersUiCommand()
     {
@@ -1303,6 +1354,7 @@ public sealed class SpherewrightToolsTests
         public string BuildBeltMode { get; set; } = "full_path_stage1";
         public bool BuildBeltSourceCover { get; set; }
         public string? BuildBeltPreservationMode { get; set; }
+        public string? BuildBeltRoutingMode { get; set; }
         public int? BuildFilterEcho { get; set; }
 
         public PrepareDismantleRequest? LastDismantleRequest { get; private set; }
@@ -1571,7 +1623,7 @@ public sealed class SpherewrightToolsTests
                     prepared.PlannedBeltPath = new BeltPathPlanSnapshot { NativeValidationMode = BuildBeltMode,
                         SourceBindingMode = BuildBeltSourceCover ? "non_removing_belt_cover" : request.SourceObjectId.HasValue ? "native_device_port" : "none",
                         ReusedSourceObjectId = BuildBeltSourceCover ? request.SourceObjectId : null,
-                        SourcePreservationMode = BuildBeltPreservationMode, NewObjectCount = 2 };
+                        SourcePreservationMode = BuildBeltPreservationMode, NewObjectCount = 2, RoutingMode = BuildBeltRoutingMode };
             }
             return Task.FromResult(BridgeCallResult<PreparedNormalAction>.Succeeded(prepared));
         }

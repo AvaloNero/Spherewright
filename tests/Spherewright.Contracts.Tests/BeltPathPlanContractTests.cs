@@ -7,6 +7,25 @@ namespace Spherewright.Contracts.Tests;
 public sealed class BeltPathPlanContractTests
 {
     [Fact]
+    public void AbsentRoutingOptionRetainsGridAndLegacyEchoRemainsUnknown()
+    {
+        Assert.Equal(BeltPathModes.NativeGrid, JsonSerializer.Deserialize<PrepareBuildRequest>("{}")!.BeltPathMode);
+        Assert.Null(JsonSerializer.Deserialize<BeltPathPlanSnapshot>("{}")!.RoutingMode);
+    }
+
+    [Theory]
+    [InlineData(BeltPathModes.NativeGrid)]
+    [InlineData(BeltPathModes.NativeGeodesic)]
+    public void RoutingRequestAndExplicitEchoRoundTrip(string mode)
+    {
+        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        var request = JsonSerializer.Serialize(new PrepareBuildRequest { BeltPathMode = mode }, options);
+        Assert.Equal(mode, JsonSerializer.Deserialize<PrepareBuildRequest>(request, options)!.BeltPathMode);
+        var echo = JsonSerializer.Serialize(new BeltPathPlanSnapshot { RoutingMode = mode }, options);
+        Assert.Equal(mode, JsonSerializer.Deserialize<BeltPathPlanSnapshot>(echo, options)!.RoutingMode);
+    }
+
+    [Fact]
     public void OptionalEchoIsAbsentInLegacyResultsButExplicitForCurrentCoverPlans()
     {
         var options=new JsonSerializerOptions{PropertyNamingPolicy=JsonNamingPolicy.CamelCase};

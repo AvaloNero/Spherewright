@@ -103,6 +103,10 @@ All recovery attempts use the existing `prepare_move` / `commit_move` flow. Neve
 
 - Source-cover plans must also advertise `plannedBeltPath.sourcePreservationMode=whole_path_native_rotation_v1`. Native drone construction may legitimately recompute source/adjacent-belt rotations from the final cargo path. Completion must verify that exact native derivation and collider evidence, preserve original identities/positions/neighbours and still prove the new reciprocal edge; it must not ignore arbitrary rotations or require every old belt quaternion to stay bit-identical. Non-belt neighbours remain unchanged. This does not weaken the same-frame whole-path/cargo proof around prebuild creation. An older cover echo without this mode is not a construction capability.
 
+### Native free-ground belt route choice
+
+`prepare_build` defaults to `beltPathMode=native_grid`. When advertised, `beltPathMode=native_geodesic` asks DSP for one spherical straight route between explicitly supplied start/end coordinates, only for ordinary2001/2002/2003 NEW belts. Both ends must be free ground, with a1.5–30m span after native snapping. No existing endpoint/resource bindings, cover, merging, raised path or automatic direction search is included. Require `plannedBeltPath.routingMode=native_geodesic` plus the normal full-path/NEW-budget echo; missing or different routing evidence means no commit, not a silently substituted grid route. Native saturation/incomplete endpoints and height changes reject. This is not general pathfinding or an end-to-end supply plan: verify both sorter attachments separately, all native collisions/materials, then terminal topology and actual delivery. Do not spend another section simply to hide an unproven connection.
+
 ## Restart and interplanetary flight
 
 - Protected resume and flight-checkpoint capabilities are not save pickers. Use only the currently advertised token for the exact owned world and flow; never preserve or revive an older capability after newer progress.

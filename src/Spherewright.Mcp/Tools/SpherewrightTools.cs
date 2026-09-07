@@ -513,11 +513,11 @@ public static partial class SpherewrightTools
         float pathLength = 6f,
         int stateHashVersion = 1,
         int initialSorterFilterItemId = 0,
+        [Description("native_grid (default) or native_geodesic: one explicit free-ground2001/2002/2003 route, 1.5–30m after native snapping. Requires all start/end coordinates and no entity/resource binding; no cover, merging or raised path. Require plannedBeltPath.routingMode to match a non-default request before commit.")]
+        string beltPathMode = BeltPathModes.NativeGrid,
         CancellationToken cancellationToken = default)
     {
-        var result = await bridgeClient.PrepareBuildAsync(
-            sessionId,
-            new PrepareBuildRequest
+        var request = new PrepareBuildRequest
             {
                 PlanetId = planetId,
                 BuildingItemId = buildingItemId,
@@ -525,18 +525,25 @@ public static partial class SpherewrightTools
                 PreferredDistance = preferredDistance,
                 PreferredPosition = CreateOptionalVector(preferredPositionX, preferredPositionY, preferredPositionZ),
                 PreferredYaw = preferredYaw,
-                ResourceNodeId = resourceNodeId > 0 ? resourceNodeId : (int?)null,
+                ResourceNodeId = resourceNodeId > 0 || (beltPathMode == BeltPathModes.NativeGeodesic && resourceNodeId != 0) ? resourceNodeId : (int?)null,
                 ExpectedResourceStateHash = string.IsNullOrWhiteSpace(expectedResourceStateHash) ? null : expectedResourceStateHash,
-                SourceObjectId = sourceObjectId > 0 ? sourceObjectId : (int?)null,
+                SourceObjectId = sourceObjectId > 0 || (beltPathMode == BeltPathModes.NativeGeodesic && sourceObjectId != 0) ? sourceObjectId : (int?)null,
                 ExpectedSourceStateHash = string.IsNullOrWhiteSpace(expectedSourceStateHash) ? null : expectedSourceStateHash,
-                DestinationObjectId = destinationObjectId > 0 ? destinationObjectId : (int?)null,
+                DestinationObjectId = destinationObjectId > 0 || (beltPathMode == BeltPathModes.NativeGeodesic && destinationObjectId != 0) ? destinationObjectId : (int?)null,
                 ExpectedDestinationStateHash = string.IsNullOrWhiteSpace(expectedDestinationStateHash) ? null : expectedDestinationStateHash,
                 PathEnd = CreateOptionalVector(pathEndX, pathEndY, pathEndZ),
                 PathLength = pathLength,
+                BeltPathMode = beltPathMode,
                 ExpectedPlayerStateHash = expectedPlayerStateHash,
                 StateHashVersion = stateHashVersion,
-            },
-            cancellationToken).ConfigureAwait(false);
+            };
+        var routingError = Spherewright.Bridge.Core.Factory.BeltPathRoutingPolicy.ValidateRequest(request,
+            buildingItemId >= 2001 && buildingItemId <= 2003);
+        if (routingError is not null)
+            return ToToolResult(BridgeCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
+                BridgeErrorCodes.InvalidRequest, routingError, false,
+                Spherewright.Bridge.Core.Factory.BeltPathRoutingPolicy.Recovery)), "No construction plan prepared.");
+        var result = await bridgeClient.PrepareBuildAsync(sessionId, request, cancellationToken).ConfigureAwait(false);
         // Mixed-cohort installs must not silently turn a requested filter into a
         // legacy unfiltered plan. Do not expose that plan's commit capability.
         if (initialSorterFilterItemId > 0 && result.Success
@@ -552,6 +559,12 @@ public static partial class SpherewrightTools
                 BridgeErrorCodes.BridgeNotReady,
                 "The installed Plugin did not confirm full native belt validation and the exact NEW-object budget; no construction token is exposed.",
                 false, "Install matching Plugin/MCP files after a normal save and shutdown, then fresh-read and prepare again. Do not commit a legacy or unconfirmed belt plan."));
+        if (buildingItemId >= 2001 && buildingItemId <= 2003 && result.Success
+            && !Spherewright.Bridge.Core.Factory.BeltPathRoutingPolicy.ConfirmsPlanEcho(beltPathMode, result.Value?.PlannedBeltPath))
+            result = BridgeCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
+                BridgeErrorCodes.BridgeNotReady,
+                "The installed Plugin did not confirm the requested belt routing mode; no construction token is exposed.",
+                false, "Install matching Plugin/MCP files after a normal save and shutdown, then fresh-prepare. Never commit a silently substituted grid route."));
         return ToToolResult(result, "One owned-item construction plan prepared through DSP's build validator; no prebuild exists yet.");
     }
 

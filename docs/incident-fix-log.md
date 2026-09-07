@@ -643,3 +643,11 @@
 - 验证：14项Core及1项MCP新回归，1472项Debug/Release、完整当前DSP Release零警告错误、真实64工具/1资源/46812字符指南通过；未冷部署/live。失败后的a50e84b6精确checkpoint恢复及root全179对象/28详情/物资/Journal55审计通过，保存的分流修复保留，无目的地保存或盲重放。
 - 状态：`fixed_offline_live_pending`；关联EXP-243和存档日记001。
 - 后续窄live正例：a157a0b冷部署/同档primary恢复后，532d165b于27593800→27599682正常返航并通过600稳定tick；全2310结构/387非belt新基线/材料/Journal十写审计通过。原27507953因更新primary被startup retire，不是相同checkpoint复测；中途optional局部read遇NO_LOCAL_PLANET后只有终态补证，尚无故障shore分支的连续trace，故针对性live pending不撤销。
+
+## IFX-061 — 发电详情把每tick能量标为燃料件数
+
+- 首见：2026-09-07，规划氢消耗时183火电公开buffer为item1120/count18686/items，raw-15665ee0/tick27697702；不是18686件氢。
+- 根因：CapturePower将generateCurrentTick写入FactoryBufferSnapshot.Count，却继承默认items/1；curFuelId只描述燃料类型。Governor按默认单位汇总时也可能把发电量和真实物资相加。
+- 修复：共享纯Core语义显式标joules_per_tick/unitsPerItem0，并在Governor当前库存和历史窗口库存统一排除发电role（包括旧版误标items）。保留原计数的int饱和投影和原生字段读取，不新增游戏写入、不改普通物品/研究点或action/hash协议。
+- 验证：当前DLL SHA/PowerSystem.GameTick→GenEnergyByFuel已复核；15Core/1MCP新增，1488项Debug/Release、完整当前DSP Release零警告错误、真实源码64工具/1资源/48248字符指南、stdout纯净通过。当前安装仍1472，修复后live单位读回待冷部署。
+- 状态：`fixed_offline_live_pending`；关联EXP-245、存档日记001。

@@ -66,6 +66,21 @@ public sealed class GovernorPlanCompilerTests
         Assert.Equal(2400, raw.InventoryObservationEndGameTick);
     }
 
+    [Theory]
+    [InlineData("items", 1)]
+    [InlineData("joules_per_tick", 0)]
+    public void GenerationIsNotInventoryEvenWhenLegacyUnitsSayItems(string unit, int scale)
+    {
+        var plan = Compile(configureSource: source => source[0].Buffers.Add(new FactoryBufferSnapshot
+        {
+            Role = "power-generation-current-tick", ItemId = 1, Count = 18686,
+            CountUnit = unit, UnitsPerItem = scale,
+        }));
+        var raw = plan.Supply.Single(s => s.ItemId == 1);
+        Assert.Equal(7, raw.SelectedBufferItemCount);
+        Assert.Equal(-3, raw.SelectedBufferItemDelta);
+    }
+
     [Fact]
     public void UpgradeCostsCompleteNewDeviceWithSeparateRefundNotIncrementalIngredients()
     {
@@ -150,7 +165,8 @@ public sealed class GovernorPlanCompilerTests
     }
 
     private static GovernorPlanSnapshot Compile(int producerCount = 1, string sourceHash = "source", decimal tolerance = .1m,
-        Action<OverseerDiagnosticBundlePlanetSnapshot>? configure = null)
+        Action<OverseerDiagnosticBundlePlanetSnapshot>? configure = null,
+        Action<FactoryEntitySnapshot[]>? configureSource = null)
     {
         var request = Request(); request.ToleranceFraction = tolerance;
         var recipes = new RecipeCatalogSnapshot { SessionId = "session", PlanetId = 104, CapturedAtGameTick = 2400,
@@ -163,6 +179,7 @@ public sealed class GovernorPlanCompilerTests
             Unlocked = true, Available = true, ProductionSpeedRaw = 20000, WorkEnergyPerTick = 200 } };
         var source = new[] { new FactoryEntitySnapshot { SessionId = "session", PlanetId = 104, CapturedAtGameTick = 2400,
             ObjectId = 20, ItemId = 2303, RecipeId = 1, Buffers = new List<FactoryBufferSnapshot> { new() { ItemId = 1, Count = 7 } } } };
+        configureSource?.Invoke(source);
         var measured = new OverseerDiagnosticBundlePlanetSnapshot { PlanetId = 104, CapturedAtGameTick = 2400,
             Production = new List<ProductionRateSnapshot> { new() { ItemId = 1, ActualProductionPerMinute = 30, ActualConsumptionPerMinute = 30 },
                 new() { ItemId = 2, ActualProductionPerMinute = 30, ActualConsumptionPerMinute = 0, DirectProducerCount = producerCount } } };

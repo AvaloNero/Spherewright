@@ -3157,15 +3157,8 @@ internal sealed partial class GameStateReader
             {
                 snapshot.PowerNetworkId = generator.networkId;
                 snapshot.PowerServeRatio = GetPowerServeRatio(factory.powerSystem, generator.networkId);
-                snapshot.Buffers.Add(new FactoryBufferSnapshot
-                {
-                    Role = "power-generation-current-tick",
-                    ItemId = generator.curFuelId,
-                    Name = GetItemName(generator.curFuelId),
-                    Count = generator.generateCurrentTick > int.MaxValue
-                        ? int.MaxValue
-                        : (int)Math.Max(0, generator.generateCurrentTick),
-                });
+                snapshot.Buffers.Add(FactoryBufferSemantics.PowerGeneration(
+                    generator.generateCurrentTick, generator.curFuelId, GetItemName(generator.curFuelId)));
             }
         }
     }

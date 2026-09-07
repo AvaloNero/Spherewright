@@ -170,9 +170,10 @@ public sealed class FactoryConnectionSnapshot
 
 public sealed class FactoryBufferSnapshot
 {
-    // Count/Inc retain their existing native values. Research buffers use 3600 points per item.
+    // Research buffers use 3600 points per item. Energy observations are not item stocks.
     public string CountUnit { get; set; } = "items";
 
+    // Zero means no item conversion (for example joules_per_tick); never divide in that case.
     public int UnitsPerItem { get; set; } = 1;
 
     public string Role { get; set; } = string.Empty;

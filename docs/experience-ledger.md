@@ -16,6 +16,30 @@
 
 ## 当前经验
 
+### EXP-246 — 普通接近目标不应盲用0.5m到达容差
+
+- 状态：`observed`
+- 日期：2026-09-07
+- 适用范围：owned-world-001母星铁区接近方案、普通Move的3D距离终态与球面短目标。
+- 当前结论：主会话按起点半径生成24m目标，却无业务需要地把arrivalTolerance设为最小0.5；现场到达附近后径向高度差也计入Vector3.Distance。普通建造接近优先使用接口默认1.5m，不用最小值冒充更安全；真正业务准入仍由fresh prepare决定。失败保留失败，不能修改旧目标容差重放或事后改判成功。
+- 直接证据：root只读raw-4c3f4e64为24m/50rays/0unknown/未检出shoreRisk；Luna唯一Move0102d0d9在27749714→27750145为position stall，180tick/剩0.64m后精确停止，Walk0/400MJ/J55/rev6，accepted1→2。raw-61621083的目标与实际位置比较：目标半径200.328410m，实际200.968284m，总差0.640197m，其中径向0.639873m、切向0.020383m。当前UpdateMove确用3D距离，契约默认容差1.5m。
+- 限制或反例：这不是已证明撞上建筑，数学分解也不证明具体地形/碰撞机制；surface无岸线风险不是无障碍保证。后续只能fresh read选择新的接近段，不重放本失败目标；不改watchdog阈值、能量或原生位置。
+- 复验触发：新接近段、Move距离/目标投影或地形采样变化。
+- 关联：EXP-243、包内移动playbook、存档日记001。
+- 最近复验：2026-09-07（终态及坐标独立复核；新容差后续段待执行）。
+
+### EXP-245 — 发电量带有fuelId也不能作为燃料库存
+
+- 状态：`validated`
+- 日期：2026-09-07
+- 适用范围：FactoryBufferSnapshot发电角色、Governor选区库存与窗口差值；仅声明当前DLL/离线修正。
+- 当前结论：power-generation-current-tick是本tick能量，curFuelId只是燃料语境。单位必须为joules_per_tick且unitsPerItem=0表示无物品换算，不能计作氢/煤的件数；旧Plugin错误items/1也按role排除。旧int上限投影保留，完整能量用long电网摘要；普通物品和研究点不变。
+- 直接证据：root raw-15665ee0在27697702读183火电count18686/item1120/items，而当前DLL PowerSystem.GameTick/GenEnergyByFuel证明对应能量、真实fuelCount另行递减。同一Core语义用于Plugin投影、Governor当前库存和历史窗口库存，15新增Core/1MCP后1488项Debug/Release、完整Release零警告错误、源码64工具/1资源/48248字符指南及stdout纯净通过。
+- 限制或反例：此时安装仍a157a0b/1472，修复未冷部署/live。不能把这些错误计数作为物资正增量、手动燃料或自动供应；不要对unitsPerItem=0做除法。未新增fuelCount读取或写入路径，未改变action/hash/成本/幂等。
+- 复验触发：发电详情映射、单位/库存聚合、冷部署或DSP变更。
+- 关联：IFX-061、game-api-overseer、存档日记001。
+- 最近复验：2026-09-07（原始反例、程序集SHA/调用链和1488离线回归；安装实测待）。
+
 ### EXP-244 — 冷启动会以更新主档撤销旧飞行检查点，不能只检查保存回调
 
 - 状态：`validated`

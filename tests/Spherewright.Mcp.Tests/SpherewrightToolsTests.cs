@@ -364,6 +364,23 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void FactoryReadGuidanceDoesNotBudgetGenerationAsFuelStock()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var read = provider.GetServices<McpServerTool>()
+            .Single(t => t.ProtocolTool.Name == "spherewright_list_factory_entities").ProtocolTool;
+        Assert.Contains("joules_per_tick, never fuel inventory", read.Description);
+        Assert.Contains("unitsPerItem=0 means no item conversion", read.Description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("Exclude this role even when an older Plugin incorrectly reports", guide);
+        Assert.Contains("never divide by zero", guide);
+        Assert.Contains("full-width power summary", guide);
+    }
+
+    [Fact]
     public async Task GovernorExposesReadOnlyDeclaredTargetAndExplicitSource()
     {
         var client = new FakeBridgeClient(SuccessResult());

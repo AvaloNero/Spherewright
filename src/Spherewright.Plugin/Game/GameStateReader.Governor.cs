@@ -58,7 +58,7 @@ internal sealed partial class GameStateReader
             }
             var window = NativeProductionRateCalculator.Calculate(GameMain.gameTick, 0, 0).Window;
             var stocks = itemIds.ToDictionary(id => id, id => source.SelectMany(e => e.Buffers)
-                .Where(b => b.ItemId == id && b.CountUnit == "items" && b.UnitsPerItem == 1).Sum(b => (long)b.Count));
+                .Where(b => b.ItemId == id && FactoryBufferSemantics.IsItemCount(b)).Sum(b => (long)b.Count));
             var actual = measured.Production.Single(p => p.ItemId == request.TargetItemId).ActualProductionPerMinute;
             if (double.IsNaN(actual) || double.IsInfinity(actual) || actual < 0 || actual > 1000000000)
                 throw new FoundryPlanningException("governor_invalid_rate", "Native target measurement is not bounded.");

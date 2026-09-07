@@ -99,7 +99,7 @@ public static partial class GovernorPlanCompiler
             var rate = measured.Production.SingleOrDefault(p => p.ItemId == flow.Key)
                 ?? throw new FoundryPlanningException("governor_measurement_missing", "Every scale input must have same-window production evidence.");
             var produced = CheckedRate(rate.ActualProductionPerMinute); var consumed = CheckedRate(rate.ActualConsumptionPerMinute);
-            var stock = source.SelectMany(e => e.Buffers).Where(b => b.ItemId == flow.Key && b.CountUnit == "items" && b.UnitsPerItem == 1).Sum(b => (long)b.Count);
+            var stock = source.SelectMany(e => e.Buffers).Where(b => b.ItemId == flow.Key && FactoryBufferSemantics.IsItemCount(b)).Sum(b => (long)b.Count);
             var additional = flow.Value * additionFraction;
             result.Supply.Add(new GovernorSupplyBalance { ItemId = flow.Key, TargetChainDemandPerMinute = flow.Value,
                 ActualProductionPerMinute = produced, ActualConsumptionPerMinute = consumed,

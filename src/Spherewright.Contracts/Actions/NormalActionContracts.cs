@@ -336,6 +336,9 @@ public sealed class CommitNormalActionRequest
 
 public sealed class PreparedNormalAction
 {
+    // Null on older plugins and non-Move plans; absence never means a dry/clear route.
+    public MovementSurfacePreview? SurfacePreview { get; set; }
+
     public string? PlannedStorageOperation { get; set; }
 
     public StorageConfigurationSnapshot? PlannedStorageConfiguration { get; set; }

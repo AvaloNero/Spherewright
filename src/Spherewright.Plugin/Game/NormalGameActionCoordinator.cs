@@ -103,9 +103,13 @@ internal sealed partial class NormalGameActionCoordinator
             target,
             request.ArrivalTolerance,
             distance);
-        return AddPreparedPlan(payload, common.Session!,
+        var surfacePreview = CaptureMoveSurfacePreview(player.Position, target);
+        var prepared = AddPreparedPlan(payload, common.Session!,
             Math.Max(1L, (long)Math.Ceiling(distance / 6f * 60f)),
             "Player remains on the same planet and reaches the target within the requested tolerance.");
+        if (prepared.Value is not null)
+            prepared.Value.SurfacePreview = surfacePreview;
+        return prepared;
     }
 
     public GameCallResult<PreparedNormalAction> PrepareHarvestOnMainThread(

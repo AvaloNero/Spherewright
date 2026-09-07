@@ -584,3 +584,12 @@
 - 实机证据：root fresh prepare 通过，Luna 新计划恢复11bac49a成功并重存26074553；完整2283实体/47详情、Journal55/55与库存保持，没有重复恢复、新档或任意选档。
 - 自动验证：两个新MCP测试覆盖未加载菜单可调用prepare及指南的前后阶段/源选择说明，指导文本断言先失败后通过。1372项Debug/Release与完整Release零警告错误；源码64工具/1资源、41250字符指南一致且stdout纯净。此为既有实机原因纠正和新文案离线证明，不冒充再次实机恢复。
 - 状态：`resume_guidance_fixed_offline_with_existing_local_resume_evidence`；关联EXP-234。
+
+## IFX-054 — 无建筑碰撞的接近方案仍越过水面，Move预检缺少地表风险证据
+
+- 首见：2026-09-07，新窗Move343bbf15在26375077按距离完成后仍Drift；主会话路线距已知非带/分拣器中心有17m以上净空，却不代表陆地。晚起观察消耗了能源，不得冒充紧随动作的落地窗口。
+- 根因：已有Move预检没有公开地表证据；外部规划把几何净空当成可步行。原生Move终态本来只承诺距离，watchdog并非全局地表规划器，不能以延长超时修复。
+- 修复：当前原生双向下射线依据落实为可选surfacePreview，32m/33点/66次硬上限；Core只解释已复制的命中、距离及高度，无自动选路/位置写入。丢失证据仍unknown，采样未发现风险不声称路径无障碍；MCP描述、resource playbook、协议/用户文档同步。恢复准备前再fresh确认，若自然Walk则不提交多余回退。
+- 离线验证：完整Release零警告错误，Debug/Release1405测试，源码64tools/1resource及42052字符指南实际握手一致。补齐PhysicsModule本地编译引用且Private=false，Plugin输出仍仅原四DLL，无游戏程序集进入产物。
+- 实机边界：旧Move失败模式及后来自然Walk已读回，返回计划未commit；新采样尚待冷部署后正负预检和正常Move。未宣称全局寻路、永久供给或0.4版本完成。
+- 状态：`open`（源码和离线修复完成，当前DSP实机待验）；关联EXP-236。

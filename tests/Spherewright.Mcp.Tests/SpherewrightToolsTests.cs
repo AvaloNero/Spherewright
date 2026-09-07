@@ -1324,6 +1324,39 @@ public sealed class SpherewrightToolsTests
         Assert.False(tools["spherewright_commit_blueprint_build"].Annotations!.ReadOnlyHint);
     }
 
+    [Fact]
+    public async Task MoveSurfaceEvidenceIsPreservedWithoutChangingRequestOrCommitAuthority()
+    {
+        var bridge=new FakeBridgeClient(SuccessResult()) { MovePlan=new PreparedNormalAction
+        { Prepared=true,CommitAllowedNow=true,PlanToken="move-plan",SurfacePreview=new MovementSurfacePreview
+        { State="partial",ShoreRisk="detected",UnknownSampleCount=1,ShoreRiskSampleCount=1,CapturedAtGameTick=123 } } };
+        var result=await SpherewrightTools.PrepareMoveAsync(bridge,"session",104,200,0,1,"fresh-player");
+        var plan=result.StructuredContent!.Value.GetProperty("result");
+        Assert.Equal("detected",plan.GetProperty("surfacePreview").GetProperty("shoreRisk").GetString());
+        Assert.Equal("move-plan",plan.GetProperty("planToken").GetString());
+        Assert.True(plan.GetProperty("commitAllowedNow").GetBoolean());
+        Assert.Equal("fresh-player",bridge.LastMoveRequest!.ExpectedPlayerStateHash);
+        Assert.Equal(200,bridge.LastMoveRequest.Target.X);
+        Assert.Equal(1,bridge.LastMoveRequest.StateHashVersion);
+    }
+
+    [Fact]
+    public void MoveSurfacePreviewIsDiscoverableAndNeverDescribedAsPathfinding()
+    {
+        var services=new ServiceCollection();services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider=services.BuildServiceProvider();
+        var description=provider.GetServices<McpServerTool>().Single(t=>t.ProtocolTool.Name=="spherewright_prepare_move").ProtocolTool.Description!;
+        Assert.Contains("surfacePreview",description);
+        Assert.Contains("at most66",description);
+        Assert.Contains("not route clearance",description);
+        Assert.Contains("does not change existing hash/commit admission",description);
+        var guide=AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("prepare_move.surfacePreview",guide);
+        Assert.Contains("absent evidence is unknown, never dry ground",guide);
+        Assert.Contains("drop the recovery intention",guide);
+    }
+
     private sealed class FakeBridgeClient : IBridgeClient
     {
         public PrepareBlueprintBuildRequest? LastBlueprintBuildRequest { get; private set; }
@@ -1377,6 +1410,8 @@ public sealed class SpherewrightToolsTests
         public BridgeCallResult<ListAssemblersResult>? ListResult { get; set; }
 
         public ActionResultSnapshot? ActionResult { get; set; }
+        public PreparedNormalAction? MovePlan { get; set; }
+        public PrepareMoveRequest? LastMoveRequest { get; private set; }
         public SessionState? SessionSnapshot { get; set; }
         public PrepareOwnedWorldResumeRequest? LastResumePrepareRequest { get; private set; }
 
@@ -1585,7 +1620,12 @@ public sealed class SpherewrightToolsTests
         public Task<BridgeCallResult<PreparedNormalAction>> PrepareMoveAsync(
             string sessionId,
             PrepareMoveRequest request,
-            CancellationToken cancellationToken) => Prepared(sessionId, NormalActionKinds.Move);
+            CancellationToken cancellationToken)
+        {
+            LastMoveRequest=request;
+            return MovePlan is null ? Prepared(sessionId,NormalActionKinds.Move)
+                : Task.FromResult(BridgeCallResult<PreparedNormalAction>.Succeeded(MovePlan));
+        }
 
         public Task<BridgeCallResult<NormalActionCommitResult>> CommitMoveAsync(
             string sessionId,

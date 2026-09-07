@@ -18,6 +18,7 @@ $sources = [ordered]@{
     'Assembly-CSharp.dll' = Join-Path $gameRoot 'DSPGAME_Data\Managed\Assembly-CSharp.dll'
     'UnityEngine.dll' = Join-Path $gameRoot 'DSPGAME_Data\Managed\UnityEngine.dll'
     'UnityEngine.CoreModule.dll' = Join-Path $gameRoot 'DSPGAME_Data\Managed\UnityEngine.CoreModule.dll'
+    'UnityEngine.PhysicsModule.dll' = Join-Path $gameRoot 'DSPGAME_Data\Managed\UnityEngine.PhysicsModule.dll'
     'BepInEx.dll' = Join-Path $gameRoot 'BepInEx\core\BepInEx.dll'
 }
 

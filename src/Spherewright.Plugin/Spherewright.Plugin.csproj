@@ -34,6 +34,10 @@
       <HintPath>$(MSBuildThisFileDirectory)..\..\.local\game-refs\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(MSBuildThisFileDirectory)..\..\.local\game-refs\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
   <Target Name="RequireLocalGameReferences" BeforeTargets="CoreCompile" Condition="!Exists('$(MSBuildThisFileDirectory)..\..\.local\game-refs\BepInEx.dll')">
     <Error Text="Local DSP/BepInEx references are missing. Run scripts/sync-game-refs.ps1 first." />

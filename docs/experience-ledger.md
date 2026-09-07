@@ -2914,10 +2914,10 @@
 - 当前结论：source cover不是裁剪点，也不是NEW建筑。旧源保留在完整stage1原生preview/creation列表，以non-removing cover复用原ID和零材料；公开plannedPath/itemBudget只含NEW点。所有NEW点仍完整占位检查，旧源中心若与另一已建/预建筑重合也拒绝；不能让旧重复锚点通过此新入口获得合理化。
 - 直接证据：同SHA DeterminePreviews的cover/同级/短路径分支、SnapLine begin_flat、CreatePrebuilds计费/复用/连接循环，以及WriteObjectConn/Direct仅操作连接池的调用链见game-api-foundry。源cover输出与首个NEW逻辑输入重复写同一边不触发货物或业务拆除；适配器本身不直接写连接。
 - 实现/验证：静态绑定整条源path几何/成员/身份和原邻边，货物自然流动不使计划陈旧；原生创建前后同帧全path及cargo完整相等，只允许源空slot0→精确NEW预建筑的新双向边，随后核无人机完工实体。8192cells/512belts/128输入限额或证据未知即拒绝；结果未知沿用隔离且禁止重放。新增51项回归，1309项Debug/Release（33/1217/59）、完整Release零警告错误和真实源码MCP64tools/1resource/同批指南通过。plannedBeltPath echo缺失、stage0、数量/材料/源不一致时MCP不暴露token。
-- 限制或反例：1309源码尚未冷部署/live；原1258只证明无副作用的完整路径prepare，不证明cover施工。目标合流、换级/替换、倾斜/抬高、闭环、超限/缺失路径拒绝。货物跨正常游戏tick变化不能与同步即时证明混为一谈。没有供水/黄糖恢复、完整三级链或Governor验收结论。
+- 限制或反例：1324已冷部署并完成2269/2001/3NEW的正常施工、扣料/原邻边/货物即时证明、完整工厂复读和正常保存恢复；2002/2003实机仍待。目标合流、换级/替换、倾斜/抬高、闭环、超限/缺失路径拒绝。货物跨正常游戏tick变化不能与同步即时证明混为一谈。没有供水/黄糖恢复、完整三级链或Governor验收结论。
 - 复验触发：DSP/Unity或原生路径/计费/连接API变化、bounds/hash/echo变化、冷部署、首个source-cover材料/货物/连接/保存恢复实测、既有同点源负例。
 - 关联：EXP-001/002/007/228/229、IFX-048、BeltSourceReusePolicy、BeltSourceReuse适配与包内playbook。
-- 最近复验：2026-09-07（当前DLL/离线1309；安装仍1258；已核第4写保存，accepted4保留，尚无施工）。
+- 最近复验：2026-09-07（同DLL/1324安装；e1574d6f正常完成、2001为46→43；save25827878→resume/重存25827909后root完整2283对象/47详情保持，十写审计落盘后归零）。
 
 ### EXP-231 — 原生完工可改变保留源带朝向，但必须给出几何证明
 
@@ -2925,14 +2925,40 @@
 - 日期：2026-09-07
 - 适用范围：当前DSP源端cover续接的无人机完工核验；不开放任意姿态调整。
 - 当前结论：保留entity ID不等于rotation始终不变。不能只放弃旧朝向检查；必须从当前有界CargoPath分段端点按原生AlterBeltRenderer公式推导，并核对entity/collider精确旋转、碰撞体身份与中心。只允许q/-q物理等价，非belt原邻居仍完整保持；prepare静态绑定及同步预建筑创建前后cargo/path证明仍严格使用原旋转。
-- 直接证据：当前同SHA AlterBeltConnections触发源/主入/出邻带renderer；AlterBeltRenderer按首末pointPos的0.50016f中点、0.6f长度分支写entity.rot与collider.q/pos。首轮1309 source-cover prepare已通过，但尚无commit；本问题在提交施工前由主会话DLL审计发现，没有伪造实际失败或先制造隔离。
+- 直接证据：当前同SHA AlterBeltConnections触发源/主入/出邻带renderer；AlterBeltRenderer按首末pointPos的0.50016f中点、0.6f长度分支写entity.rot与collider.q/pos。本问题在首个施工前由主会话DLL审计发现，没有先制造隔离；后续1324第8写e1574d6f成功，2269确有原生rotation变化并通过精确证明，完整复读其余2279旧对象rotation保持。
 - 实现/验证：独立completion topology hash只为有完整本机原生几何/碰撞体证据的belt替换朝向字段，其他身份、位置、tilt、旧边与非belt朝向严格绑定。最多8192cells、有效segment/one-based collider bounds、有限值和当前entity/path匹配；sourcePreservationMode确认缺失的旧cover计划不暴露token。15项新增回归后1324项Release（33/1230/61）、完整Release零警告错误通过；当前DLL证据见game-api-foundry。
-- 限制或反例：新证明尚未冷部署/live，不能据单元测试声称成功施工、跨tick货物守恒或保存恢复。只读source-cover通过只证明预检/NEW预算，现有供水/黄糖及完整0.4门仍未完成。
+- 限制或反例：本机首个2001源带续接已验证原生朝向变化、旧边/材料、正常完工及保存恢复；不外推任意旋转、其他带等级或跨tick货物总量。现有供水/黄糖及完整0.4门仍未完成。
 - 复验触发：DSP/Unity/原生renderer公式、collider字段、完成哈希或兼容echo变化，首次原生续接/旧邻带旋转变化和保存恢复。
 - 关联：EXP-228/229/230、IFX-048/050、BeltSourceRotationPolicy。
-- 最近复验：2026-09-07（同DLL/1324离线；游戏1309、accepted5保留，无新增施工）。
+- 最近复验：2026-09-07（同DLL/1324安装；e1574d6f的原生2269朝向变化与完整外部审计一致，正常save25827878/resume25827909后保存姿态/拓扑保持，十写审计后归零）。
+
+### EXP-232 — 本地大帧读取保留byte[]，过期分页整批重取
+
+- 状态：`validated`
+- 日期：2026-09-07
+- 适用范围：PowerShell Bridge客户端的二进制帧读取及本地完整工厂审计；不改变Plugin分页、写入或恢复规则。
+- 当前结论：函数返回byte[]须保留为单个管线对象，不能逐字节展开成Object[]；否则大帧产生逐元素装箱/再转换，空读则丢失数组身份。分页超过60秒必须弃用该snapshot重新完整读取，不能拼页或重放已完成的游戏动作。
+- 直接证据：旧256KiB内存读取返回System.Object[]，类型回归先失败；改用一元逗号后返回System.Byte[]，9项离线测试覆盖空读、字节完整性、256KiB/中文帧往返、负数/超限/截断。两次实机审计分别41f2cc/5c572e以STALE_CURSOR终止，未接受额外游戏写；改后root单日志无额外等待的23页2283对象同snapshot在9784ms读取完成，再完成47详情。前后脚本路径不完全相同，不把该单次耗时当通用性能倍数或声称消除了所有过期原因。
+- 限制或反例：这里只改善本机审计客户端，不更改DSP、MCP协议、100条页上限或60秒TTL；慢宿主仍可能到期。审计类型/索引或输出错误从原始响应复核，不触发动作重放。
+- 复验触发：PowerShell版本、帧客户端/序列化/证据记录或分页语义变化。
+- 关联：scripts/SpherewrightBridgeClient.ps1、scripts/test-bridge-client.ps1、IFX-051。
+- 最近复验：2026-09-07（9项offline；只读live23页完整同snapshot，0游戏写）。
 
 ## 修订记录
+
+- 2026-09-07：本窗第10写eabe71fa同档protected resume terminal/completed/succeeded，起止tick为null、自动重存25827909，承接#9正常保存25827878。root已核全部10个唯一终态：五次resume、四次save、一次3NEW build；无unknown、重放、换档或物料不明增加。25828447/rev1 owned104/healthy/和平/非沙盒/1×、无blocker/checkpoint；25828460单snapshot23页2283的全部身份/位置/旋转/连接与#8后/#9保存前一致，47详情/44原配置保持，25829855独立pre0，J55/55 durable无pending/error、Walk0/400MJ/3idle/三网满供电。源2269及其原生朝向、新链2283/2281/2282、玩家43条带跨正常保存/重启保持；EXP-230/231取得该2001窄案例保存恢复正例。只读分页失败单独核销，没有把它算游戏写或拼快照。复核EXP-001/002/007/072/228–232后，日记和本条落盘才将accepted10→0；继续同档，供水/黄糖/运行模块/三级链/两倍十分钟/准备清单/最终包仍未验收。
+
+- 2026-09-07：按EXP-001/002，在#9保存25827878和完整审计落盘后正常关闭精确DSP进程；未安装或热换文件，现有1324四DLL与测试Release再次4/4哈希相同，经已确认Steam启动一次。accepted9保留，下一唯一游戏写为同档protected resume#10，终态后冻结第11写，先全窗严格审计与账本复验再归零。
+
+- 2026-09-07：第9写save6ecdce80在25827878正常成功保存续接结果。root核全部9个唯一终态，25828461/rev4健康同档、25828474同snapshot2283每个identity/pose/rotation/edge与#8后严格相等，47详情/44旧配置、25830233独立pre0、J55/55/Walk0/400MJ/3idle/三网满服务。accepted9保留，关机前审计落盘后才允许正常关闭、同档恢复作为#10；EXP-230/231不提前声称恢复通过。EXP-232代码bdf688f已推送、9项脚本断言与1324原自动测试复跑通过，CI34073601443成功；MCP/Plugin公共面未变、不触动待排除打包文件。
+
+- 2026-09-07：EXP-230/231首个1324正常续带正例：Luna #8 e1574d6f在25768360→25768977 completed/succeeded，3预建筑均由无人机完工，2001仅46→43、其余玩家物料保持，目标按计划顺序2283/2281/2282而非递增ID。root独立核新echo、预算、终态及25805063完整23页2283：2280旧身份/位置不变，旧边仅2269空slot0接2283；原生朝向仅2269变化并通过已安装精确几何/碰撞体证明，2270和非belt邻居保持。新链2269→2283→2281→2282双向且末端空；44旧详情配置保持，47详情成功，25805659独立prebuild0、J55/55/Walk0/400MJ/3idle/三网满服务。新段可见精炼油自然流入，但局部cargo窗口重叠不能相加作为整path守恒；内部同步原生创建前后完整货物证明与外部跨tick观察分开。accepted8保留，保存恢复和持续供水/黄糖仍待。新增EXP-232，审计过期只读失败与施工成功分开记账。
+
+- 2026-09-07：1324同档resume df974eb2成功（动作起止null），重存25723180；root核7终态、25743549/rev1健康同档、25743564单snapshot2280全结构、43配置、25747307独立prebuild0、J55/55/Walk0/400MJ/三网满供电，accepted7保留。41f2cc只读分页因60秒cursor到期废弃，重新完整取309a178快照，不拼页、不重复resume；审计脚本按实际方法/索引读取，不把显示布局差异变成游戏重试。EXP-230/231取得1324 prepare-only正例：2269/NEW3/2001×3且whole_path_native_rotation_v1已确认，玩家与endpoint保持；施工、货物/连接和保存恢复仍待。主会话仅将这一有界方案交Luna执行，下一accepted是#8，失败/unknown先冻结。
+
+- 2026-09-07：EXP-001/002/230/231冷部署复验：#6完整保存审计先落盘，精确旧DSP进程正常退出后安装1324同批Release，4/4源码与部署SHA相等（environment有完整哈希），通过已确认Steam只启动一次。未热替换、不直接EXE、不换档；accepted6保留，下一次同档protected resume计#7。尚不把安装成功作为源带续接材料/货物/完工朝向的实机证据。
+
+- 2026-09-07：复核EXP-001/002/072/230/231：第6写save007b61c8在25723149唯一accepted并同步成功完成，主会话核全部6终态及25746211/rev2同档owned104/healthy/J55/55/Walk0/400MJ/三网满服务。独立25746255 prebuild0；25746258单snapshot23页2280全厂身份/姿态/连接与原来源一致、43详情与#5配置保持。此次审计raw采用单日志，按实际0001–0071映射，不能沿用双日志奇数索引；读取格式差异不导致重放动作。accepted6保留，审计落盘后才能正常关闭冷部署1324；源带施工仍未发生。a6cff2b的CI34071202182成功。完整旧快照可为铁/石材/电路库存定位提供候选，取用仍须fresh双边预算，局部七仓无料不能外推全厂无料。
 
 - 2026-09-07：EXP-231最终源码复验补齐locked restore、1324项Debug/Release、完整Release零警告错误和实际MCP64tools/1resource/37804字符同批指南，exit0/额外stdout0。当前仍运行1309，未热替换、未施工；Luna只获下一次正常保存#6及原43详情/完整分页审计授权，为冷部署1324保留同档。
 

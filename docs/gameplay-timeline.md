@@ -2,9 +2,29 @@
 
 更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一 `owned-world-001` 运行1309安装态、同档resume自动重存25636692，新窗accepted=5保留，Luna冻结施工。主会话独立核2280建筑完整身份/姿态/连接未变、43详情/独立0prebuild、J55/55 durable、healthy/Walk0/400MJ/三网ratio1。754与1199同点被拒，752无空闲带口；2269源复用prepare确认3NEW/3材料且无副作用。首个施工前又发现原生完工朝向重算风险，1324源码已补精确几何证明，待冷部署/live。主会话制定方案再交Luna执行；持续水/钛晶石/黄糖供给、运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。
+当前截面：同一 `owned-world-001` 的1324原生源带续接已完成施工、扣料、完整审计和正常保存/重启恢复闭环；saved tick25827909，2283建筑/47详情保持，J55/55 durable、healthy/Walk0/400MJ/三网ratio1/独立0prebuild。十写审计落盘后accepted10→0。下一步由主会话规划持续供料，Luna执行；水/钛晶石/黄糖、运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成。
 
 ## 结论与证据边界
+
+2026-09-07 / 十写冻结审计与续带保存恢复通过：#10 `eabe71fa-3044-4435-8351-7dcd398d66ca` 同档恢复成功（起止tick为null）、自动重存25827909；root独立核全部10个唯一terminal/completed/succeeded（5resume、4save、1build）。25828447/rev1同档owned104/healthy/和平/非沙盒/1×/无blocker/checkpoint，25828460单snapshot23页2283的每个身份/位置/旋转/连接与保存前一致；47详情/44旧配置保持，25829855独立prebuild0，Journal55/55 durable、Walk0/400MJ/3idle/三网ratio1。源2269与新链2283/2281/2282、仅3带扣料均跨保存恢复保持，没有重复施工；该正常源带续接实机闭环成立。raw resume-595db00c229840c992356a1e2bd4916f（0023终态）和action-76d197b0f94d4752b6d6b0f3be41576e。日记/账本落盘后accepted10→0，下一写从新窗#1计；没有把源带闭环替代持续供料或0.4完成。
+
+2026-09-07 / 新链保存恢复检查启动：#9审计先落盘，再正常关闭已确认DSP进程；无文件替换，1324四DLL仍与测试输出相等，Steam仅启动一次。accepted9不归零；Luna下一步仅菜单ready后的同档protected resume#10和完整只读回验，第11写须等待主会话十写审计落盘。
+
+2026-09-07 / 第9写续接后正常保存：`6ecdce80-faf2-4c85-b1e3-15a80863ae8a` 在25827878同步开始/完成并保存，terminal/completed/succeeded。root重新核前7终态、#8材料/施工和#9唯一save；25828461/rev4 healthy同档，25828474单snapshot23页2283的每个身份/位置/旋转/连接与#8后完全相同，47详情及44原配置保持，25830233独立0prebuild、J55/55/Walk0/400MJ/3idle/三网ratio1。raw保存action-9f8ed2328d92418884961a316675f662，审计action-d60dbc6b67e24d6d85cd4f032ba52608。accepted9保留，此记录落盘后才正常关闭并沿同一主档恢复#10；没有额外施工/搬料。客户端修复bdf688f已提交推送，9项PS断言及1324项Core/Contracts/MCP复跑通过，CI34073601443成功；排除的打包/CI仍留本地，无tag/release。
+
+2026-09-07 / 第8写源带续接：Luna按主会话固定方案fresh prepare，`e1574d6f-b895-483d-81e9-46ca62a66dbf` 在25768360开始、25768977由正常无人机完成3预建筑，terminal/completed/succeeded，2001为46→43。源2269未重建；新ID按路径为2283、2281、2282，不能假设分配递增。内部完整即时cargo/旧邻边/native rotation证明均通过。raw action-cd65d74e6165488cb64bcf83aee2853f，0066终态。
+
+root完整审计raw action-9b91f670c41347089910aae48fe69777：25805050/rev3同档owned104/healthy，25805063单snapshot23页2283唯一built，2280旧身份/位置保持、仅2269朝向按原生证据改变，其他旧边不变；新链双向、2282末端自由。玩家除3条带外物料保持、25805649 Walk0/400MJ/3idle/空手搓；J55/55 durable、三网ratio1、25805659独立prebuild0，44旧配置及47详情保持。新段有精炼油自然流入，局部cargo不加总。Luna先前5c572e审计到期整批弃用；root修复本地帧byte[]展开问题后单日志23页9784ms完成（EXP-232/IFX-051），没有重放build或扩大Plugin时限。accepted8保留，下一写仅普通保存#9；持续供水/产量和保存恢复均另验。
+
+2026-09-07 / 第7写1324同档恢复与主会话方案：resume `df974eb2-288c-4af2-a829-5bf367a45b7b` terminal/completed/succeeded，动作起止tick均null，自动重存25723180。主会话独立核全部7终态；25743549/rev1健康同档，25743564单snapshot23页2280全结构与43详情保持，独立25747307 prebuild0、J55/55 durable、Walk0/400MJ/3idle/三网ratio1。raw为resume-ba5e1622950942ae8427c8191ff8f918与action-309a17821abe49ef8331856a95562f36。先前41f2cc分页到期仅为只读失败，整批弃用后重新取同snapshot，没有拼页或重放resume；accepted7保留。
+
+主会话在1324上fresh prepare2269向原forward约4m：25737359→25737373玩家及源endpoint不变、healthy/rev1/0prebuild，返回full_path_stage1/non_removing_belt_cover/whole_path_native_rotation_v1、3个NEW点和2001×3预算；raw action-971ecc46876a4bf885da8aa1abf65396。下一步只交Luna这一个已规划的3段续接，必须自行fresh prepare核同模式/预算/路径并轮询terminal，再完整核料/连接；无扩大候选、Move、搬料、保存或旧token复用。本方案只验原生源带续接，不声称供水或黄糖恢复。
+
+2026-09-07 / 1324冷部署：先落盘#6保存与完整审计，再正常关闭精确DSP进程，安装a6cff2b同批已测试Release输出，4个DLL逐一哈希相等，Steam仅启动一次。完整哈希见environment；accepted6不归零。只授权Luna菜单ready后fresh protected resume同一主档并完整只读审计，不复用旧session/plan/token，不把冷部署记为施工成功。
+
+2026-09-07 / 第6写关机前审计：save `007b61c8-5c7a-4985-81fc-64402ca42c72` 在25723149同步开始/完成，accepted、terminal/completed/succeeded，lastOwnedSaveGameTick相等。主会话独立核全部6个原始终态；25746211/rev2同档owned104/healthy/和平/非沙盒/1×、无blocker/checkpoint，J55/55 durable无pending/error、Walk0/400MJ/3idle/空手搓、三网ratio1。独立25746255 prebuild0；25746258单snapshot23页2280唯一built的全部身份/姿态/连接与完整来源快照保持，43关键详情的配置/拓扑与第5写相同。raw保存action-7565d8bcfa69452083318bf1dd409851及审计action-ea1e2b05f13d438e97362245750c3aa5（单日志，不按旧双日志索引读取）。accepted6不归零；此记录落盘后才允许正常关闭。源码a6cff2b的CI34071202182成功，不等同于源带施工实测或最终打包。
+
+补料规划只读证据：第5写完整已保存工厂快照包含仓28铁3000、773石材2842、26电路400/铜2400/磁铁800。它们只是后续fresh inspect的候选，不把缓存库存当即时可转移预算；本批未搬料/建泵，未让Luna重试旧失败接点。
 
 2026-09-07 / 第5写与1309准备正负例：resume `f054d5b1-e44e-4941-92dc-31bc70803e9a` terminal/completed/succeeded，动作起止tick为null，自动重存25636692。主会话核全部5终态与25640704/rev1健康同档；独立25640750 prebuild0，25640757同snapshot23页2280全结构和43详情保持。Journal55/55 durable、无pending/error，Walk0/400MJ/3idle、三网ratio1，accepted5保留。raw resume-c1dc4f3bc8ab482eb3e4605a2da9419a与action-6c4df8878ba649a5a6d295fb42edf770保存。
 

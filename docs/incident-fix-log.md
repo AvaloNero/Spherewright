@@ -517,6 +517,10 @@
 
 ## IFX-048 — 普通续带把既有锚点作为新对象再次建造
 
+2026-09-07保存恢复补验：正常save25827878→正常关闭→同档protected resume/重存25827909，root全2283对象/47详情证明源2269、新链和原邻边/朝向、玩家43条带保持，未重复扣料或建造。该2001三段案例状态为`source_cover_local_constructed_saved_resumed`；其他带等级、目标合流和生产吞吐不在此正例范围。
+
+2026-09-07本机续接正例：1324冷部署后#8 e1574d6f由正常无人机完成2269→2283→2281→2282，2001仅46→43，源2269保留、原邻边保持、新尾端无连接。root完整2283对象/47详情审计通过；旧2269朝向由IFX-050精确原生证明接纳，未造同点NEW、未拆旧实体、未隔离。状态更新为`source_cover_local_constructed_save_resume_pending`；仍不能外推目标合流/换级/闭环或持续供料，保存恢复另验。下列源码截面保留历史语义。
+
 2026-09-07后续切片：1258安装态已证明完整stage1自由路径可prepare、754同点NEW拒绝且玩家/端点保持。1309源码加入正确的源端non-removing cover，旧端点留在原生预检/创建、预算只算NEW；完整旧路径即时货物和原邻边保全、同帧源→预建筑及无人机后源→实体双向验证、唯一源中心守卫和MCP兼容echo齐备。仅支持同级水平开放路径的自由出口向空地续接，不开放目标合流/换级/抬高/闭环；51项新增回归、1309全量Debug/Release及完整Release通过。状态为`source_cover_offline_verified_live_pending`；后续仍须冷部署、材料/货物/连接/保存恢复正例。下文是初次遏制时的历史截面，不能覆盖这一窄范围实现或把它当作实机已验。
 
 - 首见：2026-09-07复核供水路径和EXP-149，主会话接手规划；本次未新增belt/blueprint施工。
@@ -541,8 +545,20 @@
 
 ## IFX-050 — 源带复用的完工验证把原生朝向重算误当成身份变化
 
+2026-09-07保存恢复补验：第10写同档恢复后，2269的新原生朝向与全部2283保存前姿态/连接一致，正常源带续接的材料/配置/拓扑持久性通过；状态更新为`native_rotation_local_constructed_saved_resumed`。仍不据单个2001案例宣称所有带等级或持续产量完成。
+
+2026-09-07本机补验：1324同档恢复后首次3NEW续接成功，2269的rotation确有变化，其他2279个旧建筑rotation保持；当前精确path/collider证明、旧身份/位置/邻边与材料证明全部通过，未触发隔离。root原始终态与完整工厂复读相互支持，不再仅是离线推测；保存恢复仍待。状态更新为`native_rotation_local_constructed_save_resume_pending`，不是产线或版本完成。
+
 - 首见：2026-09-07，在1309源码冷部署/source-cover prepare正例后、首个施工commit前的DLL审计发现；尚未以实机动作触发此失败。
 - 根因：原生AlterBeltConnections/AlterBeltRenderer会在无人机接入后重算旧源/邻带entity.rot和collider.q/pos。1309的原邻域哈希包含旧旋转，可能误拒正常原生结果；不能通过随意忽略旋转来修复。
 - 修复：1324源码分开严格prepare/即时路径货物绑定与completion topology；后者仅允许通过有界当前native分段公式、明确碰撞体身份、精确entity/collider旋转与中心证明的belt朝向变动，非belt、位置、identity、旧边保持原约束。只认同一native计算或q/-q等价，不使用宽松角度容差，不写任何姿态。新增sourcePreservationMode确认，旧cover echo不暴露token。
 - 验证：15项新增Core/MCP回归、1324项Release与完整Release零警告错误；当前DLL签名/公式见game-api-foundry。未冷部署、无cover施工成功/失败及保存恢复实机声明。
 - 状态：`fixed_offline_live_pending`；关联EXP-231/230、IFX-048。
+
+## IFX-051 — 本地PowerShell大帧被逐字节展开，完整审计游标到期
+
+- 首见：2026-09-07，恢复#7和成功续带#8后的两个只读完整分页run分别在60秒边界返回STALE_CURSOR；游戏写已经成功，无重放或拼页。
+- 可确证的客户端缺陷：Read-SpherewrightExactBytes直接return byte[]会被PowerShell展开成Object[]，增加大帧装箱/转换开销，Count0则无返回对象。未将所有耗时归因于该一行，也未把审计失败说成建造失败。
+- 修复：一元逗号保留单个byte[]对象；认证、帧长度、完整读取循环、EOF失败、Plugin页上限/TTL均不变。本地审计按单日志、无额外分页等待读取，不改变游戏速度或数据。
+- 验证：旧实现类型测试先失败；修复后9项独立离线断言通过，包含中文/256KiB往返与非法/截断帧。root新23页2283对象同snapshot在9784ms读取完成，47详情和原始#8终态/材料/拓扑独立审计通过，0新游戏写。不宣称任何宿主上分页永不到期或MCP性能通用倍数。
+- 状态：`client_frame_shape_fixed_offline_and_local_verified`；关联EXP-232。

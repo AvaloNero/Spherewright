@@ -59,7 +59,9 @@ function Read-SpherewrightExactBytes {
         $offset += $read
     }
 
-    return $buffer
+    # Keep large frames as one byte[] pipeline object. Unrolling every byte
+    # allocates boxed elements and turns an empty read into no result at all.
+    return ,$buffer
 }
 
 function Read-SpherewrightBridgeFrame {

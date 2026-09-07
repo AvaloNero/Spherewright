@@ -6,6 +6,12 @@ Assembly evidence:
 - `Assembly-CSharp.dll` SHA-256: `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`.
 - Inspection tool: ILSpy command line 9.1.0.7988, used only for targeted type/signature inspection. Decompiled game source is not stored in this repository.
 
+## 2026-09-07 native mecha research takeback (read-only investigation)
+
+Targeted inspection of the same current Assembly-CSharp confirms `MechaLab.GameTick(long,float)` calls `AutoManage()`. That method resolves the current technology, falling back to the first queued technology; with automatic research supply enabled and a valid technology it calls `ManageSupply(TechProto)`, otherwise `ManageTakeback()`. Supply takes normal package items and adds3600 points per item to `itemPoints`. Takeback passes the integer quotient `item.Value/3600` to `Player.TryAddItemToPackage(itemId,count,0,throwTrash:true)` for each buffered item, then clears the bundle. Remainder points are not rounded into items. These are existing native calls, not new calls made by Spherewright.
+
+The existing owned main-thread player reader already exposes `autoManageResearchItems` and `mechaResearchItemBuffer`, including exact points, whole count and remainder. Package-only cross-tick audits can therefore falsely label a normal return as unexplained creation. This mechanism alone does not prove a particular live return: retained buffer amounts, subsequent inventory and progression/action boundaries must agree. The MCP description and embedded playbook now advertise that existing evidence; no state hash, action budget, ownership, write path or quarantine rule is relaxed.
+
 ## 2026-09-07 cargo-preserving sorter filter and warehouse UI research
 
 Local development follow-up: after the1066-cohort normal save/Steam/restart/exact-primary boundary, storage761 `set-bans30` completed24849780 with unchanged30 buffers and5 endpoints; held-hydrogen2011 sorter2218 changed filter0→1114 at24855565 while preserving hydrogen1/inc0/Inserting, both endpoints and player inventory. These two narrow positive cases supersede the corresponding pending-live notes below; other reservation/clear-filter operations and sustained supply remain unverified.

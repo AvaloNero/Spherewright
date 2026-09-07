@@ -7,6 +7,12 @@
 - Read-only ILSpy inspection of the local assembly; no decompiled code or game binaries are redistributed.
 - Plugin reads occur only on the Unity main thread after the existing exact-owned-session/local-planet check. Core receives copied DTOs, not game objects.
 
+## Oil route counterexample and native inserter span (2026-09-07)
+
+The same current DLL's `BuildTool_Inserter.CheckBuildConditions()` independently limits one-belt/one-device endpoints to5.5m straight-line separation and3.499 native `mainGrid.CalcSegmentsAcross(...)` units. Terrain/radial difference, minimum span, inventory and collision checks still apply. These constants describe this inspected branch, not permission to bypass native checking or a promise based on entity-centre distance.
+
+The fixed11-NEW oil candidate was normally constructed by action9047af1e at26694984→26700119 for11 belts, but2310→761 failed before native candidate validation (`no_finite_projection`). A later single163→1211 prepare also failed (`no_facing_interpolated_pair`, best37.981°). The root plan had proved belt placement, not either business attachment; the earlier working water route cannot validate different warehouse headings. A northward2-NEW cover candidate only passed belt placement and was not committed; its centres move farther than the5.5m limit from the intended port. The one southern candidate was rejected at existing2243. These observations introduce no native API or gameplay action, and neither attachment nor oil supply is claimed.
+
 ## Bounded surface-movement preview (2026-09-07;source/offline verified, live pending)
 
 The current Assembly-CSharp hash above was rechecked. `PlayerMove_Drift.DetermineDrift()` uses two read-only `Physics.Raycast(Ray,out RaycastHit,float,int,QueryTriggerInteraction)` calls, range30, masks8704 and16, `Collide`, directed radially downward from player position plus10m. With both hits, the ground-minus-water hit-distance gap greater than0.4m or the ground hit below `realRadius-0.8m` contributes to its Drift decision. The complete decision also includes current altitude, energy, time and movement-state hysteresis. Thus these surface samples must not be presented as proof of Walk or collision-free movement.

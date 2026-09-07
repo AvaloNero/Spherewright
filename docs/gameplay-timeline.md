@@ -2,9 +2,13 @@
 
 更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-当前截面：同一owned-world-001正常保存26074522，当前窗两次水transfer和一次save全部终态成功，root完整2283结构/47详情审计通过，J55/55 durable、healthy/Walk0/400MJ/三网满服务/独立pre0；accepted3保留。有限20水只支持短暂转换20钛晶石的推断，不是持续供水。1370源码新增显式原生球面短带路径，Debug/Release和完整构建/MCP指南通过；仍1324安装态，待正常冷部署后fresh预检。供水/黄糖、运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成，无新ZIP/tag/release。
+当前截面：1370同批DLL已正常冷部署，同一owned-world-001恢复并重存26074553；本窗两次水transfer、一次save和一次resume的四个唯一终态已独立核销。root完整2283结构/47详情审计通过，J55/55 durable、healthy/Walk0/400MJ/三网满服务/独立pre0；accepted4保留。15段原生球面新带方案已通过现场预检，非法绑定负例无写入拒绝，施工与两端接线仍待核验。有限20水只支持短暂转换20钛晶石的推断，不是持续供水。供水/黄糖、运行模块复制/续建、三级链、两倍十分钟、准备清单和最终包仍未完成，无新ZIP/tag/release。
 
 ## 结论与证据边界
+
+2026-09-07 / #4恢复及原生球面路径正负预检：Luna最初错误等待菜单gameLoaded=true，90秒内无prepare/commit，未消费票据；root fresh显示gameLoaded=false但restartResumeAvailable=true，并实际prepare通过planet104/minimum26074522（raw920b2b5a5d3840b4bf7c5a09b22c80e6），证明不是游戏阻断。纠正外部条件后Luna fresh恢复11bac49a-5caa-4b12-a3b0-d6db49df9c33成功，自动重存26074553，accepted4；raw resume-2b167e4b8875428085ffab38498469f9。root26081669完整23页2283/47详情保持、独立pre0/J55/55/满电（rawb749646313974e9ea479c8f40a1ac789），没有新档或重复恢复。新方案按753/761各自free slot2向外4m后贴地，两端为真正NEW空地而非删掉覆盖对象绑定；26082277–26082350原生stage1准备15点/15条带成功，明确routingMode=native_geodesic，player/两仓endpoint hash保持（raw8ad00d4993d24df996dce59aec7d75d3）。同请求人为增加source753的负例26087884–26087939返回不可重试INVALID_REQUEST，无plan/prebuild，现场hash不变（raw0b239a11479249a69ae0b34eae351e37）。这只证明恢复和新模式只读正负例；路径施工、两只水过滤分拣器和持续供水仍待。固定业务预算15条2001+2只2011，现有43/4足够；不增仓/泵、不抬高、先建一次路径后立即逐端预检，失败交主会话不扩散。
+
+2026-09-07 / 1370正常冷部署：三写保存审计落盘后，精确1324 DSP进程正常退出，未强杀；3b2d9ea提交推送后完整Release与1370测试再次通过。四个新DLL与安装目标逐个SHA相等，随后通过已确认Steam仅启动一次；没有直接启动EXE、热替换、游戏写或新ZIP。accepted3保留，下一步仅当前同档protected resume#4；新模式现场/施工与持续供水仍待验。
 
 2026-09-07 / #3正常保存与1370路径切片：主会话接管反复失败的接线方案后，核当前DLL确认原生geodesic而旧接口固定网格折线，新增明确空地短路径选项；1370项Debug/Release（36Contracts/1264Core/70MCP）和完整Release零警告错误、真实源码MCP64tools/1resource/40458字符指南通过。不是任意自动寻路、两端接线成功或恢复持续供水。Luna仅正常save cd78d82a-616c-4738-ad38-a2fc98961d5f在26074522同步成功（raw5f9aa9e6ae5947989e7b712c0c535e75），accepted3后停写。root核三次唯一终态与两transfer即时守恒，再26079023/rev4同档healthy、26079037完整23页2283所有姿态/连接不变、47详情配置保持、玩家库存不变、26079619独立pre0/J55/55/400MJ/满供电；raw18f346f9af1e4f67947363b30492246a。审计落盘后才正常冷部署，当前仍1324安装态，下一恢复另计#4；不热换或新建档。
 

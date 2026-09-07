@@ -571,4 +571,5 @@
 - 确认的限制：旧TryCreateBeltSteps固定path1/geodesic=false，而native UI支持球面直线。固定折线不能表达部分建筑朝向走廊，但尚未证明这是所有拒绝的原因，不能预先声称新模式已修复供水。
 - 修复：只开放明确两端空地、普通2001/2002/2003、贴地1.5–30m原生geodesic；模式/几何绑定、MCP回显拒绝旧Plugin静默降级、十点保留空间/完整端点/原生调整后地表检查。默认grid哈希和正常成本/施工/幂等/终态不变，不混cover/合流/抬高/自动搜索。
 - 验证：43项新增回归后1370 Debug/Release与完整Release零警告错误；实际源码MCP64tools/1resource/40458字符指南和stdout通过。当前1324游戏正常保存26074522并完成root三写/完整2283结构审计，尚待冷部署与有界现场正负例/施工/持续供给验证。
-- 状态：`native_geodesic_source_verified_live_pending`；关联EXP-233。
+- 后续实机：1370同批正常冷部署、同档resume11bac49a重存26074553；753/761外侧15NEW方案原生stage1通过，增加source绑定负例INVALID_REQUEST/无plan。两次前后player/endpoint hash和pre0/rev1保持；还没有施工或两端接线/持续供水证据。
+- 状态：`native_geodesic_offline_and_live_prepare_verified_construction_pending`；关联EXP-233。

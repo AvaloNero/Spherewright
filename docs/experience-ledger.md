@@ -2955,13 +2955,17 @@
 - 适用范围：当前DSP普通新带的原生点生成；不用于任意路径规划、旧带覆盖或高度调整。
 - 当前结论：旧适配器固定path1/geodesic=false，可能把建筑偏移走廊变成网格折线；当前游戏UI原生支持球面直线，可开放明确两端空地、贴地1.5–30m的窄选项，不能忽略原生拒绝或把路径可放等同两端分拣器可接。
 - 直接证据：同SHA BuildTool_Path的native路径切换传入PlanetAuxData.SnapLineNonAlloc；geodesic分支按本地网格尺度球面插值，原生数组预留10点，达到Length−10即可截断。新模式必须在替换端点前验证完整返回，不能只等数组全满。
-- 实现/验证：模式绑定精确路径，默认grid指纹不变；非默认请求需matching routingMode/full-stage1/NEW预算才发token。仅2001/2002/2003、明确自由端，不混cover/设备口/资源绑定/抬高，生成和native调整后均检查地表半径与原端点。34Core/3Contracts/6MCP新增后1370项Debug/Release与完整Release零警告错误；源码MCP64tools/1resource/40458字符指南一致、exit0/extraStdout0。尚未冷部署或实测该路径。
+- 实现/验证：模式绑定精确路径，默认grid指纹不变；非默认请求需matching routingMode/full-stage1/NEW预算才发token。仅2001/2002/2003、明确自由端，不混cover/设备口/资源绑定/抬高，生成和native调整后均检查地表半径与原端点。34Core/3Contracts/6MCP新增后1370项Debug/Release与完整Release零警告错误；源码MCP64tools/1resource/40458字符指南一致、exit0/extraStdout0。1370正常冷部署后，753/761外侧15NEW方案原生完整stage1通过；增加绑定source的负例无plan拒绝，两次前后hash/prebuild/revision保持。尚不证明施工、两端接线或持续供料。
 - 限制或反例：外侧753→761旧网格20点路径虽原生prepare可过，分拣器几何仍未证明；新模式解决表达能力，不保证该走廊成功。不得用新带反复掩盖未验证接线；源cover与旧网格原约束保持，最终供水/版本验收另算。
 - 复验触发：DLL点生成/保留空间/地形、模式/哈希/echo或native预览改变，冷部署与首个geodesic施工。
 - 关联：EXP-228/229/230、IFX-052、BeltPathRoutingPolicy、game-api-foundry。
-- 最近复验：2026-09-07（当前DLL与1370离线/source-MCP；live待验，当前窗accepted3保留）。
+- 最近复验：2026-09-07（1370已冷部署并同档恢复；只读live正负例通过，施工待验，当前窗accepted4保留）。
 
 ## 修订记录
+
+- 2026-09-07：EXP-233同1370冷部署取得只读live正负例：753/761各free slot2外4m的15NEW geodesic route通过完整stage1且回显匹配；显式增加旧source绑定返回INVALID_REQUEST/无plan。两者前后玩家/仓endpoint hash不变、pre0、rev1，不能当作已施工或持续供水。#4同档resume11bac49a重存26074553；root完整2283/47详情和四个原始终态审计通过，accepted4保留。Luna先前把菜单gameLoaded=false误当作未就绪，未进行prepare；root真实prepare确认允许恢复后纠正再执行，票据未误消费、未重启或换档。说明与包内提示需补恢复前后条件，不能重复等待相反状态。
+
+- 2026-09-07：复核EXP-001/002/233后1370已正常冷部署；Save3审计先落盘、原DSP正常退出、四DLL逐个与3b2d9ea的测试Release哈希一致，再Steam一次启动。未热换/强杀/直接EXE/换档，accepted3不变；同档恢复与geodesic原生预检/施工待验，不把源码通过当作游戏路线已成功。
 
 - 2026-09-07：1370源码切片补显式原生球面路径，沿用完整stage1/占位/成本/施工/哈希和兼容防误提交，不自动寻路。冷部署前Luna普通save cd78d82a在26074522成功；root核本窗三次唯一终态及两次transfer即时守恒，再以26079037单snapshot23页2283证明所有身份/位置/旋转/连接保持，47详情原配置保持，26079619独立pre0，J55/55、Walk0/400MJ/3idle/三网满供电。accepted3不归零，EXP-001/002/007/224/228–233复核后才允许正常关闭/同档恢复；未宣布持续供水或0.4完成。此前transfer指南提交1634845已推送，Windows CI34076978482成功。
 

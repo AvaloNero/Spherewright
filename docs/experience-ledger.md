@@ -16,6 +16,21 @@
 
 ## 当前经验
 
+### EXP-244 — 冷启动会以更新主档撤销旧飞行检查点，不能只检查保存回调
+
+- 状态：`validated`
+- 日期：2026-09-07
+- 适用范围：当前FlightCheckpointStore构造/保存生命周期，以及主会话冷部署方案。
+- 当前结论：TryRetireAfterPrimarySave只处理FlightSucceeded不代表失败checkpoint跨冷启动必然有效；构造阶段RetireIfCoveredByNewerPrimarySave对精确primary header.gameTick>checkpoint直接durable retire。新主档已覆盖时间线时，绝不复活旧token或修改票据，改用当前healthy exact-primary恢复；下一次原生起飞建立新checkpoint。冷部署方案必须一起检查startup和save两条路径。
+- 直接证据：主会话第8写save27578976后的当前进程仍显示checkpoint27507953；a157a0b四DLL冷部署/正常Steam启动11764后，日志明确retired newer timeline，root raw-adfbddde为menu/restartResumeAvailable=true/flightCheckpointAvailable=false，菜单reload脚本在任何prepare/commit前拒绝。私有票据未手改、未发生第9写。
+- 限制或反例：这是遗漏启动规则的方案错误，不是Luna执行失误或着陆修复失败。不能将后续新checkpoint飞行称为27507953同一检查点复测，也不把本次主档恢复当作再次加载旧失败checkpoint。
+- 对先前计划的修订：EXP-243中第9写“旧checkpoint恢复”已不可执行；改为唯一current primary27578976的protected resume，恢复后完整复读，再以第10写独立新checkpoint返航，随后十写冻结审计。仍是owned-world-001/102和已保全的分流工厂，不换世界。
+- 第9写复读：381fc98d从当前exact-primary正常恢复并自动重存27579007，root raw-19dff097于27583672全179实体/28详情、27583748独立pre0保持结构、配方、过滤、站仓设置和背包/燃料123/J55；玩家x+1/y-1/z-1 floatULP逐项说明，不改hash。new session/rev1/Walk0/400MJ/healthy，旧checkpoint未复活。9写全部核销且不归零；root raw-8be6335a对一次102→104新航程prepare通过，最低核心95%、正常总能源1.2GJ；下一写后先冻结审计，不能附带目的地save。
+- 新航程保存闭环：第10写532d165b成功后完成全厂十写审计并落盘重置；新窗第1写312d2127正常保存27644409，root raw-1a811574核对checkpoint27593800为retired、retiredAtGameTick27644409，当前primary恢复仍可用。不能把先前flight_succeeded/capability=false提前当作durable retired；本次有独立保存后生命周期证据。
+- 复验触发：checkpoint启动回收、正常保存、冷部署或恢复规则变动。
+- 关联：EXP-001/002/243、FlightCheckpointStore、存档日记001。
+- 最近复验：2026-09-07（启动日志、菜单读回及完整生命周期源码一致；原旧checkpoint重试计划已撤回）。
+
 ### EXP-243 — 短暂Walk不能提前取消尚未到达的自有上岸订单
 
 - 状态：`observed`
@@ -28,9 +43,12 @@
 - 同档恢复证据：a50e84b6只加载27507953本次checkpoint；root27512068完整179实体/28详情、27512128pre0保全分流结构/配置/背包，玩家x负1/y负2 ULP（私有4ULP审计界，不改产品hash）、400MJ/123石墨/J55/healthy/new session。七个唯一accepted含失败航程均核销，计数7保留；Session.lastOwnedSaveGameTick为采用checkpoint的27507953，不据此冒充主档磁盘头被另存，最近明确normal primary仍27507910。冷部署后只恢复同一失败checkpoint；本轮无新的游戏业务写/主档覆盖，不切换存档。
 - 复验触发：shore订单状态机、原生Abort/到达语义、海岸瞬态、断能与外部取消；修复后同一checkpoint实机。
 - 关联：EXP-047/052/066/242、IFX-001；同档日记001。
-- 冷部署计划复核：遵守EXP-001/002与AGENTS第5节，在已核销的第7写之后先以第8写普通保存当前恢复态，再正常关闭/同批冷部署。当前原生checkpoint store只在FlightSucceeded后由primary save retire；本次仍RecoveryRequired，须复读27507953 capability保持后才关闭。新保存不替代复测起点；菜单只加载这个失败checkpoint作为第9写，限定重试返航为第10写，随后冻结/全审计，不直接串接第11写。此明确修订前述“不作主档覆盖”的冷部署安排，不新增生产施工或换档。
+- 冷部署计划复核（后被EXP-244纠正，不能执行）：当时只检查了保存回调，错误推论RecoveryRequired的27507953会跨冷启动保持，并拟作为第9写恢复。实际startup会根据更新primary将其retire；该旧计划已撤回，不能据此恢复旧能力。正常保存/关闭规则保留，后续只走当前primary及独立新checkpoint。
 - 第8写核销：e57e2ce4于27578976正常保存成功，rev2，失败checkpoint27507953身份保持；root27582401全179实体/28详情、27582514pre0与第7写结构/配置/玩家逐项一致，400MJ/123石墨/J55/55/healthy。8写全部原始终态核销后保留计数，不归零。最终指南空格修订后1472项Debug/Release和完整Release复跑通过，真实64工具/1资源为46813字符且stdout纯净。
-- 最近复验：2026-09-07（失败终态、当前DLL Abort/到达语义、1472离线回归及第7写恢复审计；修复实测待验）。
+- 新航程第10写已接受532d165b，独立checkpoint27593800；optional player读回在session已到104但factory尚未ready时返回retryable NO_LOCAL_PLANET，使外部脚本退出，不是航程终态。Luna仅续轮询同一actionId并另留raw，禁止重跑脚本/另commit；公开指南补充将切换期局部读取延后，主会话审计须合并原acceptance与续poll证据，不把observer错误记成第二次飞行或假失败。
+- 第10写与审计：root raw-84ede14a独立复读532d165b成功终态27593800→27599682，保持600稳定tick；新checkpoint仍flight_succeeded、非retired，公开reload能力已撤销，待目的地normal save。root raw-b57c4f03于27624034单snapshot全2310实体、27624615pre0，387全部非belt详情建立完整新基线；与此前全2310结构/连接及37个非belt配置逐项相等。此前“82详情”含45条belt，不等于全部非belt；初版私有读取以160作限被387拒绝，零写，明确采用≤512有界全非belt读取重做观察。玩家背包保持、52石墨/400MJ/Walk0/J55/55/healthy/rev4，9写旧链+本次唯一终态全部核销。计数10经本条落盘后重置0，下一写仅正常保存落地结果。
+- 实机覆盖限制：修复版完成一次新checkpoint的正常返航；原始acceptance段在本地factory加载期间结束，root终态复读不能补造中间shore订单轨迹，所持有日志尚无shore progress正例。因此不宣称27507953相同checkpoint复测或该瞬态分支已实机复现；静态缺陷/14Core回归成立，针对性shore分支live仍待。
+- 最近复验：2026-09-07（1472离线回归、冷部署、新航程成功/600tick稳定、十写审计及目的地正常保存；故障shore分支连续轨迹仍待）。
 
 ### EXP-242 — 施工终态、无人机空闲与下一对象准入分别核验
 

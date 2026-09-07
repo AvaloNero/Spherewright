@@ -2,9 +2,17 @@
 
 更新时间：2026-09-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
-最近恢复截面：同一owned世界102，1455-test安装态。4条NEW带和179硅过滤分拣器已将148→179→176→175→177→178→44:9与旧钛110→44:0分开；21样本证明满硅槽下钛仍回补，主档正常保存27507910。第6写返航因短暂Walk提前自我取消上岸订单而明确失败，第7写已只加载本次27507953检查点，root完整179实体/28详情/pre0核对结构、配置和背包保持，Walk0/400MJ/123石墨/J55/55/healthy/rev1。1472-test修复源码通过，未安装/live。母星11条油候选带两端未通；永久金刚石分流、运行模块复制/续建、三级链、Governor两倍十分钟、准备清单与最终双包仍待；无新ZIP/tag/release。
+最近保存截面：同一owned世界104，a157a0b/1472-test开发DLL已冷部署，532d165b正常返航通过600tick稳定落地。十写完整审计后，新窗口第1写312d2127正常保存27644409，revision5/healthy；root独立确认新飞行checkpoint27593800于该保存tick durable retired，protected primary resume可用。全2310实体/0prebuild、387非belt详情新基线、Walk0/400MJ/52石墨/J55/55；源星102硅钛独立入口修复保留。旧27507953已被更新primary覆盖并在启动时撤销，没有复活旧token或更换世界。运行模块复制/续建、三级链、Governor两倍十分钟、准备清单与最终双包仍待；无新ZIP/tag/release。
 
 ## 结论与证据边界
+
+2026-09-07 / 落地结果保存：新窗口第1写312d2127-d863-4afd-b5c2-5d098816ad6c于27644409成功正常保存，raw-07471406；root raw-1a811574独立复读精确终态、revision5/healthy、protected primary resume与checkpoint27593800的retired/retiredAtGameTick27644409。accepted=1保留，没有附加Move或施工。只读诊断27648675显示电机缺铁但另一处铁块输出已满，以及炼油氢输出堵塞；据此由主会话规划既有供料修复，Luna执行明确方案，不把增建空转设备当成扩产。导出1500/1508/1509/1511/1512五对象铁块模块只读成功，当前源模块仍输出堵塞，尚不是运行模块复制验收。
+
+2026-09-07 / 第10写返航成功与十写审计：532d165b新checkpoint27593800起飞、27599682终态成功，证明600tick稳定Walk；root raw-84ede14a独立复读无stalled/recovery_required，checkpoint为flight_succeeded而非已retired，等待主档保存。root raw-b57c4f03于27624034全2310实体/24页、27624615pre0、387全部非belt详情，旧全结构/连接和37项旧非belt配置保持（历史82详情另含45belt，不伪称82是全部设备）。玩家背包未变，52石墨/400MJ/Walk0/J55/55/healthy/rev4。十写顺序为调站、Move、4带、过滤sorter、save、失败flight、checkpoint reload、save、primary resume、成功flight；全部唯一终态核销后本条落盘，10→0，下一写仅保存目的地。NO_LOCAL_PLANET读取中断未重放动作；本轮没有故障shore分支的连续轨迹，不声称相同旧checkpoint或该瞬态分支实机通过。
+
+2026-09-07 / 第9写同档primary恢复：381fc98d仅恢复27578976并自动正常重存27579007，旧checkpoint27507953没有复活。root raw-19dff097于27583672完整179实体/28详情、27583748pre0证明分流结构/配置/背包/123石墨/J55保持；玩家x+1/y-1/z-1 floatULP已量化，new session/rev1/Walk0/400MJ/healthy。9写原始终态链核销PASS，不归零；原生102→104新航程只读prepare通过，随后仅允许Luna第10写一次飞行，全程terminal轮询、无额外Move/save/自动回档。本次必须创建新checkpoint，不能标作原旧checkpoint复测。
+
+2026-09-07 / 冷部署与恢复方案纠正：a157a0b提交推送后完整Release重建零警告错误，43176正常退出，四程序集与同批源码哈希相同，仅Steam启动11764。root菜单raw-adfbddde发现启动器已因primary27578976>checkpoint27507953将旧checkpoint retire；先前仅看save回调的推论遗漏startup分支，菜单脚本在任何prepare/commit前拒绝，accepted仍8。撤回旧checkpoint复测计划，不改票据、不回滚新主档；只从当前27578976 protected primary恢复，再核验后建立新航程checkpoint。修复版未有着陆live结论，后续不能冒称原27507953复测。见EXP-244。
 
 2026-09-07 / 第8写正常保存：Luna仅执行一次e57e2ce4，27578976正常保存/rev2/healthy，27507953失败checkpoint保持原身份。root raw-1a142bda于27582401全179实体/28详情、27582514独立pre0核对第7写结构/配方/过滤/站仓设置和玩家位置/背包/燃料全部保持，Walk0/400MJ/J55/55，完整8写原始终态审计PASS。计数不归零；冷部署后仍只从27507953复测。最终1472项Debug/Release复跑、完整Release零警告错误和实际64工具/1资源/46813字符指南通过，尚无修复版live结论。
 

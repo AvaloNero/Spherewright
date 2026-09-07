@@ -642,3 +642,4 @@
 - 修复：纯Core订单门将未到达、被替换或缺失的shore order先送回原有运动/能源/停滞/争用核销路径；仅无当前订单或已到达的精确自有订单进入稳定Walk验证。仍保留600tick稳定、7200tick总界、3次有界上岸、exact-order abort及无传送/注入。
 - 验证：14项Core及1项MCP新回归，1472项Debug/Release、完整当前DSP Release零警告错误、真实64工具/1资源/46812字符指南通过；未冷部署/live。失败后的a50e84b6精确checkpoint恢复及root全179对象/28详情/物资/Journal55审计通过，保存的分流修复保留，无目的地保存或盲重放。
 - 状态：`fixed_offline_live_pending`；关联EXP-243和存档日记001。
+- 后续窄live正例：a157a0b冷部署/同档primary恢复后，532d165b于27593800→27599682正常返航并通过600稳定tick；全2310结构/387非belt新基线/材料/Journal十写审计通过。原27507953因更新primary被startup retire，不是相同checkpoint复测；中途optional局部read遇NO_LOCAL_PLANET后只有终态补证，尚无故障shore分支的连续trace，故针对性live pending不撤销。

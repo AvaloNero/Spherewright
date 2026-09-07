@@ -356,6 +356,11 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("must keep its progress/energy checks until it reaches its target", guide);
         Assert.Contains("Do not issue a competing Move", guide);
         Assert.Contains("cannot be relabeled successful", guide);
+        Assert.Contains("Cold startup may retire even a failed-flight checkpoint", guide);
+        Assert.Contains("Never edit a ticket or revive a retired token", guide);
+        Assert.Contains("a new flight with a new checkpoint", guide);
+        Assert.Contains("NO_LOCAL_PLANET", guide);
+        Assert.Contains("keep polling the same actionId", guide);
     }
 
     [Fact]

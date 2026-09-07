@@ -3,6 +3,12 @@
 更新时间：2026-09-08（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-08 / 停止试建后核对真实曲线算法：e6b2fef推送/CI成功；主会话对既有2553→761的一次明确替代终点预检也得到no_finite_projection（raw-13829ad3），没有提交。raw-3db01e0证明三格实际CargoPath长49，选定段分别0/16、16/17、33/16（start/length）；原生附件只搜索明确那一段，而不是任选整条折线上的点。未新增工具、观察字段或代码旁路。
+
+主会话重新阅读当前哈希AE0BA95F…游戏DLL的CargoTraffic.GetBezierArc与BuildTool_Inserter.DeterminePreviews，建立仅私有、零游戏调用的有界数值复现：段长16/17/16精确一致，2553→760复现8 admitted/16 projections与33.09633°（实机33.094°，差<0.01°），2553→761复现16 admitted/0 projections。固定圆角和只挑最小几何夹角的原估计不适用于原生逐段投影/更新顺序；没有据差异修改Plugin或放宽角度。四个明确两格接续草案只做离线排除，不是自动布局或原生批准。
+
+在可复现反例之后，仅选2552向西再向北两NEW的non-removing source cover：raw-00de9e8b当前库存2带的完整native_grid/full_path_stage1通过，whole_path_native_rotation_v1/source2552/newCount2，旧端点不删除。拟供油终点明确改为已有油预约仓761，经原过滤764进入760；非新储罐，源头707和跨旧992分拣器仍未提交。数值模型预测未来2552→761空slot9为8.53326°/2.76425m，仍非分拣器原生准入；只允许两格正常施工后fresh真实端点验证，不追加更多带。accepted8/revision25/J56/主档29533533保持。
+
 2026-09-08 / 三格跨线折线建成、第二设备连接负例：8b6f2f2已推送/CI成功后，Luna第8写fa5925fa于30147258–30147805正常完成2554→2553→2552，仅普通带5→2，分拣器3保持，raw-60649466。root raw-daaf1cb6于30150993独立核对原始/fresh唯一终态、3NEW与34旧实体精确末态、全部互反边/自由端、全背包仅带−3、正常燃料热量减少1.339200MJ、J56/56/pre0/Walk0/满电/healthy，PASS；accepted8/revision25保留，不重建这三格。
 
 随后raw-4786eef4于30152773起对明确转角2553→760只做一次fresh预检，得到no_facing_interpolated_pair：20 seeds/8 admitted/16 projections/0 facingPairs/0 candidateChecks，best33.094°而要求<11°，零commit。它与此前2532→760构成这一设备连接阶段的第二个失败候选，立即冻结相似尝试；未试后续跨线分拣器、更未接油源。先前假设圆角得到4.58975°并不代表原生CargoPath的实际分段、插值和选择，不能据估计继续建造或放宽角度。最小blocker收敛为选定实体可供原生附件搜索的带段几何；主会话先研究现有精确段边界，再决定是否有证据支持仅使用已建对象的新方案，不新增通用观察或扩大动作域。主档仍29533533，持续炼油/黄糖仍待。

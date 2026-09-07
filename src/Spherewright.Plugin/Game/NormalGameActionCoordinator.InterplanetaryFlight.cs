@@ -356,6 +356,21 @@ internal sealed partial class NormalGameActionCoordinator
 
             if (player.movementState == EMovementState.Walk)
             {
+                // Native AbortOrder does not set targetReached. A transient Walk tick must
+                // continue the exact shore Move rather than cancel it before dry terrain.
+                // Missing/replaced orders go through the same fail-closed reconciliation;
+                // no stable ticks accrue while an unfinished shore order remains.
+                if (!LandingShoreOrderPolicy.MayVerifyStableWalk(
+                        action.PlayerOrder is not null,
+                        player.currentOrder is not null,
+                        action.PlayerOrder is not null && ReferenceEquals(player.currentOrder, action.PlayerOrder),
+                        action.PlayerOrder?.targetReached ?? false))
+                {
+                    action.FlightStableLandingAtGameTick = -1L;
+                    UpdateNativeShoreLanding(action, player, destination);
+                    return;
+                }
+
                 AbortPlayerOrderIfOwned(action);
                 if (player.speed <= 0.1f)
                 {
@@ -624,7 +639,7 @@ internal sealed partial class NormalGameActionCoordinator
 
                 if (GameMain.gameTick % 120L == 0L)
                 {
-                    action.Message = $"Native Drift shore recovery is walking toward dry terrain on planet {destination.id}; {remainingDistance:F1} m remains on bounded order {action.FlightLandingOrderCount}/{FlightShoreMaximumOrders}.";
+                    action.Message = $"Native shore recovery is following its exact movement order toward dry terrain on planet {destination.id}; {remainingDistance:F1} m remains on bounded order {action.FlightLandingOrderCount}/{FlightShoreMaximumOrders}.";
                 }
 
                 return;

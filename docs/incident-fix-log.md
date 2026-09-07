@@ -634,3 +634,11 @@
 - 根因：沿用先前水线成功的方式，将带路全NEW占位/原生放置正例错误外推为足以施工的端到端业务方案；真实两仓朝向与路径不同。原生5.5m和3.499跨格上限还独立于角度/投影，单纯延长不能保证修复。
 - 当前处理：完整保留并审计11带/材料，记录ID复用和两端失败；不再提交北向/南向试铺、不放宽原生角度、不拆旧线。下一方案必须重新证明业务端点，仍只通过既有fresh prepare/commit执行。
 - 状态：`open`，未连接油候选不是供油产线；关联EXP-240。
+
+## IFX-060 — 短暂Walk提前取消自有上岸订单，随后误报订单丢失
+
+- 首见：2026-09-07，939a954a同星系返航在27513071为明确recovery_required；此前短暂Walk/2.67m/s，随后实际Drift。
+- 根因：Walk着陆分支无条件AbortPlayerOrderIfOwned，而当前DLL PlayerOrder.Abort只Dequeue、不标记原订单targetReached。保留的未到达action.PlayerOrder在下一Drift帧被当成外部提前清除。原raw与静态路径一致，但没有逐帧引用调用trace。
+- 修复：纯Core订单门将未到达、被替换或缺失的shore order先送回原有运动/能源/停滞/争用核销路径；仅无当前订单或已到达的精确自有订单进入稳定Walk验证。仍保留600tick稳定、7200tick总界、3次有界上岸、exact-order abort及无传送/注入。
+- 验证：14项Core及1项MCP新回归，1472项Debug/Release、完整当前DSP Release零警告错误、真实64工具/1资源/46812字符指南通过；未冷部署/live。失败后的a50e84b6精确checkpoint恢复及root全179对象/28详情/物资/Journal55审计通过，保存的分流修复保留，无目的地保存或盲重放。
+- 状态：`fixed_offline_live_pending`；关联EXP-243和存档日记001。

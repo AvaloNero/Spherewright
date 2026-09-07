@@ -351,6 +351,8 @@ The public prepare step deliberately does less: it captures only the restricted 
 
 ## Native same-star flight and reusable pre-flight checkpoint
 
+2026-09-07 transient-Walk correction, before implementation: targeted decompilation of the current DSP0.10.34.28529 Assembly-CSharp (`AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`, rehashed) confirms `Player.currentOrder` forwards `orders.currentOrder`, `Player.AbortOrder()` calls `PlayerOrder.Abort()`, and `Abort()` only assigns `currentOrder=Dequeue()`. It does NOT mark the aborted node's `targetReached`. Native `PlayerOrder.GameTick` calls `ReachTest` and achieves a Move only when its actual spherical-distance test sets that flag. Therefore the existing flight Walk branch's unconditional exact-owned abort can manufacture the later missing-before-arrival failure when Walk is transient. The narrow correction must reconcile an unfinished or replaced shore order through the existing movement/energy/watchdog path even during Walk; stable landing checks may begin only with no current order, or the exact tracked order natively reached. An early missing order or any foreign replacement still fails without aborting the foreign order. Keep the600tick stable interval,7200tick landing bound,3-order limit and native target/terrain rules unchanged. No new DSP mutation API, target assignment, teleport or input synthesis is introduced. Raw939a954a is a matching failure sequence, not a per-frame order-reference trace; corrected-DLL local live replay remains required.
+
 Targeted current-assembly decompilation additionally confirmed:
 
 ```text

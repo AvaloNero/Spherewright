@@ -1012,7 +1012,7 @@ public static partial class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Uses DSP's native flight/sail transition and sail-energy functions to launch, steer, brake, and land on the bound planet. It never teleports, grants fuel, or enables sandbox fast travel.")]
+    [Description("Uses DSP's native flight/sail transition and sail-energy functions to launch, steer, brake, and land on the bound planet. Poll to terminal: a transient Walk tick does not complete landing or cancel an unfinished exact shore order. Stable arrival still requires 600 consecutive grounded low-speed ticks. A terminal recovery_required requires its matching checkpoint flow, not a competing Move or relabeling success. It never teleports, grants fuel, or enables sandbox fast travel.")]
     public static async Task<CallToolResult> CommitInterplanetaryFlightAsync(
         IBridgeClient bridgeClient,
         string sessionId,

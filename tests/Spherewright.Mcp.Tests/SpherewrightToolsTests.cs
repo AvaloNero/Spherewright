@@ -341,6 +341,24 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void FlightGuidanceRequiresNativeShoreCompletionAndBoundedStableArrival()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var flight = provider.GetServices<McpServerTool>()
+            .Single(t => t.ProtocolTool.Name == "spherewright_commit_interplanetary_flight").ProtocolTool;
+        Assert.Contains("transient Walk tick does not complete landing", flight.Description);
+        Assert.Contains("unfinished exact shore order", flight.Description);
+        Assert.Contains("600 consecutive grounded low-speed ticks", flight.Description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("must keep its progress/energy checks until it reaches its target", guide);
+        Assert.Contains("Do not issue a competing Move", guide);
+        Assert.Contains("cannot be relabeled successful", guide);
+    }
+
+    [Fact]
     public async Task GovernorExposesReadOnlyDeclaredTargetAndExplicitSource()
     {
         var client = new FakeBridgeClient(SuccessResult());

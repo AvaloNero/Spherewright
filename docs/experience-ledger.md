@@ -16,6 +16,22 @@
 
 ## 当前经验
 
+### EXP-243 — 短暂Walk不能提前取消尚未到达的自有上岸订单
+
+- 状态：`observed`
+- 日期：2026-09-07
+- 适用范围：当前普通同星系飞行的Drift→Walk稳定着陆；1455安装态。
+- 当前结论：短暂Walk不是稳定着陆。若上岸的精确原生Move尚未到达，不得在第一次Walk时Abort该订单后又把其消失误归因为外部替换；仍应保持原生移动、进展/能源监测与600tick稳定门。真正被替换或提前消失的订单必须fail-closed，不能通过清空引用掩盖。
+- 直接证据：939a954a返航27507953→27513071为明确recovery_required，出现Walk/2.67m/s后报自有shore order在targetReached前被清除；源码Walk分支调用AbortPlayerOrderIfOwned但不更新action.PlayerOrder，后续Drift分支遂失败。root27521415仍Drift，J55/原主档27507910与本次checkpoint27507953保留，未作落地保存。
+- 限制或反例：已定位一致的静态可达缺陷；原raw未暴露每一帧订单引用，不声称抓到了每帧原生调用轨迹。下述修复已离线实现，冷部署与实机仍待，不能把放宽超时或强行成功当修复。先以已授权的精确失败checkpoint恢复，不复用任何更旧飞行票据。
+- 后续源码证据：同DLL反编译确认Abort仅Dequeue、不标targetReached；新增LandingShoreOrderPolicy，在精确Move未到达或存在订单争用时先走原watchdog/能源/丢失核销，只有无当前订单或原生到达的自有订单才进入600tick稳定验证，外来订单不被Abort。14 Core+1 MCP回归后1472项Debug/Release、完整Release零警告错误、真实MCP64工具/1资源/46812字符同批指南通过；替代上一条“未实现”为“已离线实现，未冷部署/live”，不改变observed状态。
+- 同档恢复证据：a50e84b6只加载27507953本次checkpoint；root27512068完整179实体/28详情、27512128pre0保全分流结构/配置/背包，玩家x负1/y负2 ULP（私有4ULP审计界，不改产品hash）、400MJ/123石墨/J55/healthy/new session。七个唯一accepted含失败航程均核销，计数7保留；Session.lastOwnedSaveGameTick为采用checkpoint的27507953，不据此冒充主档磁盘头被另存，最近明确normal primary仍27507910。冷部署后只恢复同一失败checkpoint；本轮无新的游戏业务写/主档覆盖，不切换存档。
+- 复验触发：shore订单状态机、原生Abort/到达语义、海岸瞬态、断能与外部取消；修复后同一checkpoint实机。
+- 关联：EXP-047/052/066/242、IFX-001；同档日记001。
+- 冷部署计划复核：遵守EXP-001/002与AGENTS第5节，在已核销的第7写之后先以第8写普通保存当前恢复态，再正常关闭/同批冷部署。当前原生checkpoint store只在FlightSucceeded后由primary save retire；本次仍RecoveryRequired，须复读27507953 capability保持后才关闭。新保存不替代复测起点；菜单只加载这个失败checkpoint作为第9写，限定重试返航为第10写，随后冻结/全审计，不直接串接第11写。此明确修订前述“不作主档覆盖”的冷部署安排，不新增生产施工或换档。
+- 第8写核销：e57e2ce4于27578976正常保存成功，rev2，失败checkpoint27507953身份保持；root27582401全179实体/28详情、27582514pre0与第7写结构/配置/玩家逐项一致，400MJ/123石墨/J55/55/healthy。8写全部原始终态核销后保留计数，不归零。最终指南空格修订后1472项Debug/Release和完整Release复跑通过，真实64工具/1资源为46813字符且stdout纯净。
+- 最近复验：2026-09-07（失败终态、当前DLL Abort/到达语义、1472离线回归及第7写恢复审计；修复实测待验）。
+
 ### EXP-242 — 施工终态、无人机空闲与下一对象准入分别核验
 
 - 状态：`validated`

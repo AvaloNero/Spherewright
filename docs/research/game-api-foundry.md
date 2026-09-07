@@ -7,7 +7,11 @@
 - Read-only ILSpy inspection of the local assembly; no decompiled code or game binaries are redistributed.
 - Plugin reads occur only on the Unity main thread after the existing exact-owned-session/local-planet check. Core receives copied DTOs, not game objects.
 
-## Native free-ground geodesic belt routing (2026-09-07;1370 deployed, live prepare verified)
+## Native free-ground geodesic belt routing (2026-09-07;1370 deployed, local water route verified)
+
+Latest supply evidence: normal2011 builds2299/2300 complete the filtered1000 route753→2300→2285…2298→2299→761, with reciprocal endpoints and full power. Four independent600-tick windows beginning26207282,26207898,26208507,26209114 each show nonzero water production/consumption and organic/titanium-crystal production. They contain small gaps and do not establish a continuous Governor trial. Normal savefec48fb7 at26239001 and root's subsequent complete2300-object/64-detail audit preserve the route and prior structures/configurations. Yellow matrices remain blocked downstream; post-restart water validation is still pending.
+
+Subsequent local construction: action885dff01 completed15 ordinary drone-built2001 entities at26134213→26140140, cost43→28. Root's complete2298-object snapshot at26144044 and62 details preserve all2283 older structures/47 configurations and prove the ordered new chain, planned positions, empty cargo and both free ends. Fresh2011/water1000 prepares for753→2285 and2298→761 both pass exact native slots; they do not yet prove attachments or supply. Normal energy expenditure is reported as396.7037MJ, not asserted unchanged from400MJ. No old entity, material or topology guard was relaxed.
 
 1370 local prepare-only recheck: normal exact-primary resume11bac49a resaved26074553 and root independently preserved all2283 saved structures/47 detailed configurations. At26082277–26082350, the explicit753→761 outer free-ground corridor (each selected warehouse slot2 offset4m) returns15 NEW points/items, `full_path_stage1` and `routingMode=native_geodesic`. At26087884–26087939, adding a bound source753 to that mode returns nonretryable `INVALID_REQUEST` with no plan. Both attempts preserve player/warehouse endpoint hashes, revision1 and0 prebuilds. Neither commits a route or proves its sorter attachments/supply.
 

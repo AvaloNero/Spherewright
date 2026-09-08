@@ -586,6 +586,8 @@
 
 ## IFX-045 — 错误哈希域被反复解释成现场陈旧
 
+2026-09-08实际续作核销：raw-716fd4cd用完整stateHash正常完成2719/2720的recipe17配置并只新建B炉，终态33383469/33384217/33384916；未重放原A炉。root raw-8c83d822于33391955核销四个施工/配置原始与fresh终态、完整2720结构、旧配置、全玩家仅扣两炉及J56/healthy，accepted7/revision144保持。正确hash域和配方说明预算已取得配置实机正例；下段的“配置仍待”仅指当时截面。该闭环不证明新炉供料/持续产量，也不新增Plugin能力。
+
 2026-09-08反向误用复验：主会话新私有两炉执行器把sorter专用configurationStateHash用于2719的production配置，raw-85f39edf真实STALE_STATE；A炉a3801bda已成功33343854，不重建，accepted4/revision138不变。核对现有StructuredActions分派后改为完整stateHash，raw-bbc683d1原生prepared/allowed通过。随后私有空预算断言仍不适用：配置预检用AddRecipeBudget展示煤2→石墨1，原生设置不扣玩家原料；可选target也不得新增为必填（IFX-066）。修正请求工厂/预算验证与只续A配置/B炉的入口，12项检查和raw-a131e6e0核销通过。没有Plugin/MCP改动或配置commit，后续实际配置仍待；错误域和回包假设均属于调用端，不把只读拒绝当游戏失败。
 
 - 首见：2026-09-07，1066安装态2280的两次sorter-filter prepare均使用before.stateHash，被旧通用检查报STALE_STATE；没有commit，不能计为写入失败或消耗accepted额度。

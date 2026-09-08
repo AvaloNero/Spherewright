@@ -175,12 +175,13 @@
 - 状态：`validated`（当前契约、reader及MCP离线转发；实际供油修复未验）
 - 日期/最近复验：2026-09-08。
 - 适用范围：确认componentKind=inserter的详情及既有sorter-filter配置；不推广至缺失字段、失败读取或其他mode。
-- 结论：当前filterItemId=null表示原生无过滤0，请求仍用0清除；配置请求使用configurationStateHash，但plan.expectedStateHash是服务端绑定值，非请求回显。targetObjectId也非普通配置必填响应。不要在已通过的prepare上增造断言；保留明示预算/模式回显、prepared/token/准入和终态核销，accepted后不重放。
+- 结论：当前filterItemId=null表示原生无过滤0，请求仍用0清除；仅sorter-filter配置请求使用configurationStateHash，但plan.expectedStateHash是服务端绑定值，非请求回显。targetObjectId也非普通配置必填响应。不要在已通过的prepare上增造断言；保留明示预算/模式回显、prepared/token/准入和终态核销，accepted后不重放。
 - 证据：IFX-066记录两次真实prepare通过但本地误判、无commit；30782352仍revision51/accepted2。MCP测试验证不同plan hash及可选target仍正常转发，内嵌指南测试约束null/0与非重放边界。
 - 实机复验：5199f19d于30827001使用固定现有执行器正常配置906过滤1114；root raw-4ed5c42b核销原始/fresh唯一终态、三对象原位/双端/配置、全玩家库存及J56，accepted3/revision53。调用端修正已能完成实际配置，不冒充新指南已安装。
 - 限制：没有改原生配置实现、工具数量或现场准入；指南未冷部署。raw-6f6191cb四独立600tick窗塑料P仍0，906仍空载，过滤配置不是已证明的供油修复。停止同类过滤尝试，只按健康保存/受保护重启另验，不把未知内部缓存状态当根因或写字段修补。重复两次同类调用失败必须先停止，主会话核对契约，再通过现有固定执行器执行唯一批准动作，不继续临时猜字段。
 - 保存恢复边界：7fb6fc1b正常保存30844824，同批228文件哈希保持后正常关闭/Steam单启动，68a1a166 protected resume重存30844856。root raw-09af5d70完整2587实体/410非belt配置/全库存燃料/J56/满电审计通过，accepted5不归零。raw-5bc4352b四独立窗906工作并持油、塑料P3/2/2/3，支持“重启后恢复供油”而非某一隐藏字段根因；氢净增、塑料P<C意味着EXP-196的短窗与持续性区分仍适用，长期供应未通过。
 - 复验触发：DTO/序列化、配置mode或prepare响应变化；关联EXP-007/185、IFX-001/066及存档日记001。
+- production模式澄清：A炉2719已成功建成，私有执行器误将上面的sorter专用域用于生产配方，raw-85f39edf拒绝且无配置commit。raw-bbc683d1改用完整stateHash后原生预检通过；itemBudget的煤2/石墨1是配方说明，不是这次配置的玩家扣料，不能要求空预算或target回显。root raw-a131e6e0复核并修正私有请求/预算守卫，12项site/readiness/hash/实际配置响应测试通过，accepted4/revision138保持。配置动作应证明玩家净变化为零；A不重建，后缀执行仍待。原scope仅sorter，已在结论显式限定，不把旧经验无条件推广至所有mode。关联IFX-045/066。
 
 ### EXP-256 — 原生带段投影不能用示意圆角的最佳角度替代
 

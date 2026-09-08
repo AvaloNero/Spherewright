@@ -586,6 +586,8 @@
 
 ## IFX-045 — 错误哈希域被反复解释成现场陈旧
 
+2026-09-08反向误用复验：主会话新私有两炉执行器把sorter专用configurationStateHash用于2719的production配置，raw-85f39edf真实STALE_STATE；A炉a3801bda已成功33343854，不重建，accepted4/revision138不变。核对现有StructuredActions分派后改为完整stateHash，raw-bbc683d1原生prepared/allowed通过。随后私有空预算断言仍不适用：配置预检用AddRecipeBudget展示煤2→石墨1，原生设置不扣玩家原料；可选target也不得新增为必填（IFX-066）。修正请求工厂/预算验证与只续A配置/B炉的入口，12项检查和raw-a131e6e0核销通过。没有Plugin/MCP改动或配置commit，后续实际配置仍待；错误域和回包假设均属于调用端，不把只读拒绝当游戏失败。
+
 - 首见：2026-09-07，1066安装态2280的两次sorter-filter prepare均使用before.stateHash，被旧通用检查报STALE_STATE；没有commit，不能计为写入失败或消耗accepted额度。
 - 根因：同一expectedFactoryStateHash参数在不同配置模式使用不同域，外部调用者机械沿用了普通仓配置的完整hash。现有工具长描述虽说明配置hash，参数位置未直说区别，错误也没有可操作的定位。
 - 处置：主会话核对真实请求代码，纠正为根configurationStateHash，再交回Luna继续同一有界计划；后续动作在25042120正常完成，未扩散候选、重做已接受动作或换档。

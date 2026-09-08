@@ -34,7 +34,7 @@ public sealed class GovernorThroughputValidation
     {
         if (declaration is null || string.IsNullOrWhiteSpace(declaration.SessionId)
             || string.IsNullOrWhiteSpace(declaration.ProposalHash) || string.IsNullOrWhiteSpace(declaration.SourceStateHash)
-            || declaration.PlanetId <= 0 || declaration.TargetItemId <= 0 || declaration.CapturedAtGameTick < 0
+            || declaration.PlanetId <= 0 || declaration.TargetItemId <= 0 || declaration.CapturedAtGameTick < 0 || declaration.Revision < 0
             || declaration.Baseline.State != "ready" || declaration.Baseline.IndependentWindowCount != 3
             || declaration.Baseline.ProductionPerMinute is not decimal baseline || baseline <= 0
             || !declaration.Baseline.EndGameTick.HasValue || declaration.Baseline.EndGameTick > declaration.CapturedAtGameTick
@@ -54,6 +54,56 @@ public sealed class GovernorThroughputValidation
         _scopeStart = _declaredTick;
     }
 
+    public GovernorValidationCheckpoint CreateCheckpoint(string ownedIdentityHash, string gameVersion)
+    {
+        if (!_lockedAt.HasValue)
+            throw new FoundryPlanningException("governor_validation_not_started", "Only an actually locked server declaration can be persisted.");
+        var checkpoint = new GovernorValidationCheckpoint
+        {
+            OwnedIdentityHash = ownedIdentityHash, GameVersion = gameVersion, SourceSessionId = _sessionId,
+            BaselineProposalHash = _baselineHash, SourceStateHash = _sourceHash, ScalePlanHash = _scaleHash,
+            PlanetId = _planetId, TargetItemId = _targetItemId,
+            DeclaredAtGameTick = _declaredTick, DeclarationRevision = _declarationRevision,
+            LockedAtGameTick = _lockedAt.Value, BaselineRatePerMinute = _baselineRate,
+            TargetRatePerMinute = _targetRate, ToleranceFraction = _tolerance, RequiredGameTicks = _requiredTicks,
+        };
+        checkpoint.IntegrityHash = checkpoint.CalculateIntegrityHash();
+        checkpoint.Validate();
+        return checkpoint;
+    }
+
+    // A current tick/auto-resave cannot prove the loaded save included the declaration.
+    // The Plugin supplies the consumed ticket's watermark only after a healthy planned
+    // resume and its Journal continuity check, never from a client request.
+    public static GovernorThroughputValidation Restore(GovernorValidationCheckpoint checkpoint,
+        string ownedIdentityHash, string gameVersion, string sessionId,
+        long? confirmedPlannedResumeMinimumGameTick, long currentGameTick)
+    {
+        if (checkpoint is null)
+            throw new FoundryPlanningException("governor_validation_checkpoint_invalid", "No server declaration is available.");
+        checkpoint.Validate();
+        if (checkpoint.OwnedIdentityHash != ownedIdentityHash || checkpoint.GameVersion != gameVersion
+            || string.IsNullOrWhiteSpace(sessionId) || sessionId.Length > 256 || sessionId == checkpoint.SourceSessionId
+            || !confirmedPlannedResumeMinimumGameTick.HasValue
+            || confirmedPlannedResumeMinimumGameTick.Value < checkpoint.LockedAtGameTick
+            || currentGameTick < confirmedPlannedResumeMinimumGameTick.Value)
+            throw new FoundryPlanningException("governor_validation_restore_unproven",
+                "Require the same protected identity/version and a confirmed planned-resume save covering the original lock; current time alone is insufficient.");
+        return new GovernorThroughputValidation(checkpoint, sessionId, currentGameTick);
+    }
+
+    private GovernorThroughputValidation(GovernorValidationCheckpoint checkpoint, string sessionId, long currentGameTick)
+    {
+        _sessionId = sessionId; _planetId = checkpoint.PlanetId; _targetItemId = checkpoint.TargetItemId;
+        _baselineHash = checkpoint.BaselineProposalHash; _declaredTick = checkpoint.DeclaredAtGameTick;
+        _declarationRevision = checkpoint.DeclarationRevision; _baselineRate = checkpoint.BaselineRatePerMinute;
+        _targetRate = checkpoint.TargetRatePerMinute; _tolerance = checkpoint.ToleranceFraction;
+        _requiredTicks = checkpoint.RequiredGameTicks; _scaleHash = checkpoint.ScalePlanHash;
+        _sourceHash = checkpoint.SourceStateHash; _lockedAt = checkpoint.LockedAtGameTick;
+        _lastCapture = currentGameTick;
+        Reset("protected_resume_observation_reset", currentGameTick);
+    }
+
     public void Begin(GovernorPlanSnapshot current, bool writesHealthy)
     {
         if (_lockedAt.HasValue) return;
@@ -67,6 +117,29 @@ public sealed class GovernorThroughputValidation
         ValidateDeclaration(current);
         _lockedAt = current.CapturedAtGameTick;
         _scopeStart = _lockedAt.Value;
+    }
+
+    public bool TryBeginDurably(GovernorPlanSnapshot current, bool writesHealthy,
+        Func<GovernorThroughputValidation, bool> persistDeclaration)
+    {
+        if (persistDeclaration is null) throw new ArgumentNullException(nameof(persistDeclaration));
+        if (_lockedAt.HasValue)
+            throw new FoundryPlanningException("governor_validation_already_started", "An existing lock cannot be silently replaced or repersisted.");
+        Begin(current, writesHealthy);
+        var persisted = false;
+        try
+        {
+            persisted = persistDeclaration(this);
+            return persisted;
+        }
+        finally
+        {
+            if (!persisted)
+            {
+                _lockedAt = null;
+                Reset("declaration_persistence_failed", _declaredTick);
+            }
+        }
     }
 
     public GovernorThroughputValidationSnapshot Observe(GovernorPlanSnapshot current, bool writesHealthy)

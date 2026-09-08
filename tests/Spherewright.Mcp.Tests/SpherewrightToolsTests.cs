@@ -485,6 +485,11 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("target minus measured baseline", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
         Assert.Contains("costScope", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
         Assert.Contains("validationBaselineProposalHash", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
+        Assert.Contains("declarationDurable", tool.Description);
+        Assert.Contains("covering protected planned resume", tool.Description);
+        Assert.Contains("declarationDurable", tool.InputSchema.ToString());
+        Assert.Contains("Restart always resets continuous observation to zero", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
+        Assert.Contains("not permission to relock after expansion", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
     }
 
     [Fact]

@@ -44,6 +44,7 @@ internal sealed partial class GameStateReader
     private const int OverseerSnapshotScopeId = int.MaxValue;
     private readonly GameSessionTracker _sessions;
     private readonly OverseerLogisticsProgressStore _overseerLogisticsProgressStore;
+    private readonly GovernorDeclarationStore _governorDeclarationStore;
     private readonly SnapshotPageStore<ResourceNodeSnapshot> _resourceSnapshots =
         new SnapshotPageStore<ResourceNodeSnapshot>(TimeSpan.FromSeconds(60), 16);
     private readonly SnapshotPageStore<FactoryEntitySnapshot> _factorySnapshots =
@@ -59,10 +60,12 @@ internal sealed partial class GameStateReader
 
     public GameStateReader(
         GameSessionTracker sessions,
-        OverseerLogisticsProgressStore overseerLogisticsProgressStore)
+        OverseerLogisticsProgressStore overseerLogisticsProgressStore,
+        GovernorDeclarationStore governorDeclarationStore)
     {
         _sessions = sessions;
         _overseerLogisticsProgressStore = overseerLogisticsProgressStore;
+        _governorDeclarationStore = governorDeclarationStore;
     }
 
     public GameCallResult<SessionState> GetSessionStateOnMainThread()

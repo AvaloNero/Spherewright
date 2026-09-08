@@ -67,6 +67,10 @@ internal sealed class GameSessionTracker
 
     public long Revision => _revision;
 
+    // Original consumed planned-restart watermark, not the later automatic resave.
+    // Null for new/imported/manual worlds, legacy tickets and checkpoint/quarantine reloads.
+    public long? ConfirmedPlannedResumeMinimumGameTick { get; private set; }
+
     public string WriteHealth => _writeHealth;
 
     public string? WriteQuarantineActionId => _writeQuarantineActionId;
@@ -147,6 +151,7 @@ internal sealed class GameSessionTracker
                 _ownedData = null;
                 _ownedSaveName = null;
                 _sessionId = null;
+                ConfirmedPlannedResumeMinimumGameTick = null;
                 _lastPlanetId = 0;
                 _revision = 0;
                 _lastOwnedSaveGameTick = null;
@@ -167,6 +172,7 @@ internal sealed class GameSessionTracker
         {
             _observedData = currentData;
             _sessionId = Guid.NewGuid().ToString("D");
+            ConfirmedPlannedResumeMinimumGameTick = null;
             _revision = 1;
             _writeHealth = WriteHealthStates.Healthy;
             _writeQuarantineActionId = null;
@@ -310,6 +316,8 @@ internal sealed class GameSessionTracker
         }
 
         _resumeTickets.Consume(ticket.ResumeToken);
+        ConfirmedPlannedResumeMinimumGameTick = string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
+            ? ticket.MinimumGameTick : (long?)null;
         _pendingJournalResumeTicket = null;
         _logger.LogInfo("Spherewright confirmed gameplay-journal continuity and consumed the one-time resume ticket");
     }
@@ -323,6 +331,7 @@ internal sealed class GameSessionTracker
 
         _pendingJournalResumeTicket = null;
         _ownedData = null;
+        ConfirmedPlannedResumeMinimumGameTick = null;
         _ownedSaveName = null;
         _ownedSaveState = OwnedSaveStates.None;
         _ownedSaveError = null;

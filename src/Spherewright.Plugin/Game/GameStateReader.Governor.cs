@@ -100,15 +100,29 @@ internal sealed partial class GameStateReader
             {
                 if (!_governorValidations.TryGetValue(baselineHash, out var validation))
                 {
-                    validation = _governorValidationCandidates.Values.SingleOrDefault(v => v.Snapshot().BaselineProposalHash == baselineHash);
-                    if (validation is null)
-                        throw new FoundryPlanningException("governor_validation_baseline_unavailable", "No retained ready proposal matches this session; caller-supplied history is never accepted.");
                     if (_governorValidations.Count >= 8)
                         throw new FoundryPlanningException("governor_validation_limit", "At most8 finite validation declarations per session; no declarations are silently evicted.");
-                    validation.Begin(result, healthyWrites); // Before a write/source change, not retroactively after expansion.
+                    validation = _governorValidationCandidates.Values.SingleOrDefault(v => v.Snapshot().BaselineProposalHash == baselineHash);
+                    if (validation is not null)
+                    {
+                        if (!validation.TryBeginDurably(result, healthyWrites, _governorDeclarationStore.TryPut))
+                        {
+                            // The failed lock has been cleared. Also discard this candidate;
+                            // the caller must fresh-read rather than rely on an unpersisted hash.
+                            foreach (var candidateKey in _governorValidationCandidates.Where(p => ReferenceEquals(p.Value, validation)).Select(p => p.Key).ToArray())
+                                _governorValidationCandidates.Remove(candidateKey);
+                            throw new FoundryPlanningException("governor_validation_persistence_unavailable",
+                                "The declaration was not durably locked; do not expand or retry an old candidate.");
+                        }
+                    }
+                    else validation = _governorDeclarationStore.ReadForProtectedResume(baselineHash, result.CapturedAtGameTick);
+                    if (validation is null)
+                        throw new FoundryPlanningException("governor_validation_baseline_unavailable",
+                            "No retained candidate or protected saved declaration matches this hash; caller-supplied history is never accepted.");
                     _governorValidations.Add(baselineHash, validation);
                 }
                 result.ThroughputValidation = validation.Observe(result, healthyWrites);
+                result.ThroughputValidation.DeclarationDurable = true; // Samples themselves remain non-durable.
                 result.ValidationBaselineAvailable = true;
             }
             else if (healthyWrites && result.Baseline.State == "ready" && result.Blockers.Count == 0

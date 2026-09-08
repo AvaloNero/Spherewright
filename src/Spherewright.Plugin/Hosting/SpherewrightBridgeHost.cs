@@ -97,7 +97,8 @@ internal sealed class SpherewrightBridgeHost : IDisposable
             gameVersion,
             sessionTracker,
             logger);
-        var gameStateReader = new GameStateReader(sessionTracker, overseerLogisticsProgressStore);
+        var gameStateReader = new GameStateReader(sessionTracker, overseerLogisticsProgressStore,
+            new GovernorDeclarationStore(configuration.RuntimeDescriptorDirectory, gameVersion, sessionTracker, logger));
         var gameplayJournalManager = new GameplayJournalManager(
             configuration.RuntimeDescriptorDirectory,
             gameVersion,

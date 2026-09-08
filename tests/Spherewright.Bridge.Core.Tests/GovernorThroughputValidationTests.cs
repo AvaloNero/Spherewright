@@ -192,6 +192,217 @@ public sealed class GovernorThroughputValidationTests
         Assert.Single(current.Findings); Assert.False(current.Balanced);
     }
 
+    [Fact]
+    public void AnUnlockedCandidateCannotBecomeAPersistedDeclaration()
+    {
+        var run = new GovernorThroughputValidation(Declaration());
+        Assert.Equal("governor_validation_not_started", Assert.Throws<FoundryPlanningException>(
+            () => run.CreateCheckpoint("owned-hash", "game-version")).Reason);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void FailedDurableWriteCannotPublishALockOrBypassFreshPreExecutionChecks(bool throws)
+    {
+        var run = new GovernorThroughputValidation(Declaration());
+        bool Persist(GovernorThroughputValidation value)
+        {
+            Assert.Equal(2400, value.CreateCheckpoint("owned-hash", "game-version").LockedAtGameTick);
+            if (throws) throw new IOException("Injected write failure");
+            return false;
+        }
+        if (throws) Assert.Throws<IOException>(() => run.TryBeginDurably(Declaration(), true, Persist));
+        else Assert.False(run.TryBeginDurably(Declaration(), true, Persist));
+        Assert.Null(run.Snapshot().LockedAtGameTick); Assert.Equal("declaration_persistence_failed", run.Snapshot().ResetReason);
+        Assert.Throws<FoundryPlanningException>(() => run.Observe(Current(3000), true));
+        var afterWrite = Declaration(); afterWrite.Revision++;
+        Assert.Equal("governor_validation_start_stale", Assert.Throws<FoundryPlanningException>(
+            () => run.TryBeginDurably(afterWrite, true, _ => true)).Reason);
+    }
+
+    [Fact]
+    public void DurablePublicationRequiresTheSuccessfulCallbackAndDoesNotReplayIt()
+    {
+        var run = new GovernorThroughputValidation(Declaration()); var writes = 0;
+        Assert.True(run.TryBeginDurably(Declaration(), true, value =>
+        {
+            value.CreateCheckpoint("owned-hash", "game-version").Validate(); writes++; return true;
+        }));
+        Assert.Equal(2400, run.Snapshot().LockedAtGameTick);
+        Assert.Throws<FoundryPlanningException>(() => run.TryBeginDurably(Declaration(), true, _ => { writes++; return true; }));
+        Assert.Equal(1, writes);
+    }
+
+    [Fact]
+    public void ProtectedResumeRetainsOriginalDeclarationButLosesAllPreviousObservationCredit()
+    {
+        var run = Started();
+        var checkpoint = run.CreateCheckpoint("owned-hash", "game-version");
+        for (var tick = 3000; tick <= 38400; tick += 600) run.Observe(Current(tick), true);
+        Assert.True(run.Snapshot().DoubleThroughputTargetObserved);
+        // Round-trip the private DTO, not a client request or a claimed historical rate.
+        checkpoint = System.Text.Json.JsonSerializer.Deserialize<GovernorValidationCheckpoint>(
+            System.Text.Json.JsonSerializer.Serialize(checkpoint))!;
+        var restored = GovernorThroughputValidation.Restore(checkpoint, "owned-hash", "game-version", "resumed", 40000, 40030);
+        var state = restored.Snapshot();
+        Assert.Equal("pre-execution-proposal", state.BaselineProposalHash);
+        Assert.Equal(2400, state.DeclaredAtGameTick); Assert.Equal(2400, state.LockedAtGameTick);
+        Assert.Equal(30, state.BaselineProductionPerMinute); Assert.Equal(60, state.TargetRatePerMinute);
+        Assert.Equal(.1m, state.ToleranceFraction); Assert.Equal(36000, state.RequiredGameTicks);
+        Assert.Equal(0, state.ObservedContiguousGameTicks); Assert.Equal(0, state.ObservationCount);
+        Assert.Null(state.StartGameTick); Assert.Null(state.EndGameTick); Assert.False(state.Durable);
+        Assert.False(state.DoubleThroughputTargetObserved); Assert.Equal("protected_resume_observation_reset", state.ResetReason);
+
+        GovernorPlanSnapshot Resumed(long tick)
+        {
+            var current = Current(tick); current.SessionId = "resumed"; current.Revision = 1;
+            return current;
+        }
+        Assert.Equal(0, restored.Observe(Resumed(40030), true).ObservedContiguousGameTicks);
+        for (var tick = 40629; tick < 76029; tick += 600)
+            Assert.False(restored.Observe(Resumed(tick), true).DoubleThroughputTargetObserved);
+        Assert.True(restored.Observe(Resumed(76029), true).DoubleThroughputTargetObserved);
+        Assert.Equal(36000, restored.Snapshot().ObservedContiguousGameTicks);
+    }
+
+    [Theory]
+    [InlineData("owner")] [InlineData("version")] [InlineData("missing_proof")]
+    [InlineData("old_save")] [InlineData("future_proof")] [InlineData("same_session")]
+    [InlineData("missing_session")]
+    public void RestoreRequiresAConfirmedCoveringPlannedResumeNotTheCurrentTick(string changed)
+    {
+        var checkpoint = Started().CreateCheckpoint("owned-hash", "game-version");
+        var owner = "owned-hash"; var version = "game-version"; var session = "resumed";
+        long? savedTick = 3000; long currentTick = 50000;
+        switch (changed)
+        {
+            case "owner": owner = "another-owned-world"; break;
+            case "version": version = "different-version"; break;
+            case "missing_proof": savedTick = null; break;
+            case "old_save": savedTick = 2399; break; // Many later ticks cannot repair a pre-lock load.
+            case "future_proof": savedTick = 50001; break;
+            case "same_session": session = "owned-session"; break;
+            case "missing_session": session = ""; break;
+        }
+        Assert.Equal("governor_validation_restore_unproven", Assert.Throws<FoundryPlanningException>(() =>
+            GovernorThroughputValidation.Restore(checkpoint, owner, version, session, savedTick, currentTick)).Reason);
+    }
+
+    [Theory]
+    [InlineData("version")] [InlineData("owner")] [InlineData("session")] [InlineData("hash")]
+    [InlineData("source")] [InlineData("scale")] [InlineData("planet")] [InlineData("item")]
+    [InlineData("declared_tick")] [InlineData("revision")] [InlineData("lock_tick")]
+    [InlineData("baseline")] [InlineData("target")] [InlineData("tolerance")] [InlineData("duration")]
+    public void PersistedScalarsAreIntegrityChecked(string changed)
+    {
+        var saved = Started().CreateCheckpoint("owned-hash", "game-version");
+        switch (changed)
+        {
+            case "version": saved.Version++; break;
+            case "owner": saved.OwnedIdentityHash += "changed"; break;
+            case "session": saved.SourceSessionId += "changed"; break;
+            case "hash": saved.BaselineProposalHash += "changed"; break;
+            case "source": saved.SourceStateHash += "changed"; break;
+            case "scale": saved.ScalePlanHash += "changed"; break;
+            case "planet": saved.PlanetId++; break;
+            case "item": saved.TargetItemId++; break;
+            case "declared_tick": saved.DeclaredAtGameTick--; break;
+            case "revision": saved.DeclarationRevision++; break;
+            case "lock_tick": saved.LockedAtGameTick++; break;
+            case "baseline": saved.BaselineRatePerMinute++; break;
+            case "target": saved.TargetRatePerMinute++; break;
+            case "tolerance": saved.ToleranceFraction += .01m; break;
+            case "duration": saved.RequiredGameTicks++; break;
+        }
+        Assert.Equal("governor_validation_checkpoint_invalid", Assert.Throws<FoundryPlanningException>(saved.Validate).Reason);
+    }
+
+    [Theory]
+    [InlineData("oversized")] [InlineData("missing_source")] [InlineData("lock_before_declaration")]
+    [InlineData("late_lock")] [InlineData("zero_baseline")] [InlineData("zero_target")]
+    [InlineData("relaxed_tolerance")] [InlineData("short_duration")] [InlineData("negative_revision")]
+    public void IntegrityHashDoesNotReplaceStructuralValidation(string changed)
+    {
+        var saved = Started().CreateCheckpoint("owned-hash", "game-version");
+        switch (changed)
+        {
+            case "oversized": saved.SourceSessionId = new string('x', 257); break;
+            case "missing_source": saved.SourceStateHash = ""; break;
+            case "lock_before_declaration": saved.LockedAtGameTick = 2399; break;
+            case "late_lock": saved.LockedAtGameTick = 6001; break;
+            case "zero_baseline": saved.BaselineRatePerMinute = 0; break;
+            case "zero_target": saved.TargetRatePerMinute = 0; break;
+            case "relaxed_tolerance": saved.ToleranceFraction = .51m; break;
+            case "short_duration": saved.RequiredGameTicks = 35999; break;
+            case "negative_revision": saved.DeclarationRevision = -1; break;
+        }
+        saved.IntegrityHash = saved.CalculateIntegrityHash();
+        Assert.Throws<FoundryPlanningException>(saved.Validate);
+    }
+
+    [Fact]
+    public void ARestoredDeclarationStillRejectsRetargetingAndRequiresFreshExpandedSourceWindows()
+    {
+        var saved = Started().CreateCheckpoint("owned-hash", "game-version");
+        var restored = GovernorThroughputValidation.Restore(saved, "owned-hash", "game-version", "resumed", 3000, 3030);
+        var current = Current(3630); current.SessionId = "resumed"; current.SourceStateHash = "expanded";
+        Assert.Equal(0, restored.Observe(current, true).ObservedContiguousGameTicks);
+        current = Current(4230); current.SessionId = "resumed"; current.SourceStateHash = "expanded";
+        Assert.Equal(600, restored.Observe(current, true).ObservedContiguousGameTicks);
+        current.TargetRatePerMinute = 59;
+        Assert.Equal("governor_validation_declaration_mismatch", Assert.Throws<FoundryPlanningException>(
+            () => restored.Observe(current, true)).Reason);
+        Assert.Equal(30, restored.Snapshot().BaselineProductionPerMinute);
+        saved.BaselineRatePerMinute = 1; // The restored validator copied its original immutable scalars.
+        Assert.Equal(30, restored.Snapshot().BaselineProductionPerMinute);
+    }
+
+    [Fact]
+    public void ArchiveIsBoundedIdempotentAndNeverEvictsOrReplacesAnOriginalDeclaration()
+    {
+        var archive = new GovernorDeclarationArchive { IdentityHash = "owned-hash", GameVersion = "game-version" };
+        var first = Started().CreateCheckpoint("owned-hash", "game-version");
+        archive.AddLockedDeclaration(first); archive.AddLockedDeclaration(first);
+        Assert.Single(archive.Declarations);
+        for (var index = 1; index < GovernorDeclarationArchive.MaximumDeclarations; index++)
+        {
+            var saved = Started().CreateCheckpoint("owned-hash", "game-version");
+            saved.BaselineProposalHash += index; saved.IntegrityHash = saved.CalculateIntegrityHash();
+            archive.AddLockedDeclaration(saved);
+        }
+        var ninth = Started().CreateCheckpoint("owned-hash", "game-version");
+        ninth.BaselineProposalHash += "ninth"; ninth.IntegrityHash = ninth.CalculateIntegrityHash();
+        Assert.Equal("governor_validation_limit", Assert.Throws<FoundryPlanningException>(() => archive.AddLockedDeclaration(ninth)).Reason);
+        var replacement = Started().CreateCheckpoint("owned-hash", "game-version");
+        replacement.BaselineRatePerMinute = 1; replacement.IntegrityHash = replacement.CalculateIntegrityHash();
+        Assert.Throws<FoundryPlanningException>(() => archive.AddLockedDeclaration(replacement));
+        Assert.Equal(8, archive.Declarations.Count); Assert.Same(first, archive.Declarations[0]);
+        Assert.Equal(30, first.BaselineRatePerMinute);
+    }
+
+    [Theory]
+    [InlineData("version")] [InlineData("owner")] [InlineData("game_version")]
+    [InlineData("null_entries")] [InlineData("null_entry")] [InlineData("duplicate")]
+    [InlineData("wrong_entry_owner")] [InlineData("wrong_entry_version")]
+    public void InvalidPrivateArchiveCannotBeAttached(string changed)
+    {
+        var archive = new GovernorDeclarationArchive { IdentityHash = "owned-hash", GameVersion = "game-version" };
+        var saved = Started().CreateCheckpoint("owned-hash", "game-version"); archive.AddLockedDeclaration(saved);
+        switch (changed)
+        {
+            case "version": archive.Version = 2; break;
+            case "owner": archive.IdentityHash = "other-world"; break;
+            case "game_version": archive.GameVersion = "different-version"; break;
+            case "null_entries": archive.Declarations = null!; break;
+            case "null_entry": archive.Declarations.Add(null!); break;
+            case "duplicate": archive.Declarations.Add(saved); break;
+            case "wrong_entry_owner": saved.OwnedIdentityHash = "other-world"; break;
+            case "wrong_entry_version": saved.GameVersion = "different-version"; break;
+        }
+        saved.IntegrityHash = saved.CalculateIntegrityHash();
+        Assert.Throws<FoundryPlanningException>(() => archive.Validate("owned-hash", "game-version"));
+    }
+
     private static GovernorThroughputValidation Started()
     {
         var declaration = Declaration(); var run = new GovernorThroughputValidation(declaration);

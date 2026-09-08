@@ -18,10 +18,10 @@
 
 ### EXP-271 — 跨重启续建必须保留执行前声明，而不是继承连续观察信用
 
-- 状态：`observed`；日期/最近复验：2026-09-09；范围：0.4蓝图取消/重启续建与Governor两倍验收的组合边界，仅源码/离线证据。
-- 证据：`GameStateReader.Governor.cs`当前在session变化时清空三组内存字典；`GovernorThroughputValidation`拒绝替换session，快照`Durable=false`。针对性Release构建/36测试验证原声明不可改、写后不能补锁及采样缺口重置；并未实现或实测原声明恢复。
+- 状态：`validated`（仅源码/离线）；日期/最近复验：2026-09-09；范围：0.4蓝图取消/重启续建与Governor两倍验收的组合边界，尚未冷部署或实机恢复。
+- 证据/修订：先前36测试确认内存声明无法跨session；本次增加私有逐owned声明archive和严格planned-resume恢复，锁定须flush/原子替换成功，失败不保留可用锁。全1556 Release测试/完整Release零警告错误通过，含恢复保留原声明但重新累计全部36000tick、错owner/版本、旧或未来水位、完整性/边界和故障回调负例。存储校验哈希只检测损坏，ACL才是访问边界；离线模拟不冒充实机或文件系统故障注入。
 - 结论/限制：不能把blueprint buildId可恢复推导为Governor基线也可恢复，更不能先复制一部分再用新观察冒充执行前基线。原基线/2×目标/≤10%误差/≥36000tick要求需要按owned identity保护落盘并严格恢复；连续窗口必须在重启后清零，仅使用当前session实际覆盖的tick。不得接受客户端历史输入或旧动作token。
-- 复验触发：实现声明持久化、正常保存/恢复、存储缺失/篡改/未来水位或owner/session变化时分别验证；当前没有真实蓝图commit或已锁实机Governor基线，不能给验收信用。关联IFX-075、存档日记001、Roadmap Governor门。
+- 复验触发：冷部署、正常保存/恢复、存储缺失/篡改/未来水位或owner/session变化时分别验证；保存水位须来自已消费且Journal已验的健康planned ticket，不能用恢复后新保存追认旧世界。`declarationDurable=true`只信用原声明，样本`durable=false`且重启清零。当前没有真实蓝图commit或已锁实机Governor基线，不能给实机验收信用。关联IFX-075、存档日记001、Roadmap Governor门。
 
 ### EXP-270 — 动作内守恒与动作结束后的外部位置变化分开核验
 

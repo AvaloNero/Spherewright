@@ -12,7 +12,8 @@ public sealed class GetGovernorPlanRequest
     public List<BlueprintSelectedEntity> SourceEntities { get; set; } = new List<BlueprintSelectedEntity>();
     public List<int> ExternalSupplyItemIds { get; set; } = new List<int>();
     public List<FoundryRecipeChoice> RecipeChoices { get; set; } = new List<FoundryRecipeChoice>();
-    // Optional exact pre-execution ready proposal previously returned in this session.
+    // Exact ready proposal from this session, or the same durably locked declaration
+    // restored by the server after a covering protected planned restart.
     // The server retains its baseline/target; callers cannot supply measured history.
     public string? ValidationBaselineProposalHash { get; set; }
     // Explicit additional-chain layout; never a caller-supplied measured baseline.
@@ -95,13 +96,14 @@ public sealed class GovernorThroughputValidationSnapshot
     public bool ThroughputTargetObserved { get; set; }
     public bool DoubleThroughputTargetObserved { get; set; }
     public bool Durable { get; set; }
+    public bool DeclarationDurable { get; set; }
     public string MeasurementBasis { get; set; } = "overlapping_native_600_tick_windows_no_unobserved_tick_gaps";
     public string HealthEvidenceBasis { get; set; } = "sampled_power_diagnostics_and_write_health_not_continuous_tick_health";
     public List<string> RemainingChecks { get; set; } = new List<string>
     {
         "Only a measured throughput window, not complete balance or a release-gate certificate; verify upstream automatic supply, logistics, power and material conservation separately.",
         "Power/diagnostic/write-health checks are sampled. An unobserved short health interruption cannot be ruled out by this record.",
-        "The exact baseline, target, tolerance and duration are immutable; a new session discards this non-durable validation. Never submit a claimed historical baseline.",
+        "The exact baseline, target, tolerance and duration are immutable. Only declarationDurable=true permits restoring that server declaration after a covering protected planned resume. Samples are not durable: restart resets continuous observation to zero. Never submit claimed historical rates.",
     };
 }
 

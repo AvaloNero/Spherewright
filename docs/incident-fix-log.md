@@ -14,10 +14,11 @@
 
 ## IFX-075 — Governor 的进程内锁定基线无法衔接蓝图重启续建
 
-- 首见：2026-09-09，等待石墨修复后产量窗口时的源码审计；状态`open`，不是已发生的实机扩产失败。
-- 根因：`GameStateReader.Governor.cs`在session变化时清空候选和已锁定声明；`GovernorThroughputValidation`把原session作为不可变条件，公开快照也明确`Durable=false`。因此先锁基线、部分蓝图施工、保存/重启后，原声明不能直接继续使用；蓝图buildId持久化本身不能保全Governor基线。
+- 首见：2026-09-09，等待石墨修复后产量窗口时的源码审计；状态`fixed_offline_live_pending`，不是已发生的实机扩产失败。
+- 根因：修复前`GameStateReader.Governor.cs`在session变化时清空候选和已锁定声明；`GovernorThroughputValidation`把原session作为不可变条件，公开快照也明确`Durable=false`。因此先锁基线、部分蓝图施工、保存/重启后，原声明不能直接继续使用；蓝图buildId持久化本身不能保全Governor基线。
 - 验证：针对`GovernorThroughputValidationTests`的Release构建/36测试通过，涵盖拒绝caller换session、任何写入后才锁基线、扩产后重新声明、观察缺口清零等既有约束。这些测试确认当前边界，不表示跨重启声明已经支持；尚未为此锁定实机基线或提交蓝图。
-- 下一最小修复边界：复用逐owned identity的受保护持久化，保留服务端在首个扩产写入前实际锁定的原基线、目标、误差和期限；正常同档恢复后只在严格核验身份、保存水位及声明完整性后重新绑定当前session。连续产量计数必须从恢复后重新开始，不能累加离线/旧窗口；不能开放调用端自报历史、复用旧动作token或在部分施工后以新基线替代原声明。实现、保存/恢复正负例和实机复验仍待，关联EXP-271及Roadmap。
+- 本次修复：复用BlueprintBuildStore的逐owned/当前用户ACL/flush/原子替换模式，私有archive最多64KiB/8条，仅保留服务端已锁定声明及完整性校验，不存样本/存档名/token。持久化失败不发布锁定结果、清除候选，不能靠第二次Begin绕过写前检查。恢复只接受身份/游戏版本匹配、Journal连续性已确认的健康planned resume，保存水位取被消费票据的原minimum tick，不取恢复后自动重存tick；必须覆盖原锁定。legacy/quarantine/flight checkpoint没有该证明。原声明可恢复，但全部连续采样信用归零；新增`declarationDurable`与原`durable=false`分开表达，工具及包内指南同步。
+- 离线验证：locked restore、Core Release构建/全1556测试（45 Contracts、1422 Core、89 MCP）、完整Release零警告错误。覆盖JSON往返、原2×/误差/时长保持、重启后重做36000tick、旧档/未来水位/错owner或版本、结构/完整性/重复冲突/8条上限、持久化回调失败或异常不发布锁及MCP/指南提示。这不是真实文件系统故障注入或DSP保存恢复验收；尚未冷部署、实机锁定/恢复，仍须同模块蓝图组合实测。关联EXP-271及Roadmap。
 
 ## IFX-074 — 跨阶段位置等式混淆已完成动作与后续现场变化
 

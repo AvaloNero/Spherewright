@@ -114,6 +114,8 @@
 
 2026-09-07复现与产品化：四带施工terminal成功，外部脚本仅因post-read仍有1台非空闲无人机而停在下一sorter之前，不能据此重做已完成带。GameStateReader的working只是alive-idle；新增公开player说明与包内playbook的有界只读待机、只续未提交对象、fresh核验原生复用ID规则。root完整178→179实体、逐对象材料/连接和Luna两次唯一terminal均通过；新增2项MCP测试后1457项Debug/Release、完整Release零警告错误及真实MCP resource读回通过。未修改Plugin准入、没有新ZIP；关联EXP-242。
 
+2026-09-08私有调用端再次复现：首台风机2712的8a2a4856已在33170518成功，随后9tick的working1/pending0被临时脚本即时idle断言拒绝。公开MCP现有语义正确，根因是主会话固定执行器未吸收该经验。root raw-efcd16bc独立核销完整2712结构及唯一终态，网络容量+5000、全背包仅风机−1、玩家最终idle、J56/healthy保持。修正仅在该执行器内有界只读等待返航，并以精确已完成前缀继续六个未提交位置；30项原始/变异检查通过，不修改Plugin准入，不重放第一台。新等待分支后续实机另验，accepted1不归零。
+
 2026-09-07空库存复现：旧27回收f274a9a9已于28106933成功，后置PowerShell直接访问空Measure-Object的Sum而停止，尚未prepare重建。raw-2010d15c证明2012为2→3、铜为0→1，缺少的是before铜项，不是设备丢失。公共ActionClient新增Get-SpherewrightInventoryCount，完整inventory缺项返回0，缺失/null/畸形条目、非整数/负数和聚合越界拒绝；不改prepare/commit/poll/幂等。独立scripts/test-action-client.ps1有21项离线检查且不访问游戏，本次原始库存再次核算通过；Luna随后只续未提交重建e4cae01f，28135338→28135738、2012为3→2，双端和filter1104正确。root raw-10f35253全2351实体/389配置、五写审计通过，无重复回收/重建。既有1488项Release回归复跑通过，21项PowerShell检查单列，不将两者混称新的.NET测试数量。
 
 ## IFX-002 — 同位置/同设备分拣器被错误归属或覆盖槽位

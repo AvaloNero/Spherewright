@@ -16,6 +16,13 @@
 
 ## 当前经验
 
+### EXP-273 — 已用燃料格满栈不等于燃料仓无空格
+
+- 状态：`validated`（字段语义、原93件终态和下一100件原生只读预检）；日期/最近复验：2026-09-09；范围：当前普通refuel调用端，修正后第二笔执行仍待。
+- 证据：`GameStateReader`跳过空燃料格并按item聚合`fuelStorage`，另公开`fuelStorageSlotCount/fuelStorageOccupiedSlotCount`；`TryResolveRefuelTransfer`先补同物品格再查空格。raw-86ad7bc1的93件已完成，root raw-616481a2确认总4/已占1、聚合石墨100，下一100件prepare允许。不能只算已用格的`stackSize-count`并把0解释成整个燃料仓满。
+- 处置/限制：保留原成功action且accepted7不归零；主会话提供语法检查通过的有限文件，显式核销第一笔后只继续未提交部分。空格数不替代过滤/容量/原生规则，仍需每笔fresh玩家hash和exact-count prepare。没有新增观察字段、通用工具或燃料注入；ActionClient21项通过，但语法/只读正例不冒充第二笔或飞行完成。
+- 复验触发：燃料混装、格数/占用变化、原生版本变化或部分执行时；与EXP-007/269、IFX-076及存档日记001关联。
+
 ### EXP-272 — 完整工厂分页可复用普通配置证据，不能替代端口和货物详情
 
 - 状态：`validated`；日期/最近复验：2026-09-09；范围：当前安装批次、本档2741实体的十写审计；没有新增工具或放宽审计范围。

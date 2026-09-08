@@ -195,6 +195,8 @@ public long PowerGeneratorComponent.generateCurrentTick
 
 每个网络还返回节点/消费者/发电机/蓄电器/交换器数量、原生需求/供给/容量/储能和两个 ratio。星球摘要聚合全部有界扫描到的网络，但只返回最多 64 个网络详情，并明确 `networkDetailsTruncated`；`minimumConsumerRatio` 只在至少有一个消费者的网络间计算。
 
+2026-09-08 氢去路设计复核：当前游戏及本地编译引用哈希仍同为上述AE0BA95F…EF85。`PowerSystem.GameTick`先由`EnergyCap_Fuel()`等路径汇总实际可用容量，随后按网络需求、储能及交换器状态计算分担比例，并将分配后的能量传给`GenEnergyByFuel(long energy, int[] consumeRegister)`。无增产路径扣热量为整数`energy * useFuelPerTick / genEnergyPerTick`，消耗新燃料件才更新统计；有增产时另有原生分支。因此增加一台已供料火电也会降低其他发电机的分担比例，不能简单线性放大原耗氢速率。本次只复核现有路径，没有新增字段或游戏调用。当前目录实测氢热值9000000J（raw-09ae34b3）；不凭记忆填入8MJ或未经观察的火电参数，长期净消耗仍由独立产消/库存窗口验收。
+
 2026-09-07 发电详情单位修正：当前DSP0.10.34.28529的Assembly-CSharp SHA-256复核仍为`AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`。`PowerSystem.GameTick`把分配给该发电机的本tick能量`num57`传给`PowerGeneratorComponent.GenEnergyByFuel(long energy, int[] consumeRegister)`，再赋给`generateCurrentTick`；后者不是物品数量。`GenEnergyByFuel`按能耗扣`fuelEnergy`，实际开始消耗一件时才令`fuelCount--`、`consumeRegister[fuelId]++`并更新`curFuelId`。因此原有`CapturePower`的buffer角色`power-generation-current-tick`必须标成`joules_per_tick`，`unitsPerItem=0`表示无物品换算；保留现有int上限投影和fuelId语境，不把它当燃料堆栈。需要完整能量总值时使用既有long电网摘要。普通库存/研究点/货物字段不变，也不改native写入路径、动作hash或统计窗口。
 
 本机旧安装态183火电在27697702返回count18686/item1120/错误items单位，为直接反例；这不是18686件氢。Governor当前库存和历史窗口库存复用同一物理计数判定，既排除新能量单位，也按role排除旧版误标items的发电量。该修正只改观察语义；新源码冷部署/live单位复读另验，不用单元测试冒充修复后实机。

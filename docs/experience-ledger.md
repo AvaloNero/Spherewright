@@ -18,7 +18,8 @@
 
 ### EXP-273 — 已用燃料格满栈不等于燃料仓无空格
 
-- 状态：`validated`（字段语义、原93件终态和下一100件原生只读预检）；日期/最近复验：2026-09-09；范围：当前普通refuel调用端，修正后第二笔执行仍待。
+- 续作实测：raw-90514f57只执行未提交的100件refuel（34466130）及一次save34466163，root raw-f78d681a在34470984独立核销两笔93/100及保存、全玩家差量和J56/56/healthy；原action只读未重放。格内200/背包207、两占用格/总四格，可用核心加已加注热量1.751793401GJ。去102的只读flight prepare通过，尚未飞行；accepted9/revision14保留。语法检查过的有限文件本机执行成功，不外推任意混装或不同格配置。
+- 状态：`validated`（字段语义、两笔原生加注和普通保存）；日期/最近复验：2026-09-09；范围：当前普通refuel调用端的明确一栈续作；飞行另验。
 - 证据：`GameStateReader`跳过空燃料格并按item聚合`fuelStorage`，另公开`fuelStorageSlotCount/fuelStorageOccupiedSlotCount`；`TryResolveRefuelTransfer`先补同物品格再查空格。raw-86ad7bc1的93件已完成，root raw-616481a2确认总4/已占1、聚合石墨100，下一100件prepare允许。不能只算已用格的`stackSize-count`并把0解释成整个燃料仓满。
 - 处置/限制：保留原成功action且accepted7不归零；主会话提供语法检查通过的有限文件，显式核销第一笔后只继续未提交部分。空格数不替代过滤/容量/原生规则，仍需每笔fresh玩家hash和exact-count prepare。没有新增观察字段、通用工具或燃料注入；ActionClient21项通过，但语法/只读正例不冒充第二笔或飞行完成。
 - 复验触发：燃料混装、格数/占用变化、原生版本变化或部分执行时；与EXP-007/269、IFX-076及存档日记001关联。

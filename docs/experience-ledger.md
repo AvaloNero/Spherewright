@@ -35,6 +35,7 @@
 - 2026-09-08补充：同SHA当前DLL的BuildTool_Inserter.CheckBuildConditions对双belt分别检查直距≤5m、CalcSegmentsAcross≤3.2，belt/device则为5.5m/3.499；角度通过不抵扣跨度。旧四行跨线5.031m因此被只读规划主动撤销，未再提交native附件。三行候选3.774m；raw-3aaeeeef完整材料下北段5NEW预检通过、南段明确OutOfReach。只允许短移后重验相同端点，尚无任何新格轴带或附件施工。CalcSegmentsAcross取决于局部纬度/经度格，不可仅用固定米数估算来声明原生通过。
 - 格轴消费端实机正例：固定短移后同端点full_path_stage1通过，af320970正常建5带，d0efd263正常建2606，实际2601 slot4→2606→183 slot3，1120过滤且满供电。root raw-097b73ad核对原始exact_slots位置/预算、两唯一终态、28对象/材料/J56，证明关键消费端连接已通过，而不是把预测格轴直接当批准。Luna的本地tail断言不改变实际出向slot4/otherSlot1及设备入向slot3/otherSlot0，沿EXP-007/070重新核销而不重放。accepted8；源和桥未接，不能宣称整线运行或把183当前燃料种类归因于新线。
 - 包内指导产品化：MCP的beltPathMode参数说明与同源内嵌playbook增加源/桥/消费者全链朝向、原生米距及格跨度、格轴直端段、先核销关键附件再延长路线；区分热电厂可用exact_slots与不适用的offset fallback。新增资源/Schema回归，MCP项目89项通过，无Plugin/协议/工具数量变化；当前仅源码与离线资源验证，尚未冷部署新MCP或生成最终包。关联IFX-068。
+- 南段有限施工复验：80298509正常完成原九点2615→2607，raw-28feea2a独立核销37对象、完整native_grid路径、两自由端、正常材料/燃料/J56，accepted9。真实南尾2607和北首2605的raw-02b29748原生exact_slots预检通过，1120过滤、1×2011预算；终于以建成姿态验证三格跨度，而不是凭预测角度放行。此时桥仍未提交、氢源仍断开，不宣称持续供氢或把北端正例扩大为整线产能。
 
 ### EXP-258 — 多口储罐的空闲边不等于原生自动路径会选中它
 

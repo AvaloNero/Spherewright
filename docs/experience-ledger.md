@@ -23,6 +23,7 @@
 - 实机边界：raw-9bf0ea36唯一21285f48保存32115526；root raw-24406aec按Get-OptionalPropertyValue复核11对象前/后/当前配置、全玩家/J56及原始/fresh终态，accepted1/revision65、healthy。恢复源选择5项回归通过；无重复保存、额外游戏写入或新部署声明。
 - 数组复验：后续取料包装在raw-a82053d4把真实handcraftQueue=[]误判为阻塞，尚无prepare/commit。PowerShell函数管道会把空数组返回折叠为null；必需数组应直接检查属性存在、值非null和Count，不经可选标量helper判断空队列。root仅修正本次固定执行器，原空队列正例及缺失/null/忙碌反例通过；不据此放松游戏守卫或修改公共DTO。
 - 转移复验：原raw-911ac699的同步终态证明电路板转移4件，随后原仓已自动补回1件，两个inspect间只净减3。固定执行器改以终态的beforeTargetAmount/afterTargetAmount证明精确扣料，另核对全玩家净差与仓身份/配置/连接；不要求正常流动仓的后读库存冻结。预算、守恒和身份反例等共15项离线检查通过，零Bridge请求；这只验证客户端逻辑，不代表新的取料或输送施工已完成。
+- 取料/版本复验：raw-ce78169c的三唯一Move/transfer均成功，raw-b4991782于32317435独立复读终态、全背包仅铁+50/铜+1、两原仓配置/边及J56保持；accepted4/revision69。最后摘要把revision写死为68导致本地误报，因为一次Move可在开始/完成分别推进revision。revision不是accepted计数，后续只沿fresh实际revision绑定下一步，用唯一accepted/action单独计写；禁止靠退出码或预想revision重放成功动作。共享ActionClient21项回归通过，本次无公共代码或安装态变化。
 - 限制与复验：终态与资源守恒仍是成功依据，不用Shell退出码替代。运行环境、包装入口或DTO组件改变时，先对既有受保护回包验证调用和可选字段，不能在现场反复拼装守卫。关联IFX-072、EXP-007/261/262/264及存档日记001。
 
 ### EXP-266 — 氢副产物去路须核算实际电网负载，优先复用已接电的闲置消费者

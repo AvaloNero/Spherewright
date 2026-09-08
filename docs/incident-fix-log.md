@@ -12,6 +12,14 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-066 — 调用端把有效配置预检误判为回包失败
+
+- 首见：2026-09-08，塑料供油906的有限过滤配置；状态`fixed_offline_live_pending`。
+- 根因：调用端先把确认过的inserter.filterItemId=null误当无效（当前reader明确把原生0映射为null），继而要求普通配置plan回显targetObjectId、要求expectedStateHash等于请求哈希。后两次原生prepare均已通过，却被本地新增断言拒绝；没有commit。主会话按两次上限中断，没有让第三次猜字段继续。
+- 修复：包内/MCP内嵌playbook明确null与请求0的区别、可选目标字段及服务端计划哈希；保留正确请求hash、prepared/token/commitAllowed/blockers和各mode明示检查。MCP回归用不同服务端hash和缺省target验证现有转发，不改Plugin或放宽原生校验。
+- 证据：reader的原生0→null、AddPreparedPlan和MCP配置转发；raw-71780d94的通过预检、raw-da22630d于30782352仍revision51/906无过滤。accepted2、主档30704534/J56保持。塑料持续供油为何停滞仍未证明，不能把调用端修复当作实际送油恢复。
+- 验证层级：MCP套件88项通过、零失败，包含新的内嵌指南回归及更新的配置转发正例；仅离线源码验证。关联EXP-257、IFX-001、存档日记001；新指南尚未冷部署。
+
 ## IFX-065 — 私有旧连接检查的单元素数组展开假负例
 
 - 首见：2026-09-08，氢分拣器2531正常建成后的私有断言，raw-faa5aac2。

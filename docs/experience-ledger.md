@@ -16,6 +16,16 @@
 
 ## 当前经验
 
+### EXP-257 — 普通配置的请求与响应不保证逐字段回显
+
+- 状态：`validated`（当前契约、reader及MCP离线转发；实际供油修复未验）
+- 日期/最近复验：2026-09-08。
+- 适用范围：确认componentKind=inserter的详情及既有sorter-filter配置；不推广至缺失字段、失败读取或其他mode。
+- 结论：当前filterItemId=null表示原生无过滤0，请求仍用0清除；配置请求使用configurationStateHash，但plan.expectedStateHash是服务端绑定值，非请求回显。targetObjectId也非普通配置必填响应。不要在已通过的prepare上增造断言；保留明示预算/模式回显、prepared/token/准入和终态核销，accepted后不重放。
+- 证据：IFX-066记录两次真实prepare通过但本地误判、无commit；30782352仍revision51/accepted2。MCP测试验证不同plan hash及可选target仍正常转发，内嵌指南测试约束null/0与非重放边界。
+- 限制：没有改原生配置实现、工具数量或现场准入；指南未冷部署，906实际恢复送油另验。重复两次同类调用失败必须先停止，主会话核对契约，再通过现有固定执行器执行唯一批准动作，不继续临时猜字段。
+- 复验触发：DTO/序列化、配置mode或prepare响应变化；关联EXP-007/185、IFX-001/066及存档日记001。
+
 ### EXP-256 — 原生带段投影不能用示意圆角的最佳角度替代
 
 - 状态：`validated`（两负例离线复现、两NEW续接及一个实际油附件）

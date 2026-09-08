@@ -25,6 +25,22 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void OpeningPlaybookDistinguishesUnfilteredSorterReadbackFromRequestZero()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("componentKind=inserter", guide);
+        Assert.Contains("filterItemId=null", guide);
+        Assert.Contains("filterItemId=0", guide);
+        Assert.Contains("request and response representations differ", guide);
+        Assert.Contains("missing property, failed inspection or non-inserter is still unknown", guide);
+        Assert.Contains("preserve any accepted action and never replay it", guide);
+        Assert.Contains("does not require repeating build-path or placement previews", guide);
+        Assert.Contains("`targetObjectId` is optional", guide);
+        Assert.Contains("not a request-hash echo", guide);
+        Assert.Contains("Keep explicitly documented mode-specific checks", guide);
+    }
+
+    [Fact]
     public void BeltShortageRecoveryIsDiscoverableWithoutClaimingPlacementApproval()
     {
         var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareBuildAsync))!;
@@ -1187,9 +1203,19 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
-    public async Task ConfigureBuildingTool_MapsSorterFilterMode()
+    public async Task ConfigureBuildingTool_MapsSorterFilterWithoutInventedResponseEchoes()
     {
-        var bridge = new FakeBridgeClient(SuccessResult());
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            ConfigurePlan = new PreparedNormalAction
+            {
+                Prepared = true,
+                ActionKind = NormalActionKinds.ConfigureBuilding,
+                PlanToken = "plan",
+                CommitAllowedNow = true,
+                ExpectedStateHash = "sha256:server-plan-binding",
+            },
+        };
 
         var result = await SpherewrightTools.PrepareConfigureBuildingAsync(
             bridgeClient: bridge,
@@ -1208,6 +1234,11 @@ public sealed class SpherewrightToolsTests
         Assert.Equal(BuildingConfigurationModes.SorterFilter, bridge.LastConfigureRequest?.Mode);
         Assert.Equal(1120, bridge.LastConfigureRequest?.FilterItemId);
         Assert.Equal("sha256:factory", bridge.LastConfigureRequest?.ExpectedFactoryStateHash);
+        var plan = result.StructuredContent!.Value.GetProperty("result");
+        Assert.True(plan.GetProperty("prepared").GetBoolean());
+        Assert.True(plan.GetProperty("commitAllowedNow").GetBoolean());
+        Assert.Equal("sha256:server-plan-binding", plan.GetProperty("expectedStateHash").GetString());
+        Assert.False(plan.TryGetProperty("targetObjectId", out var target) && target.ValueKind != JsonValueKind.Null);
     }
 
     [Fact]
@@ -1634,6 +1665,7 @@ public sealed class SpherewrightToolsTests
         public ListResourceNodesRequest? LastResourceListRequest { get; private set; }
 
         public PrepareConfigureBuildingRequest? LastConfigureRequest { get; private set; }
+        public PreparedNormalAction? ConfigurePlan { get; set; }
         public bool OmitStorageEcho { get; set; }
 
         public PrepareBuildRequest? LastBuildRequest { get; private set; }
@@ -1953,6 +1985,8 @@ public sealed class SpherewrightToolsTests
         {
             LastConfigureRequest = request;
             var result = await Prepared(sessionId, NormalActionKinds.ConfigureBuilding);
+            if (ConfigurePlan is not null)
+                result = BridgeCallResult<PreparedNormalAction>.Succeeded(ConfigurePlan);
             if (request.Mode == BuildingConfigurationModes.StorageCapacity && !OmitStorageEcho && result.Value is not null)
             {
                 result.Value.PlannedStorageOperation = request.StorageOperation;

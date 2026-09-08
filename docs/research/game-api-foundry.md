@@ -7,6 +7,23 @@
 - Read-only ILSpy inspection of the local assembly; no decompiled code or game binaries are redistributed.
 - Plugin reads occur only on the Unity main thread after the existing exact-owned-session/local-planet check. Core receives copied DTOs, not game objects.
 
+## Oil-extractor instantaneous demand versus work budget (2026-09-09)
+
+The current `get_build_catalog` observation (private evidence `raw-cfdad8e0`)
+reports item `2307` work/idle energy of `14000/400` joules per tick,
+item `2011` at `300/150`, and item `2203` generation of `5000` on this planet.
+`GameStateReader` copies the catalog values from
+`prefabDesc.workEnergyPerTick` / `idleEnergyPerTick`, whereas entity
+`PowerDemandPerTick` is copied from the bound `PowerConsumerComponent.requiredEnergy`.
+The latter is the current request, not the catalog work limit.
+
+Consequently, the historical `400`-demand sample does not disprove `14000` work
+energy. Three local wind turbines leave `1000` per tick for a fully working
+extractor alone, or `700` with one working basic sorter. The proposed four-turbine
+kit leaves `6000/5700` before other consumers. Placement, coverage, actual network
+membership and sustained production still need live proof. This corrects the
+interpretation in EXP-010/017 via EXP-274; no game API or power field is changed.
+
 ## Belt material rejection is not a location verdict (2026-09-07)
 
 The current local `Assembly-CSharp.dll` hash above was rechecked. `BuildTool_Path.CheckBuildConditions()` checks the copied in-hand/package budget for each uncovered preview before range and subsequent placement conditions. It consumes only the preview inventory snapshot here. Failure to obtain one belt sets `EBuildCondition.NotEnoughItem` and continues to the next preview, so the missing item's later geometry checks may not run. Normal `CreatePrebuilds` remains a separate write path and is not called by prepare.

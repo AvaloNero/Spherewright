@@ -19,6 +19,7 @@
 - 验证：针对`GovernorThroughputValidationTests`的Release构建/36测试通过，涵盖拒绝caller换session、任何写入后才锁基线、扩产后重新声明、观察缺口清零等既有约束。这些测试确认当前边界，不表示跨重启声明已经支持；尚未为此锁定实机基线或提交蓝图。
 - 本次修复：复用BlueprintBuildStore的逐owned/当前用户ACL/flush/原子替换模式，私有archive最多64KiB/8条，仅保留服务端已锁定声明及完整性校验，不存样本/存档名/token。持久化失败不发布锁定结果、清除候选，不能靠第二次Begin绕过写前检查。恢复只接受身份/游戏版本匹配、Journal连续性已确认的健康planned resume，保存水位取被消费票据的原minimum tick，不取恢复后自动重存tick；必须覆盖原锁定。legacy/quarantine/flight checkpoint没有该证明。原声明可恢复，但全部连续采样信用归零；新增`declarationDurable`与原`durable=false`分开表达，工具及包内指南同步。
 - 离线验证：locked restore、Core Release构建/全1556测试（45 Contracts、1422 Core、89 MCP）、完整Release零警告错误。覆盖JSON往返、原2×/误差/时长保持、重启后重做36000tick、旧档/未来水位/错owner或版本、结构/完整性/重复冲突/8条上限、持久化回调失败或异常不发布锁及MCP/指南提示。这不是真实文件系统故障注入或DSP保存恢复验收；尚未冷部署、实机锁定/恢复，仍须同模块蓝图组合实测。关联EXP-271及Roadmap。
+- 2026-09-09冷部署补充：包含该修复的c32a5e0同批228文件哈希、实际安装MCP64工具/1资源及53671字符指南通过；正常保存34182274→退出→protected resume重存34182305后既有塑料配置和三独立产量窗通过，J56/56连续。此项将安装态更新为已冷部署，但未锁定任何实机Governor声明，状态仍为`fixed_offline_live_pending`；普通恢复不代替原基线跨重启与蓝图组合验收。
 
 ## IFX-074 — 跨阶段位置等式混淆已完成动作与后续现场变化
 

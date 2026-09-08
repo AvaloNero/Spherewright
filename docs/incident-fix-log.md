@@ -1,6 +1,6 @@
 # Spherewright 首次问题与代码修复记录
 
-更新时间：2026-09-08（Asia/Singapore）
+更新时间：2026-09-09（Asia/Singapore）
 
 本文件专门记录项目第一次遇到的可复用工程问题：现场症状、根因、代码或协议
 修复、验证证据和仍有限制。它不是逐局流水账，也不是当前规则的唯一来源。
@@ -11,6 +11,13 @@
 状态取 `fixed | mitigated | open`。`fixed` 只表示写明范围内已有代码和验证证据，
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
+
+## IFX-075 — Governor 的进程内锁定基线无法衔接蓝图重启续建
+
+- 首见：2026-09-09，等待石墨修复后产量窗口时的源码审计；状态`open`，不是已发生的实机扩产失败。
+- 根因：`GameStateReader.Governor.cs`在session变化时清空候选和已锁定声明；`GovernorThroughputValidation`把原session作为不可变条件，公开快照也明确`Durable=false`。因此先锁基线、部分蓝图施工、保存/重启后，原声明不能直接继续使用；蓝图buildId持久化本身不能保全Governor基线。
+- 验证：针对`GovernorThroughputValidationTests`的Release构建/36测试通过，涵盖拒绝caller换session、任何写入后才锁基线、扩产后重新声明、观察缺口清零等既有约束。这些测试确认当前边界，不表示跨重启声明已经支持；尚未为此锁定实机基线或提交蓝图。
+- 下一最小修复边界：复用逐owned identity的受保护持久化，保留服务端在首个扩产写入前实际锁定的原基线、目标、误差和期限；正常同档恢复后只在严格核验身份、保存水位及声明完整性后重新绑定当前session。连续产量计数必须从恢复后重新开始，不能累加离线/旧窗口；不能开放调用端自报历史、复用旧动作token或在部分施工后以新基线替代原声明。实现、保存/恢复正负例和实机复验仍待，关联EXP-271及Roadmap。
 
 ## IFX-074 — 跨阶段位置等式混淆已完成动作与后续现场变化
 

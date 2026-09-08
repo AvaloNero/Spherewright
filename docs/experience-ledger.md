@@ -16,6 +16,13 @@
 
 ## 当前经验
 
+### EXP-271 — 跨重启续建必须保留执行前声明，而不是继承连续观察信用
+
+- 状态：`observed`；日期/最近复验：2026-09-09；范围：0.4蓝图取消/重启续建与Governor两倍验收的组合边界，仅源码/离线证据。
+- 证据：`GameStateReader.Governor.cs`当前在session变化时清空三组内存字典；`GovernorThroughputValidation`拒绝替换session，快照`Durable=false`。针对性Release构建/36测试验证原声明不可改、写后不能补锁及采样缺口重置；并未实现或实测原声明恢复。
+- 结论/限制：不能把blueprint buildId可恢复推导为Governor基线也可恢复，更不能先复制一部分再用新观察冒充执行前基线。原基线/2×目标/≤10%误差/≥36000tick要求需要按owned identity保护落盘并严格恢复；连续窗口必须在重启后清零，仅使用当前session实际覆盖的tick。不得接受客户端历史输入或旧动作token。
+- 复验触发：实现声明持久化、正常保存/恢复、存储缺失/篡改/未来水位或owner/session变化时分别验证；当前没有真实蓝图commit或已锁实机Governor基线，不能给验收信用。关联IFX-075、存档日记001、Roadmap Governor门。
+
 ### EXP-270 — 动作内守恒与动作结束后的外部位置变化分开核验
 
 - 状态：`observed`；日期/最近复验：2026-09-08；范围：本档A出口四动作后的只读审计及重新绑定现场，不是通用的外部操作归因能力。

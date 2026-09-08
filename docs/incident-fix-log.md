@@ -12,6 +12,13 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-071 — dot-source 的同名参数把实际执行误切为离线验证
+
+- 首见：2026-09-08，两处油路升级的私有固定执行器；状态`fixed_offline_live_pending`，不是Plugin/MCP错误。
+- 根因：外层和被dot-source的备料脚本均声明ValidateOfflineOnly。导入时显式置true污染外层作用域，外层无参数运行也进入离线分支。Luna只看到两条离线PASS、exit0；没有Bridge调用、accepted或action，不能当作升级成功，也不需要回滚或重放材料动作。
+- 修复与验证：外层改用独立的ValidateOilUpgradesOfflineOnly；保留共用的已测试断言，不重写原语。AST检查通过；两份原生升级预算正例、预算变更反例及结果ID/互反槽映射回归通过；额外的零Bridge调度探针证明正常模式能越过离线分支。修复脚本尚待Luna重新授权执行，不将dispatch探针计入实机。
+- 限制：共享作用域导入不能只测试被导入函数，还要测试调用入口。进程exit0不是业务完成证据，仍以独立accepted/action终态和原始读回核销。关联EXP-264、存档日记001。
+
 ## IFX-070 — 私有保存守卫把数值零当成一个集合元素
 
 - 首见：2026-09-08，新氢支路保存前检查；状态`fixed`，仅本次私有执行脚本，不是Plugin或MCP故障。

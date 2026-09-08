@@ -513,7 +513,7 @@ public static partial class SpherewrightTools
         float pathLength = 6f,
         int stateHashVersion = 1,
         int initialSorterFilterItemId = 0,
-        [Description("native_grid (default) or native_geodesic: one explicit free-ground2001/2002/2003 route, 1.5–30m after native snapping. Requires all start/end coordinates and no entity/resource binding; no cover, merging or raised path. Require plannedBeltPath.routingMode to match a non-default request before commit.")]
+        [Description("native_grid (default) or native_geodesic: one explicit free-ground2001/2002/2003 route, 1.5–30m after native snapping. Requires all start/end coordinates and no entity/resource binding; no cover, merging or raised path. Require plannedBeltPath.routingMode to match a non-default request before commit. Geodesic belts may rotate their four sorter directions: check source, bridge and consumer facing AND native span, not endpoint coordinates alone. For grid-aligned attachments prefer native_grid with straight end segments; fresh-read actual ports and prepare the critical sorter before constructing the remaining route. Never relax native checks or replay an unchanged rejected pair.")]
         string beltPathMode = BeltPathModes.NativeGrid,
         CancellationToken cancellationToken = default)
     {

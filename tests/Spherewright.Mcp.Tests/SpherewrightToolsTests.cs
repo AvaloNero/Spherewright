@@ -166,6 +166,31 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void BeltRoutingGuidanceRequiresWholeConnectionGeometryBeforeRemainingConstruction()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tool = Assert.Single(provider.GetServices<McpServerTool>(),
+            value => value.ProtocolTool.Name == "spherewright_prepare_build").ProtocolTool;
+        var description = tool.InputSchema.GetProperty("properties").GetProperty("beltPathMode")
+            .GetProperty("description").GetString()!;
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        foreach (var text in new[] { description, guide })
+        {
+            Assert.Contains("source, bridge and consumer", text);
+            Assert.Contains("straight end segments", text);
+            Assert.Contains("prepare the critical sorter before constructing the remaining route", text);
+        }
+        Assert.Contains("5m maximum straight distance", guide);
+        Assert.Contains("3.2 maximum local grid segments", guide);
+        Assert.Contains("Predicted cardinal directions are not native approval", guide);
+        Assert.Contains("fallback excludes thermal generators and two-belt pairs", guide);
+        Assert.Contains("do not replay the unchanged pair", guide);
+    }
+
+    [Fact]
     public void FullNativePathStageDoesNotDependOnThePlayersUiCommand()
     {
         var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareBuildAsync))!;

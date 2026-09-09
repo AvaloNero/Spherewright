@@ -7,6 +7,12 @@
 - Read-only ILSpy inspection of the local assembly; no decompiled code or game binaries are redistributed.
 - Plugin reads occur only on the Unity main thread after the existing exact-owned-session/local-planet check. Core receives copied DTOs, not game objects.
 
+## Empty tank versus missing observation (2026-09-09)
+
+The current assembly SHA-256 above was rechecked. ILSpy confirms `TankComponent.id`, `entityId`, `fluidId`, `fluidCount`, `fluidInc` and `fluidCapacity` are integer fields; normal tank flow can clear `fluidId` as the tank drains. `SetEmpty()` also zeroes the component identity, so a zero quantity alone without exact entity/component identity is insufficient. No new game method is called.
+
+Existing `GameStateReader.CaptureTank` omitted buffers for both invalid identity and empty contents. Live 24-window captures of tank165 returned empty buffers; even where hydrogen consumption exceeded production this did not prove that tank's inventory trend. The minimal repair retains cursor/pool bounds, checks copied native id/entity ownership and nonnegative consistent item/count fields, and adds nullable `tankFluidCount` to the existing entity DTO. Verified zero is distinct from null/unobserved. Positive `tank-fluid` buffers retain their original semantics; no fictional item-zero buffer is added, no capacity/flow or sustained-supply claim is inferred, and action/configuration/endpoint hashes are unchanged. Core, contract and packaged-guidance regressions cover these boundaries; current installed Plugin lacks this field until a separate cold deployment and fresh live validation.
+
 ## Oil-extractor instantaneous demand versus work budget (2026-09-09)
 
 The current `get_build_catalog` observation (private evidence `raw-cfdad8e0`)

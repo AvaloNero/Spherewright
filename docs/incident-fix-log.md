@@ -12,6 +12,13 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-084 — 正常空罐与未读到组件无法从公开DTO区分
+
+- 首见：2026-09-09完整供给窗口，IFX-082先保留unknown；状态`fixed_offline_live_pending`。第二轮恢复科研后的raw-0e167778仍有24个未知，虽氢P105/C165，也不能证明罐库存趋势。
+- 根因：CaptureTank将原生正常空罐与错误tankId/池身份都投影为空buffers。当前DLL复核证明正常流动会清fluidId，不能仅将旧if里的fluidCount条件去掉或为未知填0。
+- 修复：保留原池/cursor边界，通过Core纯数量/身份校验，将确证数量放入现有DTO可空tankFluidCount；0与null区别明确，正缓冲原含义保持。MCP两既有描述、包内playbook及协议同步；工具数/协议版本/动作与三种hash均不变，没有写入罐、添加新工具或绕过验收。
+- 验证：26项新增回归及全1586测试通过，locked restore和完整Release零警告错误；未知/错身份/负数量/缺失物品不能成0，旧DTO保持null。当前已安装批次仍无新字段，实机空罐/正常保存恢复另验；不得修补历史raw或用单元测试宣称氢供给通过。关联EXP-277/276。
+
 ## IFX-083 — StrictMode对空科研缓冲的成员枚举在动作成功后抛错
 
 - 首见：2026-09-09正常选择2103后，私有执行文件汇总物品ID；状态`fixed_local_helper`，不是Plugin科研动作失败。

@@ -89,6 +89,11 @@ public sealed class FactoryEntitySnapshot
 
     public List<FactoryBufferSnapshot> Buffers { get; set; } = new List<FactoryBufferSnapshot>();
 
+    // Total native fluid items in this exact tank, including verified zero.
+    // Null/missing means unobserved or not a tank; empty Buffers alone is unknown.
+    // Read-only evidence, excluded from action/configuration/endpoint hashes.
+    public int? TankFluidCount { get; set; }
+
     // Detail-only observation, separate from device buffers and action hashes.
     // Null (including list snapshots) means not observed, never an empty belt.
     public BeltCargoSnapshot? BeltCargo { get; set; }

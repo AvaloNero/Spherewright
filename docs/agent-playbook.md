@@ -31,6 +31,8 @@ For a station, fresh-read the reciprocal belt input, configured item capacities 
 
 ## Research buffers and inventory accounting
 
+- For a liquid tank, `tankFluidCount` is its identity-verified total fluid quantity in items at the capture tick. An explicit zero proves an empty tank; null/missing is unknown, including older Plugins. Empty `buffers` alone is not zero. For positive quantities, identify the fluid from the matching `tank-fluid` buffer; do not count it twice or treat one reading as sustained flow. Preserve unknown samples when comparing inventory trends; a drained tank is not proof of a sustained hydrogen sink.
+
 - Retain `get_player_state.mechaResearchItemBuffer` and `autoManageResearchItems` alongside inventory. The mecha's research buffer holds **3600 points per whole item**, not additional backpack stacks. On the currently validated DSP version, normal research management can return buffered whole items when automatic research supply is disabled or no valid current/queued technology remains.
 - Before attributing an unexpected backpack change, compare retained buffer `pointCount`, `wholeItemCount` and `remainderPoints`, inventory item/count/inc, and **before/after progression**. Native takeback returns the integer quotient and clears the buffer: **never round up** remainder points or call a return newly produced material. This is **not permission to accept arbitrary inventory gains**; if the quantities, trigger or action boundary cannot be reconciled, stop new writes and retain the unresolved evidence. Do not replay a completed build/transfer or alter state hashes to make the audit pass.
 

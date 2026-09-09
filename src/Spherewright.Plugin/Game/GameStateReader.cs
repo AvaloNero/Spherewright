@@ -3589,11 +3589,15 @@ internal sealed partial class GameStateReader
         }
 
         ref var tank = ref factory.factoryStorage.tankPool[tankId];
-        if (tank.id != tankId || tank.entityId != entity.id
-            || tank.fluidId <= 0 || tank.fluidCount <= 0)
+        var observedCount = TankFluidObservationPolicy.ObserveCount(
+            entity.id, tankId, tank.id, tank.entityId, tank.fluidId, tank.fluidCount);
+        if (!observedCount.HasValue)
         {
             return;
         }
+
+        snapshot.TankFluidCount = observedCount.Value;
+        if (observedCount.Value == 0) return;
 
         snapshot.Buffers.Add(new FactoryBufferSnapshot
         {

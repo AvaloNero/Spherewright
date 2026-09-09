@@ -3,6 +3,12 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 重启保留部分施工、暴露声明持久化缺陷：raw-e26ba2b9正常关闭并保留旧程序集备份后，安装d8c0cf9的4 Plugin/224 MCP文件，哈希全一致；一次Steam启动，raw-ccff1964实测64工具/1资源/59713字符指南及当前Plugin认证。此前完整Release零警告错误、1664测试通过，仍只是本机开发安装态，不是最终ZIP或异机验证。
+
+Luna仅执行一次protected resume，raw-resume-1a4d8808的action `9f1abe12-07e8-49ee-bb41-48139148400b`成功，主档38525649→38525680，新revision1/accepted2/J66/healthy。root raw-b815e51a在38534784–38536530核销全2986实体/464非带配置/80详情、双向连接、全玩家物料科研点、四网和0prebuild，玩家Walk0/800MJ；原蓝图保持cancelled、1完成/5未提交及完全相同的逐对象借记证据。
+
+该审计最后的Governor读取真实返回`governor_validation_persistence_unavailable`。raw-b0702725/a4324cc7只读验证私有原档身份/游戏版本一致，但旧完整性哈希依赖decimal表示：原基线31、目标62.0的哈希正确，JSON读取后基线31.0导致不匹配。未修改声明文件、未重新锁基线、未继续五对象施工。下一唯一blocker是IFX-093，不把其误报为蓝图丢失、世界损坏或需要换档。4cd3268远端一致、CI34401008359成功。
+
 2026-09-10 / 部分蓝图与取消状态正常保存：raw-d3634910唯一save `9ce55e34-2404-4c19-b502-4638b0813d5a`在38525649成功，已覆盖原Governor锁38461509及第一炉/取消证据；root raw-85a651cb核销终态、完整玩家物料科研点/J66和原buildId的1完成/5未提交保持，revision97/accepted1，不因单次审计归零。恢复票据绑定当前primary和J66，无flight checkpoint。
 
 冷部署前raw-9e4a5282只读确认旧19c9069已安装228文件和新d8c0cf9测试cohort228文件逐哈希匹配、相同当前游戏引用、精确DSP/Steam进程、健康保存票据及原cancelled计划。零安装/关闭/加载写；下一才正常关闭、同批更换、一次Steam启动并protected resume。045872c远端一致、CI34400637397成功；该条不宣称恢复或五对象续建已经通过。

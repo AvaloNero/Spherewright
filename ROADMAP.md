@@ -106,6 +106,8 @@
 
 ## 0.4.0 — Overseer, Foundry & Governor
 
+2026-09-10 / 冷部署与原部分蓝图恢复通过、Governor恢复阻塞：d8c0cf9同批228文件冷部署，实际MCP64工具/1资源/59713字符指南；protected resume38525680，root raw-b815e51a复核2986实体/464配置/80详情、全厂双向边/材料/J66及原cancelled计划1完成5未提交。原Governor声明却在首次跨session读取时被完整性检查拒绝；raw-a4324cc7定位为旧decimal哈希区分31与31.0，而Plugin JSON会给整数decimal补.0。原声明文件未改，62/min目标不重锁，后续施工冻结至该直接blocker修复并冷部署复验。此次不抵扣原buildId续建、持续产出或2×连续十分钟门。
+
 2026-09-10 / 蓝图取消门局部实机通过：原六对象计划完成一炉后，正常取消只将未提交工作停止，实体/材料证据不变；root raw-8ee2dee1完整十写/2986实体审计通过，revision96/J66/healthy，accepted落盘后归零。普通保存/重启/原buildId五项续建及持续产出、Governor62/min连续十分钟仍待；1664测试/同源228文件staged cohort及64/1资源握手不抵扣这些实机门，也不是最终候选包。
 
 2026-09-10 / 首次真实blueprint commit门部分核销：同一六对象模块已在原生全图/材料/科技/供电预检和Governor预锁之后，以一次有限action正常建成idx0熔炉2986，达到上限1后terminal paused，五对象未提交；root独立验证持久逐对象材料/配置证据，accepted9/revision94/save38413066/J66。不是整图完成；取消、保存重启/原buildId续建、无重复完整核销及持续产出、2×连续十分钟仍未通过。

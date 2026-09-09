@@ -3,6 +3,12 @@
 更新时间：2026-09-09（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-09 / 新油源与独立供电施工通过：保存审计后Luna单次Move`8f7ce075-c0e0-4fb8-af91-3934dd2b5ef2`于36102736→36103624返回历史Walk落点，raw-961626c5，实际Walk0/400MJ；长预览unavailable未被称作路径安全。root raw-4efe02f2重新通过四风机及540井的原生预检后，Luna raw-b99a2823按明确五步正常施工风机2798–2801和油井2802，终态依次36120483/36121769/36123062/36124372/36125753，accepted1→6、revision70→80。每步fresh计划、正常扣料与无人机、唯一对象、成功终态和idle读回，没有重放或改变已成功对象。
+
+root raw-1b7d2c87在36133630核销五个原始/fresh收据、完整2802对象且2797旧配置不变，玩家仅2203−4/2307−1，203带/1sorter/1塔保留，J58/pre0/Walk0/healthy。新network3为4节点/4风机/1消费者、容量20000J/tick、井满工作预算14000、余6000，原三网不变且当前满电；540 remaining70733→70715，井口已真实产出50原油。只能证明井口产出和供电，不代表炼油或黄糖持续供料。尚未新增save，主档仍36081834，accepted6不归零。
+
+真实井口2802的source-bound七格带在raw-ee9c0b58重新通过full_path_stage1/native_device_port、预算7。前两点与此前free-path估计有小差异，其余五点和南干线起点一致；后续以实际端口计划为准，不把旧预测当精确连接。相关ActionClient21项及两份本批私有脚本AST通过；下一步七格出口、剩余干线/首桥、持续黄糖窗口和保存恢复，蓝图/Governor门不抵扣。
+
 2026-09-09 / 原油下游施工正常保存及十写审计通过：Luna raw-c52a6456的保存动作`977c6976-9694-4853-b8b2-994f4a9f7082`于36081834成功，将54新带及两只过滤sorter持久化至同一owned主档，并签发protected restart票据。root raw-b986deb0在36091985核销本窗十个唯一原始accepted及fresh成功终态（1 Move、2 transfer、1 handcraft、5 build、1 save），41带调用方等待超时仍沿原action核销，没有重放。完整单快照2797 built/437非带配置、70详情/双向槽、pre0，原2741对象除批准新增边外保持；全玩家净2001−54/2011−1，其他物品/inc/手持/科研/队列不变，可用燃料热量仅正常减少27.968934MJ。
 
 revision68，Walk0/充足能量/3idle，三网当前ratio1，节点/发电机未变、主网仅新增两消费者，J58/58 durable无pending/error，和平/非沙盒/1×/owned/healthy、无blocker/checkpoint。现有材料203带/1基础sorter/1塔/1井/4风机。ActionClient21项通过；私有只读审计首次因可选字典键在strict mode下不存在而停止，改为ContainsKey后完整复跑通过，未产生游戏写入或放宽核验。账本落盘后accepted10→0；主档36081834，尚未退出/恢复，不称恢复验收。下一步仅施工已选井网和剩余上游/首桥，新原油实际供给、黄糖持续窗口和蓝图/Governor仍待。

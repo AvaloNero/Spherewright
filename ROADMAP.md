@@ -106,6 +106,8 @@
 
 ## 0.4.0 — Overseer, Foundry & Governor
 
+2026-09-10 / 首次真实blueprint commit门部分核销：同一六对象模块已在原生全图/材料/科技/供电预检和Governor预锁之后，以一次有限action正常建成idx0熔炉2986，达到上限1后terminal paused，五对象未提交；root独立验证持久逐对象材料/配置证据，accepted9/revision94/save38413066/J66。不是整图完成；取消、保存重启/原buildId续建、无重复完整核销及持续产出、2×连续十分钟仍未通过。
+
 2026-09-10 / 扩产前基线声明门部分核销：raw-dc840149预热后固定三段独立3600tick产31/34/28，均值31，root raw-84bd3a05核销即时定价62/min并在38461509持久锁定，严格2×/≤10%/≥36000连续tick。所有扩产写仍在其后，accepted3/revision81/save38413066/J66；declarationDurable不等于采样持久或目标达到。下一进入既定供电及首次真实blueprint commit、取消/原buildId重启续建和持续供料；这些门与连续十分钟、三级链/准备清单/最终双包仍未完成。
 
 2026-09-10 / 当前现场边界：完整复制装备已正常保存38413066，近场短移后最远A仓的原生业务预检通过，root独立核销两终态/全物料/J65，revision79/accepted2保留。尚未首次blueprint commit或锁定Governor，下一必须用新的真实需求和固定三窗立即锁定2×声明，不能复用已过期的研究负荷基线。复制、取消/原buildId重启续建、持续产出及连续36000tick门均仍待；未生成新最终包或发布。

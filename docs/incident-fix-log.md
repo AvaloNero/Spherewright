@@ -12,6 +12,13 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-080 — 油井新增正常出口被私有旧配置守卫误报
+
+- 首见：2026-09-09油井2802七格出口施工；状态`fixed_local_helper`，仅私有验收逻辑，不是Plugin或MCP失败。
+- 证据/根因：raw-a5bc5a78的唯一动作于36152645原生terminal/succeeded，七个NEW带和−7材料明确；后置比较却要求油井insertTargetObjectId仍为空。当前GameStateReader该字段直接投影miner.insertTarget，正常接线后其值2803与2802:0→2803:1一致，属于本次批准的预期变化。
+- 修正：保留原action和全部成功对象，仅当原井无连接/无目标、后态唯一精确指向原计划首带且槽位双向匹配时核销这个变化，其他身份/姿态/资源/电力/配置继续比较。不得笼统忽略insertTargetObjectId或重放整段。私有执行文件同步修正但没有再运行写入。
+- 验证：root raw-eb49aad9在36163652独立核销12对象、七点完整有向链/实际末端原油、全玩家−7/J58/healthy；落盘原始回包一正四负对照拒绝错误目标、丢边、错误slot和矿点变更，零游戏调用。ActionClient21项与源带策略60项通过；新施工保存恢复及持续炼油另验。关联EXP-275/237及存档日记001。
+
 ## IFX-079 — 私有只读预检的同名参数被辅助脚本覆盖
 
 - 首见：2026-09-09原油干线预检；状态`fixed_local_helper`，仅私有PowerShell调用端，无Plugin或MCP面变化。

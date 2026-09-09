@@ -62,7 +62,7 @@ internal sealed partial class GameStateReader
             var actual = measured.Production.Single(p => p.ItemId == request.TargetItemId).ActualProductionPerMinute;
             if (double.IsNaN(actual) || double.IsInfinity(actual) || actual < 0 || actual > 1000000000)
                 throw new FoundryPlanningException("governor_invalid_rate", "Native target measurement is not bounded.");
-            series.Observe(CanonicalStateHash.Combine("source-binding", key, sourceHash, scale.PlanHash), window, (decimal)actual, stocks);
+            series.Observe(GovernorSourceBinding.CreateMeasurementBinding(key, sourceHash, itemIds), window, (decimal)actual, stocks);
             BlueprintInspection? copy = null;
             if (source.All(e => BoundedBlueprintReader.SupportsItem(e.ItemId)))
             {

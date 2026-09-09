@@ -10,6 +10,39 @@ namespace Spherewright.Bridge.Core.Tests;
 public sealed class GovernorPlanCompilerTests
 {
     [Fact]
+    public void RepricingAnUnchangedSourceToTwiceItsBaselineDoesNotRestartMeasurement()
+    {
+        var draft = Compile(targetRate: 90);
+        var doubled = Compile(targetRate: 60);
+        Assert.NotEqual(draft.FullTargetScale.PlanHash, doubled.FullTargetScale.PlanHash);
+        Assert.NotEqual(draft.ProposalHash, doubled.ProposalHash); // This remains a new proposal, not an old token.
+        Assert.NotEqual(draft.FullTargetScale.MachineCount, doubled.FullTargetScale.MachineCount);
+        var items = draft.FullTargetScale.Stages.SelectMany(s => s.Inputs).Select(i => i.ItemId)
+            .Append(draft.TargetItemId).Distinct().OrderBy(i => i).ToArray();
+        Assert.Equal(items, doubled.FullTargetScale.Stages.SelectMany(s => s.Inputs).Select(i => i.ItemId)
+            .Append(doubled.TargetItemId).Distinct().OrderBy(i => i).ToArray());
+
+        var series = new GovernorMeasurementSeries();
+        var legacy = new GovernorMeasurementSeries();
+        var binding = GovernorSourceBinding.CreateMeasurementBinding("series", draft.SourceStateHash, items);
+        var oldDraftBinding = Spherewright.Bridge.Core.Safety.CanonicalStateHash.Combine(
+            "source-binding", "series", draft.SourceStateHash, draft.FullTargetScale.PlanHash);
+        for (var tick = 600; tick <= 2400; tick += 600)
+        {
+            Observe(series, tick, 30, binding);
+            Observe(legacy, tick, 30, oldDraftBinding);
+        }
+        Observe(series, 2410, 30, GovernorSourceBinding.CreateMeasurementBinding("series", doubled.SourceStateHash, items));
+        Observe(legacy, 2410, 30, Spherewright.Bridge.Core.Safety.CanonicalStateHash.Combine(
+            "source-binding", "series", doubled.SourceStateHash, doubled.FullTargetScale.PlanHash));
+        Assert.Equal("warming_up", legacy.Baseline(.1m).State); // Exact previous adapter counterexample.
+        Assert.Equal(0, legacy.Baseline(.1m).IndependentWindowCount);
+        Assert.Equal("ready", series.Baseline(.1m).State);
+        Assert.Equal(3, series.Baseline(.1m).IndependentWindowCount);
+        Assert.Equal(doubled.TargetRatePerMinute, 2 * series.Baseline(.1m).ProductionPerMinute);
+    }
+
+    [Fact]
     public void StableBaselineRequiresThreeIndependentPostBindingNonzeroWindows()
     {
         var series = new GovernorMeasurementSeries();
@@ -166,9 +199,9 @@ public sealed class GovernorPlanCompilerTests
 
     private static GovernorPlanSnapshot Compile(int producerCount = 1, string sourceHash = "source", decimal tolerance = .1m,
         Action<OverseerDiagnosticBundlePlanetSnapshot>? configure = null,
-        Action<FactoryEntitySnapshot[]>? configureSource = null)
+        Action<FactoryEntitySnapshot[]>? configureSource = null, decimal targetRate = 60)
     {
-        var request = Request(); request.ToleranceFraction = tolerance;
+        var request = Request(); request.ToleranceFraction = tolerance; request.TargetRatePerMinute = targetRate;
         var recipes = new RecipeCatalogSnapshot { SessionId = "session", PlanetId = 104, CapturedAtGameTick = 2400,
             Items = new List<ItemCatalogEntry> { new() { ItemId = 1, Unlocked = true, IsRaw = true }, new() { ItemId = 2, Unlocked = true } },
             Recipes = new List<RecipeCatalogEntry> { new() { RecipeId = 1, Unlocked = true, RecipeType = "Assemble", TimeSpend = 60,

@@ -9,6 +9,72 @@ namespace Spherewright.Bridge.Core.Tests;
 public sealed class GovernorSourceBindingTests
 {
     [Fact]
+    public void MeasurementBindingCanonicalizesItemOrderButKeepsScopeAndActualSource()
+    {
+        var hash = GovernorSourceBinding.CreateMeasurementBinding("series", "source", new[] { 1, 2 });
+        Assert.Equal(hash, GovernorSourceBinding.CreateMeasurementBinding("series", "source", new[] { 2, 1 }));
+        Assert.NotEqual(hash, GovernorSourceBinding.CreateMeasurementBinding("new-series", "source", new[] { 1, 2 }));
+        Assert.NotEqual(hash, GovernorSourceBinding.CreateMeasurementBinding("series", "changed-source", new[] { 1, 2 }));
+        Assert.NotEqual(hash, GovernorSourceBinding.CreateMeasurementBinding("series", "source", new[] { 1, 3 }));
+    }
+
+    [Theory]
+    [InlineData("key")] [InlineData("source")] [InlineData("null")]
+    [InlineData("empty")] [InlineData("limit")] [InlineData("negative")] [InlineData("duplicate")]
+    public void MeasurementBindingRejectsMissingOrUnboundedEvidence(string invalid)
+    {
+        var items = invalid switch
+        {
+            "null" => null,
+            "empty" => Array.Empty<int>(),
+            "limit" => Enumerable.Range(1, 65).ToArray(),
+            "negative" => new[] { -1 },
+            "duplicate" => new[] { 1, 1 },
+            _ => new[] { 1, 2 },
+        };
+        var error = Assert.Throws<FoundryPlanningException>(() => GovernorSourceBinding.CreateMeasurementBinding(
+            invalid == "key" ? "" : "series", invalid == "source" ? "" : "source", items!));
+        Assert.Equal("governor_measurement_scope_invalid", error.Reason);
+    }
+
+    [Theory]
+    [InlineData("key")] [InlineData("source")] [InlineData("items")]
+    public void RealMeasurementScopeChangeStillDiscardsTheBaseline(string change)
+    {
+        var series = new GovernorMeasurementSeries();
+        var binding = GovernorSourceBinding.CreateMeasurementBinding("series", "source", new[] { 1, 2 });
+        for (var tick = 600; tick <= 2400; tick += 600)
+            ObserveMeasurement(series, binding, tick, 30);
+        Assert.Equal("ready", series.Baseline(.1m).State);
+        var changed = GovernorSourceBinding.CreateMeasurementBinding(change == "key" ? "new-series" : "series",
+            change == "source" ? "changed-source" : "source", change == "items" ? new[] { 1, 2, 3 } : new[] { 1, 2 });
+        ObserveMeasurement(series, changed, 2410, 30);
+        Assert.Equal(0, series.Baseline(.1m).IndependentWindowCount);
+        Assert.Equal("warming_up", series.Baseline(.1m).State);
+        Assert.Null(series.PreviousStockTick);
+    }
+
+    [Fact]
+    public void RetainingMeasurementScopeDoesNotMakeTheLiveUnstablePatternReady()
+    {
+        var series = new GovernorMeasurementSeries();
+        var binding = GovernorSourceBinding.CreateMeasurementBinding("series", "source", new[] { 1006, 1109 });
+        ObserveMeasurement(series, binding, 600, 42);
+        ObserveMeasurement(series, binding, 1200, 42);
+        ObserveMeasurement(series, binding, 1800, 36);
+        ObserveMeasurement(series, binding, 2400, 36);
+        ObserveMeasurement(series, binding, 2410, 36); // Overlap is still not a new independent sample.
+        var result = series.Baseline(.1m);
+        Assert.Equal("unstable", result.State);
+        Assert.Equal(38, result.ProductionPerMinute);
+        Assert.Equal(3, result.IndependentWindowCount);
+    }
+
+    private static void ObserveMeasurement(GovernorMeasurementSeries series, string binding, long tick, decimal rate) =>
+        series.Observe(binding, new OverseerWindowSnapshot { State = "ready", StartGameTick = tick - 599,
+            EndGameTick = tick, ElapsedGameTicks = 600 }, rate, new Dictionary<int, long> { [1] = 5 });
+
+    [Fact]
     public void NormalProductionAndStorageGrowthCanEstablishThreeIndependentWindows()
     {
         var source = Source(); var series = new GovernorMeasurementSeries();

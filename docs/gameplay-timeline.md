@@ -3,6 +3,10 @@
 更新时间：2026-09-09（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-09 / 1590同批冷部署及14风机保存恢复通过：79be0ae完整locked restore、Release零警告/错误、51 Contracts+1441 Core+98 MCP共1590项通过；raw-2c1fb3ee开发批次228文件，非最终ZIP。原进程正常关闭后保留旧安装备份，raw-3657fad3复核新Plugin4/MCP224全部哈希并仅经Steam启动一次；Plugin SHA256 `31831878020074AE4061A595A11F4CCC7FB08FD5F180E345E26BB13E6E32E743`，MCP DLL `F13EA945884E48CD0FEA37A7CDCBF505E60C61EBA22CB906B6CD433A26944AC2`。raw-6986c17f真实安装态握手64 tools/1 resource/57691字符，同批新窗口指南可读、认证当前Plugin、stdout纯净/正常退出。
+
+Luna仅一次protected primary恢复`e9959239-0c48-495d-8fc5-7eadf5ed587d`，resume-e679a887由36892270自动重存36892301；root raw-11233ef0于36898687核销原始/fresh终态、同一完整2980实体/458非belt配置/58详情、全部14风机与旧产线连接、四网节点/负载结构保持、玩家库存加科研点数/Journal61连续。玩家恢复舍入差仅0.000029682m，Walk0/能量充足，165明确空且无伪buffer。revision1/accepted9保留、healthy/0prebuild/无blocker或flight checkpoint；不以提前审计归零。79be0ae远端与CI34350372928成功。冷部署及持久性门关闭，恢复后的持续供给另行预声明观察；本次不是蓝图续建或Governor验收。
+
 2026-09-09 / 供给验收调用方误判已离线复现并正常保存：原raw-0e564632的500tick缺口可使稳定7.5/min流的完整31产/31耗变成采样29/31；新增两个Core反例和两个MCP指南回归，相关12项通过，详见EXP-280/IFX-088。原数据不改判，新增指南不改变Plugin计数、字段、动作或Governor门。实际样本760输出一直20、767一直10、259一直3000，仅据保守下界不足不重新建设钛矿路。下一步用预声明且区间语义一致的方法验证恢复后的真实非零供给；不是再跑相同失败门或事后放宽旧结果。
 
 Luna随后仅执行一次普通save，action `1948b77a-8e30-46f2-bf62-939dab9d633f`保存36892270，raw-d434fc26；root raw-308c766d于36901825独立核销同action终态、精确保存/恢复可用、owned/healthy/J61和全背包加科研点数守恒。revision40/accepted8保持，Walk0、800MJ；1142正常研究95890/240000，未完成。未移动、重建、重采或重启，安装仍62d7d4c。9a767ae远端及CI34348759520成功；本次保存不等同已恢复。

@@ -3,6 +3,8 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 煤路后置接入预检定位局部阻塞：root raw-8ffbdeab两输出2987→2992/2990→2993原生通过，但原inputB 3025→2989被BUILD_CONNECTION_INVALID拒绝，exact TooSkew，fallback no_admissible_seed、44 seeds/0 admitted/0 candidateChecks。零commit，accepted6/revision18/primary38758959保持；未重试同pair或派Luna继续。完成态3025已是原煤路拐点，先前拟用的自由尾几何不能代表接续后形态。下一主会话依据已暴露的真实sorterEndpoints选择有证据的局部接入，并重新计算实际跨度/供料上限；不得改朝向门、拆重已成功对象，或沿用旧30coal/min假设。此负例不撤销47NEW煤带施工成功，也未声称整个六接口预检通过。
+
 2026-09-10 / 原批准煤路施工闭合：Luna raw-46d293f2只提交三段32+2+13 NEW，三终态分别38802872/38804185/38811002，新增47带、净耗2001×47；后两段都用刚完工尾端的新hash及full_path_stage1/whole_path_native_rotation_v1预检。线路映射必须按实际位置：第一段2994–3025，第二段3027→3026，第三段3029→3028→3030–3040，不能按实体ID排序当线路顺序。
 
 root raw-2ac15b62于38816181核销全部3040实体/469非带配置、5904条互返边、三个原始/fresh终态、47点精确路线、全玩家物料科研点/J66、原六对象蓝图及四网满供；旧2993实体配置不变、0prebuild、revision18/accepted6、primary仍38758959。煤路两自由端与全部新段为空，没有接煤源/炉输入/输出，故仅核销施工不认定供给。下一先两输出和两炉输入四只sorter，到accepted10后全审计，再接两煤源。上一2a7002e远端一致，CI34409575006成功。

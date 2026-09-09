@@ -12,6 +12,13 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-079 — 私有只读预检的同名参数被辅助脚本覆盖
+
+- 首见：2026-09-09原油干线预检；状态`fixed_local_helper`，仅私有PowerShell调用端，无Plugin或MCP面变化。
+- 根因：dot-source会在调用方作用域绑定被加载脚本的参数；辅助文件将同名ExpectedRevision重置为默认2，覆盖调用者已指定的49，导致读取session后、prepare前误停。
+- 修正/验证：改用独立任务参数CrudeExpectedRevision；零Bridge离线对照证明共享参数变2而独立参数保持49，随后raw-8a337f28完整原生85带free-path预检通过。没有重复Move、游戏写入或修改产品state hash/准入。
+- 边界：仅证明调用参数不再被覆盖，不证明整条原油线路已批准或已施工；关联EXP-237及存档日记001。
+
 ## IFX-078 — 聚合岸边风险被调用指南误当成整段禁止移动
 
 - 首见：2026-09-09新油源接近；状态`fixed_offline_live_pending`，范围为Agent指南和描述，不是Plugin移动/采样错误。

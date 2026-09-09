@@ -12,6 +12,13 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-082 — 空储液DTO使私有联合验收器提前抛错
+
+- 首见：2026-09-09新原油接通后的完整24窗核对；状态`fixed_local_helper`，产品字段可观测性限制仍保留。
+- 根因：核对器要求165必有一条tank-fluid；当前GameStateReader.CaptureTank在fluidId/count为空和部分组件不可用时都直接省略缓冲。空数组既不能证明库存为0，也不应让已取得的完整窗口和其他失败结论丢失。
+- 修正：私有核对器将空缓冲保留null并增加hydrogen_tank_inventory_unknown失败；有记录仍严格核对身份/role/单位/非负数量。任何未知样本不计通过，氢消耗不足单独失败。未新增公开观察字段，未更改原供给阈值。
+- 验证：正数量、空DTO必须未知、错误role拒绝的离线对照通过；原raw-06a792f4零重放重新核对为raw-3bfb8df6，24个罐样本均unknown、氢P99/C86、黄糖0/0，evidenceAuditPassed=true且allSupplyCriteriaPassed=false。ActionClient21项通过；这是报告修正而不是氢供给或整个产线验收通过。关联EXP-276及存档日记001。
+
 ## IFX-081 — 跨语言模板替换把正则尾锚当成替换指令
 
 - 首见：2026-09-09恢复原油入口的私有执行文件准备；状态`fixed_local_helper`，没有Plugin/MCP代码或游戏副作用。

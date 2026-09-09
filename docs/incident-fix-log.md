@@ -14,6 +14,7 @@
 
 ## IFX-093 — Governor声明的decimal完整性哈希不能跨Plugin JSON往返
 
+- 最新状态：`fixed_local_live`。e336604冷部署后，raw-ed745c72在真实protected resume38583472中成功读回原v2声明，原hash/31→62/锁38461509保持，declarationDurable且连续观察0；没有改私有归档或重新锁定。当前实际Serializer/旧记录恢复已验证，新v3正式锁定的磁盘发布路径有离线往返校验，未为制造新正例替换本次已扩产的原声明。
 - 修复状态：`fixed_offline_live_pending`。新checkpoint v3对decimal用Invariant `G29`数值格式；旧v1/v2仅尝试Newtonsoft整数补.0对应的最多三种等值前表示，原hash/原文件不变，不搜索任意scale或放松任何声明字段。存储在原子落盘前还要用实际PluginJson往返并Validate，不能只验证内存对象。
 - 验证：直接编译同一PluginJson源码、Newtonsoft13.0.4的25个新增回归覆盖两代旧记录/整数与小数/文化/篡改拒绝，153个Governor相关测试通过；全Release0警告错误、1689项通过。raw-70fe3036用修复Core只读验证现场原文件及其SHA不变，恢复出的31→62/锁38461509/连续0正确；这不是安装Plugin里的实机恢复，下一仍须冷部署/同档复验。
 - 首见：2026-09-10，状态`open`。首次持久锁定后真实冷部署/同档恢复，声明读取返回`governor_validation_persistence_unavailable`；原部分蓝图/材料/世界全部保留。

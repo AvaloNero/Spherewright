@@ -3,6 +3,10 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 修复版冷部署、原声明和部分蓝图恢复通过：Luna raw-d4535d04正常save38583441，root raw-608f582e核对保存终态及新旧两批228文件；raw-3c2b9926正常关闭/保留备份/安装e336604并Steam单启动，raw-314d8b53实际MCP64工具/1资源/60079字符指南/当前Plugin认证通过。Luna raw-resume-2aeba78a仅一次恢复`c1cb284d-d42a-4f69-be22-fa8c15e8f07c`成功，primary38583472，新revision1/accepted4/J66/healthy。
+
+root raw-ed745c72截至38588522核销全部2986实体/464配置/80详情、全厂双向边、0prebuild、四网/全材料/科研点/J66；保存落点误差约0.000017m，小于事先声明1cm序列化容差。原cancelled build保留idx0炉2986和五项not_submitted，完整逐对象材料记录未变。原Governor hash/31→62/锁38461509正常恢复，declarationDurable=true、samples durable=false/连续0，当前多了未接原料的新炉而source_configuration_changed，因此不得拼接旧窗。IFX-093现已实机关闭；五对象续建和实际产出仍待。e336604远端一致，CI34403163506成功，没有新最终ZIP/tag/发布。
+
 2026-09-10 / IFX-093源码修复已通过离线验证：新声明v3规范化decimal数值，旧v1/v2保留原hash并只兼容整数补.0；正式持久锁之前验证实际PluginJson往返结果。153相关测试、完整Release零警告错误、53 Contracts+1529 Core+107 MCP共1689通过。raw-70fe3036只读验证现场原归档，SHA不变，原31→62/锁38461509可恢复且连续tick归零；尚未冷部署/实机恢复。当前accepted2/revision1/primary38525680/J66，后续只保存同档、冷部署修复及原buildId续建，不重开或重锁。74c5162远端一致、CI34402500014成功。
 
 2026-09-10 / 重启保留部分施工、暴露声明持久化缺陷：raw-e26ba2b9正常关闭并保留旧程序集备份后，安装d8c0cf9的4 Plugin/224 MCP文件，哈希全一致；一次Steam启动，raw-ccff1964实测64工具/1资源/59713字符指南及当前Plugin认证。此前完整Release零警告错误、1664测试通过，仍只是本机开发安装态，不是最终ZIP或异机验证。

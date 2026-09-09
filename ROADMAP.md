@@ -106,6 +106,8 @@
 
 ## 0.4.0 — Overseer, Foundry & Governor
 
+2026-09-10 / 原声明恢复与部分蓝图跨session保留实机通过：e336604冷部署228文件，64工具/1资源/60079字符指南及认证握手通过；普通save38583441→protected resume38583472，root raw-ed745c72完整2986/464/80、全物料/J66/四网/0prebuild核销。原31→62、锁38461509与hash原样恢复，连续观察0；原cancelled计划仍1完成5未提交。IFX-093闭合，不重锁、不修改私有归档；accepted4/revision1。下一只对原buildId fresh续建五项，持续供料和2×连续36000tick仍未过。
+
 2026-09-10 / IFX-093修复已离线通过、待冷部署：checkpoint v3数值哈希及实际PluginJson往返校验补齐，旧v1/v2只兼容数值完全相同的整数补.0，原现场声明只读验证通过且文件未改。153相关/1689全套测试与完整Release零警告错误；不将该离线结论当作原锁实机恢复。原buildId五对象续建、持续供料和Governor62/min连续36000tick仍待，下一仅冷部署后复验该直接blocker。
 
 2026-09-10 / 冷部署与原部分蓝图恢复通过、Governor恢复阻塞：d8c0cf9同批228文件冷部署，实际MCP64工具/1资源/59713字符指南；protected resume38525680，root raw-b815e51a复核2986实体/464配置/80详情、全厂双向边/材料/J66及原cancelled计划1完成5未提交。原Governor声明却在首次跨session读取时被完整性检查拒绝；raw-a4324cc7定位为旧decimal哈希区分31与31.0，而Plugin JSON会给整数decimal补.0。原声明文件未改，62/min目标不重锁，后续施工冻结至该直接blocker修复并冷部署复验。此次不抵扣原buildId续建、持续产出或2×连续十分钟门。

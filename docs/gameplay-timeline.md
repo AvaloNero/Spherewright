@@ -3,6 +3,10 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / IFX-094冷部署与原带核销通过：raw-b8abc1d2先证明全厂唯一新增2987、旧2986配置不变、5804条边互返、背包仅2001少1、J66；raw-2c66b023正常关闭隔离进程并保留备份，9514d84同批4 Plugin/224 MCP文件哈希一致，raw-63fdc61a真实MCP为64工具/1资源/60656字符。Luna一次protected quarantine resume `4d26612a-78cb-4c91-a671-faa8dd2bfd60`通过fresh固定LastExit恢复并正常另存到38674189（raw-resume-105a97a9），没有加载较早38583472的primary或重做带子。
+
+root raw-67acc3ab截至38684615核销2987实体/464非带配置/81详情、全厂互返边、0prebuild、四网满供、氢罐0及全玩家材料/科研点/J66。修复版由原生cargo-path/entity/collider精确证明idx2就是2987；原101→100借记未变，idx0炉2986及其余四项也未变。写健康恢复、revision1/accepted6；原有限计划仍保留outcome_unknown停止状态，未自动续建。此项只关闭完成态识别和保留现场的恢复门，不算整图完成。下一用原取消动作停止未提交项；Governor不得凭隔离票据恢复或重新锁定，需健康保存/计划重启重新证明原31→62声明。9514d84远端一致、CI34405065738成功，1691全套测试通过；没有最终ZIP/tag/发布。
+
 2026-09-10 / IFX-094源码修复通过：仅让蓝图已完成belt复用普通source-cover已验证的原生路径/碰撞体精确朝向证明，未放宽预建筑或物料/拓扑检查。当前DLL复核、50相关测试、1691全套Release与完整构建零警告错误通过；当前游戏仍隔离，尚未部署或认定候选2987。下一正常隔离恢复必须保留本次已施工世界，随后恢复同一原buildId和原Governor声明，不回读较早primary伪装零施工。89597a8远端一致、CI34404574448成功。
 
 2026-09-10 / 原计划续建暴露带完工识别缺陷：root raw-c84becd6 fresh剩余五对象预检成功后，Luna raw-0a468c9a用全新token/同buildId提交一次，action `ba0e0f67-d0af-46d8-8d4f-2c74ce92933d`在38600247接受。依赖顺序先提交idx2带、正常扣2001一件101→100；38601035返回outcome_unknown `pending_result_missing_or_ambiguous:2`，后续四项停止。原炉2986与其历史材料证据仍保留。

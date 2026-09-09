@@ -14,6 +14,7 @@
 
 ## IFX-094 — 蓝图带完工仍按预建筑球面朝向匹配
 
+- 最新状态：`fixed_local_live`（精确完成态识别与保留现场的隔离恢复）。9514d84同批228文件冷部署后，protected quarantine resume从fresh固定LastExit保留已建带并保存38674189；root raw-67acc3ab中原idx2由pending唯一核销为2987/completed，原借记101→100不变，完整2987实体/464配置/81详情、互返边、全材料/科研点/J66通过。原计划仍保持outcome_unknown停止，不自动重做；显式停止、剩余四项续建及持续生产另验。既有1691测试及CI34405065738成功，不把这项局部修复外推为蓝图/Governor整体验收完成。
 - 修复状态：`fixed_offline_live_pending`。完成态belt复用既有ProvesNativeBeltRotation，对当前路径端点精确导出entity/collider朝向和碰撞中心；预建筑、材料、类型/位置、唯一路径身份及全双向边守卫不变。当前DLL哈希/AlterBeltRenderer重新查验，50项相关/1691全套Release通过，完整构建零警告错误；没有放松到任意角度容差或增加动作原语。下一需正常隔离恢复保留2987并由修复版精确认定，再通过原取消/新prepare继续未提交项，当前仍不能标成live修复。
 - 首见：2026-09-10，状态`open`。原buildId恢复五对象的action `ba0e0f67-d0af-46d8-8d4f-2c74ce92933d`在38600247接受、38601035以`pending_result_missing_or_ambiguous:2`进入outcome_unknown/quarantine；只新增一次2001借记101→100，四项未提交，未重放。
 - 证据：raw-0a468c9a逐对象记录保留原炉2986，idx2有明确预建筑/借记但未认定完工；raw-9d3434be观察真实带2987，item2001/位置与原idx2完全相同、空连接、path82/10cells/零货物、0prebuild。还不能把候选直接认领为已证明结果，须当前原生几何/双端/唯一性核销。

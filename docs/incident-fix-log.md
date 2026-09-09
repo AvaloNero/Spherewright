@@ -12,6 +12,12 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-083 — StrictMode对空科研缓冲的成员枚举在动作成功后抛错
+
+- 首见：2026-09-09正常选择2103后，私有执行文件汇总物品ID；状态`fixed_local_helper`，不是Plugin科研动作失败。
+- 原因/修正：直接使用空数组的.itemId在StrictMode下抛错，改为显式ForEach-Object枚举，空集合产生零项。AST通过只证明语法，不能替代空数组运行测试。
+- 证据：raw-217545e7已经含唯一terminal/succeeded及J59。停止后没有重跑commit；root raw-825ea9f3仅凭原始前后和fresh收据，使用既有科研守恒helper证明背包+点数总量完全保持、非矩阵库存/位置保持，确认原生科研自然推进8176/108000。修正文件未重新执行写入；当前边界已变化，原固定revision守卫同样禁止重放。科研相关MCP4项及ActionClient21项通过；关联EXP-239/276、当档日记。
+
 ## IFX-082 — 空储液DTO使私有联合验收器提前抛错
 
 - 首见：2026-09-09新原油接通后的完整24窗核对；状态`fixed_local_helper`，产品字段可观测性限制仍保留。

@@ -3,6 +3,10 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 部分蓝图与取消状态正常保存：raw-d3634910唯一save `9ce55e34-2404-4c19-b502-4638b0813d5a`在38525649成功，已覆盖原Governor锁38461509及第一炉/取消证据；root raw-85a651cb核销终态、完整玩家物料科研点/J66和原buildId的1完成/5未提交保持，revision97/accepted1，不因单次审计归零。恢复票据绑定当前primary和J66，无flight checkpoint。
+
+冷部署前raw-9e4a5282只读确认旧19c9069已安装228文件和新d8c0cf9测试cohort228文件逐哈希匹配、相同当前游戏引用、精确DSP/Steam进程、健康保存票据及原cancelled计划。零安装/关闭/加载写；下一才正常关闭、同批更换、一次Steam启动并protected resume。045872c远端一致、CI34400637397成功；该条不宣称恢复或五对象续建已经通过。
+
 2026-09-10 / 取消未提交部分与十写审计通过：Luna raw-9f1668ed对原buildId仅正常提交取消`73b304ef-77a7-488a-868a-81b128e1af36`，38508570成功，phase=cancelled；炉2986及其逐对象借记/完工证据保持，五项仍not_submitted，没有拆除、退款或保存。
 
 root raw-8ee2dee1在38514710核销本窗十个原始/fresh唯一终态、完整2986实体/464配置/80详情及全厂双向边、四网满供电；净物料仅四风机、一塔、一炉，其他背包加科研点/燃料/J66连续，800MJ/Walk0/0prebuild/healthy。revision96/save38413066，账本落盘后accepted10→0。下一单独正常save覆盖原Governor锁与部分施工，再正常关闭/同批冷部署/protected resume，只续原buildId的五个未提交对象；不复用旧token或整图重放。

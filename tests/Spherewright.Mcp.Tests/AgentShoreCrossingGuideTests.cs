@@ -29,4 +29,31 @@ public sealed class AgentShoreCrossingGuideTests
         Assert.Contains("`movementState=Walk`", guide, StringComparison.Ordinal);
         Assert.Contains("not native pathfinding or route clearance", guide, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void ShortCrossingGuideRequiresCompleteEvidenceAndAnAboveWaterLandingMargin()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("fully observed short crossing", guide, StringComparison.Ordinal);
+        Assert.Contains("water in transit", guide, StringComparison.Ordinal);
+        Assert.Contains("`state=observed`", guide, StringComparison.Ordinal);
+        Assert.Contains("`unknownSampleCount=0`", guide, StringComparison.Ordinal);
+        Assert.Contains("`arcLengthMetres<=32`", guide, StringComparison.Ordinal);
+        Assert.Contains("arcLengthMetres/(samples.Count-1)<=1", guide, StringComparison.Ordinal);
+        Assert.Contains("at least4m", guide, StringComparison.Ordinal);
+        Assert.Contains("`groundHit=true`, `waterHit=true`", guide, StringComparison.Ordinal);
+        Assert.Contains("finite non-null `groundBelowWaterMetres<=-0.1`", guide, StringComparison.Ordinal);
+        Assert.Contains("`arrivalTolerance<=0.5`", guide, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ShortCrossingGuideDoesNotPromoteShallowOrUnknownSamplesToWalkProof()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("not proof of Walk or route clearance", guide, StringComparison.Ordinal);
+        Assert.Contains("shallow-water endpoint, missing sample, `partial` or `unavailable`", guide, StringComparison.Ordinal);
+        Assert.Contains("check the evidence again, commit once, poll to terminal", guide, StringComparison.Ordinal);
+        Assert.Contains("Stop on failure or non-ready arrival, retain the action", guide, StringComparison.Ordinal);
+        Assert.Contains("not turn this into a candidate sweep or an automatic routing loop", guide, StringComparison.Ordinal);
+    }
 }

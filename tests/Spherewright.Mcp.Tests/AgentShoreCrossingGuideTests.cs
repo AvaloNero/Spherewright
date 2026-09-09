@@ -43,7 +43,11 @@ public sealed class AgentShoreCrossingGuideTests
         Assert.Contains("at least4m", guide, StringComparison.Ordinal);
         Assert.Contains("`groundHit=true`, `waterHit=true`", guide, StringComparison.Ordinal);
         Assert.Contains("finite non-null `groundBelowWaterMetres<=-0.1`", guide, StringComparison.Ordinal);
-        Assert.Contains("`arrivalTolerance<=0.5`", guide, StringComparison.Ordinal);
+        Assert.Contains("`arrivalTolerance=1.5`", guide, StringComparison.Ordinal);
+        Assert.Contains("not a forced0.5m", guide, StringComparison.Ordinal);
+        Assert.Contains("three-dimensional distance", guide, StringComparison.Ordinal);
+        Assert.Contains("`2*arrivalTolerance+1`", guide, StringComparison.Ordinal);
+        Assert.Contains("never widen a failed action's tolerance and replay it", guide, StringComparison.Ordinal);
     }
 
     [Fact]

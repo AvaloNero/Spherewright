@@ -48,6 +48,14 @@ internal sealed partial class GameStateReader
             var error = TryCaptureOverseerDiagnosticBundle(GameMain.data, itemIds, out var entries);
             if (error is not null) return GameCallResult<GovernorPlanSnapshot>.Failed(error);
             var measured = entries.Single(e => e.Planet.PlanetId == request.PlanetId).Planet;
+            // Diagnostic findings stay on the existing fresh600-tick path. Only
+            // Governor's explicitly declared production window changes; no new
+            // general Overseer surface or native sampling/execution loop.
+            if (request.MeasurementGameTicks == 3600)
+            {
+                var counterError = TryApplyGovernorMinuteCounters(factory!, measured);
+                if (counterError is not null) return GameCallResult<GovernorPlanSnapshot>.Failed(counterError);
+            }
             var sourceHash = GovernorSourceBinding.Create(source);
             var key = CanonicalStateHash.Combine("governor-series-v1", sessionId, request.PlanetId, request.TargetItemId,
                 CanonicalStateHash.Combine("selected-ids", source.Select(e => e.ObjectId).OrderBy(id => id).Cast<object>().ToArray()));
@@ -56,13 +64,14 @@ internal sealed partial class GameStateReader
                 if (_governorSeries.Count >= 8) throw new FoundryPlanningException("governor_series_limit", "At most8 source-bound observation series per session; no history is silently evicted.");
                 series = new GovernorMeasurementSeries(); _governorSeries.Add(key, series);
             }
-            var window = NativeProductionRateCalculator.Calculate(GameMain.gameTick, 0, 0).Window;
+            var window = NativeProductionRateCalculator.Calculate(GameMain.gameTick, 0, 0, request.MeasurementGameTicks).Window;
             var stocks = itemIds.ToDictionary(id => id, id => source.SelectMany(e => e.Buffers)
                 .Where(b => b.ItemId == id && FactoryBufferSemantics.IsItemCount(b)).Sum(b => (long)b.Count));
             var actual = measured.Production.Single(p => p.ItemId == request.TargetItemId).ActualProductionPerMinute;
             if (double.IsNaN(actual) || double.IsInfinity(actual) || actual < 0 || actual > 1000000000)
                 throw new FoundryPlanningException("governor_invalid_rate", "Native target measurement is not bounded.");
-            series.Observe(GovernorSourceBinding.CreateMeasurementBinding(key, sourceHash, itemIds), window, (decimal)actual, stocks);
+            series.Observe(GovernorSourceBinding.CreateMeasurementBinding(key, sourceHash, itemIds, request.MeasurementGameTicks),
+                window, (decimal)actual, stocks, request.MeasurementGameTicks, GameMain.gameTick);
             BlueprintInspection? copy = null;
             if (source.All(e => BoundedBlueprintReader.SupportsItem(e.ItemId)))
             {
@@ -141,5 +150,46 @@ internal sealed partial class GameStateReader
                 "Governor " + exception.Reason + ": " + exception.Message, false,
                 "Fresh-read a bounded explicit source selection, runtime catalogs and nonzero Overseer windows; proposals never grant write authority."));
         }
+    }
+
+    private static BridgeError? TryApplyGovernorMinuteCounters(PlanetFactory factory,
+        Spherewright.Contracts.Diagnostics.OverseerDiagnosticBundlePlanetSnapshot measured)
+    {
+        var stats = GameMain.data.statistics?.production?.factoryStatPool;
+        if (stats is null || factory.index < 0 || factory.index >= stats.Length
+            || stats[factory.index] is not { } stat || stat.productIndices is null || stat.productPool is null
+            || stat.productCursor < 1 || stat.productCursor > stat.productPool.Length
+            || measured.Production.Count > MaximumOverseerItemCount)
+            return NotReady("Governor native minute statistics are unavailable.");
+        foreach (var row in measured.Production)
+        {
+            if (row.ItemId <= 0 || row.ItemId >= stat.productIndices.Length)
+                return NotReady("Governor native minute item index is invalid.");
+            var index = stat.productIndices[row.ItemId];
+            if (index < 0 || index >= stat.productCursor)
+                return NotReady("Governor native minute product index is inconsistent.");
+            long produced = 0, consumed = 0;
+            if (index > 0)
+            {
+                var product = stat.productPool[index];
+                if (product is null) return NotReady("Governor native minute product is unavailable.");
+                try
+                {
+                    (produced, consumed) = NativeMinuteProductionCounters.Read(row.ItemId, product.itemId,
+                        product.count, product.cursor, product.total);
+                }
+                catch (ArgumentException)
+                { return NotReady("Governor native minute product identity, rings or totals are inconsistent."); }
+            }
+            var rate = NativeProductionRateCalculator.Calculate(measured.CapturedAtGameTick, produced, consumed, 3600);
+            row.ProducedCount = produced; row.ConsumedCount = consumed;
+            row.ActualProductionPerMinute = rate.ActualProductionPerMinute;
+            row.ActualConsumptionPerMinute = rate.ActualConsumptionPerMinute;
+            row.RateSource = "native_factory_statistics_level_1";
+            row.Utilization = row.TheoreticalProductionPerMinute.HasValue
+                ? OverseerTheoreticalProductionCalculator.CalculateUtilization(rate.Window.State,
+                    rate.ActualProductionPerMinute, row.TheoreticalProductionPerMinute.Value) : null;
+        }
+        return null;
     }
 }

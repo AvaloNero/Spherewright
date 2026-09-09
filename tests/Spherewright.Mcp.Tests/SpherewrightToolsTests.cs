@@ -467,6 +467,7 @@ public sealed class SpherewrightToolsTests
         Assert.False(result.IsError); Assert.Equal("session", client.LastSessionId);
         Assert.Same(source, Assert.Single(client.LastGovernorRequest!.SourceEntities));
         Assert.Equal(36000, client.LastGovernorRequest.ValidationGameTicks);
+        Assert.Equal(600, client.LastGovernorRequest.MeasurementGameTicks);
         Assert.Equal(.1m, client.LastGovernorRequest.ToleranceFraction);
         Assert.Equal(60, client.LastGovernorRequest.TargetRatePerMinute);
         Assert.Equal("retained-pre-execution-proposal", client.LastGovernorRequest.ValidationBaselineProposalHash);
@@ -481,6 +482,7 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("sourceEntities", tool.InputSchema.ToString());
         Assert.Contains("validationBaselineProposalHash", tool.InputSchema.ToString());
         Assert.Contains("parallelExpansionBlueprint", tool.InputSchema.ToString());
+        Assert.Contains("measurementGameTicks", tool.InputSchema.ToString());
         Assert.Contains("parallelExpansionBlueprint", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
         Assert.Contains("target minus measured baseline", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
         Assert.Contains("costScope", AgentPlaybookResources.GetOpeningMovementPlaybook().Text);
@@ -1104,6 +1106,29 @@ public sealed class SpherewrightToolsTests
         var description = ((System.ComponentModel.DescriptionAttribute)method.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).Single()).Description;
         Assert.Contains("DISABLED final grids", description); Assert.Contains("NOT grid indices", description);
         Assert.Contains("do not clear occupied grids", description); Assert.Contains("lock-occupied", description);
+    }
+
+    [Theory]
+    [InlineData(3600, false)] [InlineData(600, true)]
+    public async Task GovernorMinuteWindowRequiresMatchingInstalledPlugin(int echoed, bool rejected)
+    {
+        var client = new FakeBridgeClient(SuccessResult()) { GovernorResponseMeasurementGameTicks = echoed };
+        var result = await SpherewrightTools.GetGovernorPlanAsync(client, "session", 104, 1109, 76,
+            new[] { new BlueprintSelectedEntity { ObjectId = 113, ExpectedEndpointStateHash = "fresh", ExpectedRecipeId = 17 } },
+            measurementGameTicks: 3600);
+        Assert.Equal(3600, client.LastGovernorRequest!.MeasurementGameTicks);
+        Assert.Equal(rejected, result.IsError);
+    }
+
+    [Theory]
+    [InlineData(0)] [InlineData(36000)]
+    public async Task GovernorRejectsUnsupportedMeasurementPeriodBeforeCallingBridge(int period)
+    {
+        var client = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.GetGovernorPlanAsync(client, "session", 104, 1109, 76,
+            new[] { new BlueprintSelectedEntity { ObjectId = 113, ExpectedEndpointStateHash = "fresh" } },
+            measurementGameTicks: period);
+        Assert.True(result.IsError); Assert.Null(client.LastGovernorRequest);
     }
 
     [Fact]
@@ -2151,11 +2176,13 @@ public sealed class SpherewrightToolsTests
 
         public GetFoundryPlanRequest? LastFoundryRequest { get; private set; }
         public GetGovernorPlanRequest? LastGovernorRequest { get; private set; }
+        public int? GovernorResponseMeasurementGameTicks { get; set; }
         public Task<BridgeCallResult<GovernorPlanSnapshot>> GetGovernorPlanAsync(string sessionId, GetGovernorPlanRequest request, CancellationToken cancellationToken)
         {
             LastSessionId = sessionId; LastGovernorRequest = request;
             return Task.FromResult(BridgeCallResult<GovernorPlanSnapshot>.Succeeded(new GovernorPlanSnapshot
-            { SessionId = sessionId, PlanetId = request.PlanetId, TargetItemId = request.TargetItemId, TargetRatePerMinute = request.TargetRatePerMinute }));
+            { SessionId = sessionId, PlanetId = request.PlanetId, TargetItemId = request.TargetItemId, TargetRatePerMinute = request.TargetRatePerMinute,
+                MeasurementGameTicks = GovernorResponseMeasurementGameTicks ?? request.MeasurementGameTicks }));
         }
 
         public Task<BridgeCallResult<BuildCatalog>> GetBuildCatalogAsync(

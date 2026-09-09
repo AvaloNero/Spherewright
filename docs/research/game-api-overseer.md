@@ -68,7 +68,7 @@ public void PlanetData.UnloadFactory()
 
 2026-09-09 / Governor低速测量阻塞的实现前复核：当前Assembly-CSharp仍为`AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`。重新检查`FactoryProductionStat.GameTick(long)`及`ComputeTheMiddleLevel(int)`：每`time % 6 == 0`执行level1，生产从level0下一写入游标倒数1..6格求和，写入count[600..1199]并更新total[1]；消耗对称写入count[4200..4799]/total[8]。两环均600格，因此覆盖3600个自动游戏tick，最新末端为`time - time % 6`；其后未满6tick的新样本不在level1内，不能把末端写成当前capture tick。level1值同样正常Export/Import；手搓路径只改lifetime，不进入此环。不得读取total[6]/[13]差值作自动产消，亦不读取有UI刷新依赖的ref速度缓存。
 
-拟采用的最小范围只为Governor事前声明的3600tick选项；Overseer公共默认及600tick原有声明不变。新选项仍须绑定session/现场/周期，排除绑定前历史、明确真实start/end，并保留同帧短窗诊断和健康检查；不得把长窗均值等同所有瞬时tick恒速。当前仅DLL静态证据，尚无新适配或长窗实机通过声明。
+已实现的最小范围只为Governor事前声明的3600tick选项；Overseer公共默认及600tick原有声明不变。新选项绑定session/现场/周期，排除绑定前历史、明确真实start/end，并保留同帧短窗诊断和健康检查；不得把长窗均值等同所有瞬时tick恒速。`NativeMinuteProductionCounters`仅同步读取并逐值校验两环（每item1200格，最多64item），不保留数组、不改原生状态，身份/数组/游标/负数/total不一致时fail-closed。57新回归、1662项及完整Release通过；仍无冷部署或长窗实机通过声明。
 
 当前程序集公开：
 

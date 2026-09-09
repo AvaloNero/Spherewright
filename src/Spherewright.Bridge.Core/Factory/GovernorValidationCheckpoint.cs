@@ -22,11 +22,14 @@ public sealed class GovernorValidationCheckpoint
     public decimal TargetRatePerMinute { get; set; }
     public decimal ToleranceFraction { get; set; }
     public int RequiredGameTicks { get; set; }
+    public int MeasurementGameTicks { get; set; } = 600; // Absent in v1: original ten-second semantics.
     public string IntegrityHash { get; set; } = string.Empty;
 
     public void Validate()
     {
-        if (Version != 1 || !Bounded(OwnedIdentityHash) || !Bounded(GameVersion)
+        if ((Version != 1 && Version != 2) || !Bounded(OwnedIdentityHash) || !Bounded(GameVersion)
+            || !Diagnostics.NativeProductionRateCalculator.IsSupportedWindow(MeasurementGameTicks)
+            || (Version == 1 && MeasurementGameTicks != 600)
             || !Bounded(SourceSessionId) || !Bounded(BaselineProposalHash)
             || !Bounded(SourceStateHash) || !Bounded(ScalePlanHash)
             || PlanetId <= 0 || TargetItemId <= 0 || DeclaredAtGameTick < 0 || DeclarationRevision < 0
@@ -40,10 +43,14 @@ public sealed class GovernorValidationCheckpoint
     }
 
     // Detects corruption; filesystem access control, not this public hash, establishes trust.
-    public string CalculateIntegrityHash() => CanonicalStateHash.Combine("governor-locked-declaration-v1",
+    public string CalculateIntegrityHash()
+    {
+        var legacy = CanonicalStateHash.Combine("governor-locked-declaration-v1",
         Version, OwnedIdentityHash, GameVersion, SourceSessionId, BaselineProposalHash,
         SourceStateHash, ScalePlanHash, PlanetId, TargetItemId, DeclaredAtGameTick, DeclarationRevision, LockedAtGameTick,
         BaselineRatePerMinute, TargetRatePerMinute, ToleranceFraction, RequiredGameTicks);
+        return Version == 1 ? legacy : CanonicalStateHash.Combine("governor-locked-declaration-v2", legacy, MeasurementGameTicks);
+    }
 
     private static bool Bounded(string? value) => !string.IsNullOrWhiteSpace(value) && value!.Length <= 256;
 }

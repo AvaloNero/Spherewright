@@ -13,6 +13,7 @@ public static partial class GovernorPlanCompiler
             || request.TargetRatePerMinute <= 0 || request.TargetRatePerMinute > 1000000
             || request.ToleranceFraction <= 0 || request.ToleranceFraction > .5m
             || request.ValidationGameTicks < 36000 || request.ValidationGameTicks > 216000
+            || !Diagnostics.NativeProductionRateCalculator.IsSupportedWindow(request.MeasurementGameTicks)
             || request.SourceEntities is null || request.SourceEntities.Count < 1 || request.SourceEntities.Count > 32
             || request.SourceEntities.Any(x => x is null || x.ObjectId <= 0 || string.IsNullOrWhiteSpace(x.ExpectedEndpointStateHash))
             || request.SourceEntities.Select(x => x.ObjectId).Distinct().Count() != request.SourceEntities.Count)
@@ -41,6 +42,10 @@ public static partial class GovernorPlanCompiler
         GovernorMeasurementSeries series, string sourceHash, long revision, BlueprintInspection? copy)
     {
         ValidateRequest(request);
+        if (series.MeasurementGameTicks != request.MeasurementGameTicks
+            || (window.State == "ready" && (window.ElapsedGameTicks != request.MeasurementGameTicks
+                || !window.StartGameTick.HasValue || window.EndGameTick - window.StartGameTick.Value != request.MeasurementGameTicks - 1)))
+            throw new FoundryPlanningException("governor_measurement_period_mismatch", "Do not relabel a series or native window with a different measurement period.");
         if (source.Count != request.SourceEntities.Count || measured.PlanetId != request.PlanetId
             || recipes.PlanetId != request.PlanetId || recipes.CapturedAtGameTick != measured.CapturedAtGameTick
             || source.Any(e => e.SessionId != recipes.SessionId || e.PlanetId != recipes.PlanetId
@@ -67,6 +72,7 @@ public static partial class GovernorPlanCompiler
             CapturedAtGameTick = recipes.CapturedAtGameTick, Revision = revision, SourceStateHash = sourceHash,
             TargetItemId = request.TargetItemId, TargetRatePerMinute = request.TargetRatePerMinute,
             ToleranceFraction = request.ToleranceFraction, ValidationGameTicks = request.ValidationGameTicks,
+            MeasurementGameTicks = request.MeasurementGameTicks,
             Baseline = baseline, CurrentWindow = window, FullTargetScale = scale,
             Power = measured.Power, Logistics = measured.Logistics,
             FindingsTruncated = measured.InfrastructureFindingsTruncated || measured.Production.Any(p => p.FindingsTruncated)
@@ -80,6 +86,7 @@ public static partial class GovernorPlanCompiler
                 "Actual consumption is a lower bound on demand under starvation. Imports/reservations/transport are not included in allocatable local surplus.",
                 "Buffer deltas cover selected objects only, include transport/manual changes, and are not inferred from production minus consumption.",
                 "Preserve the pre-execution nonzero baseline, declared target/tolerance/window. Prove at least10 game minutes afterward; no post-hoc tolerance changes.",
+                "MeasurementGameTicks is fixed before measurement and immutable after lock. Diagnostics and power remain fresh sampled evidence (diagnostics use the native600-tick basis); longer production averages do not hide or waive those findings.",
                 "Recheck every upstream, selected power network and external connection after upgrades/copy. Machine count/nameplate speed is not throughput.",
                 "A depleted-source finding requires fresh finite vein/coverage evidence before replacement; a backed-up miner is not proof of exhaustion.",
                 "TargetChainFindings have target-diagnostic/selected-object path evidence. Other planet findings remain visible but do not alone prove this selected line is unhealthy. Supply-rate deficits remain separate and must be resolved for sustainable expansion.",
@@ -138,9 +145,9 @@ public static partial class GovernorPlanCompiler
             result.ParallelExpansion.Plan.BlueprintSite.Power?.AssessmentHash);
     }
 
-    private static string FingerprintCore(GovernorPlanSnapshot result) => CanonicalStateHash.Combine("governor-proposal-v2",
+    private static string FingerprintCore(GovernorPlanSnapshot result) => CanonicalStateHash.Combine("governor-proposal-v3",
         result.SessionId, result.PlanetId, result.Revision, result.CapturedAtGameTick, result.SourceStateHash,
-        result.FullTargetScale.PlanHash, result.TargetRatePerMinute, result.ToleranceFraction, result.ValidationGameTicks,
+        result.FullTargetScale.PlanHash, result.TargetRatePerMinute, result.ToleranceFraction, result.ValidationGameTicks, result.MeasurementGameTicks,
         result.Baseline.State, result.Baseline.StartGameTick, result.Baseline.EndGameTick, result.Baseline.ProductionPerMinute,
         result.Power.TotalEnergyRequired, result.Power.TotalEnergyServed, result.Power.TotalEnergyCapacity, result.Power.MinimumConsumerRatio,
         result.FindingsTruncated, CanonicalStateHash.Combine("blockers", result.Blockers.Cast<object>().ToArray()),

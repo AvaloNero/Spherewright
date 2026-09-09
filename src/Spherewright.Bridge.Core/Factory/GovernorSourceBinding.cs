@@ -9,13 +9,15 @@ public static class GovernorSourceBinding
     // A proposed rate/machine budget is not an observed world change. Keep the
     // actual source and observed item scope bound; full proposal/scale hashes
     // still protect every declaration and executable construction plan.
-    public static string CreateMeasurementBinding(string seriesKey, string sourceHash, IReadOnlyList<int> observedItemIds)
+    public static string CreateMeasurementBinding(string seriesKey, string sourceHash, IReadOnlyList<int> observedItemIds,
+        int measurementGameTicks = 600)
     {
-        if (string.IsNullOrWhiteSpace(seriesKey) || string.IsNullOrWhiteSpace(sourceHash)
+        if (!Diagnostics.NativeProductionRateCalculator.IsSupportedWindow(measurementGameTicks)
+            || string.IsNullOrWhiteSpace(seriesKey) || string.IsNullOrWhiteSpace(sourceHash)
             || observedItemIds is null || observedItemIds.Count < 1 || observedItemIds.Count > 64
             || observedItemIds.Any(id => id <= 0) || observedItemIds.Distinct().Count() != observedItemIds.Count)
             throw new FoundryPlanningException("governor_measurement_scope_invalid", "Require a source-bound series and1..64 distinct observed item identities.");
-        return CanonicalStateHash.Combine("governor-measurement-binding-v2", seriesKey, sourceHash,
+        return CanonicalStateHash.Combine("governor-measurement-binding-v3", seriesKey, sourceHash, measurementGameTicks,
             CanonicalStateHash.Combine("observed-items", observedItemIds.OrderBy(id => id).Cast<object>().ToArray()));
     }
 

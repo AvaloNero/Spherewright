@@ -9,6 +9,26 @@ namespace Spherewright.Bridge.Core.Tests;
 
 public sealed class GovernorPlanCompilerTests
 {
+    [Theory]
+    [InlineData(0)] [InlineData(601)] [InlineData(36000)]
+    public void GovernorRequestRejectsUnboundedOrUnsupportedMeasurementPeriod(int period)
+    {
+        var request = Request(); request.MeasurementGameTicks = period;
+        Assert.Equal("governor_request_invalid", Assert.Throws<FoundryPlanningException>(
+            () => GovernorPlanCompiler.ValidateRequest(request)).Reason);
+    }
+
+    [Fact]
+    public void MinuteProposalDeclaresActualPeriodAndBindsItWithoutAlteringFoundryScale()
+    {
+        var minute = Compile(measurementGameTicks: 3600); var normal = Compile();
+        Assert.Equal(3600, minute.MeasurementGameTicks); Assert.Equal(3600, minute.CurrentWindow.ElapsedGameTicks);
+        Assert.Equal("ready", minute.Baseline.State); Assert.Equal(3, minute.Baseline.IndependentWindowCount);
+        Assert.Equal(normal.FullTargetScale.PlanHash, minute.FullTargetScale.PlanHash);
+        var hash = minute.ProposalHash; minute.MeasurementGameTicks = 600;
+        Assert.NotEqual(hash, GovernorPlanCompiler.Fingerprint(minute));
+    }
+
     [Fact]
     public void RepricingAnUnchangedSourceToTwiceItsBaselineDoesNotRestartMeasurement()
     {
@@ -199,7 +219,7 @@ public sealed class GovernorPlanCompilerTests
 
     private static GovernorPlanSnapshot Compile(int producerCount = 1, string sourceHash = "source", decimal tolerance = .1m,
         Action<OverseerDiagnosticBundlePlanetSnapshot>? configure = null,
-        Action<FactoryEntitySnapshot[]>? configureSource = null, decimal targetRate = 60)
+        Action<FactoryEntitySnapshot[]>? configureSource = null, decimal targetRate = 60, int measurementGameTicks = 600)
     {
         var request = Request(); request.ToleranceFraction = tolerance; request.TargetRatePerMinute = targetRate;
         var recipes = new RecipeCatalogSnapshot { SessionId = "session", PlanetId = 104, CapturedAtGameTick = 2400,
@@ -217,17 +237,23 @@ public sealed class GovernorPlanCompilerTests
             Production = new List<ProductionRateSnapshot> { new() { ItemId = 1, ActualProductionPerMinute = 30, ActualConsumptionPerMinute = 30 },
                 new() { ItemId = 2, ActualProductionPerMinute = 30, ActualConsumptionPerMinute = 0, DirectProducerCount = producerCount } } };
         configure?.Invoke(measured);
-        return GovernorPlanCompiler.Compile(request, recipes, buildings, source, measured, Window(2400), Series(), sourceHash, 1, null);
+        request.MeasurementGameTicks = measurementGameTicks;
+        recipes.CapturedAtGameTick = measured.CapturedAtGameTick = source[0].CapturedAtGameTick = 4 * measurementGameTicks;
+        return GovernorPlanCompiler.Compile(request, recipes, buildings, source, measured,
+            NativeProductionRateCalculator.Calculate(4 * measurementGameTicks, 0, 0, measurementGameTicks).Window,
+            Series(measurementGameTicks), sourceHash, 1, null);
     }
     private static GetGovernorPlanRequest Request() => new() { PlanetId = 104, TargetItemId = 2, TargetRatePerMinute = 60,
         SourceEntities = new List<BlueprintSelectedEntity> { new() { ObjectId = 20, ExpectedRecipeId = 1, ExpectedEndpointStateHash = "endpoint" } } };
     private static OverseerWindowSnapshot Window(long tick) => NativeProductionRateCalculator.Calculate(tick, 0, 0).Window;
     private static void Observe(GovernorMeasurementSeries series, long tick, decimal rate, string binding = "bound") =>
         series.Observe(binding, Window(tick), rate, new Dictionary<int, long> { [1] = tick < 2400 ? 10 : 7 });
-    private static GovernorMeasurementSeries Series()
+    private static GovernorMeasurementSeries Series(int measurementGameTicks = 600)
     {
         var series = new GovernorMeasurementSeries();
-        Observe(series, 600, 30); Observe(series, 1200, 30); Observe(series, 1800, 30); Observe(series, 2400, 30);
+        for (var tick = measurementGameTicks; tick <= 4 * measurementGameTicks; tick += measurementGameTicks)
+            series.Observe("bound", NativeProductionRateCalculator.Calculate(tick, 0, 0, measurementGameTicks).Window,
+                30, new Dictionary<int, long> { [1] = tick < 4 * measurementGameTicks ? 10 : 7 }, measurementGameTicks);
         return series;
     }
 }

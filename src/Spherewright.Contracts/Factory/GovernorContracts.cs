@@ -9,6 +9,7 @@ public sealed class GetGovernorPlanRequest
     public decimal TargetRatePerMinute { get; set; }
     public decimal ToleranceFraction { get; set; } = .1m;
     public int ValidationGameTicks { get; set; } = 36000;
+    public int MeasurementGameTicks { get; set; } = 600;
     public List<BlueprintSelectedEntity> SourceEntities { get; set; } = new List<BlueprintSelectedEntity>();
     public List<int> ExternalSupplyItemIds { get; set; } = new List<int>();
     public List<FoundryRecipeChoice> RecipeChoices { get; set; } = new List<FoundryRecipeChoice>();
@@ -47,6 +48,7 @@ public sealed class GovernorPlanSnapshot
     public decimal TargetRatePerMinute { get; set; }
     public decimal ToleranceFraction { get; set; }
     public int ValidationGameTicks { get; set; }
+    public int MeasurementGameTicks { get; set; } = 600;
     public string MeasurementScope { get; set; } = "local_planet_item_not_selected_entity_counters";
     public bool SelectionContainsAllTargetProducers { get; set; }
     public OverseerPowerSummarySnapshot Power { get; set; } = new OverseerPowerSummarySnapshot();
@@ -86,6 +88,7 @@ public sealed class GovernorThroughputValidationSnapshot
     public decimal TargetMultiplier { get; set; }
     public decimal ToleranceFraction { get; set; }
     public int RequiredGameTicks { get; set; }
+    public int MeasurementGameTicks { get; set; } = 600;
     public long ObservedContiguousGameTicks { get; set; }
     public long? StartGameTick { get; set; }
     public long? EndGameTick { get; set; }

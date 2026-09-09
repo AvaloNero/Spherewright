@@ -1,3 +1,4 @@
+using Spherewright.Bridge.Core.Diagnostics;
 using Spherewright.Contracts.Diagnostics;
 using Spherewright.Contracts.Factory;
 
@@ -18,6 +19,7 @@ public sealed class GovernorThroughputValidation
     private readonly decimal _targetRate;
     private readonly decimal _tolerance;
     private readonly int _requiredTicks;
+    private readonly int _measurementGameTicks;
     private readonly string _scaleHash;
     private string _sourceHash;
     private long _scopeStart;
@@ -41,6 +43,7 @@ public sealed class GovernorThroughputValidation
             || declaration.TargetRatePerMinute <= baseline || declaration.TargetRatePerMinute > 1000000
             || declaration.ToleranceFraction <= 0 || declaration.ToleranceFraction > .5m
             || declaration.ValidationGameTicks < 36000 || declaration.ValidationGameTicks > 216000
+            || !NativeProductionRateCalculator.IsSupportedWindow(declaration.MeasurementGameTicks)
             || !declaration.SelectionContainsAllTargetProducers || declaration.Blockers.Count != 0
             || !HealthyObservation(declaration, true) || string.IsNullOrWhiteSpace(declaration.FullTargetScale.PlanHash))
             throw new FoundryPlanningException("governor_validation_baseline_invalid",
@@ -50,6 +53,7 @@ public sealed class GovernorThroughputValidation
         _declarationRevision = declaration.Revision;
         _baselineRate = baseline; _targetRate = declaration.TargetRatePerMinute;
         _tolerance = declaration.ToleranceFraction; _requiredTicks = declaration.ValidationGameTicks;
+        _measurementGameTicks = declaration.MeasurementGameTicks;
         _scaleHash = declaration.FullTargetScale.PlanHash; _sourceHash = declaration.SourceStateHash;
         _scopeStart = _declaredTick;
     }
@@ -60,6 +64,7 @@ public sealed class GovernorThroughputValidation
             throw new FoundryPlanningException("governor_validation_not_started", "Only an actually locked server declaration can be persisted.");
         var checkpoint = new GovernorValidationCheckpoint
         {
+            Version = 2, MeasurementGameTicks = _measurementGameTicks,
             OwnedIdentityHash = ownedIdentityHash, GameVersion = gameVersion, SourceSessionId = _sessionId,
             BaselineProposalHash = _baselineHash, SourceStateHash = _sourceHash, ScalePlanHash = _scaleHash,
             PlanetId = _planetId, TargetItemId = _targetItemId,
@@ -99,6 +104,7 @@ public sealed class GovernorThroughputValidation
         _declarationRevision = checkpoint.DeclarationRevision; _baselineRate = checkpoint.BaselineRatePerMinute;
         _targetRate = checkpoint.TargetRatePerMinute; _tolerance = checkpoint.ToleranceFraction;
         _requiredTicks = checkpoint.RequiredGameTicks; _scaleHash = checkpoint.ScalePlanHash;
+        _measurementGameTicks = checkpoint.MeasurementGameTicks;
         _sourceHash = checkpoint.SourceStateHash; _lockedAt = checkpoint.LockedAtGameTick;
         _lastCapture = currentGameTick;
         Reset("protected_resume_observation_reset", currentGameTick);
@@ -148,6 +154,7 @@ public sealed class GovernorThroughputValidation
         ValidateDeclaration(current);
         if (!_lockedAt.HasValue) throw new FoundryPlanningException("governor_validation_not_started", "Lock this declaration before expanding the source.");
         var window = current.CurrentWindow;
+        var sampleStep = NativeProductionRateCalculator.SampleStepGameTicks(_measurementGameTicks);
         if (current.CapturedAtGameTick < _declaredTick || current.CapturedAtGameTick < _lastCapture)
         { Reset("game_tick_regressed", Math.Max(_declaredTick, _lastCapture)); return Snapshot(); }
         if (current.SourceStateHash != _sourceHash)
@@ -159,9 +166,11 @@ public sealed class GovernorThroughputValidation
         if (!HealthyObservation(current, writesHealthy))
         { Reset("sampled_health_or_attribution_unproven", current.CapturedAtGameTick); return Snapshot(); }
         if (window.State != OverseerWindowStates.Ready || window.CrossedSessionBoundary
-            || window.ElapsedGameTicks != 600 || !window.StartGameTick.HasValue
-            || window.EndGameTick - window.StartGameTick.Value != 599
-            || window.EndGameTick > current.CapturedAtGameTick || current.CapturedAtGameTick - window.EndGameTick > 1)
+            || window.ElapsedGameTicks != _measurementGameTicks || !window.StartGameTick.HasValue
+            || window.EndGameTick - window.StartGameTick.Value != _measurementGameTicks - 1
+            || window.EndGameTick % sampleStep != 0
+            || window.EndGameTick > current.CapturedAtGameTick
+            || current.CapturedAtGameTick - window.EndGameTick > Math.Max(1, sampleStep - 1))
         { Reset("native_window_unavailable", current.CapturedAtGameTick); return Snapshot(); }
         if (window.StartGameTick.Value < _scopeStart) return Snapshot();
         if (_end.HasValue && window.EndGameTick <= _end.Value) return Snapshot();
@@ -192,6 +201,8 @@ public sealed class GovernorThroughputValidation
             BaselineProductionPerMinute = _baselineRate, TargetRatePerMinute = _targetRate,
             TargetMultiplier = _targetRate / _baselineRate, ToleranceFraction = _tolerance,
             RequiredGameTicks = _requiredTicks, ObservedContiguousGameTicks = observed,
+            MeasurementGameTicks = _measurementGameTicks,
+            MeasurementBasis = "overlapping_native_" + _measurementGameTicks + "_tick_windows_no_unobserved_tick_gaps",
             StartGameTick = _start, EndGameTick = _end,
             MinimumWindowRatePerMinute = _minimum, MaximumWindowRatePerMinute = _maximum,
             ObservationCount = _count, ResetReason = _resetReason, ThroughputTargetObserved = passed,
@@ -209,6 +220,7 @@ public sealed class GovernorThroughputValidation
     {
         if (current.SessionId != _sessionId || current.PlanetId != _planetId || current.TargetItemId != _targetItemId
             || current.TargetRatePerMinute != _targetRate || current.ToleranceFraction != _tolerance
+            || current.MeasurementGameTicks != _measurementGameTicks
             || current.ValidationGameTicks != _requiredTicks || current.FullTargetScale.PlanHash != _scaleHash)
             throw new FoundryPlanningException("governor_validation_declaration_mismatch",
                 "The pre-execution session, item, recipe scale, target, tolerance and duration are immutable.");

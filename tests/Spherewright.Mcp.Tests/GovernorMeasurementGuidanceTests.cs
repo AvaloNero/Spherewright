@@ -9,6 +9,20 @@ namespace Spherewright.Mcp.Tests;
 public sealed class GovernorMeasurementGuidanceTests
 {
     [Fact]
+    public void PlaybookAndToolExposePeriodChoiceBeforeBaselineAndNeverAfterLock()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetGovernorPlanAsync))!;
+        var parameter = method.GetParameters().Single(p => p.Name == "measurementGameTicks");
+        Assert.Equal(600, parameter.DefaultValue);
+        Assert.Contains("BEFORE", parameter.GetCustomAttribute<DescriptionAttribute>()!.Description);
+        Assert.Contains("3600", parameter.GetCustomAttribute<DescriptionAttribute>()!.Description);
+        Assert.Contains("locked measurement period cannot change", method.GetCustomAttribute<DescriptionAttribute>()!.Description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("matching echo", guide); Assert.Contains("measurement-period", guide);
+        Assert.Contains("not permission to loosen10%", guide); Assert.Contains("native six-tick-aligned", guide);
+    }
+
+    [Fact]
     public void ToolExplainsRepricingBeforeLockWithoutRetargetingAnExperiment()
     {
         var text = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetGovernorPlanAsync))!

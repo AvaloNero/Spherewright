@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-10 / 停止相似失败复验：raw-c3e7d45b第二条接近目标再次position_stalled/180tick，root raw-b617167e仍Walk0/800MJ/healthy，accepted8/revision37/J63；一次成功短移不是后续直线路径保证。两条接近候选的地表读数均正常但碰撞未证，不继续第三条相似路线；北侧raw-35f5e83f的末端实测水下1.33m也未提交，不放宽末端陆地规则。冻结Luna并由主会话重规划，已完成产线不动。
+
+2026-09-10 / EXP-284导入顺序补充：私有预览脚本若先导入审计包装、再dot-source原始ActionClient，后者会覆盖同名Bridge函数。实际游戏写入尚未授权时发现此问题；改为通用helper先导入、审计包装最后导入后，以raw-35f5e83f确认请求/响应确已落入保护日志。只有prepare未有accepted，缺失的早期raw不补造；后续执行必须保留这一顺序和任务独立参数。局部球面north需以east×up验证正Y、单位长和正交，再用于候选坐标；未提交的几何草案不计为已尝试Move。
+
 2026-09-10 / 包内有界脱困规则本机正例：一次position_stalled后，raw-7d955ed3对不同4m西北切平面目标仅提交一次，29tick完成；root raw-c8544177证明Walk0/800MJ/healthy、物料/科研点/J63不变。原失败目标没有重放，另外三个方向未尝试；这证明本次有限恢复，不是自动寻路或任意建筑可穿越。accepted7/revision36/save37427745；后续仍需fresh接近路线，不能因成功恢复继续原直撞路线。
 
 2026-09-10 / 移动playbook与watchdog复验：raw-77174aec在37719066返回真实position_stalled/180tick/remaining6.6541m/doNotRetrySameTarget，root raw-77e35102确认精确原订单终止、800MJ/Walk0/healthy且全部非位置物料/J63保持。地表射线全正常、目标中心清晰不等于沿途无建筑碰撞；邻近多设备时不可编造唯一障碍或重复原目标，应按既有最多四个正交4m规则逐个有界探测，并遵守两次同阶段失败交主会话上限。当前仅1个已接受的接近Move失败、未提交恢复候选，accepted6/revision34/save37427745；不延长超时或改动已成功产线。

@@ -106,6 +106,8 @@
 
 ## 0.4.0 — Overseer, Foundry & Governor
 
+2026-09-10 / 五对象续建尚未通过：新prepare和一次原buildId commit已执行，但首个带正常扣料后因完成识别进入outcome_unknown，余四项没提交；原炉/声明恢复门保持已过。当前accepted5/revision4/primary38583472，候选带2987真实存在但尚未通过全部原生证明。IFX-094是唯一直接blocker，先修完工朝向核销及安全同档恢复，不重放整图；持续产出、2×十分钟与最终版本门仍待。
+
 2026-09-10 / 原声明恢复与部分蓝图跨session保留实机通过：e336604冷部署228文件，64工具/1资源/60079字符指南及认证握手通过；普通save38583441→protected resume38583472，root raw-ed745c72完整2986/464/80、全物料/J66/四网/0prebuild核销。原31→62、锁38461509与hash原样恢复，连续观察0；原cancelled计划仍1完成5未提交。IFX-093闭合，不重锁、不修改私有归档；accepted4/revision1。下一只对原buildId fresh续建五项，持续供料和2×连续36000tick仍未过。
 
 2026-09-10 / IFX-093修复已离线通过、待冷部署：checkpoint v3数值哈希及实际PluginJson往返校验补齐，旧v1/v2只兼容数值完全相同的整数补.0，原现场声明只读验证通过且文件未改。153相关/1689全套测试与完整Release零警告错误；不将该离线结论当作原锁实机恢复。原buildId五对象续建、持续供料和Governor62/min连续36000tick仍待，下一仅冷部署后复验该直接blocker。

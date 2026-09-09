@@ -3,6 +3,10 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 原计划续建暴露带完工识别缺陷：root raw-c84becd6 fresh剩余五对象预检成功后，Luna raw-0a468c9a用全新token/同buildId提交一次，action `ba0e0f67-d0af-46d8-8d4f-2c74ce92933d`在38600247接受。依赖顺序先提交idx2带、正常扣2001一件101→100；38601035返回outcome_unknown `pending_result_missing_or_ambiguous:2`，后续四项停止。原炉2986与其历史材料证据仍保留。
+
+root raw-d4c7d61e核销原终态，revision4/accepted5/quarantined，primary仍38583472；raw-9d3434be复读候选带2987处于精确规划位置、2001/空边/path82十格/零货物，0prebuild、玩家Walk0/800MJ。这不是整图完成，也不因报错假定零写。IFX-094定位到蓝图完成匹配误用预建筑球面朝向，下一复用既有原生cargo-renderer几何证明，冷部署恢复时必须保留实际已建带和借记，不重放整图或重锁Governor。db72ccb远端一致、CI34404012334成功。
+
 2026-09-10 / 修复版冷部署、原声明和部分蓝图恢复通过：Luna raw-d4535d04正常save38583441，root raw-608f582e核对保存终态及新旧两批228文件；raw-3c2b9926正常关闭/保留备份/安装e336604并Steam单启动，raw-314d8b53实际MCP64工具/1资源/60079字符指南/当前Plugin认证通过。Luna raw-resume-2aeba78a仅一次恢复`c1cb284d-d42a-4f69-be22-fa8c15e8f07c`成功，primary38583472，新revision1/accepted4/J66/healthy。
 
 root raw-ed745c72截至38588522核销全部2986实体/464配置/80详情、全厂双向边、0prebuild、四网/全材料/科研点/J66；保存落点误差约0.000017m，小于事先声明1cm序列化容差。原cancelled build保留idx0炉2986和五项not_submitted，完整逐对象材料记录未变。原Governor hash/31→62/锁38461509正常恢复，declarationDurable=true、samples durable=false/连续0，当前多了未接原料的新炉而source_configuration_changed，因此不得拼接旧窗。IFX-093现已实机关闭；五对象续建和实际产出仍待。e336604远端一致，CI34403163506成功，没有新最终ZIP/tag/发布。

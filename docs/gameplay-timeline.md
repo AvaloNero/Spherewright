@@ -3,6 +3,12 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 取消未提交部分与十写审计通过：Luna raw-9f1668ed对原buildId仅正常提交取消`73b304ef-77a7-488a-868a-81b128e1af36`，38508570成功，phase=cancelled；炉2986及其逐对象借记/完工证据保持，五项仍not_submitted，没有拆除、退款或保存。
+
+root raw-8ee2dee1在38514710核销本窗十个原始/fresh唯一终态、完整2986实体/464配置/80详情及全厂双向边、四网满供电；净物料仅四风机、一塔、一炉，其他背包加科研点/燃料/J66连续，800MJ/Walk0/0prebuild/healthy。revision96/save38413066，账本落盘后accepted10→0。下一单独正常save覆盖原Governor锁与部分施工，再正常关闭/同批冷部署/protected resume，只续原buildId的五个未提交对象；不复用旧token或整图重放。
+
+同时d8c0cf9同源开发cohort raw-763c5881完成locked restore、完整Release零警告错误、53 Contracts+1504 Core+107 MCP共1664测试及win-x64自包含publish，四Plugin/224MCP工件各自与同运行时输出逐哈希匹配。真实staged MCP raw-38e87bc2读回64工具/1资源/59713字符指南且stdout纯净、正常退出；尚未安装，不是最终ZIP或异机验证。d8c0cf9远端一致、CI34400173639成功。
+
 2026-09-10 / 首次真实有限蓝图提交通过：raw-9e18bc1a只提交一次`26e744f6-232b-4dcd-9ee2-190da3fcb195`，原六对象计划buildId `a05b0036-eda4-4300-b38a-c6a81c3cde96`受maximumObjectsToSubmit=1约束，在38491707正常terminal成功、phase=paused；只idx0经正常扣料和施工无人机建成熔炉2986，recipe17、network2、无预接外部边，其余五项严格not_submitted。整图材料预检2炉/2sorter/2带不等于一次扣完整图，本次炉库存仅2→1。
 
 root raw-a894342d在38502747独立核销原始/fresh终态、exact buildId的持久逐对象证据和唯一实体、全背包科研点/J66保持，accepted9/revision94/save38413066。已有五供电实体不重做；该新炉未接原料/输出，因此不称模块持续生产或Governor吞吐通过。下一取消未提交部分，再做十写审计和普通保存/正常重启/原buildId fresh续建。1115152远端一致、CI34399667195成功。

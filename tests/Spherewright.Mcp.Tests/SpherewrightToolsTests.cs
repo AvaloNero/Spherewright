@@ -25,6 +25,36 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void StalledMoveGuidanceIncludesSmallAndCoincidentFactoryObjects()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.CommitMoveAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        Assert.Contains("including belts and sorters/inserters", guide);
+        Assert.Contains("including belts and sorters/inserters", description);
+        Assert.Contains("Retain every distinct object ID even when positions coincide", guide);
+        Assert.Contains("current catalog/inspection for item identity", guide);
+        Assert.Contains("center distance alone is not walking clearance", description);
+        Assert.Contains("not horizontal walking footprints", guide);
+    }
+
+    [Fact]
+    public void StalledMoveGuidanceKeepsObservationAndRecoveryBounds()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("incomplete or expired pagination cannot rule out obstacles", guide);
+        Assert.Contains("stay outside the observed obstacle cluster", guide);
+        Assert.Contains("crossing the same obstruction is not a new route", guide);
+        Assert.Contains("Do not dismantle a working line", guide);
+        Assert.Contains("do not submit the same target again", guide);
+        Assert.Contains("four targets", guide);
+        Assert.Contains("each direction **once**", guide);
+        Assert.Contains("All recovery attempts use the existing", guide);
+        Assert.Contains("movementState=Walk", guide);
+    }
+
+    [Fact]
     public void OpeningPlaybookDistinguishesUnfilteredSorterReadbackFromRequestZero()
     {
         var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;

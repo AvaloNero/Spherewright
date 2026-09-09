@@ -957,7 +957,7 @@ public static partial class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Starts the prepared movement through DSP's Player.Order path and returns a pollable action. Poll its actionId to terminal. On position_stalled or route_stalled, follow the opening-movement playbook and never retry the same target. It never writes player position.")]
+    [Description("Starts the prepared movement through DSP's Player.Order path and returns a pollable action. Poll its actionId to terminal. On position_stalled or route_stalled, follow the opening-movement playbook and never retry the same target. Inspect nearby objects including belts and sorters/inserters; center distance alone is not walking clearance. It never writes player position.")]
     public static async Task<CallToolResult> CommitMoveAsync(
         IBridgeClient bridgeClient,
         string sessionId,

@@ -95,6 +95,7 @@ public sealed class GovernorThroughputValidationSnapshot
     public decimal? MinimumWindowRatePerMinute { get; set; }
     public decimal? MaximumWindowRatePerMinute { get; set; }
     public long ObservationCount { get; set; }
+    // Last historical reset, not a current-failure flag; it may remain after progress/success.
     public string? ResetReason { get; set; }
     public bool ThroughputTargetObserved { get; set; }
     public bool DoubleThroughputTargetObserved { get; set; }

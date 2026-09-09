@@ -9,6 +9,21 @@ namespace Spherewright.Mcp.Tests;
 public sealed class GovernorMeasurementGuidanceTests
 {
     [Fact]
+    public void ToolAndEmbeddedPlaybookDistinguishLastResetFromCurrentWindowFailure()
+    {
+        var tool = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetGovernorPlanAsync))!
+            .GetCustomAttribute<DescriptionAttribute>()!.Description;
+        Assert.Contains("resetReason is historical", tool);
+        Assert.Contains("not a current-failure flag", tool);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("resetReason is historical", guide);
+        Assert.Contains("not a current-failure flag", guide);
+        Assert.Contains("distinct independent windows", guide);
+        Assert.Contains("current measured rate", guide);
+        Assert.Contains("never restore credit across a sampling gap", guide);
+    }
+
+    [Fact]
     public void PlaybookAndToolExposePeriodChoiceBeforeBaselineAndNeverAfterLock()
     {
         var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetGovernorPlanAsync))!;

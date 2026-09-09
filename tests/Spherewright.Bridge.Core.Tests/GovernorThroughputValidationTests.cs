@@ -53,6 +53,36 @@ public sealed class GovernorThroughputValidationTests
         Assert.False(result.ThroughputTargetObserved);
     }
 
+    [Fact]
+    public void LastResetReasonIsHistoricalWhileFreshHealthyWindowsCanReachTheTarget()
+    {
+        var run = Started();
+        run.Observe(Current(3000), true);
+        var failed = run.Observe(Current(3600, 53), true);
+        Assert.Equal(0, failed.ObservedContiguousGameTicks);
+        Assert.Equal("measured_rate_outside_declared_tolerance", failed.ResetReason);
+
+        // A healthy window still overlapping the rejected scope is not a second failure.
+        var waiting = run.Observe(Current(3900), true);
+        Assert.Equal("waiting_for_target", waiting.State);
+        Assert.Equal(0, waiting.ObservedContiguousGameTicks);
+        Assert.Equal(failed.ResetReason, waiting.ResetReason);
+
+        var observing = run.Observe(Current(4200), true);
+        Assert.Equal("observing", observing.State);
+        Assert.Equal(600, observing.ObservedContiguousGameTicks);
+        Assert.Equal(failed.ResetReason, observing.ResetReason);
+        for (var tick = 4800; tick <= 39600; tick += 600)
+            run.Observe(Current(tick), true);
+        var passed = run.Snapshot();
+        Assert.Equal(36000, passed.ObservedContiguousGameTicks);
+        Assert.True(passed.DoubleThroughputTargetObserved);
+        Assert.Equal(failed.ResetReason, passed.ResetReason);
+        Assert.Equal(3601, passed.StartGameTick);
+        Assert.Equal(30, passed.BaselineProductionPerMinute);
+        Assert.Equal(60, passed.TargetRatePerMinute);
+    }
+
     [Theory]
     [InlineData("session")] [InlineData("target")] [InlineData("item")]
     [InlineData("planet")] [InlineData("tolerance")] [InlineData("duration")] [InlineData("recipe_scale")]

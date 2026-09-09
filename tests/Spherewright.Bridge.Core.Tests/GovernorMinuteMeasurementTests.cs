@@ -186,7 +186,7 @@ public sealed class GovernorMinuteMeasurementTests
     public void LockedPeriodSurvivesProtectedResumeAndCannotBeChanged()
     {
         var run = StartMinute(); var saved = run.CreateCheckpoint("owned", "version");
-        Assert.Equal(2, saved.Version); Assert.Equal(3600, saved.MeasurementGameTicks); saved.Validate();
+        Assert.Equal(3, saved.Version); Assert.Equal(3600, saved.MeasurementGameTicks); saved.Validate();
         var restored = GovernorThroughputValidation.Restore(saved, "owned", "version", "new-session", 15000, 15030);
         Assert.Equal(0, restored.Snapshot().ObservedContiguousGameTicks);
         Assert.Equal(3600, restored.Snapshot().MeasurementGameTicks);

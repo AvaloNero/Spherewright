@@ -47,14 +47,18 @@ internal sealed class GovernorDeclarationStore
             var saved = validation.CreateCheckpoint(_document!.IdentityHash, _gameVersion);
             var proposed = Clone(_document);
             proposed.AddLockedDeclaration(saved);
-            var bytes = new UTF8Encoding(false).GetBytes(PluginJson.Serialize(proposed));
+            var json = PluginJson.Serialize(proposed);
+            var bytes = new UTF8Encoding(false).GetBytes(json);
             if (bytes.Length > MaximumBytes) throw new InvalidDataException("Governor declaration size limit.");
+            var verified = PluginJson.Deserialize<GovernorDeclarationArchive>(json);
+            if (verified is null) throw new InvalidDataException("Governor declaration round-trip is missing.");
+            verified.Validate(_document.IdentityHash, _gameVersion);
             WindowsCurrentUserSecurity.EnsureSecureDirectory(_directory);
             temporaryPath = Path.Combine(_directory, ".declarations-" + Guid.NewGuid().ToString("N") + ".tmp");
             WindowsCurrentUserSecurity.WriteSecureNewFile(temporaryPath, bytes);
             if (File.Exists(_path!)) File.Replace(temporaryPath, _path!, null, true);
             else File.Move(temporaryPath, _path!);
-            _document = Clone(proposed); // Do not publish an in-memory lock on persistence failure.
+            _document = verified; // Publish only the exact round-tripped, validated durable data.
             return true;
         }
         catch (Exception exception) when (IsStorageError(exception))

@@ -3,6 +3,8 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / IFX-093源码修复已通过离线验证：新声明v3规范化decimal数值，旧v1/v2保留原hash并只兼容整数补.0；正式持久锁之前验证实际PluginJson往返结果。153相关测试、完整Release零警告错误、53 Contracts+1529 Core+107 MCP共1689通过。raw-70fe3036只读验证现场原归档，SHA不变，原31→62/锁38461509可恢复且连续tick归零；尚未冷部署/实机恢复。当前accepted2/revision1/primary38525680/J66，后续只保存同档、冷部署修复及原buildId续建，不重开或重锁。74c5162远端一致、CI34402500014成功。
+
 2026-09-10 / 重启保留部分施工、暴露声明持久化缺陷：raw-e26ba2b9正常关闭并保留旧程序集备份后，安装d8c0cf9的4 Plugin/224 MCP文件，哈希全一致；一次Steam启动，raw-ccff1964实测64工具/1资源/59713字符指南及当前Plugin认证。此前完整Release零警告错误、1664测试通过，仍只是本机开发安装态，不是最终ZIP或异机验证。
 
 Luna仅执行一次protected resume，raw-resume-1a4d8808的action `9f1abe12-07e8-49ee-bb41-48139148400b`成功，主档38525649→38525680，新revision1/accepted2/J66/healthy。root raw-b815e51a在38534784–38536530核销全2986实体/464非带配置/80详情、双向连接、全玩家物料科研点、四网和0prebuild，玩家Walk0/800MJ；原蓝图保持cancelled、1完成/5未提交及完全相同的逐对象借记证据。

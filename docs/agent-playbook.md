@@ -141,6 +141,8 @@ In the currently verified native version, belt-to-belt sorters require both **5m
 
 ## Restart and interplanetary flight
 
+- If Governor declaration attachment fails after restart, stop expansion and preserve the original declaration hash. Do not edit its private archive or submit a replacement baseline. A software serialization defect may require a tested cold update; that must restore the same numerical baseline, target and lock tick, with continuous observation restarted at zero.
+
 - At the main menu, `gameLoaded=false` is expected; do not wait for `gameLoaded=true` before prepare. `restartResumeAvailable` advertises the protected current ticket, not final native readiness. Use that ticket in fresh `prepare_resume_owned_game`, which checks native preload/menu/no-loader readiness plus the exact header and durable Journal checkpoint without loading or consuming it. Only an actual not-ready rejection calls for bounded waiting. After the accepted resume reaches terminal, require fresh `gameLoaded=true`, owned/saved/healthy state, the saved tick and durable Journal. Do not restart or choose another world because the pre-resume menu is unloaded. Healthy planned restarts use only the ticket-bound primary; quarantine recovery alone uses a qualifying fixed LastExit.
 
 - Protected resume and flight-checkpoint capabilities are not save pickers. Use only the currently advertised token for the exact owned world and flow; never preserve or revive an older capability after newer progress.

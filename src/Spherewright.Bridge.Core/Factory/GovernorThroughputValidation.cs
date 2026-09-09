@@ -64,7 +64,7 @@ public sealed class GovernorThroughputValidation
             throw new FoundryPlanningException("governor_validation_not_started", "Only an actually locked server declaration can be persisted.");
         var checkpoint = new GovernorValidationCheckpoint
         {
-            Version = 2, MeasurementGameTicks = _measurementGameTicks,
+            Version = 3, MeasurementGameTicks = _measurementGameTicks,
             OwnedIdentityHash = ownedIdentityHash, GameVersion = gameVersion, SourceSessionId = _sessionId,
             BaselineProposalHash = _baselineHash, SourceStateHash = _sourceHash, ScalePlanHash = _scaleHash,
             PlanetId = _planetId, TargetItemId = _targetItemId,

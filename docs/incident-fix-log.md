@@ -14,6 +14,8 @@
 
 ## IFX-093 — Governor声明的decimal完整性哈希不能跨Plugin JSON往返
 
+- 修复状态：`fixed_offline_live_pending`。新checkpoint v3对decimal用Invariant `G29`数值格式；旧v1/v2仅尝试Newtonsoft整数补.0对应的最多三种等值前表示，原hash/原文件不变，不搜索任意scale或放松任何声明字段。存储在原子落盘前还要用实际PluginJson往返并Validate，不能只验证内存对象。
+- 验证：直接编译同一PluginJson源码、Newtonsoft13.0.4的25个新增回归覆盖两代旧记录/整数与小数/文化/篡改拒绝，153个Governor相关测试通过；全Release0警告错误、1689项通过。raw-70fe3036用修复Core只读验证现场原文件及其SHA不变，恢复出的31→62/锁38461509/连续0正确；这不是安装Plugin里的实机恢复，下一仍须冷部署/同档复验。
 - 首见：2026-09-10，状态`open`。首次持久锁定后真实冷部署/同档恢复，声明读取返回`governor_validation_persistence_unavailable`；原部分蓝图/材料/世界全部保留。
 - 根因证据：raw-b815e51a拒绝来自旧声明完整性检查。raw-a4324cc7只读装载原私有归档，owned身份/游戏版本匹配；同一数值基线31被Newtonsoft序列化并读取成31.0，旧CanonicalStateHash的默认decimal格式保留scale。只把内存基线还原为数值相等的31、保持目标62.0时原哈希恢复；从未写原文件。
 - 边界：锁定时验证的是序列化前对象，旧测试只用System.Text.Json，未覆盖Plugin所用序列化器。下一修复须使用数值规范表示，并窄兼容原整数补.0造成的旧记录；不能忽略完整性校验、改原声明数值/锁定时刻、换基线或修改存档。修复/冷部署/原声明恢复仍待，accepted2，后续扩产冻结。关联EXP-282及日记001。

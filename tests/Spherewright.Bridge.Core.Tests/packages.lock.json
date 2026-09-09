@@ -12,6 +12,12 @@
           "Microsoft.TestPlatform.TestHost": "17.14.1"
         }
       },
+      "Newtonsoft.Json": {
+        "type": "Direct",
+        "requested": "[13.0.4, )",
+        "resolved": "13.0.4",
+        "contentHash": "pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A=="
+      },
       "xunit": {
         "type": "Direct",
         "requested": "[2.9.3, )",
@@ -107,17 +113,11 @@
       "spherewright.bridge.core": {
         "type": "Project",
         "dependencies": {
-          "Spherewright.Contracts": "[1.0.0, )"
+          "Spherewright.Contracts": "[0.4.0, )"
         }
       },
       "spherewright.contracts": {
         "type": "Project"
-      },
-      "Newtonsoft.Json": {
-        "type": "CentralTransitive",
-        "requested": "[13.0.4, )",
-        "resolved": "13.0.3",
-        "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
       }
     }
   }

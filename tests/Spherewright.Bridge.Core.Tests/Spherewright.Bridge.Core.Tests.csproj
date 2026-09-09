@@ -7,8 +7,12 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Spherewright.Bridge.Core\Spherewright.Bridge.Core.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\Spherewright.Plugin\Transport\PluginJson.cs" Link="PluginTransport\PluginJson.cs" />
   </ItemGroup>
 </Project>
 

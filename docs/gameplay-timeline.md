@@ -3,6 +3,10 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 隔离恢复后的健康声明恢复闭环：Luna raw-769fb9a4普通save `e4e1f0f2-9068-4273-8d56-9a5f0503ff26`保存38707623、revision4/accepted8；root raw-fcbdc45e核销新healthy票据、同源228文件及正常关闭，仅Steam启动一次、不重新安装。真实MCP raw-4f659732维持64工具/1资源/60656字符。Luna raw-resume-35d5f681一次exact-primary恢复`c6f0188a-197f-4dea-a651-ca02074cf602`并重存38707654，accepted9。
+
+root raw-df900fa6截至38711644证明完整2987实体/464配置/81详情、互返边、0prebuild、全玩家物料科研点/J66及四网满供；原buildId保持cancelled、2986/2987两项completed和四项not_submitted，原材料记录不变。原Governor声明hash/基线31/目标62/锁38461509/误差0.1/36000tick全部恢复，declarationDurable=true、连续0、source_configuration_changed；没有重锁或写归档。下一只续未提交四项，第10写后先全审计，供料/持续产出与2×窗口仍待。c71797b远端一致、CI34407175815成功。
+
 2026-09-10 / 核销后显式停止未提交项通过：root fresh预检raw-7e8408a6后，Luna raw-532abc38仅一次cancel `dac0e116-6a2d-4083-86a5-c31369e91e60`于38697123终态成功。原buildId从outcome_unknown转cancelled，已完成2986/2987和各自原材料记录、四项not_submitted全部保留；未拆除、未退款、未施工，全玩家物料/科研点/J66不变。revision3/accepted7/primary38674189/healthy。下一普通保存并健康计划重启证明原Governor声明，再fresh续四项；此时尚无新生产。上项c665fa3远端一致，CI34406792287成功。
 
 2026-09-10 / IFX-094冷部署与原带核销通过：raw-b8abc1d2先证明全厂唯一新增2987、旧2986配置不变、5804条边互返、背包仅2001少1、J66；raw-2c66b023正常关闭隔离进程并保留备份，9514d84同批4 Plugin/224 MCP文件哈希一致，raw-63fdc61a真实MCP为64工具/1资源/60656字符。Luna一次protected quarantine resume `4d26612a-78cb-4c91-a671-faa8dd2bfd60`通过fresh固定LastExit恢复并正常另存到38674189（raw-resume-105a97a9），没有加载较早38583472的primary或重做带子。

@@ -3,6 +3,8 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 核销后显式停止未提交项通过：root fresh预检raw-7e8408a6后，Luna raw-532abc38仅一次cancel `dac0e116-6a2d-4083-86a5-c31369e91e60`于38697123终态成功。原buildId从outcome_unknown转cancelled，已完成2986/2987和各自原材料记录、四项not_submitted全部保留；未拆除、未退款、未施工，全玩家物料/科研点/J66不变。revision3/accepted7/primary38674189/healthy。下一普通保存并健康计划重启证明原Governor声明，再fresh续四项；此时尚无新生产。上项c665fa3远端一致，CI34406792287成功。
+
 2026-09-10 / IFX-094冷部署与原带核销通过：raw-b8abc1d2先证明全厂唯一新增2987、旧2986配置不变、5804条边互返、背包仅2001少1、J66；raw-2c66b023正常关闭隔离进程并保留备份，9514d84同批4 Plugin/224 MCP文件哈希一致，raw-63fdc61a真实MCP为64工具/1资源/60656字符。Luna一次protected quarantine resume `4d26612a-78cb-4c91-a671-faa8dd2bfd60`通过fresh固定LastExit恢复并正常另存到38674189（raw-resume-105a97a9），没有加载较早38583472的primary或重做带子。
 
 root raw-67acc3ab截至38684615核销2987实体/464非带配置/81详情、全厂互返边、0prebuild、四网满供、氢罐0及全玩家材料/科研点/J66。修复版由原生cargo-path/entity/collider精确证明idx2就是2987；原101→100借记未变，idx0炉2986及其余四项也未变。写健康恢复、revision1/accepted6；原有限计划仍保留outcome_unknown停止状态，未自动续建。此项只关闭完成态识别和保留现场的恢复门，不算整图完成。下一用原取消动作停止未提交项；Governor不得凭隔离票据恢复或重新锁定，需健康保存/计划重启重新证明原31→62声明。9514d84远端一致、CI34405065738成功，1691全套测试通过；没有最终ZIP/tag/发布。

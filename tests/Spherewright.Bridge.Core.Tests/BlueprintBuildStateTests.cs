@@ -210,6 +210,27 @@ public sealed class BlueprintBuildStateTests
     }
 
     private static BlueprintBuildState Create() => BlueprintBuildState.Create(Site());
+
+    [Fact]
+    public void ProvedPendingCompletionKeepsUnknownActionStoppedUntilExplicitCancellationAndFreshAuthority()
+    {
+        var state = Create(); Begin(state);
+        state.BeforeSubmit(0,101,2,"before"); state.ConfirmSubmission(0,8,1,"after");
+        state.Stop("outcome_unknown"); // Completion check failed, not an unknown native debit.
+        var restored = JsonSerializer.Deserialize<BlueprintBuildState>(JsonSerializer.Serialize(state))!;
+        restored.ConfirmCompletion(0,100,110); // Adapter must prove unique actual geometry/material/edges first.
+        Assert.Equal("outcome_unknown",restored.Phase);
+        Assert.Null(restored.NextReadyIndex());
+        Assert.Throws<InvalidOperationException>(() => restored.Begin("new",Guid.NewGuid().ToString(),1,111));
+        restored.Stop("cancelled"); // Existing explicit stop never refunds or resubmits the completed object.
+        restored.Begin("new",Guid.NewGuid().ToString(),1,111);
+        Assert.Equal(1,restored.NextReadyIndex());
+        Assert.Equal(100,restored.Objects[0].EntityId);
+        Assert.Equal(2,restored.Objects[0].InventoryBefore); Assert.Equal(1,restored.Objects[0].InventoryAfter);
+        Assert.Throws<InvalidOperationException>(() => restored.BeforeSubmit(0,112,1,"replay"));
+        restored.Validate();
+    }
+
     private static void Begin(BlueprintBuildState state, int limit = 2) => state.Begin("session", Guid.NewGuid().ToString(), limit, 100);
     private static void CompleteFirst(BlueprintBuildState state)
     { state.BeforeSubmit(0, 101, 2, "before"); state.ConfirmSubmission(0, 8, 1, "after"); state.ConfirmCompletion(0, 100, 110); }

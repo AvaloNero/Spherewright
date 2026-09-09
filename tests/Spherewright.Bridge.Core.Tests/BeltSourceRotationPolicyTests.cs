@@ -6,6 +6,20 @@ namespace Spherewright.Bridge.Core.Tests;
 
 public sealed class BeltSourceRotationPolicyTests
 {
+    [Fact]
+    public void CompletedBlueprintBeltUsesExactDerivedOrientationNotAPrebuildPose()
+    {
+        // Captured 2001 completion quaternion; geometry derivation remains a Plugin/live check.
+        var actual = new QuaternionSnapshot { X=.219716623f, Y=.399377346f, Z=-.8845228f, W=.0992058441f };
+        var derived = new QuaternionSnapshot { X=actual.X, Y=actual.Y, Z=actual.Z, W=actual.W };
+        Assert.True(BeltSourceRotationPolicy.CanReadSegment(82,10,10,0,10));
+        Assert.True(BeltSourceRotationPolicy.MatchesNativeRotation(actual,derived));
+        Assert.False(BeltSourceRotationPolicy.MatchesNativeRotation(actual,new QuaternionSnapshot { W=1 }));
+        derived.X += .000001f;
+        Assert.False(BeltSourceRotationPolicy.MatchesNativeRotation(actual,derived));
+        Assert.False(BeltSourceRotationPolicy.CanReadSegment(82,10,10,0,11));
+    }
+
     [Theory]
     [InlineData(1,100,128,75,25,true)]
     [InlineData(1,8192,16384,8191,1,true)]

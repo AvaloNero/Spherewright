@@ -159,8 +159,15 @@ internal sealed partial class NormalGameActionCoordinator
         ref var e = ref factory.entityPool[id];
         if (e.id != id || e.protoId != spec.ItemId || (e.pos - ToVector(spec.Position)).sqrMagnitude > .00001f) return false;
         var desc = LDB.items.Select(spec.ItemId).prefabDesc;
-        var rotation = desc.isBelt ? Maths.SphericalRotation(ToVector(spec.Position), 0) : BlueprintRotation(spec.Rotation);
-        if (Quaternion.Angle(e.rot, rotation) > .1f) return false;
+        // Path prebuilds use SphericalRotation, but normal completion calls the native
+        // cargo renderer, which derives the entity AND collider pose from path geometry.
+        // Reuse the exact bounded read-only proof already required for source belts;
+        // never ignore belt rotation or weaken the separate prebuild/debit/edge checks.
+        if (desc.isBelt)
+        {
+            if (!ProvesNativeBeltRotation(factory, id)) return false;
+        }
+        else if (Quaternion.Angle(e.rot, BlueprintRotation(spec.Rotation)) > .1f) return false;
         if (desc.isAssembler)
         {
             if (e.assemblerId < 1 || e.assemblerId >= factory.factorySystem.assemblerCursor) return false;

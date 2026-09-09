@@ -14,6 +14,7 @@
 
 ## IFX-094 — 蓝图带完工仍按预建筑球面朝向匹配
 
+- 修复状态：`fixed_offline_live_pending`。完成态belt复用既有ProvesNativeBeltRotation，对当前路径端点精确导出entity/collider朝向和碰撞中心；预建筑、材料、类型/位置、唯一路径身份及全双向边守卫不变。当前DLL哈希/AlterBeltRenderer重新查验，50项相关/1691全套Release通过，完整构建零警告错误；没有放松到任意角度容差或增加动作原语。下一需正常隔离恢复保留2987并由修复版精确认定，再通过原取消/新prepare继续未提交项，当前仍不能标成live修复。
 - 首见：2026-09-10，状态`open`。原buildId恢复五对象的action `ba0e0f67-d0af-46d8-8d4f-2c74ce92933d`在38600247接受、38601035以`pending_result_missing_or_ambiguous:2`进入outcome_unknown/quarantine；只新增一次2001借记101→100，四项未提交，未重放。
 - 证据：raw-0a468c9a逐对象记录保留原炉2986，idx2有明确预建筑/借记但未认定完工；raw-9d3434be观察真实带2987，item2001/位置与原idx2完全相同、空连接、path82/10cells/零货物、0prebuild。还不能把候选直接认领为已证明结果，须当前原生几何/双端/唯一性核销。
 - 已定位检查差异：BlueprintEntityMatches对已完成belt仍要求预建筑`Maths.SphericalRotation`。相同当前DLL的AlterBeltRenderer在正常完工时按实际cargo路径重算entity/collider朝向，原普通source-cover已用ProvesNativeBeltRotation精确只读核验该机制（EXP-231/IFX-050）；蓝图未复用。下一只修复此完工识别，不放宽预建筑/位置/材料/拓扑，不新增动作原语。修复冷部署前保留原unknown，正常隔离恢复须证明含2987的世界而非加载施工前primary；原Governor目标不重锁。

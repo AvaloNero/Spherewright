@@ -3,6 +3,8 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / IFX-094源码修复通过：仅让蓝图已完成belt复用普通source-cover已验证的原生路径/碰撞体精确朝向证明，未放宽预建筑或物料/拓扑检查。当前DLL复核、50相关测试、1691全套Release与完整构建零警告错误通过；当前游戏仍隔离，尚未部署或认定候选2987。下一正常隔离恢复必须保留本次已施工世界，随后恢复同一原buildId和原Governor声明，不回读较早primary伪装零施工。89597a8远端一致、CI34404574448成功。
+
 2026-09-10 / 原计划续建暴露带完工识别缺陷：root raw-c84becd6 fresh剩余五对象预检成功后，Luna raw-0a468c9a用全新token/同buildId提交一次，action `ba0e0f67-d0af-46d8-8d4f-2c74ce92933d`在38600247接受。依赖顺序先提交idx2带、正常扣2001一件101→100；38601035返回outcome_unknown `pending_result_missing_or_ambiguous:2`，后续四项停止。原炉2986与其历史材料证据仍保留。
 
 root raw-d4c7d61e核销原终态，revision4/accepted5/quarantined，primary仍38583472；raw-9d3434be复读候选带2987处于精确规划位置、2001/空边/path82十格/零货物，0prebuild、玩家Walk0/800MJ。这不是整图完成，也不因报错假定零写。IFX-094定位到蓝图完成匹配误用预建筑球面朝向，下一复用既有原生cargo-renderer几何证明，冷部署恢复时必须保留实际已建带和借记，不重放整图或重锁Governor。db72ccb远端一致、CI34404012334成功。

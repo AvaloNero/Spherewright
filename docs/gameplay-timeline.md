@@ -3,6 +3,10 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 精确槽诊断批次冷部署与恢复通过：root raw-e63fa715正常关闭已保存DSP，以可恢复备份替换e4e12ff同批4个Plugin侧及224个MCP文件，全228哈希匹配后仅经Steam启动一次。raw-ed4a4ae8验证已安装MCP64工具/1资源/65742字符指南、当前新Plugin认证、纯stdout与正常exit0。部署预检曾因Steam注册表使用正斜杠而误停，路径规范化后与实际进程精确匹配；该拒绝发生在关闭/安装前，未放宽身份边界。
+
+Luna仅执行protected resume 8f9d804a，raw-resumea4b5599e从41205153恢复并自动重存41205185。root raw-ec6234bc于41213193独立核全部3074实体/5960互返边/25详情、六路已燃料化送料、原五网和120氢/全部玩家库存/J78；3073/3074空载、未接线、配方0保持。位置序列化差0.000018309m，Walk0，healthy且零prebuild。accepted8/revision1不归零；下一仅fresh读取新摘要，尚未证明具体原生阻塞或任何重氢产出。
+
 2026-09-10 / 错误摘要冷部署前保存：Luna仅普通save87b82a54，raw-6511e8fd于41205153成功。root raw-3a92c4b4在41223237核本轮七个原始/fresh终态（含恢复）、完整3074实体/5960互返边/25详情、120氢与完整玩家/J78、五网满供和零prebuild；3073/3074仍空载未接线。accepted7/revision9不归零。e4e12ff同批228文件再次locked restore/full Release/test/publish通过1747项，staged MCP64/1/65742指南及认证/纯stdout通过；此处尚未安装，下一正常关闭、同批替换与protected resume。
 
 2026-09-10 / 启动仓完成，接线停在明确诊断缺口：Luna raw-5e0ebafc仅正常建成3074，action e9dbf764于41155028成功，2101−1，保留120氢/3高速分拣/1备用对撞机；root raw-6dbe0df3独立核原始/fresh终态、玩家/J78、旧3073/3056和五网。accepted6/revision8，主档仍41054111。

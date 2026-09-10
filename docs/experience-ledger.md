@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-10 / EXP-001/002/007/103/214/250冷部署恢复复验validated：raw-e63fa715正常关闭并以保留备份安装e4e12ff全228匹配文件，raw-ed4a4ae8为实际安装64/1/65742指南与新Plugin认证/stdout正常退出；不再是staged连接旧Plugin的证据。Luna唯一恢复8f9d804a从41205153自动重存41205185，root raw-ec6234bc核全3074/5960边/25详情、玩家120氢/J78及五网，accepted8保持。Steam注册表SteamExe用正斜杠而进程路径用反斜杠；私有预检先证明GetFullPath后二者完全相等再修比较，未更换启动目标、弱化进程身份或重复启动。下一只读具体原生拒绝，诊断冷部署不等于接线或生产通过；最近复验2026-09-10。
+
 2026-09-10 / EXP-002/007/103/214/250冷部署前复验validated：raw-6511e8fd普通save41205153，root raw-3a92c4b4独立核七终态/全3074/5960边/25详情/玩家120氢/J78及原五网。accepted7保留，不因提前全厂审计归零。stage raw-7221fbab为e4e12ff同批228文件、1747测试及正常publish，raw-3eac9cca为staged MCP64/1/65742指南/纯stdout；它连接的仍是旧Plugin，不能当新Plugin已安装或新拒绝诊断live。下一只正常关闭后部署，保持精确primary/J78与全部未接线设备；最近复验2026-09-10。
 
 2026-09-10 / EXP-227精确槽诊断补全validated仅离线：IFX-100复用既有错误文本，分别保留lastNativeRejection/lastPreNativeRejection，nativeChecks只在实际调用CheckBuildConditions前计入；单带candidateChecks原语义不变。报告常量内存/每理由512字符，原候选顺序与全部准入/幂等/hash/材料/施工不变。10Core/1MCP新增回归后1747项及完整DSP Release、64工具/1资源/65742字符嵌入指南一致/stdout纯净通过；当前安装仍d31fa66，未声称具体原生阻塞或接线已解。最近复验2026-09-10，冷部署后同一存档只读复验拒绝，无commit重试。

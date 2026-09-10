@@ -12,6 +12,12 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-096 — 跨科技完成的库存审计缺少原生奖励表
+
+- 首见：2026-09-10，状态`open`。油动作的最后原始玩家读数39613814为太阳能板0；1501于39617713解锁后，root raw-b9f2f612于39624391观察2205×1。两个transfer终态成功且更早，未重放；后续游戏写入冻结，当前没有Plugin quarantine。
+- 根因边界：当前DLL确认`UnlockTech`读取`TechProto.AddItems/AddItemCounts`并通过`GainTechAwards`→`Player.TryAddItemToPackage`发放原生奖励；现有科技DTO只含科技状态、前置、解锁配方和研究预算，不含奖励元数据。因此跨tick检查不能总假设非动作物品完全不变，但也不能按物品名称/时间巧合自动认领增量。
+- 下一最小修复：在既有owned主线程progression读取中补充有界、完整、nullable的奖励表，未知与无奖励分开；只读目录不是已收到证明。结合真实unlockTick、原始动作终态、前后全库存及容量后再核销，不写库存、不改hash或放宽未知结果规则。当前1501具体奖励表及修复后实机仍待。关联EXP-288。
+
 ## IFX-095 — 调用方将 Governor 历史重置原因误算为新失败
 
 - 首见：2026-09-10。状态 `fixed_local_live` 仅指私有只读采样器；公开指南更新已离线验证，尚未冷部署。

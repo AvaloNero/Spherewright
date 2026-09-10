@@ -6,6 +6,12 @@ Assembly evidence:
 - `Assembly-CSharp.dll` SHA-256: `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`.
 - Inspection tool: ILSpy command line 9.1.0.7988, used only for targeted type/signature inspection. Decompiled game source is not stored in this repository.
 
+## 2026-09-10 native technology completion item awards
+
+The installed assembly and compile reference were independently rehashed against the SHA-256 above. Targeted ILSpy inspection confirms public `TechProto.AddItems` and `TechProto.AddItemCounts` are parallel `int[]` fields. `GameHistoryData.UnlockTech(int)` records the current unlock tick and completed state, applies the prototype's recipes/functions, and iterates those arrays through `GainTechAwards(int,int)`. That method uses ordinary `Player.TryAddItemToPackage(itemId,count,0,throwTrash:true)`; it reports a shortfall when the returned package amount is below the requested amount. These are native completion side effects, not Spherewright calls or an authorized item-grant primitive.
+
+In the current save, a pair of oil transfers ended before tick39613814 with no solar panel in the retained player snapshot. Technology1501 unlocked at39617713; the subsequent player read contained one2205. This temporal evidence identifies a reward hypothesis, not its exact prototype quantity or successful delivery proof. The existing progression DTO lacks the two reward arrays. The next narrow read-only adaptation will expose a bounded complete copy, with unknown metadata distinct from an observed empty list; callers must still reconcile unlock/event and actual inventory/capacity evidence. No game write, research selection/hash change, live validation or automatic positive-delta allowance is established by this research note.
+
 ## 2026-09-07 native mecha research takeback (read-only investigation)
 
 Targeted inspection of the same current Assembly-CSharp confirms `MechaLab.GameTick(long,float)` calls `AutoManage()`. That method resolves the current technology, falling back to the first queued technology; with automatic research supply enabled and a valid technology it calls `ManageSupply(TechProto)`, otherwise `ManageTakeback()`. Supply takes normal package items and adds3600 points per item to `itemPoints`. Takeback passes the integer quotient `item.Value/3600` to `Player.TryAddItemToPackage(itemId,count,0,throwTrash:true)` for each buffered item, then clears the bundle. Remainder points are not rounded into items. These are existing native calls, not new calls made by Spherewright.

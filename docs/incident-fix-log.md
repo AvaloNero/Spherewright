@@ -12,6 +12,13 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-101 — 合法但接线过近的空仓缺少正常回收纠正入口
+
+- 首见：2026-09-10，3074单体施工合法，但两组面向3073的槽位被原生TooClose拒绝；现有dismantle仅矿机/普通分拣，不能回收这只空仓。原布局遗漏最小格跨度是规划错误，不是游戏或角度规则错误，不通过再铺复杂路线掩盖。
+- 修复范围：先同步AGENTS直接阻塞边界，再复用既有两阶段dismantle，仅开放默认、完全空、无叠层/配送器/功能附属/标注的2101。完整有界反查实体、预建筑和缓存引用；prepare/commit/执行前核原生身份与内容。仍只调用已存在DoDismantleObject，精确返还一个仓且inc不变，逐一核其他实体/预建筑和连接未动。不自动重建、不回收有货/过滤/堆叠仓，不新增工具或DTO。
+- 验证：49项Core及1项MCP新增，1797项（58/1625/114）通过；完整DSP Release零警告错误、真实源码MCP64/1/66807字符指南及纯stdout正常退出。已有miner/sorter/hash/幂等/隔离测试同时保留通过。
+- 状态：`fixed_offline_live_pending`。当前安装仍e4e12ff，3074未拆、primary41205185/J78/accepted8；后续同批冷部署、fresh预检及具体单仓回收/重新放置需各自实证。关联EXP-292。
+
 ## IFX-100 — 精确槽循环的最后角度错误遮蔽更早原生拒绝
 
 - 同日`fixed_local_live`限于拒绝诊断：e4e12ff已同批冷部署并protected resume，root raw-972373b1只做一次3074→3073新预检，得到attempts108/nativeChecks2/lastNativeRejection=TooClose，同时保留后续TooSkew。确认真正进入原生检查的两对被TooClose挡住；原先仅角度摘要的缺陷已实读核销，未声称接线通过。玩家hash、双端身份/配置/连接、J78及revision1保持，accepted8、primary41205185；无commit。该反例转入主会话现场重设计，不继续同对重试。

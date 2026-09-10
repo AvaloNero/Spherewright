@@ -369,6 +369,28 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void EmptyStorageRecoveryIsDiscoverableWithoutAdvertisingGeneralDeletionOrAutomaticRebuild()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        foreach (var name in new[] { nameof(SpherewrightTools.PrepareDismantleAsync), nameof(SpherewrightTools.CommitDismantleAsync) })
+        {
+            var method = typeof(SpherewrightTools).GetMethod(name)!;
+            var description = (System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+                typeof(System.ComponentModel.DescriptionAttribute))!;
+            foreach (var text in new[] { description.Description, guide })
+            {
+                Assert.Contains("empty default2101 storage", text);
+                Assert.Contains("prebuild", text);
+                Assert.Contains("cached", text);
+                Assert.Contains("no automatic rebuild", text);
+            }
+        }
+        Assert.Contains("all30 native grids", guide);
+        Assert.Contains("TooClose", guide);
+        Assert.Contains("minimum grid span", guide);
+    }
+
+    [Fact]
     public void BoundedSingleBeltAttachmentIsDiscoverableWithoutWeakeningNativePlacementRules()
     {
         var services = new ServiceCollection();

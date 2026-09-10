@@ -591,12 +591,12 @@ public static partial class SpherewrightTools
 
     [McpServerTool(
         Name = "spherewright_prepare_dismantle",
-        Title = "Prepare one normal resource-miner or basic-sorter dismantle",
+        Title = "Prepare one supported miner, sorter or empty-storage recovery",
         ReadOnly = false,
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Re-reads one exact completed resource miner or ordinary2011/2012 sorter and the settled local player; verifies endpoint identity, native build range, idle manual build UI and conservative package capacity. Sorters require native recoverable cargo, bounded inbound-reference checks and reciprocity of every PRESENT edge. Missing ends are allowed for normal dismantle/rebuild repair; mismatched present edges, advanced stacking, prebuild endpoints and the native instant-dismantle option are rejected. Prepare removes nothing and returns no item.")]
+    [Description("Re-reads one exact completed resource miner, ordinary2011/2012 sorter, or empty default2101 storage and the settled local player; verifies endpoint identity, native build range, idle manual build UI and conservative package capacity. Storage requires all30 grids completely empty/default, no layers or add-on, and no outgoing/incoming entity/prebuild or cached references; native identity/content are bound and rechecked. Sorters require native recoverable cargo, bounded inbound-reference checks and reciprocity of every PRESENT edge. Missing sorter ends are allowed; mismatched present edges, advanced stacking, prebuild targets and native instant-dismantle are rejected. Prepare removes nothing and returns no item; no automatic rebuild.")]
     public static async Task<CallToolResult> PrepareDismantleAsync(
         IBridgeClient bridgeClient,
         string sessionId,
@@ -623,12 +623,12 @@ public static partial class SpherewrightTools
 
     [McpServerTool(
         Name = "spherewright_commit_dismantle",
-        Title = "Dismantle one exact resource miner or basic sorter normally",
+        Title = "Recover one exact supported miner, sorter or empty storage normally",
         ReadOnly = false,
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Calls DSP's normal PlayerAction_Build.DoDismantleObject once for the approved miner or ordinary2011/2012 sorter. Poll actionId to terminal; proves exact disappearance and building/cargo recovery without unexplained inventory deltas. Sorter removal also verifies cargo inc and that surviving endpoint poses/configurations/other slots are unchanged. It neither writes connections directly nor automatically rebuilds. Missing outcome evidence quarantines writes; never repeat the dismantle under a new key.")]
+    [Description("Calls DSP's normal PlayerAction_Build.DoDismantleObject once for the approved miner, ordinary2011/2012 sorter, or isolated empty default2101 storage. Poll actionId to terminal; proves exact disappearance and building/cargo recovery without unexplained inventory deltas. Sorter removal verifies cargo inc and surviving endpoints. Empty storage requires no layers/add-on/entity/prebuild/cached references, returns exactly one2101, preserves inventory inc and all surviving native entities/prebuilds/connections. It never writes connections directly and has no automatic rebuild. Missing outcome evidence quarantines writes; never repeat the dismantle under a new key.")]
     public static async Task<CallToolResult> CommitDismantleAsync(
         IBridgeClient bridgeClient,
         string sessionId,
@@ -639,7 +639,7 @@ public static partial class SpherewrightTools
     {
         var request = CreateCommitRequest(sessionId, planetId, planToken, idempotencyKey);
         var result = await bridgeClient.CommitDismantleAsync(sessionId, request, cancellationToken).ConfigureAwait(false);
-        return ToToolResult(result, "Normal resource-miner dismantle completed with disappearance and recovery readback.");
+        return ToToolResult(result, "Normal supported-entity dismantle accepted; poll actionId for terminal disappearance and recovery evidence.");
     }
 
     [McpServerTool(

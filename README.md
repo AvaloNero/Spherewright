@@ -32,6 +32,8 @@ main 已增加只读 `spherewright_get_foundry_plan`：从目标产量计算多�
 
 ### 0.4 开发中的蓝图与升级
 
+0.4源码还为错误空载布局补充窄范围正常回收：现有 `prepare_dismantle` / `commit_dismantle` 可处理默认、全空、无叠层/配送器/连接或缓存引用的一级仓2101，返还一个仓并核验其他实体及库存不变。不会自动重建或搬迁；有货/过滤/堆叠仓不支持。当前离线通过，冷部署及实机状态见[IFX-101](./docs/incident-fix-log.md#ifx-101--合法但接线过近的空仓缺少正常回收纠正入口)，不在已发布0.3.3中。
+
 `prepare_move` 的新增可选 `surfacePreview` 提供最长32m短路径上的有界地表采样，帮助Agent在提交前识别水面/岸边风险；缺失证据不代表陆地，未发现风险也不保证无障碍或能保持步行。它不自动寻路、不改变正常Move准入，抵达后仍须复读落地、速度和能量。此为未发布0.4开发能力，离线、部署与实机状态见[API证据](./docs/research/game-api-foundry.md)。
 
 普通传送带新增可选 `beltPathMode=native_geodesic`：让游戏在两个明确空地点之间生成球面直线路径，默认仍为网格路径。当前只支持贴地、1.5–30m短路径，不含旧带覆盖、合流或自动寻路；必须收到匹配的计划模式、通过完整原生预检，并另验两端分拣器与真实供料。源码/离线、部署及实机结果分别记录在[API证据](./docs/research/game-api-foundry.md)和存档日记中；这不是已发布0.3.3的功能。
@@ -104,6 +106,8 @@ AllowWrites = true
 无游戏 DLL 的核心回归使用 `Spherewright.Core.slnf`；完整 Plugin 构建需先执行 `./scripts/sync-game-refs.ps1`。`./scripts/package-release.ps1 -Version <version>` 会从同一提交同时生成 GitHub 手动安装包和 Thunderstore 包。项目使用 [MIT License](./LICENSE)。
 
 ## English
+
+Unreleased v0.4 source adds narrowly scoped native recovery of one empty default2101 warehouse through the existing two-phase dismantle tools: no layers, add-on, connections or cached references; exactly one building item is returned, with surviving entities and inventory preserved. It does not automatically move/rebuild anything or remove occupied/filtered/stacked storage. Offline validation has passed; cold deployment and live recovery remain pending (IFX-101).
 
 Spherewright is a structured, safety-first control bridge for **Dyson Sphere Program**. It lets an external MCP-capable Agent observe the live game and perform bounded actions through normal DSP systems—without embedding an LLM, editing saves, injecting items, or driving the UI with screenshots and keyboard/mouse macros.
 

@@ -106,7 +106,7 @@
 
 ## 0.4.0 — Overseer, Foundry & Governor
 
-2026-09-10 空仓布局纠正最小切片离线通过：既有dismantle仅扩展孤立、默认、全空2101，按原生回收返还材料并核验全部其他entity/prebuild/连接和玩家inc；无自动重建或新工具/DTO。49Core/1MCP新增后1797项及完整DSP Release、64/1/66807指南通过。当前安装仍e4e12ff，下一正常保存与同批冷部署；真实回收、替代落点接线和首批重氢仍未验，持续燃料/Foundry/最终包门不抵扣。
+2026-09-10 空仓布局纠正最小切片：既有dismantle仅扩展孤立、默认、全空2101，按原生回收返还材料并核验全部其他entity/prebuild/连接和玩家inc；无自动重建或新工具/DTO。49Core/1MCP新增后1797项及完整DSP Release、64/1/66807指南通过。cd83b28已同批冷部署并恢复；唯一3cf3429f实机回收3074，root raw-f886dc79核3073幸存对象/5960互返边/全玩家inc/J78/五网，2101+1。当前accepted1/revision3、primary41312641未覆盖该回收；替代落点接线、保存恢复和首批重氢仍未验，持续燃料/Foundry/最终包门不抵扣。
 
 2026-09-10 精确槽诊断实机门核销：raw-972373b1仅新预检得到108对/2次native检查及TooClose，旧最后TooSkew不再遮蔽；身份/玩家hash/J78/revision保持。当前唯一接线blocker已明确为原生最小距离/格跨度，下一root重设计空仓方案；没有新的接线或首批重氢验收通过，accepted8/primary41205185。
 

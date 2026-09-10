@@ -32,7 +32,7 @@ main 已增加只读 `spherewright_get_foundry_plan`：从目标产量计算多�
 
 ### 0.4 开发中的蓝图与升级
 
-0.4源码还为错误空载布局补充窄范围正常回收：现有 `prepare_dismantle` / `commit_dismantle` 可处理默认、全空、无叠层/配送器/连接或缓存引用的一级仓2101，返还一个仓并核验其他实体及库存不变。不会自动重建或搬迁；有货/过滤/堆叠仓不支持。当前离线通过，冷部署及实机状态见[IFX-101](./docs/incident-fix-log.md#ifx-101--合法但接线过近的空仓缺少正常回收纠正入口)，不在已发布0.3.3中。
+0.4源码还为错误空载布局补充窄范围正常回收：现有 `prepare_dismantle` / `commit_dismantle` 可处理默认、全空、无叠层/配送器/连接或缓存引用的一级仓2101，返还一个仓并核验其他实体及库存不变。不会自动重建或搬迁；有货/过滤/堆叠仓不支持。离线、冷部署及本机单个空仓回收已通过，替代落点与后续保存恢复另验，详见[IFX-101](./docs/incident-fix-log.md#ifx-101--合法但接线过近的空仓缺少正常回收纠正入口)，不在已发布0.3.3中。
 
 `prepare_move` 的新增可选 `surfacePreview` 提供最长32m短路径上的有界地表采样，帮助Agent在提交前识别水面/岸边风险；缺失证据不代表陆地，未发现风险也不保证无障碍或能保持步行。它不自动寻路、不改变正常Move准入，抵达后仍须复读落地、速度和能量。此为未发布0.4开发能力，离线、部署与实机状态见[API证据](./docs/research/game-api-foundry.md)。
 
@@ -107,7 +107,7 @@ AllowWrites = true
 
 ## English
 
-Unreleased v0.4 source adds narrowly scoped native recovery of one empty default2101 warehouse through the existing two-phase dismantle tools: no layers, add-on, connections or cached references; exactly one building item is returned, with surviving entities and inventory preserved. It does not automatically move/rebuild anything or remove occupied/filtered/stacked storage. Offline validation has passed; cold deployment and live recovery remain pending (IFX-101).
+Unreleased v0.4 source adds narrowly scoped native recovery of one empty default2101 warehouse through the existing two-phase dismantle tools: no layers, add-on, connections or cached references; exactly one building item is returned, with surviving entities and inventory preserved. It does not automatically move/rebuild anything or remove occupied/filtered/stacked storage. Offline validation, cold deployment and one local live recovery have passed; replacement placement and a covering save/resume remain separate pending checks (IFX-101).
 
 Spherewright is a structured, safety-first control bridge for **Dyson Sphere Program**. It lets an external MCP-capable Agent observe the live game and perform bounded actions through normal DSP systems—without embedding an LLM, editing saves, injecting items, or driving the UI with screenshots and keyboard/mouse macros.
 

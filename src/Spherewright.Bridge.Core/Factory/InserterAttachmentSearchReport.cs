@@ -57,6 +57,7 @@ public sealed class InserterAttachmentSearchReport
         BestFacingDegrees.HasValue ? BestFacingDegrees.Value.ToString("F3", CultureInfo.InvariantCulture) : "unknown");
 
     public const string Recovery = "Do not repeat the same endpoint pair unchanged. Read the native attachment failure stage: "
+        + "for exact slots, nativeChecks counts actual DSP checks; read lastNativeRejection separately from lastPreNativeRejection. "
         + "geometry_unavailable is not proof of bad angles; no_admissible_seed/no_finite_projection/no_facing_interpolated_pair "
         + "requires a different evidence-backed local geometry. Only an explicit native OutOfReach rejection calls for moving closer. "
         + "For geometry_buffer_busy, wait before one bounded fresh prepare; never reuse an old token. "

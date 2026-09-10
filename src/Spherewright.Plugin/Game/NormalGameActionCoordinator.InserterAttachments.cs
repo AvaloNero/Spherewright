@@ -84,7 +84,7 @@ internal sealed partial class NormalGameActionCoordinator
                         rejection = report.DescribeFailure();
                         return false;
                     }
-                    if (TryValidateInserterBuild(factory, player, item, step, out var checkedStep, out rejection))
+                    if (TryValidateInserterBuild(factory, player, item, step, out var checkedStep, out rejection, out _))
                     {
                         accepted = checkedStep;
                         return true;

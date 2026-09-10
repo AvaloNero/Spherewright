@@ -350,6 +350,25 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void ExactSlotFailuresExplainActualNativeChecksWithoutTreatingLastAngleAsOverallCause()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareBuildAsync))!;
+        var description = (System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!;
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        foreach (var text in new[] { description.Description, guide })
+        {
+            Assert.Contains("nativeChecks", text);
+            Assert.Contains("lastNativeRejection", text);
+            Assert.Contains("lastPreNativeRejection", text);
+        }
+        Assert.Contains("actual calls to DSP's placement validator", guide);
+        Assert.Contains("Zero checks means the native placement result is unknown", guide);
+        Assert.Contains("Do not replay the unchanged pair", guide);
+        Assert.Contains("Older Plugins may report only the last exact-slot error", guide);
+    }
+
+    [Fact]
     public void BoundedSingleBeltAttachmentIsDiscoverableWithoutWeakeningNativePlacementRules()
     {
         var services = new ServiceCollection();

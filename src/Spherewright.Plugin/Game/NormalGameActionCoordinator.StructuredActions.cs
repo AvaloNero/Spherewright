@@ -426,6 +426,7 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         var last = "DSP rejected every bounded inserter endpoint pair.";
+        var exactRejections = new ExactInserterRejectionReport();
         foreach (var sourcePoint in sourcePoints)
         {
             foreach (var destinationPoint in destinationPoints)
@@ -439,7 +440,7 @@ internal sealed partial class NormalGameActionCoordinator
                     destinationPoint.ObjectId,
                     destinationPoint.Slot);
                 step.FilterItemId = request.InitialSorterFilterItemId;
-                if (TryValidateInserterBuild(factory, player, item, step, out var accepted, out last))
+                if (TryValidateInserterBuild(factory, player, item, step, out var accepted, out last, out var nativeCheckPerformed))
                 {
                     var result = BuildPreparation.Succeeded(NormalBuildKinds.Inserter, new[] { accepted });
                     result.SourceObjectId = source!.ObjectId;
@@ -448,6 +449,7 @@ internal sealed partial class NormalGameActionCoordinator
                     result.DestinationEndpointHash = BuildEndpointHash(destination);
                     return result;
                 }
+                exactRejections.Record(last, nativeCheckPerformed);
             }
         }
 
@@ -462,7 +464,7 @@ internal sealed partial class NormalGameActionCoordinator
             return result;
         }
         return BuildPreparation.Failed(BridgeErrorCodes.BuildConnectionInvalid,
-            "Exact-slot candidates rejected; last exact-slot result: " + last + " " + offsetRejection,
+            "Exact-slot candidates rejected; " + exactRejections.DescribeFailure() + " " + offsetRejection,
             InserterAttachmentSearchReport.Recovery);
     }
 
@@ -1039,10 +1041,12 @@ internal sealed partial class NormalGameActionCoordinator
         ItemProto item,
         BuildStepPlan candidate,
         out BuildStepPlan accepted,
-        out string rejection)
+        out string rejection,
+        out bool nativeCheckPerformed)
     {
         accepted = candidate;
         rejection = string.Empty;
+        nativeCheckPerformed = false;
         var filterError = ValidateInitialSorterFilter(item, candidate.FilterItemId);
         if (filterError is not null)
         {
@@ -1105,6 +1109,7 @@ internal sealed partial class NormalGameActionCoordinator
             tool.SnapshotPlayerInventory();
             var preview = CreatePreview(candidate, item);
             tool.buildPreviews.Add(preview);
+            nativeCheckPerformed = true;
             var valid = tool.CheckBuildConditions();
             if (!valid || preview.condition != EBuildCondition.Ok || preview.coverObjId != 0
                 || preview.filterId != candidate.FilterItemId)
@@ -1271,7 +1276,7 @@ internal sealed partial class NormalGameActionCoordinator
         }
         else if (plan.BuildKind == NormalBuildKinds.Inserter)
         {
-            valid = TryValidateInserterBuild(factory, player, item, plan.BuildSteps[0], out var accepted, out rejection)
+            valid = TryValidateInserterBuild(factory, player, item, plan.BuildSteps[0], out var accepted, out rejection, out _)
                 && BuildStepsEqual(plan.BuildSteps, new[] { accepted });
         }
         else

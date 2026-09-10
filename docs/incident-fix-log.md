@@ -14,6 +14,8 @@
 
 ## IFX-100 — 精确槽循环的最后角度错误遮蔽更早原生拒绝
 
+- 同日`fixed_local_live`限于拒绝诊断：e4e12ff已同批冷部署并protected resume，root raw-972373b1只做一次3074→3073新预检，得到attempts108/nativeChecks2/lastNativeRejection=TooClose，同时保留后续TooSkew。确认真正进入原生检查的两对被TooClose挡住；原先仅角度摘要的缺陷已实读核销，未声称接线通过。玩家hash、双端身份/配置/连接、J78及revision1保持，accepted8、primary41205185；无commit。该反例转入主会话现场重设计，不继续同对重试。
+
 - 同日`fixed_offline_live_pending`：精确槽失败报告保留最后原生和前置拒绝，实际CheckBuildConditions调用独立计数；每理由最多512字符、常量内存，不改候选枚举、检查、token/hash/commit或材料。旧单带偏移报告保持原计数含义。新增10Core/1MCP回归覆盖早期原生错误不被晚期角度错误覆盖、未知/无原生检查、长文本界限和两组真实端点角度；1747项（58/1576/113）、完整DSP Release零警告错误、真实源码MCP64/1/65742字符指南及纯stdout通过。待正常保存、同批冷部署和真实拒绝复读；没有放行施工。
 
 - 首见/状态：2026-09-10，`open`。3074→3073送料prepare返回最后槽对TooSkew及不适用的单带fallback，未提交接线。

@@ -51,4 +51,20 @@ public sealed class GameplayFirstOccurrenceDetectorTests
 
         Assert.Empty(detected);
     }
+
+    [Theory]
+    [InlineData(1110)]
+    [InlineData(2011)]
+    public void HistoricalManualItemWithNoRecordedEvent_RemainsKnownAfterReattachment(int itemId)
+    {
+        // Attached history has a counter seed, but deliberately no invented first-event timestamp.
+        var historicalSeeds = new[] { itemId };
+        var detector = new GameplayFirstOccurrenceDetector(knownManualItemIds: historicalSeeds);
+        Assert.Empty(detector.ObserveManualCounts(new Dictionary<int, long> { [itemId] = 8 }));
+        Assert.Empty(detector.ObserveManualCounts(new Dictionary<int, long> { [itemId] = 16 }));
+
+        var reattached = new GameplayFirstOccurrenceDetector(knownManualItemIds: historicalSeeds);
+        Assert.Empty(reattached.ObserveManualCounts(new Dictionary<int, long> { [itemId] = 17 }));
+        Assert.Single(reattached.ObserveProductionLineCounts(new Dictionary<int, long> { [itemId] = 1 }));
+    }
 }

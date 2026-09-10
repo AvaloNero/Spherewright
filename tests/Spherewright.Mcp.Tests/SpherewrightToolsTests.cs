@@ -25,6 +25,27 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void AttachedJournalGuidanceDoesNotInferNeverMadeFromMissingFirst()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetGameplayJournalAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        foreach (var text in new[] { description, guide })
+        {
+            Assert.Contains("attached_existing_save", text);
+            Assert.Contains("historicalCoverageComplete=false", text);
+            Assert.Contains("not proof that the item was never made", text);
+            Assert.Contains("durableThroughSequence", text);
+            Assert.Contains("Never replay a completed craft", text);
+        }
+        Assert.Contains("complete old entry prefix", guide);
+        Assert.Contains("no pending persistence and no persistence error", guide);
+        Assert.Contains("not a mandatory +1", guide);
+        Assert.Contains("backfill pre-tracking history", guide);
+    }
+
+    [Fact]
     public void TechCompletionRewardsAreDiscoverableAsMetadataNotDeliveryOrProduction()
     {
         var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetProgressionStateAsync))!;

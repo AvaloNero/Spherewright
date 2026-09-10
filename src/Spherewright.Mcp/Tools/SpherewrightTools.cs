@@ -125,7 +125,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns the protected journal for the current owned save: first manual and production-line output per item are tracked independently, as are first technology and upgrade selections, with wall-clock and in-save game times.")]
+    [Description("Returns the protected journal for the current owned save: first manual and production-line output per item are tracked independently, as are first technology and upgrade selections, with wall-clock and in-save game times. For attached_existing_save with historicalCoverageComplete=false, an absent first-event entry is not proof that the item was never made: historical seeds suppress later repeats without backfilling timestamps. Verify durableThroughSequence and persistence health; prove a craft from its terminal and materials, not an expected Journal increment. Never replay a completed craft because its first-event entry is absent.")]
     public static async Task<CallToolResult> GetGameplayJournalAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,

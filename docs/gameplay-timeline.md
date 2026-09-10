@@ -3,6 +3,10 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 空仓回收修复部署前保存通过：Luna仅save b90b35c6于41312610成功，raw-5cf4f305；root raw-4981cae2于41320582核前七个已保留跨进程收据、本进程恢复与保存原始/fresh终态、完整3074实体/5960互返边/25详情、全部玩家120氢/J78及五网。3073/3074空载未接线、recipe0保持，accepted9/revision2不归零；下一次恢复计为第十写，先审计后再施工。
+
+cd83b28空仓正常回收修复已推送，CI34493678556成功。raw-0ffd2b9a同批228文件经locked restore/full Release/test/publish，1797项通过；raw-e63659cc staged MCP64工具/1资源/66807字符指南、stdout纯净/exit0通过。此时Plugin仍e4e12ff，以上不是新代码已安装或仓库回收live。下一仅正常关闭、同批部署、protected resume，旧成功产线/火电和对撞机不重做。
+
 2026-09-10 / 接线真实阻塞已定位：新安装摘要raw-972373b1于41221869返回108槽对/2次真实native检查，最后原生拒绝TooClose，后续TooSkew独立保留。root只预检一次，没有接线commit；player hash和双端原配置/连接/J78/revision1保持，accepted8、primary41205185。IFX-100的“遮蔽原生拒绝”已本机通过；当前问题是两设备接口过近而非材料、能量或纯角度。交root依据原生格跨度重设计空仓接线方案，未移动/拆除任何已完成对象，重氢仍未生产。
 
 2026-09-10 / 精确槽诊断批次冷部署与恢复通过：root raw-e63fa715正常关闭已保存DSP，以可恢复备份替换e4e12ff同批4个Plugin侧及224个MCP文件，全228哈希匹配后仅经Steam启动一次。raw-ed4a4ae8验证已安装MCP64工具/1资源/65742字符指南、当前新Plugin认证、纯stdout与正常exit0。部署预检曾因Steam注册表使用正斜杠而误停，路径规范化后与实际进程精确匹配；该拒绝发生在关闭/安装前，未放宽身份边界。

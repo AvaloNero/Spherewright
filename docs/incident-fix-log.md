@@ -21,6 +21,8 @@
 
 - 离线验证：Core solution Release构建零警告/错误，5项first-detector与1项MCP指南回归通过，21项ActionClient检查零游戏调用；原六成功动作完整保留。新四步后缀raw-e3458d98仅fresh native prepare通过，零游戏写，不算后缀已完成。
 
+- 后缀`fixed_local_live`：raw-8f06def0仅完成两次正常制作、石墨烯取回及保存40032002/J73；root raw-ade29279独立核全部十个唯一成功终态、全玩家/材料、完整工厂和durable73，无首次伪造、六前缀重放或Plugin修改。aaaa7e8已推送且CI34435331951成功；公开指南更新仍未冷部署，当前实机只证明修正后的私有调用方流程。
+
 ## IFX-096 — 跨科技完成的库存审计缺少原生奖励表
 
 - 首见：2026-09-10，状态`open`。油动作的最后原始玩家读数39613814为太阳能板0；1501于39617713解锁后，root raw-b9f2f612于39624391观察2205×1。两个transfer终态成功且更早，未重放；后续游戏写入冻结，当前没有Plugin quarantine。

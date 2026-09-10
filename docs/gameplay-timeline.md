@@ -3,6 +3,8 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 错误摘要冷部署前保存：Luna仅普通save87b82a54，raw-6511e8fd于41205153成功。root raw-3a92c4b4在41223237核本轮七个原始/fresh终态（含恢复）、完整3074实体/5960互返边/25详情、120氢与完整玩家/J78、五网满供和零prebuild；3073/3074仍空载未接线。accepted7/revision9不归零。e4e12ff同批228文件再次locked restore/full Release/test/publish通过1747项，staged MCP64/1/65742指南及认证/纯stdout通过；此处尚未安装，下一正常关闭、同批替换与protected resume。
+
 2026-09-10 / 启动仓完成，接线停在明确诊断缺口：Luna raw-5e0ebafc仅正常建成3074，action e9dbf764于41155028成功，2101−1，保留120氢/3高速分拣/1备用对撞机；root raw-6dbe0df3独立核原始/fresh终态、玩家/J78、旧3073/3056和五网。accepted6/revision8，主档仍41054111。
 
 同一root只读批次首个3074→3073预检返回BUILD_CONNECTION_INVALID；未建任何分拣、未配置或投料。当前代码循环用最后槽对的TooSkew覆盖此前失败，最后的单带fallback又不适用于两个设备。raw-fa86a1d6对已有端点纯计算，108对中7→0/8→1为6.721°/6.732°，满足原14°规则；这不是完整原生放置通过，更早具体条件仍未知。先修摘要再决定现场方案，不重放端点或移动既有建筑。首轮私有角度计算复发IFX-062，错误raw-df8e82f1已由三组已知角度自检后的raw-fa86a1d6显式作废，未据其游戏写入。

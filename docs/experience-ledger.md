@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-10 / EXP-002/007/103/214/250冷部署前复验validated：raw-6511e8fd普通save41205153，root raw-3a92c4b4独立核七终态/全3074/5960边/25详情/玩家120氢/J78及原五网。accepted7保留，不因提前全厂审计归零。stage raw-7221fbab为e4e12ff同批228文件、1747测试及正常publish，raw-3eac9cca为staged MCP64/1/65742指南/纯stdout；它连接的仍是旧Plugin，不能当新Plugin已安装或新拒绝诊断live。下一只正常关闭后部署，保持精确primary/J78与全部未接线设备；最近复验2026-09-10。
+
 2026-09-10 / EXP-227精确槽诊断补全validated仅离线：IFX-100复用既有错误文本，分别保留lastNativeRejection/lastPreNativeRejection，nativeChecks只在实际调用CheckBuildConditions前计入；单带candidateChecks原语义不变。报告常量内存/每理由512字符，原候选顺序与全部准入/幂等/hash/材料/施工不变。10Core/1MCP新增回归后1747项及完整DSP Release、64工具/1资源/65742字符嵌入指南一致/stdout纯净通过；当前安装仍d31fa66，未声称具体原生阻塞或接线已解。最近复验2026-09-10，冷部署后同一存档只读复验拒绝，无commit重试。
 
 2026-09-10 / EXP-227/248复验：3074正常施工及root双边/现场核销validated，accepted6保留；3074→3073首个prepare拒绝后停止。原始端点纯计算显示两对约6.7°，当前TryPrepareInserterBuild却仅输出循环最后的TooSkew，不能把最后候选当全部候选根因，也不能把角度合格当原生放置通过。该摘要缺口直接阻塞送料方案，见IFX-100；下一仅保留更深入原生检查的错误，不放宽角度/碰撞/成本/端点。EXP-248再次适用：私有整数Min/Max角度辅助复发，raw-df8e82f1无效，raw-fa86a1d6经45°/90°/180°自检修正，未游戏写入。最近复验2026-09-10，冷部署后的错误实读再验。

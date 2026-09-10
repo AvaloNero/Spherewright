@@ -2784,6 +2784,7 @@ internal sealed partial class GameStateReader
                 IsPowerNode = item.prefabDesc.isPowerNode,
                 IsPowerCharger = item.prefabDesc.isPowerCharger,
                 WindGenerationAtCurrentPlanetPerTick = CaptureFoundryWindGeneration(item.prefabDesc, factory!.planet.windStrength),
+                FuelPowerProfile = CaptureFuelPowerProfile(item.ID, item.prefabDesc),
             });
         }
 

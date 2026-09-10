@@ -1258,14 +1258,14 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns the currently implemented unlocked building and smelting-recipe candidates from DSP's runtime prototypes. It refuses unowned sessions and never changes game state.")]
+    [Description("Returns building and recipe candidates with native unlock/availability flags from the owned world's runtime prototypes. Optional fuelPowerProfile reports ordinary thermal/fusion base generation and full-load fuel energy in joules per tick plus the native fuel type mask. Null/missing is unknown, not zero. These catalog ratings are not live generation, inventory or sustainable supply and do not grant Foundry planned-generation credit. It refuses unowned sessions and never changes game state.")]
     public static async Task<CallToolResult> GetBuildCatalogAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,
         [Description("Cancellation token supplied by the MCP host.")] CancellationToken cancellationToken = default)
     {
         var result = await bridgeClient.GetBuildCatalogAsync(sessionId, cancellationToken).ConfigureAwait(false);
-        return ToToolResult(result, "Live unlocked build catalog captured from the owned ordinary world.");
+        return ToToolResult(result, "Live build catalog with native availability flags captured from the owned ordinary world.");
     }
 
     [McpServerTool(

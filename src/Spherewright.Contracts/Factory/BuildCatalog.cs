@@ -68,6 +68,19 @@ public sealed class BuildCatalogItem
     // Only native wind-forced generation is predictable from this local planet.
     // Null is unknown, not free generating capacity.
     public long? WindGenerationAtCurrentPlanetPerTick { get; set; }
+
+    // Optional native base ratings for ordinary thermal/fusion generators only.
+    // Not current generation, fuel inventory, or evidence of sustainable supply.
+    public FuelPowerCatalogProfile? FuelPowerProfile { get; set; }
+}
+
+public sealed class FuelPowerCatalogProfile
+{
+    public long GenerationEnergyPerTick { get; set; }
+
+    public long FuelEnergyUsePerTick { get; set; }
+
+    public int FuelTypeMask { get; set; }
 }
 
 public sealed class BuildCatalogRecipe

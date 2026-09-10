@@ -85,6 +85,22 @@ public sealed class FoundryPowerPlannerTests
     }
 
     [Fact]
+    public void FuelCatalogRatingDoesNotCreditUnfuelledPlannedGenerationOrChangeAssessmentHash()
+    {
+        var context = new FoundryPowerContext { PlacementShellRadius = 200 };
+        var catalog = Catalog(wind: null);
+        catalog[1].ItemId = 2211;
+        var objects = new[] { Obj(0, 2302), Obj(1, 2211) };
+        var before = Assess(context, objects, catalog);
+        catalog[1].FuelPowerProfile = FuelPowerCatalogPolicy.Capture(2211, true, 50000, 60000, 2);
+        var after = Assess(context, objects, catalog);
+        Assert.Equal(before.AssessmentHash, after.AssessmentHash);
+        Assert.Equal(0, Assert.Single(after.Components).AddedWindGenerationPerTick);
+        Assert.Equal(100, Assert.Single(after.Components).DeficitPerTick);
+        Assert.False(after.FullBaseLoadBudgetSatisfied);
+    }
+
+    [Fact]
     public void PlannedChargerReservesNativeFullWorkingDemandEvenWithoutConsumerComponent()
     {
         var catalog = Catalog(); var charger = catalog[1];

@@ -125,6 +125,14 @@ internal sealed partial class GameStateReader
         FoundryPlanningException Reject(string reason) => new FoundryPlanningException(reason, "Native bounded power evidence is unavailable; do not assume coverage or spare capacity.");
     }
 
+    // Invoked only by the owned main-thread catalog reader. Prefab scalars are
+    // base ratings; EnergyCap_Fuel/GenEnergyByFuel mutate live state and must not run here.
+    private static FuelPowerCatalogProfile? CaptureFuelPowerProfile(int itemId, PrefabDesc prefab) =>
+        FuelPowerCatalogPolicy.Capture(itemId,
+            prefab.isPowerGen && !prefab.windForcedPower && !prefab.photovoltaic
+            && !prefab.gammaRayReceiver && !prefab.geothermal,
+            prefab.genEnergyPerTick, prefab.useFuelPerTick, prefab.fuelMask);
+
     private static long? CaptureFoundryWindGeneration(PrefabDesc prefab, float windStrength)
     {
         if (!prefab.isPowerGen || !prefab.windForcedPower || float.IsNaN(windStrength) || float.IsInfinity(windStrength)

@@ -14,6 +14,8 @@
 
 ## IFX-099 — 燃料电站施工预算缺少原生额定发电与耗料证据
 
+- 同日修复状态`fixed_offline_live_pending`：既有build catalog新增可空fuelPowerProfile，仅2204/2211且原生普通燃料发电标志、正值有界发电/耗料和支持mask通过才复制三标量。Core不依赖DSP，Plugin只在原owned主线程读取PrefabDesc，不调用任何发电/扣料方法。18项新增回归覆盖白名单/无效值/64位与旧DTO兼容/MCP指南、及不为未建未供料机组增加Foundry容量或改变assessment hash。locked restore、完整DSP Release零警告/错误，1736测试（58 Contracts/1566 Core/112 MCP）通过；当前安装仍efe12c2，未宣称读得当前机组额定值或已投产，下一同批冷部署实读。
+
 - 首见/状态：2026-09-10，`open`。两台对撞机已制造但总基础负载24MW，旧五个分离电网当前容量合计18.9MW也不足。现有build catalog可观察2211的材料、科技、节点覆盖，却只公开风力发电预测，没有普通燃料机组的原生额定发电、满负载燃料能量消耗及燃料类型掩码，因而不能先算清所需机组数与持续燃料预算。
 - 证据：raw-ce34b3e9已有当前目录/五网；当前DLL由PrefabDesc读取生成组件的genEnergyPerTick/useFuelPerTick/fuelMask，PowerSystem.NewGeneratorComponent正常建设时复制三者；EnergyCap_Fuel还取决于实际燃料及增产状态，GenEnergyByFuel按实际发电负荷扣燃料能量。因此额定值不是当前供给，不能靠记忆填数或算出机组数量就宣布可运行。
 - 下一最小边界：在现有owned主线程build catalog补充仅普通火电/聚变的可空只读原生燃料档案，未知不当0，不改工具数、动作类型、hash、施工或Foundry的可用容量准入；先完整验证/冷部署实读，再批准有限施工。该缺口直接阻止本轮既定24MW电力与持续燃料预算，不扩展通用观察或其他建筑类型。关联EXP-291。

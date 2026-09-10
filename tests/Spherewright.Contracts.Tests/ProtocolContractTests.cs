@@ -17,6 +17,27 @@ namespace Spherewright.Contracts.Tests;
 public sealed class ProtocolContractTests
 {
     [Fact]
+    public void FuelPowerCatalogProfileIsOptionalAndPreservesLongNativeBaseRatings()
+    {
+        var legacy = JsonSerializer.Deserialize<BuildCatalogItem>("{}", JsonOptions)!;
+        Assert.Null(legacy.FuelPowerProfile);
+        Assert.Null(JsonSerializer.Deserialize<BuildCatalogItem>("{\"fuelPowerProfile\":null}", JsonOptions)!.FuelPowerProfile);
+        legacy.ItemId = 2211;
+        legacy.FuelPowerProfile = new FuelPowerCatalogProfile
+        {
+            GenerationEnergyPerTick = 3000000000L,
+            FuelEnergyUsePerTick = 4000000000L,
+            FuelTypeMask = 2,
+        };
+        var json = JsonSerializer.Serialize(legacy, JsonOptions);
+        var copy = JsonSerializer.Deserialize<BuildCatalogItem>(json, JsonOptions)!.FuelPowerProfile!;
+        Assert.Equal(3000000000L, copy.GenerationEnergyPerTick);
+        Assert.Equal(4000000000L, copy.FuelEnergyUsePerTick);
+        Assert.Equal(2, copy.FuelTypeMask);
+        Assert.Null(legacy.WindGenerationAtCurrentPlanetPerTick);
+    }
+
+    [Fact]
     public void InserterAttachmentPlanIsOptionalAndRetainsSignedOffsetsWithoutPrivateGeometry()
     {
         var legacy = JsonSerializer.Deserialize<PreparedNormalAction>("{}", JsonOptions)!;

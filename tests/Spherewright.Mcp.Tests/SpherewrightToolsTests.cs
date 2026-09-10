@@ -1742,6 +1742,22 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("ignore shortages", guide);
     }
 
+    [Fact]
+    public void FuelPowerRatingsAreDiscoverableWithoutClaimingLiveSupplyOrNewWriteAuthority()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetBuildCatalogAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        Assert.Contains("fuelPowerProfile", description);
+        Assert.Contains("Null/missing is unknown, not zero", description);
+        Assert.Contains("do not grant Foundry planned-generation credit", description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("fuelEnergyUsePerTick * 3600 / fuelHeatValueJoules", guide);
+        Assert.Contains("not live generation, fuel inventory or sustainable supply", guide);
+        Assert.Contains("do not credit unbuilt/unfuelled generators", guide);
+        Assert.Contains("never substitute a remembered generator rating", guide);
+    }
+
     private sealed class FakeBridgeClient : IBridgeClient
     {
         public PrepareBlueprintBuildRequest? LastBlueprintBuildRequest { get; private set; }

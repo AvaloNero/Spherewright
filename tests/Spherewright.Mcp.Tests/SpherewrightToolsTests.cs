@@ -1730,6 +1730,18 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("drop the recovery intention",guide);
     }
 
+    [Fact]
+    public void PackagedPowerGuidanceSeparatesNativeSpacingAndDynamicCapacity()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("wind-to-wind separation is at least 10.5m", guide);
+        Assert.Contains("Check all planned pairs", guide);
+        Assert.Contains("does not authorize moving or rebuilding successful objects", guide);
+        Assert.Contains("current-tick available generation, not immutable installed topology", guide);
+        Assert.Contains("Retain and explain changes", guide);
+        Assert.Contains("ignore shortages", guide);
+    }
+
     private sealed class FakeBridgeClient : IBridgeClient
     {
         public PrepareBlueprintBuildRequest? LastBlueprintBuildRequest { get; private set; }

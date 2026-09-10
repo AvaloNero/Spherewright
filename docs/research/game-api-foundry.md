@@ -2,6 +2,10 @@
 
 ## Baseline and boundary
 
+2026-09-10 recheck: the same Assembly-CSharp SHA-256 below remains installed. `BuildTool_Click.CheckBuildConditions` compares squared projected power-node distance against `110.25` for two wind generators, so separation must be at least10.5m; ordinary connectivity still uses the native connection radius. Independently valid empty-site previews do not include another not-yet-built wind. After two normal wind builds, the original third candidate returned `WindTooClose`; a single revised candidate at13.3088m from the first node passed fresh native preparation without changing the two built objects. This is a preview, not third-node construction.
+
+`PowerSystem.GameTick` sums each generator's current `EnergyCap_Wind/PV/Gamma/GTH/Fuel` result and assigns `PowerNetwork.energyCapacity` after excluding exchanger output. `EnergyCap_Fuel` uses the currently available fuel energy/count and native generation/inc parameters. Therefore this counter is not a fixed installation-capacity fingerprint. Existing network1 was observed at221000 and185000 J/tick with identical members and full served demand; its three thermal entities retained configuration. The caller must retain that dynamic evidence and check actual supply separately, not fail topology audit merely on unequal capacity. No Plugin read/write, hash or action rule was changed.
+
 - DSP `0.10.34.28529`, BepInEx `5.4.17.0`; inspected 2026-09-05.
 - `Assembly-CSharp.dll` SHA-256: `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`.
 - Read-only ILSpy inspection of the local assembly; no decompiled code or game binaries are redistributed.

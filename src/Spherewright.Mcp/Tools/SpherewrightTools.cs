@@ -104,7 +104,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns the current technology, research queue, hash progress, matrix requirements, prerequisites, and unlocked technology states from the current runtime.")]
+    [Description("Returns current technology, research queue, hash progress, requirements, prerequisites and unlock states. completionItemRewards is bounded native completion metadata, not a delivery receipt: null/missing means unknown; an empty list means observed no rewards. Reconcile actual before/after inventory, capacity, unlockTick and action boundaries before attributing a gain. Never replay a completed action or count rewards as handcraft/production; read the Agent playbook for research inventory accounting.")]
     public static async Task<CallToolResult> GetProgressionStateAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,

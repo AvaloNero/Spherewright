@@ -25,6 +25,30 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void TechCompletionRewardsAreDiscoverableAsMetadataNotDeliveryOrProduction()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetProgressionStateAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        var resource = AgentPlaybookResources.GetOpeningMovementPlaybook();
+        Assert.Equal(AgentPlaybookResources.OpeningMovementUri, resource.Uri);
+        foreach (var text in new[] { description, resource.Text })
+        {
+            Assert.Contains("completionItemRewards", text);
+            Assert.Contains("not a delivery receipt", text);
+            Assert.Contains("null/missing means unknown", text);
+            Assert.Contains("empty list means observed no rewards", text);
+            Assert.Contains("unlockTick", text);
+            Assert.Contains("Never replay a completed action", text);
+        }
+        Assert.Contains("not handcraft or production", resource.Text);
+        Assert.Contains("capacity overflow", resource.Text);
+        Assert.Contains("multiple possible sources", resource.Text);
+        Assert.Contains("at most32 entries", resource.Text);
+        Assert.Contains("must not create or backfill a first-production Journal event", resource.Text);
+    }
+
+    [Fact]
     public void StalledMoveGuidanceIncludesSmallAndCoincidentFactoryObjects()
     {
         var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;

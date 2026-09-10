@@ -313,6 +313,8 @@ internal sealed partial class GameStateReader
                     .OrderBy(id => id)
                     .ToList(),
                 UnlockRecipeIds = (tech.UnlockRecipes ?? Array.Empty<int>()).OrderBy(id => id).ToList(),
+                CompletionItemRewards = TechCompletionRewardCatalog.Capture(
+                    tech.AddItems, tech.AddItemCounts, itemId => LDB.items.Select(itemId)?.name),
             };
 
             var techItems = tech.Items ?? Array.Empty<int>();

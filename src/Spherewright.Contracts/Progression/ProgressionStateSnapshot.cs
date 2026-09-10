@@ -54,6 +54,18 @@ public sealed class TechStateSnapshot
     public List<TechMatrixRequirement> MatrixRequirements { get; set; } = new List<TechMatrixRequirement>();
 
     public List<TechItemRequirement> ItemRequirements { get; set; } = new List<TechItemRequirement>();
+
+    // Native completion metadata, not a receipt. Null/missing is unknown; [] is observed no rewards.
+    public List<TechCompletionItemReward>? CompletionItemRewards { get; set; }
+}
+
+public sealed class TechCompletionItemReward
+{
+    public int ItemId { get; set; }
+
+    public string Name { get; set; } = string.Empty;
+
+    public int Count { get; set; }
 }
 
 public sealed class TechMatrixRequirement

@@ -18,6 +18,8 @@
 - 根因边界：当前DLL确认`UnlockTech`读取`TechProto.AddItems/AddItemCounts`并通过`GainTechAwards`→`Player.TryAddItemToPackage`发放原生奖励；现有科技DTO只含科技状态、前置、解锁配方和研究预算，不含奖励元数据。因此跨tick检查不能总假设非动作物品完全不变，但也不能按物品名称/时间巧合自动认领增量。
 - 下一最小修复：在既有owned主线程progression读取中补充有界、完整、nullable的奖励表，未知与无奖励分开；只读目录不是已收到证明。结合真实unlockTick、原始动作终态、前后全库存及容量后再核销，不写库存、不改hash或放宽未知结果规则。当前1501具体奖励表及修复后实机仍待。关联EXP-288。
 
+- 2026-09-10修复状态`fixed_offline_live_pending`：新增`TechStateSnapshot.completionItemRewards`，现有owned主线程读取精确原生数组，经Core最多32条的整表校验深复制；null/缺失与已观察空表分离，错配/未知项/非法数量/超限不截断，保留顺序和重复项。现有MCP描述、嵌入/包内playbook及协议吸收奖励非投递回执、非首次生产的边界，没有新工具或写入/hash修改。新增21测试，完整Release零警告错误、1714测试（57 Contracts/1548 Core/109 MCP）通过；仅离线实现，当前1501奖励核销仍待同批冷部署实读。
+
 ## IFX-095 — 调用方将 Governor 历史重置原因误算为新失败
 
 - 首见：2026-09-10。状态 `fixed_local_live` 仅指私有只读采样器；公开指南更新已离线验证，尚未冷部署。

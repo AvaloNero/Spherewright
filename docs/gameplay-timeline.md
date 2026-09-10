@@ -3,6 +3,8 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 空仓回收原生预检正反例通过：位移待归因期间只读检查，不提交游戏动作。root raw-591eeb75在当前安装cd83b28上fresh预检：已接线燃料仓3064被INVALID_REQUEST拒绝；空仓3074通过prepare/commitAllowedNow，预算为正常返还一个2101。计划返还不是已返还，3074仍在原处，旧燃料仓不动。前后玩家stateHash、双仓配置/连接、Journal和revision1不变，gameWrites0；tick41336483、primary41312641/J78/accepted10保持。229358f的CI34495717396已成功，十写位置门仍待用户确认后重验，不归零、不沿用本次token、不宣称回收或重建完成。
+
 2026-09-10 / 空仓修复冷部署通过、恢复后位移待归因：root raw-ca0b59fe正常关闭已保存DSP、保留可恢复备份并安装cd83b28同批228文件。raw-0d23af19证明实际安装MCP64/1/66807、全哈希、新Plugin认证、纯stdout及exit0；786b1cb远端/CI34494954143成功。Luna仅protected resume 7d8fa471，raw-resumef3af9f1c由41312610恢复并自动重存41312641，首个玩家读数41312664与保存位置相同。
 
 root十写审计raw-0aee238a已核十份唯一原始/保留的退出前fresh收据、全3074实体/5960互返边/25详情及玩家完整物品，但41317441玩家位置较恢复首读变化7.594354m，故在位置门停止，未宣称完整审计通过或归零。raw-8cec9cc5于41325406再次原地Walk0，完整库存/J78、五网满供、零prebuild和healthy/revision1保持；没有Agent Move或施工提交。已询问用户是否手动移动，尚未归因，不能称序列化误差、回档错误或传送。accepted10保持冻结，下一先确认变化来源并fresh核销，再预检/回收3074；不重开档、不重放恢复，未证明空仓回收live或重氢产出。

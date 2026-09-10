@@ -3,6 +3,10 @@
 更新时间：2026-09-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-10 / 空仓修复冷部署通过、恢复后位移待归因：root raw-ca0b59fe正常关闭已保存DSP、保留可恢复备份并安装cd83b28同批228文件。raw-0d23af19证明实际安装MCP64/1/66807、全哈希、新Plugin认证、纯stdout及exit0；786b1cb远端/CI34494954143成功。Luna仅protected resume 7d8fa471，raw-resumef3af9f1c由41312610恢复并自动重存41312641，首个玩家读数41312664与保存位置相同。
+
+root十写审计raw-0aee238a已核十份唯一原始/保留的退出前fresh收据、全3074实体/5960互返边/25详情及玩家完整物品，但41317441玩家位置较恢复首读变化7.594354m，故在位置门停止，未宣称完整审计通过或归零。raw-8cec9cc5于41325406再次原地Walk0，完整库存/J78、五网满供、零prebuild和healthy/revision1保持；没有Agent Move或施工提交。已询问用户是否手动移动，尚未归因，不能称序列化误差、回档错误或传送。accepted10保持冻结，下一先确认变化来源并fresh核销，再预检/回收3074；不重开档、不重放恢复，未证明空仓回收live或重氢产出。
+
 2026-09-10 / 空仓回收修复部署前保存通过：Luna仅save b90b35c6于41312610成功，raw-5cf4f305；root raw-4981cae2于41320582核前七个已保留跨进程收据、本进程恢复与保存原始/fresh终态、完整3074实体/5960互返边/25详情、全部玩家120氢/J78及五网。3073/3074空载未接线、recipe0保持，accepted9/revision2不归零；下一次恢复计为第十写，先审计后再施工。
 
 cd83b28空仓正常回收修复已推送，CI34493678556成功。raw-0ffd2b9a同批228文件经locked restore/full Release/test/publish，1797项通过；raw-e63659cc staged MCP64工具/1资源/66807字符指南、stdout纯净/exit0通过。此时Plugin仍e4e12ff，以上不是新代码已安装或仓库回收live。下一仅正常关闭、同批部署、protected resume，旧成功产线/火电和对撞机不重做。

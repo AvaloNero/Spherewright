@@ -3,6 +3,12 @@
 更新时间：2026-09-11（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-11 / 氢输入预约按三动作完成：root fresh native prepare后Luna raw-e928a01e仅执行一次有限计划。adea4441在43925695正常锁住3074全部30个D2格；cee263e8在43925797只取20D2到玩家，仓585→565；a2c02d80在43925877根据新状态预约实际空出的原生第0格为H，其他29格保持D2。每次新prepare/唯一commit/terminal，原四个端口、同步仓count/inc和玩家守恒，无Move、建造、保存、额外催化H或循环取料。
+
+root raw-5d1514be于43942403独立核三原始/fresh终态及顺序、全3402实体/6628互返边/18详情/4真实持槽、完整玩家净+20D2、J83与两网；29仓储Core、8私有计划和21action-client测试通过。氢实际进入预约格到20，D2仓重新增长至580，说明入口容量修复有效；raw-4b69f82e随后看到对撞机D2出口99，又受缺少消费者限制。不能把这段有限恢复当持续供给，也不能再取一批D2来重跑空窗实验。accepted3/revision6不归零，primary43874376未覆盖本批。
+
+下一接实际r41燃料棒消费者，目标1棒/min需D2 10/min、钛合金0.5/min和超级磁场环0.5/min；当前原钛合金炉及供料仓无所需原料、无现成自动环产线，不能把历史库存或Foundry四层只读物料草案当建成。调用方只读审计先后暴露混合action访问nullable配置回执和错误使用working名称的展示问题；已按actionKind分支、对照DTO的isWorking，未重放任何游戏动作，最终完整审计通过。既有成功送料线保留。
+
 2026-09-11 / 最新指南同批冷部署、同档恢复与十写审计闭合：b806cf1完整locked restore/Release构建零警告错误，1799测试（58 Contracts/1626 Core/115 MCP）通过；4个Plugin侧文件与224个MCP文件同源逐个哈希核对。安装态raw-54965a4b认证到新Plugin，64工具/1资源、68175字符playbook和现有power-summary新说明均可读取，stdout纯净且正常exit0；这是本机开发安装，不是最终发行包或异机验收。
 
 第九次accepted是5c5eefdd普通保存43874344，root raw-6f844f01先核九收据和全场景，再正常关闭、保留旧批次备份并冷部署；第十次4551e591仅走ticket绑定primary的protected resume，重新保存43874376。root raw-b400151e在43880011独立核九个旧session原始/fresh终态与新恢复终态、全3402对象/6628互返边/55关键详情/17真实持槽、全背包inc、Walk/静止/J83原身份和durable边界、两网满供。首次恢复位置差0.102mm，无预建筑、重复扣料/实体或额外催化H；accepted10在本次审计commit/push后才归零，新revision1。3074仍585D2，六热电当前发电0属已知缺氢死锁，不被写成持续生产或恢复失败。

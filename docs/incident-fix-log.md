@@ -14,6 +14,8 @@
 
 ## IFX-106 — 私有执行器的离线开关被导入脚本覆盖
 
+2026-09-11后缀恢复实测：02dcd76推送/CI通过后Luna raw-93d63746只做r85/r88两步，root raw-fb3d1e72于44129317核十原始/fresh终态、全3405实体/6632边/17详情和完整玩家/J83；不重放原五笔。2个显式模式拒绝/5预算私有检查与21action-client通过。有限后缀闭环已验证，当前30普通带/8高速；仍未保存，不将本例外推全部历史私有脚本已安全。
+
 - 首见：2026-09-11。root对新本地备料脚本请求离线检查，dot-source的旧helper含同名ValidateOfflineOnly参数，默认false覆盖调用方true，意外进入真实取料/加工。此五次执行来自主会话而非Luna，违反既定执行分工；不是用户另行授权，也不是Plugin绕过prepare/commit。
 - 处置：立即中断调用方进程而未关闭DSP。raw-cf346391记录三笔原生transfer和r5/r84两次handcraft，5个accepted均有原始终态；不重跑原脚本。root raw-cb0fd919于44102839核累计8个原始/fresh成功终态、全3405实体/6632边/17详情、完整玩家count/inc、源仓双边守恒、J83和两网满供。没有construction、额外投料、保存、quarantine或outcome_unknown，accepted8/revision30保留。
 - 私有修复：任务专属模式名，在任何导入前快照并校验三模式互斥；无参数不再执行，真正执行须显式开关。4项无模式/冲突模式拒绝、9项离线配方预算以及21项现有action-client检查通过；修复不改变Plugin/MCP能力或游戏动作语义。开发规范同步要求此入口隔离。

@@ -138,6 +138,8 @@ prepare 必须无游戏副作用，返回短期计划、真实资源预算、完
 
 accepted 之后不得因为本地超时、输出格式错误或响应丢失而换键重做。先用同一 action ID/幂等键或 fresh 双边状态核销；只有确定未接受的 prepare/commit 拒绝才允许重新 inspect 和新建计划。
 
+私有实机执行脚本同样必须显式选择执行模式，不能无参数默认写游戏。offline/preview/execute在任何dot-source前快照并校验互斥；使用任务专属参数名，不能让导入脚本的同名param覆盖离线开关。离线/预览测试不获游戏commit授权；先验证无模式、冲突模式会在导入前拒绝，离线模式在导入后仍零游戏调用。若调用方意外进入执行或被中断，冻结并核销所有已接受action，保留真实执行者和计数，只把已证明未执行的后缀重新交给Luna，禁止重跑原脚本。参见IFX-106/EXP-299。
+
 合法动作可以跨多个游戏 tick 处于 queued、executing 或 waiting 状态。调用方取消等待不能暗中撤销已经开始的普通游戏过程。无法证明 expected after 时返回 outcome unknown 并冻结后续写入；不得猜测回滚玩家、库存、科技或工厂字段。
 
 state hash 使用版本化、无歧义规范编码；列表 cursor 绑定 session、planet、过滤器、快照身份、offset 和 expiry。详情读取与 prepare 不能依赖分页快照继续代表实时状态。

@@ -12,6 +12,15 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-108 — 私有独立带请求守卫在StrictMode下读取缺省可选键
+
+- 首见：2026-09-12。Luna raw-c755aee5完成两取料与r85×2后，root五步脚本首建前抛出缺少sourceObjectId属性；没有带段prepare/commit。
+- 根因：独立带的真实请求只含preferredPosition/pathEnd，不含可选源/目标ID。附加安全守卫使用点语法直接访问缺省hashtable键，在导入的StrictMode下抛错。原26项测试检查计划/材料/结果，不经过该请求守卫。
+- 处置：冻结并核销成功前缀。root raw-21acbeb5于47386313核八累计终态、65详情、完整物资/inc和原J84/两网，accepted8/revision33保持；仅新增2普通分拣器，42带不变，无预建筑、隔离或未知结果。
+- 修正：纯调用方守卫先检查ContainsKey再索引读取；缺省/整数0允许，非零、null、字符串和数组拒绝。14项StrictMode请求形状回归复现旧错误并验证修正，80带Core/4Contracts及21action-client通过；没有修改Plugin/MCP或放宽原生规则。
+- 后续：保留旧五步脚本作为已执行记录，不重跑；仅续未提交两段4NEW，实际调用和十写审计另验，材料不重取/重搓。
+- 状态：`fixed_offline_live_pending`；关联EXP-200/299、存档日记001。
+
 ## IFX-107 — 私有路径结果重复包装导致成功前缀后的尾端提取失败
 
 2026-09-12后缀实机复验：dee5beb推送/CI通过后，Luna raw-02cde2f4只从唯一3638续6带及独立2带，两原生终态47219900/47221750成功，单次接收/扁平ID检查与最终汇总正常。root raw-75633d61核四累计终态、3659实体/7136互返边/63详情及玩家/J84/两网，原34成功带无重放。24后缀/三入口、13形状与136带Core、21action-client通过；本私有后缀`fixed`，不声称所有旧执行器已整改。未保存或供钛，后续五连接与保存恢复仍另验。

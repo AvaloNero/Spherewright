@@ -7,7 +7,7 @@ namespace Spherewright.Bridge.Core.Tests;
 public sealed class StorageConfigurationPolicyTests
 {
     private static readonly IReadOnlyDictionary<int, int> Sizes = new Dictionary<int, int>
-        { [1000] = 20, [1114] = 20, [1115] = 100, [1120] = 20 };
+        { [1000] = 20, [1114] = 20, [1115] = 100, [1120] = 20, [1121] = 20 };
     private static StorageUiGrid Grid(int item = 0, int count = 0, int inc = 0, int filter = 0) =>
         new(item, count, inc, filter, item == 0 ? 0 : Sizes[item]);
     private static StorageUiState State(params StorageUiGrid[] grids) => new("default", 0, grids);
@@ -69,6 +69,37 @@ public sealed class StorageConfigurationPolicyTests
             StorageConfigurationOperations.FilterEmptyOrMatching, filter: 1000));
         Assert.Equal("storage_configuration_unchanged", error.Message);
         Assert.Equal(hash, StorageConfigurationPolicy.Fingerprint(before));
+    }
+
+    [Fact]
+    public void PartlyFilledOutputStackDoesNotProvideAMixedInputReservation()
+    {
+        // The live failure had585 deuterium in30 grids. Fifteen free positions
+        // in its last stack are not a grid that can admit hydrogen.
+        var occupied = State(Enumerable.Range(0, 30)
+            .Select(i => Grid(1121, i == 29 ? 5 : 20)).ToArray());
+        var locked = Project(occupied, StorageConfigurationOperations.LockOccupied);
+        Assert.Equal(585, locked.Grids.Sum(grid => grid.Count));
+        Assert.All(locked.Grids, grid => Assert.Equal(1121, grid.Filter));
+        var error = Assert.Throws<ArgumentException>(() => Project(locked,
+            StorageConfigurationOperations.FilterEmptyOrMatching, filter: 1120));
+        Assert.Equal("storage_configuration_unchanged", error.Message);
+
+        // A separate post-transfer fixture, not permission to mutate storage
+        // or an assumption about native transfer order. Live action and fresh
+        // evidence must establish the emptied grid before this projection.
+        var postTransfer = new StorageUiState("filtered", 0,
+            new[] { Grid(1121, filter: 1121) }.Concat(locked.Grids.Skip(1)));
+        var reserved = Project(postTransfer,
+            StorageConfigurationOperations.FilterEmptyOrMatching, filter: 1120);
+        Assert.Equal(1120, reserved.Grids[0].Filter);
+        Assert.Equal(0, reserved.Grids[0].Count);
+        Assert.Equal(565, reserved.Grids.Sum(grid => grid.Count));
+        Assert.Equal(postTransfer.Grids.Select(grid => grid.Count), reserved.Grids.Select(grid => grid.Count));
+        Assert.Equal(postTransfer.Grids.Select(grid => grid.Inc), reserved.Grids.Select(grid => grid.Inc));
+        Assert.All(reserved.Grids.Skip(1), grid => Assert.Equal(1121, grid.Filter));
+        Assert.NotEqual(StorageConfigurationPolicy.Fingerprint(locked),
+            StorageConfigurationPolicy.Fingerprint(postTransfer));
     }
 
     [Fact]

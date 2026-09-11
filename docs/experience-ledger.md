@@ -32,6 +32,8 @@
 
 同批推送网络复验（`observed`，不归因为游戏或TLS缺陷）：05cd0d6的普通及Windows TLS重试仍出现reset/443超时，GitHub API确认远端未更新；SSH备用入口因无已知主机密钥按StrictHostKeyChecking拒绝，未跳过。从HTTPS DNS查询获得另一github.com地址后，依据本机Git文档仅在单条push用http.curloptResolve指定连接地址，仍保留github.com主机名、完整TLS证书验证和原认证，4.3秒正常推送成功；未改hosts、DNS、remote、全局Git/代理或known_hosts。不永久固定该地址，不把一次成功当网络根因证明，后续必须复核真实远端SHA和CI。
 
+2026-09-11 / 推送备用通道复验（`validated`限本机本次传输，补充上条）：6947508的HTTPS在新DNS候选和默认线路仍出现连接reset/低速终止；本机Git仅支持schannel，不能把切换OpenSSL当通用办法。每次先等原命令明确终止并复核远端未更新，再换通道，不凭超时重放。通过[GitHub官方元数据](https://api.github.com/meta)和[SSH 443说明](https://docs.github.com/en/authentication/troubleshooting-ssh/using-ssh-over-the-https-port)核对公开ED25519主机密钥，只写入忽略目录下本次专用公钥文件，以StrictHostKeyChecking=yes、BatchMode=yes验证已有SSH身份成功；单条Git命令临时映射到ssh.github.com:443后正常fast-forward推送，远端精确6947508且CI34618919000成功。未修改remote、全局Git/SSH、用户known_hosts、认证资料或TLS校验，没有force push；专用公钥文件不进入发行包。不能从本次成功推断网络根因或永久信任未来不同公钥，复用时仍检查当前官方密钥、目标仓库、真实远端与CI。最近复验同日。
+
 2026-09-11 / EXP-188/208三处涡轮电塔复验（`validated`限正常施工、扣料和主网接入）：raw-237d6a9f三个正常终态建3477–3479，root raw-03f23550于46126787核八收据、全3479/6780边/52详情、完整物资/J83及两网。主网节点仅加3至127、既有351消费者/71发电机不变，旧线路无变化；全部塔材料正常由背包3扣至0，不能把剩余库存字段误解为已建对象数。55供电Core/21action-client/2入口/18计划检查通过，accepted8不重置、primary45973184未保存新增43对象。实际落点、锚点和未来取料几何与原计划一致，但未来分拣器仍须实际位置/槽位/网号/满供验证，不外推完整输送或持续燃料；后续新施工、十写和恢复触发复验，最近复验同日。
 
 2026-09-11 / 三处涡轮通道供电执行边界（`observed`，关联EXP-188/208/299）：raw-1e028e6d在accepted5/revision26的完整85带/4高速/3塔预算下，fresh复验三原有明确2201落点；至对应未来取料点5.551/5.551/5.220m、至既有锚3165/3048/3080为6.395/15.649/15.868m。只批准三次普通建塔，逐对象核成本、原配置/邻边、实际主网节点增量及两网满供，到accepted8即停作阶段审计，不清零。55供电Core/21action-client/2入口/18计划正反检查通过；分拣器尚未出生，几何覆盖不能替代后续真实取料位置/网号/满供读回。不得重做38带和两跨接、追加移动/投料/保存，任一拒绝保留成功前缀并停止；最近复验同日。上项cdd56e3推送曾遇HTTPS reset/443连接超时，Windows TLS后端的单命令重试成功，未改持久配置、认证或关闭证书校验；仅记录该次网络结果，不认定TLS是故障根因。

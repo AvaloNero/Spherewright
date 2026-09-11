@@ -573,6 +573,32 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void PowerGuidanceRequiresNativeMembershipReconciliationAndMeasuredFuelDemand()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var read = provider.GetServices<McpServerTool>()
+            .Single(t => t.ProtocolTool.Name == "spherewright_get_power_summary").ProtocolTool;
+        Assert.True(read.Annotations!.ReadOnlyHint);
+        Assert.Contains("network IDs can be null", read.Description);
+        Assert.Contains("construction can merge networks", read.Description);
+        Assert.Contains("never replay a successful build", read.Description);
+        Assert.Contains("Positive generation is not sustained fuel consumption", read.Description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("Null is not proof of disconnection", guide);
+        Assert.Contains("actual affected consumer/generator memberships", guide);
+        Assert.Contains("an unexplained change still requires stopping", guide);
+        Assert.Contains("Never replay a successful build", guide);
+        Assert.Contains("adding generators does not multiply fuel consumption", guide);
+        Assert.Contains("Declare useful demand and independent measurement windows first", guide);
+        Assert.Contains("extra finite storage does not prove sustained supply", guide);
+        Assert.Contains("throttling below the declared demand", guide);
+        Assert.Contains("Keep failed windows and sampling gaps", guide);
+    }
+
+    [Fact]
     public async Task GovernorExposesReadOnlyDeclaredTargetAndExplicitSource()
     {
         var client = new FakeBridgeClient(SuccessResult());

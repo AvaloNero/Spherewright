@@ -297,7 +297,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns all active local power networks with generation, capacity, demand, served energy, storage, and service ratios from the current runtime.")]
+    [Description("Returns all active local power networks with generation, capacity, demand, served energy, storage, and service ratios from the current runtime. Pure power-node entity network IDs can be null; use fresh consumer/generator membership and this summary. Native tower construction can merge networks: reconcile actual members/topology, never replay a successful build on a caller assertion. Positive generation is not sustained fuel consumption; follow the agent playbook's demand and measurement rules.")]
     public static async Task<CallToolResult> GetPowerSummaryAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,

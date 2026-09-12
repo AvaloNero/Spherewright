@@ -12,6 +12,12 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-118 — OrderedDictionary整数索引被当作位置而非实体键
+
+- 首见：2026-09-12。Luna临时只读收集器先因短函数名R解析为Invoke-History而在本地失败，改用明确名称后，raw-94517132已成功读取3079，随后在OrderedDictionary整数索引处越界；均无游戏写入，不是Plugin拒绝或世界损坏。
+- 根因/修正：PowerShell的有序字典存在整数位置索引重载，不能用稀疏实体ID当位置。root固定后缀使用普通Hashtable、统一Int32键、唯一正ID和32详情上限；显式模式在导入前拒绝缺省调用，复用已成功原始记录，不重写历史或恢复旧token。与IFX-115的Int64/Int32键类型问题分别保留。
+- 验证/状态：`fixed`仅本次私有收集器。六项离线键类型/非法ID/重复/限额检查及解析/无模式入口通过；Luna只执行一次修复后缀raw-7b2716b7，完成22详情与610tick间隔的两功率快照，末读49221324，accepted0/revision15/原J84/primary48796250保持。root独立核原始读数；55项电力/燃料目录Core回归通过。没有公开API变更、游戏prepare/commit、重新开档或持续燃料通过声明。
+
 ## IFX-117 — 从截零的余量字段计算总缺电量
 
 - 首见：2026-09-12。root私有单塔电力预览已正确保持passed=false，但附加headroomAfterSevenSorters字段把总余额显示为−2100 J/t；实际既有网络已经缺1006144 J/t。

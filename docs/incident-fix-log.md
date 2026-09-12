@@ -12,6 +12,19 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-117 — 从截零的余量字段计算总缺电量
+
+- 首见：2026-09-12。root私有单塔电力预览已正确保持passed=false，但附加headroomAfterSevenSorters字段把总余额显示为−2100 J/t；实际既有网络已经缺1006144 J/t。
+- 根因：Foundry的HeadroomAfterPlanPerTick是截零的非负余量，不承载负债。调用方把它当有符号余额，再减七普通分拣器的2100 J/t，丢失既有缺口；Core/Plugin原始DeficitPerTick及满负载拒绝正确，没有写入被错误批准。
+- 修正/验证：私有调用方改为按原始发电、预留、出口、新增基础负载及新增覆盖负载重算有符号余额。raw-fe032b71的原始容量449056/预留1455200保留，原附加−2100字段弃用；raw-cf910384证明正确值−1008244，并覆盖容量、出口、新覆盖负载的增量负例，纳入63项原始/合成检查。
+- 状态：`fixed_offline`仅私有附加预算字段；实际满基础负载缺口仍open，不能把算术修正称作补电。无Plugin/MCP改动、游戏commit或静默覆盖原始证据。
+
+## IFX-116 — 无源传送带的nullable端点被调用方误判为非零身份
+
+- 首见：2026-09-12。raw-1dfe2b0a的A三NEW、B16NEW原生预检均成功，私有water预览脚本却在B提前停止；错误不来自原生放置。
+- 根因/修正：B为sourceBindingMode=none、sourceObjectId=null；PowerShell直接比较null与数值0不等。调用方复用已有Assert-FDPath语义，显式转为数值再核对预定源；真实2298仍必须精确匹配、source preservation和完整路径检查不变，不把任意非零ID归一成空。
+- 验证/状态：`fixed`仅该私有调用方；原A/B计划分别通过核销，null与0的无源正例及错误非零源/绑定/预算/validation负例纳入63检查。后续只从C1运行，raw-1a1fba04八段实际native通过且revision15/J84/背包保持；没有重放原A/B或游戏写入。公开API与Plugin不变。
+
 ## IFX-115 — JSON实体ID与Hashtable键类型不同导致假缺项
 
 - 首见：2026-09-12。石矿同档恢复成功后，root raw-43b8efb1已核全场和438详情；货物循环随后错误报告缺少beltCargo，Luna没有继续游戏写入。

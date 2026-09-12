@@ -112,6 +112,7 @@ public sealed class ProductionOutputState
 
     public long BufferedCount { get; set; }
 
+    // First count that prevents another native batch; zero means unknown.
     public long BufferCapacity { get; set; }
 }
 
@@ -198,7 +199,7 @@ public static class ProductionFaultClassifier
                 input,
                 OverseerFindingKinds.OutputBlocked,
                 OverseerFindingConfidences.Confirmed,
-                $"The output buffer for {DisplayName(blockedOutput.ItemName, blockedOutput.ItemId)} is full.",
+                $"The output buffer for {DisplayName(blockedOutput.ItemName, blockedOutput.ItemId)} cannot admit another native batch.",
                 Evidence("output_buffer_count", blockedOutput.BufferedCount, "items"),
                 Evidence("output_buffer_capacity", blockedOutput.BufferCapacity, "items"));
         }

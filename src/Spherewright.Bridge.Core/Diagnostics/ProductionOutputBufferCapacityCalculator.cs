@@ -4,6 +4,8 @@ public static class ProductionOutputBufferCapacityCalculator
 {
     public const int MinerOutputThreshold = 50;
 
+    // Legacy capacity name: this is the first buffered count that rejects the
+    // next native batch, not the maximum stock after adding a whole batch.
     public static int CalculateAssemblerCapacity(
         bool isSmeltingRecipe,
         bool isAssemblyRecipe,
@@ -16,10 +18,17 @@ public static class ProductionOutputBufferCapacityCalculator
 
         if (isSmeltingRecipe)
         {
-            return 100;
+            if (productCountPerCycle > 100)
+            {
+                // Such a batch cannot fit even an empty native smelter buffer;
+                // do not invent a positive threshold for unsupported input.
+                throw new ArgumentOutOfRangeException(nameof(productCountPerCycle));
+            }
+
+            return 101 - productCountPerCycle;
         }
 
-        return checked(productCountPerCycle * (isAssemblyRecipe ? 10 : 20));
+        return checked(productCountPerCycle * (isAssemblyRecipe ? 9 : 19) + 1);
     }
 
     public static int CalculateMatrixLabCapacity(int speedOverride)

@@ -25,6 +25,26 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void NativeOutputAdmissionThresholdGuidanceIsDiscoverableWithoutTreatingItAsStorageCapacity()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetOverseerProductionAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        foreach (var text in new[] { description, guide })
+        {
+            Assert.Contains("output_buffer_capacity", text);
+            Assert.Contains("next-batch admission threshold", text);
+            Assert.Contains("not physical storage capacity", text);
+            Assert.Contains("19", text);
+        }
+        Assert.Contains("101-q", guide);
+        Assert.Contains("9*q+1", guide);
+        Assert.Contains("19*q+1", guide);
+        Assert.Contains("Do not clear storage", guide);
+    }
+
+    [Fact]
     public void LongCycleOutputBlockageGuidanceIsDiscoverableWithoutClaimingSustainableSupply()
     {
         var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetOverseerProductionAsync))!;

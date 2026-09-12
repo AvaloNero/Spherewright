@@ -4,6 +4,10 @@
 
 ## 2026-09-13：长周期制造台停机满输出被固定短窗永久跳过
 
+IFX-124实现前再次只读反编译当前同哈希AssemblerComponent.InternalUpdate：单产物和多产物分支均先令replicating=false再检查每个输出。Smelt拒绝produced+productCount>100；Assemble拒绝produced>9×productCount；Refine/Particle/Chemical及其他分支拒绝produced>19×productCount。因此支持的正批量下，第一个被拒绝的整数分别是101−productCount、9×productCount+1、19×productCount+1；不是100/10批/20批的物理存量上界。诊断原evidence键output_buffer_capacity保持兼容，但应解释为下一批生产的拒绝阈值，不能当作仓库容量或缺少的件数。当前smelt批量超过100时连空缓冲也拒绝；现有正容量契约不能表达这种零阈值，须明确拒绝该异常输入，不能伪造一个正阈值。矩阵实验室和采矿机原阈值不在此修复范围。
+
+本次离线实现已经采用上述精确阈值，取代下文IFX-123首轮保留的整批限制；没有改变DSP调用或原生数据。63相关测试先16失败后全过，包含9组逐整数比较、checked边界、18/19/20棒集成及原未知/工作中/供电守卫。全Debug/Release1846、完整当前DSP Release零警告错误、源码实际MCP64/1/70562字符指南/纯stdout通过；当前安装仍133d96f，新阈值的冷部署/live正例尚待。
+
 同日冷部署后复验：133d96f同源228文件和实际安装MCP64/1/69804通过，原主档51590563恢复并重存51590594。raw-3512b944的实际MCP窗口51599099–51599698中3403/r41产0、diagnostic coverage complete但无finding；前后详情均停机/满电/输出19，raw-a1af1f0c于51605434再次确认。不是原20棒测试前提，不记修复正例。原生>9×productCounts的整数拒绝阈值对批量2是19，现有2×10整批上界不等于该阈值；IFX-124记录这个待修缺口，下一应复核分支后修计算器，而非等待或制造20棒场景。没有新增DSP调用或游戏写入。
 
 IFX-123现场为3403/r41：raw-3658d4fc于51465517读到replicating对应的isWorking=false、time/timeSpend=7200000/7200000、1802输出20、三种输入齐备且供电比1；后续600tick原生统计产出0，既有诊断却无finding。当前Assembly-CSharp SHA-256再次核为`AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，并重新从该DLL只读反编译`AssemblerComponent`：`InternalUpdate`在time>=timeSpend时先令replicating=false，Assemble输出满足produced>productCounts×9即返回0，未开始下一轮。r41每批2棒，满缓冲20足以证明原生拒绝；当前7500速度对应960tick一轮，固定600tick诊断永远达不到旧整周期门。

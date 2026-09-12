@@ -7,9 +7,15 @@ public sealed class ProductionOutputBufferCapacityCalculatorTests
 {
     [Theory]
     [InlineData(true, false, 1, 100)]
-    [InlineData(false, true, 2, 20)]
-    [InlineData(false, false, 3, 60)]
-    public void CalculateAssemblerCapacity_MatchesCurrentRuntimeGates(
+    [InlineData(true, false, 2, 99)]
+    [InlineData(true, false, 100, 1)]
+    [InlineData(false, true, 1, 10)]
+    [InlineData(false, true, 2, 19)]
+    [InlineData(false, true, 3, 28)]
+    [InlineData(false, false, 1, 20)]
+    [InlineData(false, false, 2, 39)]
+    [InlineData(false, false, 3, 58)]
+    public void CalculateAssemblerCapacity_ReturnsFirstNativeRejectedOutputCount(
         bool isSmelting,
         bool isAssembly,
         int perCycle,
@@ -21,6 +27,43 @@ public sealed class ProductionOutputBufferCapacityCalculatorTests
                 isSmelting,
                 isAssembly,
                 perCycle));
+    }
+
+    [Theory]
+    [InlineData(true, false, 1)]
+    [InlineData(true, false, 2)]
+    [InlineData(true, false, 100)]
+    [InlineData(false, true, 1)]
+    [InlineData(false, true, 2)]
+    [InlineData(false, true, 3)]
+    [InlineData(false, false, 1)]
+    [InlineData(false, false, 2)]
+    [InlineData(false, false, 3)]
+    public void CalculateAssemblerCapacity_MatchesNativeStrictComparisonAtEveryBufferCount(
+        bool isSmelting, bool isAssembly, int perCycle)
+    {
+        var threshold = ProductionOutputBufferCapacityCalculator.CalculateAssemblerCapacity(
+            isSmelting, isAssembly, perCycle);
+
+        for (var buffered = 0; buffered <= 120; buffered++)
+        {
+            var nativeRejects = isSmelting
+                ? buffered + perCycle > 100
+                : buffered > perCycle * (isAssembly ? 9 : 19);
+            Assert.Equal(nativeRejects, buffered >= threshold);
+        }
+    }
+
+    [Theory]
+    [InlineData(true, 9)]
+    [InlineData(false, 19)]
+    public void CalculateAssemblerCapacity_PreservesCheckedThresholdBoundary(bool isAssembly, int multiplier)
+    {
+        var largestBatch = (int.MaxValue - 1) / multiplier;
+        Assert.Equal(checked(largestBatch * multiplier + 1),
+            ProductionOutputBufferCapacityCalculator.CalculateAssemblerCapacity(false, isAssembly, largestBatch));
+        Assert.Throws<OverflowException>(() =>
+            ProductionOutputBufferCapacityCalculator.CalculateAssemblerCapacity(false, isAssembly, largestBatch + 1));
     }
 
     [Theory]
@@ -45,6 +88,8 @@ public sealed class ProductionOutputBufferCapacityCalculatorTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             ProductionOutputBufferCapacityCalculator.CalculateAssemblerCapacity(false, true, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            ProductionOutputBufferCapacityCalculator.CalculateAssemblerCapacity(true, false, 101));
         Assert.Throws<OverflowException>(() =>
             ProductionOutputBufferCapacityCalculator.CalculateAssemblerCapacity(false, false, int.MaxValue));
         Assert.Equal(

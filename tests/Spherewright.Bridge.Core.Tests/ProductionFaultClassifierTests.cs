@@ -7,6 +7,29 @@ namespace Spherewright.Bridge.Core.Tests;
 public sealed class ProductionFaultClassifierTests
 {
     [Theory]
+    [InlineData(18, false)]
+    [InlineData(19, true)]
+    [InlineData(20, true)]
+    public void ClassifyPrimary_UsesNativeNextBatchThresholdForPartlyDrainedFuelOutput(int buffered, bool blocked)
+    {
+        var input = StoppedFuelRodInput();
+        input.Outputs[0].BufferedCount = buffered;
+        input.Outputs[0].BufferCapacity = ProductionOutputBufferCapacityCalculator.CalculateAssemblerCapacity(
+            isSmeltingRecipe: false, isAssemblyRecipe: true, productCountPerCycle: 2);
+
+        var finding = ProductionFaultClassifier.ClassifyPrimary(input);
+
+        Assert.Equal(blocked ? OverseerFindingKinds.OutputBlocked : null, finding?.Kind);
+        if (blocked)
+        {
+            Assert.Contains(finding!.Evidence, entry =>
+                entry.Metric == "output_buffer_count" && entry.NumericValue == buffered);
+            Assert.Contains(finding.Evidence, entry =>
+                entry.Metric == "output_buffer_capacity" && entry.NumericValue == 19);
+        }
+    }
+
+    [Theory]
     [InlineData(960)]
     [InlineData(1200)]
     [InlineData(3600)]
@@ -24,7 +47,7 @@ public sealed class ProductionFaultClassifierTests
         Assert.Contains(finding!.Evidence, entry =>
             entry.Metric == "output_buffer_count" && entry.NumericValue == 20);
         Assert.Contains(finding.Evidence, entry =>
-            entry.Metric == "output_buffer_capacity" && entry.NumericValue == 20);
+            entry.Metric == "output_buffer_capacity" && entry.NumericValue == 19);
     }
 
     [Theory]
@@ -64,7 +87,7 @@ public sealed class ProductionFaultClassifierTests
                 break;
             case "unpowered": input.PowerServeRatio = .5; break;
             case "unknown_capacity": input.Outputs[0].BufferCapacity = 0; break;
-            case "not_full": input.Outputs[0].BufferedCount = 19; break;
+            case "not_full": input.Outputs[0].BufferedCount = 18; break;
             case "no_output": input.Outputs = Array.Empty<ProductionOutputState>(); break;
             case "no_elapsed_ticks": input.WindowElapsedGameTicks = 0; break;
         }

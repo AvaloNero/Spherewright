@@ -4,6 +4,8 @@
 
 ## 2026-09-13：长周期制造台停机满输出被固定短窗永久跳过
 
+同日冷部署后复验：133d96f同源228文件和实际安装MCP64/1/69804通过，原主档51590563恢复并重存51590594。raw-3512b944的实际MCP窗口51599099–51599698中3403/r41产0、diagnostic coverage complete但无finding；前后详情均停机/满电/输出19，raw-a1af1f0c于51605434再次确认。不是原20棒测试前提，不记修复正例。原生>9×productCounts的整数拒绝阈值对批量2是19，现有2×10整批上界不等于该阈值；IFX-124记录这个待修缺口，下一应复核分支后修计算器，而非等待或制造20棒场景。没有新增DSP调用或游戏写入。
+
 IFX-123现场为3403/r41：raw-3658d4fc于51465517读到replicating对应的isWorking=false、time/timeSpend=7200000/7200000、1802输出20、三种输入齐备且供电比1；后续600tick原生统计产出0，既有诊断却无finding。当前Assembly-CSharp SHA-256再次核为`AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，并重新从该DLL只读反编译`AssemblerComponent`：`InternalUpdate`在time>=timeSpend时先令replicating=false，Assemble输出满足produced>productCounts×9即返回0，未开始下一轮。r41每批2棒，满缓冲20足以证明原生拒绝；当前7500速度对应960tick一轮，固定600tick诊断永远达不到旧整周期门。
 
 修复只在Core允许已经停止、known-zero、供电已知充足、输出达到既有满缓冲阈值的非采矿设备报告output_blocked。完整周期、原窗口、原输出数量和保守整批阈值不改；对未知上游历史速率、正在工作、未知/不足供电、未满输出及其他故障仍保留原门。本切片不扩展到部分腾位时的每一个原生批量准入阈值，不把600tick零产本身当故障。没有新增DSP访问、公开观察字段、动作或工具；MCP说明及嵌入playbook同步。19项新增Core和1项MCP回归后，Debug/Release各1825测试通过、完整当前DSP Release零警告错误；冷部署及同一现场的新诊断读回仍待，现有实机反例不冒充修复后正例。

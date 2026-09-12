@@ -12,12 +12,18 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-124 — 整批缓冲上界被当作原生开工拒绝阈值
+
+- 首见：2026-09-13，133d96f同批冷部署/原档恢复后。实际安装MCP raw-3512b944在51599698返回ready600tick、3403/r41产0、无finding；前后均isWorking=false、供电比1、三种输入齐备、输出19。raw-a1af1f0c于51605434复核19/停机；没有游戏写入或恢复异常。
+- 根因边界：当前DLL的Assemble输出门为produced>productCounts×9，批量2的第一拒绝整数是19。ProductionOutputBufferCapacityCalculator仍返回2×10=20，之前测试名MatchesCurrentRuntimeGates过度宣称精确原生门；IFX-123已明确保留这一保守整批限制，因此不能把这次19的响应冒充其20棒正例。
+- 状态：`open`。下一基于当前DLL复核相关配方分支，修正既有阈值计算及边界/溢出回归，不新增字段/工具或改原生物料。不等待“更容易通过的20”替代修复，不重放施工、恢复或原只读验收。持续燃料仍另验。关联IFX-123、EXP-196/208/299。
+
 ## IFX-123 — 固定600tick诊断永久跳过长周期制造台的停机满输出
 
 - 首见：2026-09-13，自动燃料首产后。3403/r41输出20、三种输入齐备、isWorking=false、完整进度和供电比1，但产量0时仍无output_blocked。源口与旧产线已正常保存51439686/J85；不能据空finding宣布持续供给，也不能直接按首窗重氢负值扩建。
 - 根因：ProductionFaultClassifier在所有分类之前要求窗口覆盖完整设备周期。当前r41/MkI一轮960tick，大于诊断固定600tick；即使反复读取也永远不能通过。当前DLL原生输出门的独立复核见game-api-overseer。先加测试，960/1200/3600tick三个反例均复现为错误null。
 - 修复：仅允许停止、known-zero、供电已知充足、输出达到既有满缓冲阈值的非采矿设备越过整周期等待；缺料、物流、未知上游速率、未完成循环及其他分类不放宽。无新游戏读取/写入、工具、字段或白名单。包内playbook和MCP描述明确此边界，缺失finding不是健康或配平证明。
-- 验证/状态：`fixed_offline_live_pending`。新增19 Core+1 MCP回归，Debug/Release各1825通过（58 Contracts/1645 Core/122 MCP），完整当前DSP Release为0警告/0错误。仍待冷部署、protected resume及真实MCP原现场读回；没有新ZIP或持续燃料验收。既有输出阈值是保守整批满缓冲，不宣称覆盖部分腾位下的所有原生准入拒绝点。关联EXP-196/208/299。
+- 验证/状态：`fixed_offline_live_pending`。新增19 Core+1 MCP回归，Debug/Release各1825通过（58 Contracts/1645 Core/122 MCP），完整当前DSP Release为0警告/0错误。2026-09-13已完成133d96f同源228文件冷部署、实际安装MCP64/1/69804与同档51590563→51590594恢复，相关34项Release复验通过；新诊断正例仍未取得，19棒现场暴露IFX-124，不能改称原20棒案例通过。没有最终ZIP或持续燃料验收。关联EXP-196/208/299。
 
 ## IFX-122 — 私有目录读取漏传当前星球，被正确拒绝为STALE_STATE
 

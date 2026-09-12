@@ -12,11 +12,18 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-122 — 私有目录读取漏传当前星球，被正确拒绝为STALE_STATE
+
+- 首见：2026-09-12。raw-309eaf68已读当前session和18对象，get_recipe_catalog空payload被拒绝为“requested planet does not match”。没有prepare/commit、隔离或世界切换。
+- 根因/修正：GetRecipeCatalogOnMainThread接收LocalPlanetRequest并用其PlanetId验证当前owned factory；空对象不是“默认当前星球”。私有调用方改为明确planetId104，并对目录/功率/玩家/实体等本地作用域读取，在发送前拒绝缺省或错误星球。保留原Plugin校验，不放宽identity或增加观察字段。
+- 验证/状态：`fixed`仅私有调用方。15项模拟检查覆盖五种读取的正确星球、缺省和错误星球（后两者零Bridge调用）；raw-2817e8c3修正读取于49845665完整通过，原session/revision1、accepted2、J84和主档49805037保持。错误响应仍保留，不把它转换为虚假的恢复/施工失败。关联EXP-007/188/299。
+
 ## IFX-121 — 私有十写审计已落盘，末尾摘要序列化整数键失败
 
 - 首见：2026-09-12。raw-f63622f3全部十写审计通过，并已写入受保护water-inlet-ten-root-audit记录；最后stdout的ConvertTo-Json因materialNet的Hashtable键为Int32而失败，脚本exit1。此时没有新游戏请求，更不是原生动作或审计断言失败。
 - 根因/修正：内部物品计数以整数键索引正确，但直接把它作为JSON对象输出不符合键必须为字符串的要求。保护记录已由既有安全序列化转换保留正确内容；root独立读取该实际落盘记录，确认passed/tick/十终态/计数齐备，没有重放游戏动作或再做全厂读取。仅将末尾显示映射为明确字符串键，内部计数与守恒判断保持整数键。
 - 验证/边界：原62项十写离线检查包含新增显示往返，2001/2011/2201净−3/−7/−1保持；原实机记录为49755342/accepted10/revision19、全3839实体/7510互返边/667详情、J84及两网。状态`fixed`仅私有摘要；首次live运行的exit1仍如实保留，不改写原raw或宣称第二轮live执行。关联EXP-007/219/299。
+- 2026-09-12再次复验：raw-9c969bd8的两次酸输送备料预检及保护成功记录已完成，末尾显示因嵌套craft.inputs整数键重现同错。改走现有ConvertTo-EvidenceSafeValue后再序列化；51备料离线包含嵌套数量往返，root只读原成功记录核销49886845/accepted2，不重跑预检或隐藏首次exit1。集合.Count与逐条count的另一离线投影误判也已修正，不能把脚本聚合错误归给原生计划。
 
 ## IFX-120 — 普通分拣器后置检查误用了高速分拣器计时枚举
 

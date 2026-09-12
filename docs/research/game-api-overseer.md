@@ -2,6 +2,12 @@
 
 本文记录 v0.4 只读多行星监督链路采用的当前《戴森球计划》运行时接口。它补充 [game-api-m0.md](./game-api-m0.md)，不改变 owned-world、Unity 主线程或普通玩法写入边界。
 
+## 2026-09-13：长周期制造台停机满输出被固定短窗永久跳过
+
+IFX-123现场为3403/r41：raw-3658d4fc于51465517读到replicating对应的isWorking=false、time/timeSpend=7200000/7200000、1802输出20、三种输入齐备且供电比1；后续600tick原生统计产出0，既有诊断却无finding。当前Assembly-CSharp SHA-256再次核为`AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，并重新从该DLL只读反编译`AssemblerComponent`：`InternalUpdate`在time>=timeSpend时先令replicating=false，Assemble输出满足produced>productCounts×9即返回0，未开始下一轮。r41每批2棒，满缓冲20足以证明原生拒绝；当前7500速度对应960tick一轮，固定600tick诊断永远达不到旧整周期门。
+
+修复只在Core允许已经停止、known-zero、供电已知充足、输出达到既有满缓冲阈值的非采矿设备报告output_blocked。完整周期、原窗口、原输出数量和保守整批阈值不改；对未知上游历史速率、正在工作、未知/不足供电、未满输出及其他故障仍保留原门。本切片不扩展到部分腾位时的每一个原生批量准入阈值，不把600tick零产本身当故障。没有新增DSP访问、公开观察字段、动作或工具；MCP说明及嵌入playbook同步。19项新增Core和1项MCP回归后，Debug/Release各1825测试通过、完整当前DSP Release零警告错误；冷部署及同一现场的新诊断读回仍待，现有实机反例不冒充修复后正例。
+
 ## 2026-09-07：混合入站带的尾端对齐货包观察（实现前证据）
 
 同一当前DLL（0.10.34.28529，Assembly-CSharp SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`，本次再次核验）中，`CargoPath.pathLength`直接返回私有`bufferLength`。`StationComponent.UpdateNeeds()`仅在count<max时把槽itemId加入needs；`UpdateInputSlots(CargoTraffic,SignData[],bool)`仅对Input端调用该path的`TryPickItemAtRear(int[],out int,out byte,out byte)`，成功后写storageIdx=needIdx+1（最后接收槽，不是输入过滤配置）。后者只在`buffer[bufferLength-6]==250`时取对齐的十字节货包，按四位base100货物ID读取，只有物品匹配needs才清除货包/RemoveCargo；不会跳过不需要的尾端货物。

@@ -131,8 +131,26 @@ public static class ProductionFaultClassifier
         Validate(input, minimumPowerServeRatio);
 
         if (!input.IsConfigured
-            || !string.Equals(input.WindowState, OverseerWindowStates.Ready, StringComparison.Ordinal)
-            || input.WindowElapsedGameTicks < input.ExpectedCycleGameTicks)
+            || !string.Equals(input.WindowState, OverseerWindowStates.Ready, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var blockedOutput = input.Outputs.FirstOrDefault(output =>
+            output.BufferCapacity > 0 && output.BufferedCount >= output.BufferCapacity);
+        // Native assembler output gates stop replication independently of the
+        // rolling rate window. A cycle longer than 600 ticks must not hide a
+        // stopped, fully powered, known-zero producer with a proven full buffer.
+        // All other diagnoses retain the complete-cycle observation requirement.
+        var stoppedFullOutputIsKnown = input.WindowElapsedGameTicks > 0
+            && !input.IsResourceExtractor
+            && !input.IsWorking
+            && input.ActualProductionStateKnown
+            && input.ActualProductionPerMinute <= NonZeroRateEpsilon
+            && input.PowerNetworkId.HasValue && input.PowerNetworkId.Value > 0
+            && input.PowerServeRatio.HasValue && input.PowerServeRatio.Value >= minimumPowerServeRatio
+            && blockedOutput is not null;
+        if (input.WindowElapsedGameTicks < input.ExpectedCycleGameTicks && !stoppedFullOutputIsKnown)
         {
             return null;
         }
@@ -174,8 +192,6 @@ public static class ProductionFaultClassifier
             return null;
         }
 
-        var blockedOutput = input.Outputs.FirstOrDefault(output =>
-            output.BufferCapacity > 0 && output.BufferedCount >= output.BufferCapacity);
         if (blockedOutput is not null)
         {
             return Finding(

@@ -6,6 +6,83 @@ namespace Spherewright.Bridge.Core.Tests;
 
 public sealed class ProductionFaultClassifierTests
 {
+    [Theory]
+    [InlineData(960)]
+    [InlineData(1200)]
+    [InlineData(3600)]
+    public void ClassifyPrimary_RecognizesStoppedFullOutputWhenNativeWindowIsShorterThanCycle(long cycleTicks)
+    {
+        var input = StoppedFuelRodInput();
+        input.ExpectedCycleGameTicks = cycleTicks;
+
+        var finding = ProductionFaultClassifier.ClassifyPrimary(input);
+
+        Assert.Equal(OverseerFindingKinds.OutputBlocked, finding?.Kind);
+        Assert.Equal(OverseerFindingConfidences.Confirmed, finding?.Confidence);
+        Assert.Equal(OverseerFindingSeverities.Stopped, finding?.Severity);
+        Assert.Equal(3403, finding?.ObjectId);
+        Assert.Contains(finding!.Evidence, entry =>
+            entry.Metric == "output_buffer_count" && entry.NumericValue == 20);
+        Assert.Contains(finding.Evidence, entry =>
+            entry.Metric == "output_buffer_capacity" && entry.NumericValue == 20);
+    }
+
+    [Theory]
+    [InlineData("warming_up")]
+    [InlineData("discontinuous")]
+    [InlineData("unconfigured")]
+    [InlineData("working")]
+    [InlineData("unknown_rate")]
+    [InlineData("producing")]
+    [InlineData("unknown_power")]
+    [InlineData("disconnected")]
+    [InlineData("invalid_network")]
+    [InlineData("resource_extractor")]
+    [InlineData("unpowered")]
+    [InlineData("unknown_capacity")]
+    [InlineData("not_full")]
+    [InlineData("no_output")]
+    [InlineData("no_elapsed_ticks")]
+    public void ClassifyPrimary_DoesNotInferShortWindowBlockageWithoutCompleteStoppedOutputEvidence(string missingEvidence)
+    {
+        var input = StoppedFuelRodInput();
+        switch (missingEvidence)
+        {
+            case "warming_up": input.WindowState = OverseerWindowStates.WarmingUp; break;
+            case "discontinuous": input.WindowState = OverseerWindowStates.Discontinuous; break;
+            case "unconfigured": input.IsConfigured = false; break;
+            case "working": input.IsWorking = true; break;
+            case "unknown_rate": input.ActualProductionStateKnown = false; break;
+            case "producing": input.ActualProductionPerMinute = 2; break;
+            case "unknown_power": input.PowerServeRatio = null; break;
+            case "disconnected": input.PowerNetworkId = null; break;
+            case "invalid_network": input.PowerNetworkId = 0; break;
+            case "resource_extractor":
+                input.IsResourceExtractor = true;
+                input.ResourceStateKnown = true;
+                input.RemainingResourceAmount = 0;
+                break;
+            case "unpowered": input.PowerServeRatio = .5; break;
+            case "unknown_capacity": input.Outputs[0].BufferCapacity = 0; break;
+            case "not_full": input.Outputs[0].BufferedCount = 19; break;
+            case "no_output": input.Outputs = Array.Empty<ProductionOutputState>(); break;
+            case "no_elapsed_ticks": input.WindowElapsedGameTicks = 0; break;
+        }
+
+        Assert.Null(ProductionFaultClassifier.ClassifyPrimary(input));
+    }
+
+    [Fact]
+    public void ClassifyPrimary_StillPrioritizesPowerAfterACompleteCycleWithFullOutput()
+    {
+        var input = StoppedFuelRodInput();
+        input.WindowElapsedGameTicks = input.ExpectedCycleGameTicks;
+        input.PowerServeRatio = .5;
+
+        Assert.Equal(OverseerFindingKinds.InsufficientPower,
+            ProductionFaultClassifier.ClassifyPrimary(input)?.Kind);
+    }
+
     [Fact]
     public void ClassifyPrimary_DoesNotDiagnoseBeforeOneCompleteCycle()
     {
@@ -259,6 +336,28 @@ public sealed class ProductionFaultClassifierTests
         input.Inputs = new[] { MissingMaterial() };
 
         Assert.Null(ProductionFaultClassifier.ClassifyPrimary(input));
+    }
+
+    private static ProductionFaultInput StoppedFuelRodInput()
+    {
+        var input = BaseInput();
+        input.ObjectId = 3403;
+        input.TargetItemId = 1802;
+        input.TargetItemName = "Deuteron fuel rod";
+        input.ProductionUnitKind = "assembler";
+        input.ProductionUnitName = "Assembler 3403";
+        input.ExpectedCycleGameTicks = ProductionOutputBufferCapacityCalculator.CalculateCycleGameTicks(7_200_000, 7_500);
+        input.Outputs = new[]
+        {
+            new ProductionOutputState
+            {
+                ItemId = 1802,
+                ItemName = "Deuteron fuel rod",
+                BufferedCount = 20,
+                BufferCapacity = ProductionOutputBufferCapacityCalculator.CalculateAssemblerCapacity(false, true, 2),
+            },
+        };
+        return input;
     }
 
     private static ProductionFaultInput BaseInput()

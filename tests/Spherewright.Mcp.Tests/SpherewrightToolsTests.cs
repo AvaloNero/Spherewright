@@ -25,6 +25,24 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void LongCycleOutputBlockageGuidanceIsDiscoverableWithoutClaimingSustainableSupply()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetOverseerProductionAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        foreach (var text in new[] { description, guide })
+        {
+            Assert.Contains("stopped and fully powered", text);
+            Assert.Contains("output_blocked", text);
+            Assert.Contains("complete-cycle requirement", text);
+            Assert.Contains("An absent finding is not proof of sustainable supply", text);
+        }
+        Assert.Contains("unknown rate/power/capacity", guide);
+        Assert.Contains("do not replay successful construction", guide);
+    }
+
+    [Fact]
     public void AttachedJournalGuidanceDoesNotInferNeverMadeFromMissingFirst()
     {
         var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetGameplayJournalAsync))!;

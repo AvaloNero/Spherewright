@@ -1,6 +1,6 @@
 # Spherewright 首次问题与代码修复记录
 
-更新时间：2026-09-12（Asia/Singapore）
+更新时间：2026-09-13（Asia/Singapore）
 
 本文件专门记录项目第一次遇到的可复用工程问题：现场症状、根因、代码或协议
 修复、验证证据和仍有限制。它不是逐局流水账，也不是当前规则的唯一来源。
@@ -11,6 +11,13 @@
 状态取 `fixed | mitigated | open`。`fixed` 只表示写明范围内已有代码和验证证据，
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
+
+## IFX-123 — 固定600tick诊断永久跳过长周期制造台的停机满输出
+
+- 首见：2026-09-13，自动燃料首产后。3403/r41输出20、三种输入齐备、isWorking=false、完整进度和供电比1，但产量0时仍无output_blocked。源口与旧产线已正常保存51439686/J85；不能据空finding宣布持续供给，也不能直接按首窗重氢负值扩建。
+- 根因：ProductionFaultClassifier在所有分类之前要求窗口覆盖完整设备周期。当前r41/MkI一轮960tick，大于诊断固定600tick；即使反复读取也永远不能通过。当前DLL原生输出门的独立复核见game-api-overseer。先加测试，960/1200/3600tick三个反例均复现为错误null。
+- 修复：仅允许停止、known-zero、供电已知充足、输出达到既有满缓冲阈值的非采矿设备越过整周期等待；缺料、物流、未知上游速率、未完成循环及其他分类不放宽。无新游戏读取/写入、工具、字段或白名单。包内playbook和MCP描述明确此边界，缺失finding不是健康或配平证明。
+- 验证/状态：`fixed_offline_live_pending`。新增19 Core+1 MCP回归，Debug/Release各1825通过（58 Contracts/1645 Core/122 MCP），完整当前DSP Release为0警告/0错误。仍待冷部署、protected resume及真实MCP原现场读回；没有新ZIP或持续燃料验收。既有输出阈值是保守整批满缓冲，不宣称覆盖部分腾位下的所有原生准入拒绝点。关联EXP-196/208/299。
 
 ## IFX-122 — 私有目录读取漏传当前星球，被正确拒绝为STALE_STATE
 

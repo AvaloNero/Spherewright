@@ -22,6 +22,8 @@
 
 ## IFX-108 — 私有独立带请求守卫在StrictMode下读取缺省可选键
 
+2026-09-12硫酸油路调用方再现：root新脚本遗漏复用既有守卫，Luna raw-78832bd1首个prepare之前被缺省sourceObjectId点语法阻止；原23项计划/结果测试未走真实请求形状。root raw-0315d9f0于47924786核零native prepare/commit、accepted0/revision9、完整玩家36带/四普通与原J84保持、零预建筑。新入口改为复用AssertIndependentRelayRequest，实际Module-Call与离线共同调用纯请求守卫；39私有正反含StrictMode原错误复现、缺省/整数0及非法值/模式，三入口拒绝通过。该入口为`fixed_offline_live_pending`，旧后缀的已验状态不倒退；没有Plugin/MCP改动，三段施工仍未开始，保护raw存在而console未打印不构成重放理由。
+
 2026-09-12后缀实机复验：5ee8c88推送/CI通过后，Luna raw-97257492只建未执行两段2NEW，终态47409732/47411712；实际缺省端点请求通过修正守卫，原三笔材料不重放。root raw-2e9e0d13核十累计终态、全3663实体/7140互返边/69详情和玩家/J84/两网；17后缀/两入口、14请求形状、80带Core/4Contracts与21action-client通过。本私有后缀`fixed`，不外推旧脚本或完整输送验收。
 
 - 首见：2026-09-12。Luna raw-c755aee5完成两取料与r85×2后，root五步脚本首建前抛出缺少sourceObjectId属性；没有带段prepare/commit。

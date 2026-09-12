@@ -18,13 +18,14 @@
 - 根因边界：当前DLL的Assemble输出门为produced>productCounts×9，批量2的第一拒绝整数是19。ProductionOutputBufferCapacityCalculator仍返回2×10=20，之前测试名MatchesCurrentRuntimeGates过度宣称精确原生门；IFX-123已明确保留这一保守整批限制，因此不能把这次19的响应冒充其20棒正例。
 - 修复：同哈希DLL复核单/多产物分支后，既有计算器返回第一个拒绝整数：Smelt为101−q，Assemble为9q+1，其他配方为19q+1。保留checked溢出、正批量及实验室/矿机原门；q>100的熔炼批量连空缓冲也容不下，明确拒绝而不猜正阈值。既有output_buffer_capacity键保持兼容并在MCP/指南/协议说明为“下一批出料拒绝阈值”，不是物理库存上限。没有新DSP访问、写原语、工具或公开字段，IFX-123的停止/已知零产/已知满供电守卫保持。
 - 验证/状态：`fixed_offline_live_pending`。先以63项相关回归复现16失败（含19棒漏报及20棒错误容量），修复后63全部通过；新增20 Core+1 MCP，Debug/Release各1846（58/1665/123）通过、locked restore及完整DSP Release零警告错误。实际源码MCP64/1/70562字符指南/纯stdout/exit0通过，但安装仍133d96f；下一冷部署与真实19棒诊断读回，不能拿源码测试或旧安装的反例抵扣。9组0..120输出数量比较与最大checked边界覆盖等号/严格大于，18棒负例和19/20棒正例覆盖短窗分类集成。持续燃料仍另验。关联IFX-123、EXP-196/208/299。
+- 后续实机：6bfc533已冷部署/同档恢复51680646，实际MCP raw-a42fbaa9于51684454返回output_buffer_capacity=19和confirmed output_blocked，但前后数量都是20。严格19棒探针因此exit1；raw-c1bf268f只独立核20棒正例，不更改原失败记录。精确19棒live仍待自然出现，状态仍保留该待验范围，不清仓制造样本；63 Core+2 MCP及同批1846回归通过。
 
 ## IFX-123 — 固定600tick诊断永久跳过长周期制造台的停机满输出
 
 - 首见：2026-09-13，自动燃料首产后。3403/r41输出20、三种输入齐备、isWorking=false、完整进度和供电比1，但产量0时仍无output_blocked。源口与旧产线已正常保存51439686/J85；不能据空finding宣布持续供给，也不能直接按首窗重氢负值扩建。
 - 根因：ProductionFaultClassifier在所有分类之前要求窗口覆盖完整设备周期。当前r41/MkI一轮960tick，大于诊断固定600tick；即使反复读取也永远不能通过。当前DLL原生输出门的独立复核见game-api-overseer。先加测试，960/1200/3600tick三个反例均复现为错误null。
 - 修复：仅允许停止、known-zero、供电已知充足、输出达到既有满缓冲阈值的非采矿设备越过整周期等待；缺料、物流、未知上游速率、未完成循环及其他分类不放宽。无新游戏读取/写入、工具、字段或白名单。包内playbook和MCP描述明确此边界，缺失finding不是健康或配平证明。
-- 验证/状态：`fixed_offline_live_pending`。新增19 Core+1 MCP回归，Debug/Release各1825通过（58 Contracts/1645 Core/122 MCP），完整当前DSP Release为0警告/0错误。2026-09-13已完成133d96f同源228文件冷部署、实际安装MCP64/1/69804与同档51590563→51590594恢复，相关34项Release复验通过；新诊断正例仍未取得，19棒现场暴露IFX-124，不能改称原20棒案例通过。没有最终ZIP或持续燃料验收。关联EXP-196/208/299。
+- 验证/状态：`fixed`（当前6bfc533安装的停机/满电/20棒长周期场景）。最初新增19 Core+1 MCP，1825 Debug/Release及完整当前DSP Release零警告错误通过；133d96f恢复后只遇到19棒反例，另开IFX-124。合并修复的6bfc533/1846-test/228文件冷部署、实际MCP64/1/70562和同档51680614→51680646恢复均通过。raw-a42fbaa9的600tick窗51683855–51684454，3403/r41周期960tick、前后停机/供电比1/20棒/产0，实际返回confirmed output_blocked，raw-c1bf268f独立复核原响应；63 Core+2 MCP再回归通过。保留IFX-124精确19棒待验和严格探针exit1，不冒充原133安装已有20棒正例。没有最终ZIP或持续燃料验收。关联EXP-196/208/299。
 
 ## IFX-122 — 私有目录读取漏传当前星球，被正确拒绝为STALE_STATE
 

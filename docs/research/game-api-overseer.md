@@ -6,7 +6,9 @@
 
 IFX-124实现前再次只读反编译当前同哈希AssemblerComponent.InternalUpdate：单产物和多产物分支均先令replicating=false再检查每个输出。Smelt拒绝produced+productCount>100；Assemble拒绝produced>9×productCount；Refine/Particle/Chemical及其他分支拒绝produced>19×productCount。因此支持的正批量下，第一个被拒绝的整数分别是101−productCount、9×productCount+1、19×productCount+1；不是100/10批/20批的物理存量上界。诊断原evidence键output_buffer_capacity保持兼容，但应解释为下一批生产的拒绝阈值，不能当作仓库容量或缺少的件数。当前smelt批量超过100时连空缓冲也拒绝；现有正容量契约不能表达这种零阈值，须明确拒绝该异常输入，不能伪造一个正阈值。矩阵实验室和采矿机原阈值不在此修复范围。
 
-本次离线实现已经采用上述精确阈值，取代下文IFX-123首轮保留的整批限制；没有改变DSP调用或原生数据。63相关测试先16失败后全过，包含9组逐整数比较、checked边界、18/19/20棒集成及原未知/工作中/供电守卫。全Debug/Release1846、完整当前DSP Release零警告错误、源码实际MCP64/1/70562字符指南/纯stdout通过；当前安装仍133d96f，新阈值的冷部署/live正例尚待。
+本次离线实现已经采用上述精确阈值，取代下文IFX-123首轮保留的整批限制；没有改变DSP调用或原生数据。63相关测试先16失败后全过，包含9组逐整数比较、checked边界、18/19/20棒集成及原未知/工作中/供电守卫。全Debug/Release1846、完整当前DSP Release零警告错误、源码实际MCP64/1/70562字符指南/纯stdout通过；该离线截面时安装仍133d96f。
+
+后续6bfc533同源228文件已冷部署，实际MCP64/1/70562/纯stdout及同档51680614→51680646恢复通过。raw-a42fbaa9在51683855–51684454的ready600tick窗：3403/r41前后停机、供电比1、输出20、产0，返回confirmed output_blocked与output_buffer_capacity=19。raw-c1bf268f独立核原12条响应、玩家/端点hash和revision不变；这是IFX-123的真实长周期正例及新阈值实际读回，不是IFX-124精确19棒场景。原严格19棒探针exit1因数量实际20而保留，不能改写为整个探针通过；不人为腾位制造19。63 Core+2 MCP再回归通过，持续燃料和最终包仍未验。
 
 同日冷部署后复验：133d96f同源228文件和实际安装MCP64/1/69804通过，原主档51590563恢复并重存51590594。raw-3512b944的实际MCP窗口51599099–51599698中3403/r41产0、diagnostic coverage complete但无finding；前后详情均停机/满电/输出19，raw-a1af1f0c于51605434再次确认。不是原20棒测试前提，不记修复正例。原生>9×productCounts的整数拒绝阈值对批量2是19，现有2×10整批上界不等于该阈值；IFX-124记录这个待修缺口，下一应复核分支后修计算器，而非等待或制造20棒场景。没有新增DSP调用或游戏写入。
 

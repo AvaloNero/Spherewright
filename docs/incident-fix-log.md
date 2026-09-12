@@ -12,6 +12,12 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-119 — 私有资源审计猜矿种/字段并混入失败响应空结果
+
+- 首见：2026-09-12。空载施工前全读发现86覆盖三点→两点，正确停止。后续私有核验把真实Stone矿节点假定为Iron，并读取DTO没有的productItemId；修正为实际yields后，又因同批202失败响应的null result与197成功响应一起计数而停止。两次都是本地审计条件错误，非新增游戏故障，无游戏写入。
+- 修正/验证：先离线核原始响应和当前资源DTO，分开保留202的INVALID_ENTITY与197的Stone/yields正例，不把过滤null视为消除错误；只补读未读的201。raw-f86c7abe于49294856核两节点同组15/单矿机、正余量8206/6853，86其他配置保持；随后raw-ef663b55全3756实体复读通过，原玩家/J84/accepted0/revision15/primary48796250保持。
+- 状态：`fixed`仅本次私有审计及明确86/202资源基线。没有改变Plugin/MCP、静默忽略其他resourceNodeIds变化或重新建矿；耗尽的精确tick仍未知，三点产能估计作废，持续供矿/制酸/燃料须后续实际窗口验证。关联EXP-195/299。
+
 ## IFX-118 — OrderedDictionary整数索引被当作位置而非实体键
 
 - 首见：2026-09-12。Luna临时只读收集器先因短函数名R解析为Invoke-History而在本地失败，改用明确名称后，raw-94517132已成功读取3079，随后在OrderedDictionary整数索引处越界；均无游戏写入，不是Plugin拒绝或世界损坏。

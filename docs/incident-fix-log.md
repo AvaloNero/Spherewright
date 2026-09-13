@@ -71,6 +71,7 @@
 
 ## IFX-118 — OrderedDictionary整数索引被当作位置而非实体键
 
+- 2026-09-13后缀实机：b97e5c9/CI34745209499成功后，raw-7a9b5ad4固定三窗执行一次exit0；root核132详情、三个独立600tick原生响应及53946916的原玩家/J85/两网/healthy revision148。本次后缀`fixed`，只关闭读取器错误，不关闭石墨回压/持续供给；旧28响应、exit1及错误初报不改写，accepted7保持。
 - 2026-09-13再现：Luna raw-a83dc72c已完成28个live只读响应、最后53902763/3375，临时图字典仍使用ordered的整数位置赋值而越界，catch又因rows未初始化遮住原错；“零live调用”的初报由原始响应纠正，确无prepare/commit或生产窗口。root raw-1ff768fb核53920301的玩家/J85/两网/accepted7/revision148保持。旧inline不重跑，只读后缀用普通Hashtable/对象数组及既有边界，去掉掩盖原错的catch和不存在的DTO展示字段；16专项+25继承、解析/2入口拒绝通过，状态`fixed_offline_live_pending`仅该新后缀。原有22详情收集器的较早fixed证据仍成立，不外推所有临时脚本已吸收经验。
 - 首见：2026-09-12。Luna临时只读收集器先因短函数名R解析为Invoke-History而在本地失败，改用明确名称后，raw-94517132已成功读取3079，随后在OrderedDictionary整数索引处越界；均无游戏写入，不是Plugin拒绝或世界损坏。
 - 根因/修正：PowerShell的有序字典存在整数位置索引重载，不能用稀疏实体ID当位置。root固定后缀使用普通Hashtable、统一Int32键、唯一正ID和32详情上限；显式模式在导入前拒绝缺省调用，复用已成功原始记录，不重写历史或恢复旧token。与IFX-115的Int64/Int32键类型问题分别保留。

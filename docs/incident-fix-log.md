@@ -12,6 +12,13 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-127 — 私有预检把复用的源带重复计入NEW路径
+
+- 首见：2026-09-13。Luna raw-fb060281的4173西向续接原生预检已成功，full_path_stage1、5个NEW点和5带成本均正常；私有Gop-Plan却期待6点，因Exact path cardinality退出，exit1、零commit，后两段未预检。
+- 根因：调用方把原生内部包含源cover的路径，误当公开plannedPath。既有protocol及Assert-FDPath早已规定plannedPath/itemBudget只含NEW，复用源4173由plannedBeltPath另行绑定。原32项合成离线检查复制了同一错误假设，没有覆盖真实source-cover响应，不能用其PASS否定当前正确的Plugin结果。
+- 修正：复用既有Assert-FDPath，仅为源续接的预期NEW坐标跳过起点；加入本次真实5点计划正例和“把源点插回plannedPath”负例。原完整预检入口在导入前永久拒绝，只保留offline；后缀保留首段成功证据，只准预检未做的两个全NEW形状，未来父带仍须真实建成后fresh prepare。没有Plugin/MCP语义改变或新的游戏动作。
+- 验证/状态：`fixed_offline_live_pending`限私有调用方。34+12原断言/继承、5项后缀检查及解析/3入口拒绝通过；首次复用公共断言时合成fixture漏destinationObjectId导致offline失败、零游戏调用，补齐真实DTO形状后通过。root raw-0427d825于54105240核六相关详情、完整玩家/durable J85/两网及零预建筑，accepted8/revision149/primary53983928保持，原exit1不改写。后两段原生预检、材料、真实新入口、实际消耗和持续供给仍待。关联EXP-007/188/219/299。
+
 ## IFX-126 — 调用方把一次配方配置误算为一次revision递增
 
 - 后续实机状态：`fixed`限私有后缀与原台不重放。d1eeec2/CI34741102959成功后，raw-7519f0dc仅配置3965/3966为r58，53604513/53604622成功，真实revision112→114→116；3964/r16保留。root raw-48839c6c于53614437核全部十笔原始/fresh终态、4179实体/8160互返边/418详情、三台16/58/58空机及原玩家/J85/两网，17+54审计离线通过。原执行器exit1和其遗漏测试保持为历史事实；未投料或保存新配置，持续产量和实际恢复仍待。

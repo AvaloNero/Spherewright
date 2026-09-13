@@ -540,6 +540,8 @@
 
 2026-09-07空库存复现：旧27回收f274a9a9已于28106933成功，后置PowerShell直接访问空Measure-Object的Sum而停止，尚未prepare重建。raw-2010d15c证明2012为2→3、铜为0→1，缺少的是before铜项，不是设备丢失。公共ActionClient新增Get-SpherewrightInventoryCount，完整inventory缺项返回0，缺失/null/畸形条目、非整数/负数和聚合越界拒绝；不改prepare/commit/poll/幂等。独立scripts/test-action-client.ps1有21项离线检查且不访问游戏，本次原始库存再次核算通过；Luna随后只续未提交重建e4cae01f，28135338→28135738、2012为3→2，双端和filter1104正确。root raw-10f35253全2351实体/389配置、五写审计通过，无重复回收/重建。既有1488项Release回归复跑通过，21项PowerShell检查单列，不将两者混称新的.NET测试数量。
 
+2026-09-13空带聚合再现（关联EXP-014）：最后原油源已由Luna正常建成，root的新只读审计却在offline阶段直接访问空Measure-Object的Sum而exit1，尚无游戏调用。仅修该私有单段货物校验为初始化零、显式逐项求和，保留纯物料/总数验证；四种物料各覆盖空与非空正例及五类畸形负例，39专项+91继承、解析/3入口拒绝通过。raw-a48220b5的433详情/213带段实机审计通过，原source action未重放。不是新的Plugin/MCP缺陷，也不声称所有历史临时脚本均已整改。
+
 ## IFX-002 — 同位置/同设备分拣器被错误归属或覆盖槽位
 
 - 首见：2026-08-31，精炼厂同源输出；2026-09-01 在熔炉上复现槽覆盖。

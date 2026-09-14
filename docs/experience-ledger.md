@@ -16,6 +16,12 @@
 
 ## 当前经验
 
+2026-09-15 / EXP-007/185/242/299有界进展观察（`validated`限当前源码与调用方offline，后缀live仍待）：F3DBB671仅续原未提交三路径及save；root独立82+79离线、49十写审计、5入口/解析及21客户端/1 MCP回归通过。固定四轮现实等待不是原生施工时限：当前源码为started+max(72000,estimatedGameTicks×20)，原G4计划9000、deadline59069945，而58892267已成功；377条原等待记录覆盖120.700567现实秒，不含可推造的退出game tick。仅按同action原负prebuild集合及当前有限非null进度观察：剩余集合只能缩小、既有进度不能倒退，不猜归一化上限；缺字段、外来/重复或重现对象即停。queued空目标过渡与立即terminal分别处理，完成跨snapshot/session读优先fresh原终态。
+
+每轮等待≤30秒；本次17/7/5 NEW分别最多40/20/16轮，Stopwatch在2430/1230/990秒后不开始新调用，保存2轮/150秒，已发起的有界请求可能稍晚返回。八轮且≥3600tick无进展、两轮tick不前进或原生deadline触发保留pending，不声明原生失败、不reprepare/replay。精确caller-timeout才允许后续同handle观察；其他错误保持。保存完成revision先核owned/healthy身份及原handle终态，再绑定新primary，不能用旧primary断言抢先误报；pending进度使用JSON-safe rows。最终constructionAndSaveSucceeded和readinessPending仍分离。最近复验同日，当前尚未live续段、保存或接源；此设计不修改Plugin超时、MCP面或正常原生规则，实际进度样本/异常分支另验。对应IFX-001/121，替代固定四轮预算的后缀策略而非删除原历史失败。
+
+2026-09-15 / EXP-007/185/242/299返航期间fresh施工准入复验（`validated`限当前6070cf8三次实机接受）：root仅复放raw-9a09c3df，把原始意图的playerCapturedAtGameTick与真实player及唯一commit逐一对应。G2在58888204为0idle/3working，G3在58889136及G4在58889939为1idle/2working，均零pending build/repair且fresh原生prepare/commit成功；上一动作和全部六终态已有raw-2b250795独立核销。此证据更新下方“返航中续建实机另验”的历史边界，不删除原失败，也不把G1的全idle样本混入。仍须先核前一动作、逐对象/材料/连接，再最后fresh读player/hash；当前工作任务、物资、位置、会话或原生规则改变时重新验证，不能推导一般working状态可写或忽略stale拒绝。最近复验同日；本次证据复放零新游戏调用/写入，无新save或持续供给结论。
+
 2026-09-15 / EXP-007/185/242/299原action等待与施工时钟分层（`validated`限本次四段成功及六前缀核销）：Luna raw-9a09c3df已完成G1–G3；G4于58889945接受，固定四轮30现实秒等待后仍active并退出，不能据此重建或判成原生失败。root raw-4937d1cc读回原action在58892267正常成功、十带114→104；原生2322tick是游戏时长，与调用方现实时间预算不能等同。raw-2b250795/58901490完整核六原/fresh终态、4525实体/8842互返边、24累计新带fresh空货、全部旧配置/玩家/科研/J88/满供与零prebuild。accepted6保留，只续G5–G7的29 NEW及save；原退出和未及时取得终态的事实保留，不重放原塔或任何成功带段。
 
 13+48离线、解析、两审计/两退役入口拒绝通过，旧执行模式退役；下一同handle观察必须同时尊重原生终态/game tick和有界现实等待，每次等待不超过30秒，不能通过改产品超时、无限观察或重新提交掩盖停滞。具体后缀策略仍待Sol设计验证。root审计空货使用真正fresh inspect的observed/items，原list摘要只作配置/拓扑；离线fixture须从明确空的已核对象取材，不从无序全详情任选一条带，首次夹具错误拒绝仍保留。最近复验同日；原生施工规则、玩家/现场或供料变化时再验，当前无新save/实际消费或持续供应结论。对应IFX-001；历史“返航中准入”的离线正例不自动变成全部时序实机保证。

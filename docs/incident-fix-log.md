@@ -588,6 +588,10 @@
 
 ## IFX-001 — 已接受动作被客户端展示错误误报为失败
 
+- 2026-09-15私有有界观察修正offline：Sol冻结F3DBB671，仅续G5–G7+save并保留accepted6；root独立82+79/49离线、5入口拒绝与解析、21客户端/1 MCP通过，零游戏调用。按原action/prebuild负ID和真实进度观察，轮数、现实时间、无进展与原生game-tick边界均有上限；caller timeout不等于native失败，其他异常不吞掉。独立审查发现并修正save跨读完成时先拿旧primary断言的竞态：先核同session/healthy及revision，fresh原handle终态后才绑定新primary。额外revision、异session、隔离、进度缺失/倒退/外来对象与错误超时均有反例；pending进度用JSON-safe rows避免IFX-121。此时未preview/execute，不能将offline称为实机修复，未来只续三未提交路径及保存。
+
+- 2026-09-15返航中实际准入补证：root只复放raw-9a09c3df原意图/player/唯一commit，证明G2预检0idle/3working、G3/G4预检1idle/2working，均零pending build/repair且fresh原生接受。对应58888204/58889136/58889939；不是追加游戏调用、放宽hash或把任意working当可建。三次动作后来成功并纳入raw-2b250795六前缀，原四轮等待退出与未保存事实不改写。下方离线正例的live待验边界据此窄范围更新，下一等待策略与三路径后缀仍须单独验证。
+
 - 2026-09-15有界等待预算再次核销：raw-9a09c3df只接受G1–G4四笔，前三成功后G4在四轮同handle等待结束仍active；root raw-4937d1cc获得其58889945→58892267正常成功终态，十带114→104。raw-2b250795/58901490独立核全部六前缀、4525实体/8842边、真正fresh空货/完整旧配置/玩家科研/J88/电网/零prebuild，accepted6/R21/primary58361888保持、未保存。旧live两入口退役，13+48离线/解析及四入口拒绝通过；不是Plugin施工失败或隔离，等待策略下一单独修正，不重做成功部分。root首个离线G4夹具选中有货旧带而被拒绝，后改用明确空4505，不放宽实际审计；同批把既定fresh详情的空货核验显式执行，未新增公共字段或游戏调用种类。
 
 - 2026-09-15续建分层修正（仅私有调用方）：当前6070cf8普通带/保存路径未增加all-drone-idle门，BuildUiIsIdle是人工工具预览状态；不能把working直接当成未完成建筑。只在原action/逐对象/成本/拓扑全部成立、玩家和零pending保持后，用最后fresh player/hash继续七个固定路径的原生预检；任何stale/原生拒绝仍停，不放宽游戏准入。最终有界返航观察另存readinessPending，与已成功的建设/save分离，累计十写后仍需root独立settled审计。D49139AF冻结后缀由root独立通过79+89离线（含原15组返航DTO）、41审计离线、5错误入口和解析；此处尚不宣称续建实机通过，原失败不删除。关联EXP-007/185/242/299。

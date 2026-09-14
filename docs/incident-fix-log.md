@@ -588,6 +588,9 @@
 
 ## IFX-001 — 已接受动作被客户端展示错误误报为失败
 
+- 2026-09-15续建分层修正（仅私有调用方）：当前6070cf8普通带/保存路径未增加all-drone-idle门，BuildUiIsIdle是人工工具预览状态；不能把working直接当成未完成建筑。只在原action/逐对象/成本/拓扑全部成立、玩家和零pending保持后，用最后fresh player/hash继续七个固定路径的原生预检；任何stale/原生拒绝仍停，不放宽游戏准入。最终有界返航观察另存readinessPending，与已成功的建设/save分离，累计十写后仍需root独立settled审计。D49139AF冻结后缀由root独立通过79+89离线（含原15组返航DTO）、41审计离线、5错误入口和解析；此处尚不宣称续建实机通过，原失败不删除。关联EXP-007/185/242/299。
+- 同批只读预检raw-9a2cd61e完成七原生prepare且零commit，root独立核原始18详情/八组player与session/原J88/两网/零prebuild，58874772/R13/primary58361888/accepted2保持。1项MCP既有指南回归通过；预检时已全idle，不能算返航中实际接受施工或新保存正例。
+
 - 2026-09-15再次实测：Luna raw-52cb3af7的G0在58839342原生成功、四带128→124；随后15次观察1working/0pending，返航等待到期exit1，未提交后续路径/save。root raw-36569934确认稍后全idle，raw-79e2f63b/58852478核两成功前缀、4505实体/8808边、真实详情/全部玩家科研/J88/两网/0prebuild；accepted2/R13/primary58361888保持。原执行入口退役，10+40离线/四入口拒绝/21客户端及1 MCP回归通过；仅此成功前缀已核销，新返航分层后缀另验。root原a5e把list的null货物摘要误作inspect而退出，已将生产货物核验移到fresh详情并加反例，未改写原失败或重做动作；已有包内无人机语义保持，不称新的Plugin缺陷。
 
 - 首见：2026-08-31，`owned-world-001`。

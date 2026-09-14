@@ -16,6 +16,12 @@
 
 ## 当前经验
 
+2026-09-15 / EXP-007/185/242/299续建不额外等待全部无人机返航（`validated`限当前6070cf8调用路径、真实DTO离线复放，续建实机另验）：Sol只设计G1–G7及一次普通保存，保留4501和4505→4504→4503→4502；49 NEW带、两次实际源cover，与原两笔组成十写。对当前安装源的PrepareBuild/TryValidateBeltBuild/CreatePreparedPrebuilds/BuildUiIsIdle及普通save路径核对，未发现额外all-idle门；BuildUiIsIdle检查人工建设预览，不等于无人机idle。working=alive−idle且pending为零不是施工失败；仍须先取得原action成功终态、唯一逐对象/材料/拓扑证据，再以原位Walk、完整物资/科研、充足能量和零pending进入fresh原生prepare/commit。原生内部仍可拒绝，不承诺返航状态一定可建；player hash包含idle等计数，先读完实际父链，再最后读player/hash，陈旧拒绝即停，不内部重试。
+
+该窄规则替代历史私有后缀“每次后续commit前必须全idle”的额外限制，不改变Plugin/Bridge、安全hash、原生规则或最终独立审计的settled要求。末尾最多20×500ms只读；若建设和保存已成功但仍返航，分别记录constructionAndSaveSucceeded与readinessPending，保留10笔原action，后续只读核销而非重放。冻结后缀SHA-256 D49139AF5B75FD14530ACE89D958D2AAA7FA5EECCBF428F72B5F2DE701B7A129；root独立79+89离线、41十写审计离线、5错误入口拒绝和解析通过，其中15组raw-52cb3af7真实返航样本调用生产helper，均零游戏调用。尚无新增实体或保存；最近复验同日，安装态/玩家/现场变化或原生拒绝必须重新设计，不能据此跳过原生验证。对应IFX-001。
+
+同批只读正例raw-9a2cd61e/58874772已由root独立复读：七原生prepare、18详情、八组player/session、J88/两网/零prebuild均保持，R13/primary58361888/accepted2未变；G1为真实4502 cover，六其他候选不是联合预约，尤其G7仍需在实际父带完成后fresh cover。1项已有MCP无人机指南回归通过。当前preview玩家已全idle，不把它算成返航中实际commit正例；施工与保存仍待。
+
 2026-09-15 / EXP-007/018/242/299无人机返航分层再次实测（`validated`限成功前缀核销）：raw-52cb3af7的G0在58839342已成功、四带128→124；15次后读58839348–58839805为1working/0pending，调用方等返航到期不改变terminal。working来自alive−idle，不能把它等同未完施工；实际任务、逐对象/材料/拓扑证据须分开。raw-36569934稍后已全idle，raw-79e2f63b/58852478核两原/fresh动作、完整4505实体/8808边/旧配置、真正inspect货物/玩家/科研/原J88/两网/零prebuild。accepted2保持，仅续七条未提交路径及save，原塔和G0两个成功前缀绝不重放。
 
 原G0入口退役两模式零调用拒绝；10+40离线、两审计错误入口、21客户端及1 MCP现有指南检查通过，没有新增产品字段或超时设置。list的轻量配置不能当inspect的beltCargo观察，原审计a5e在此拒绝后保留，生产核验已改走fresh详情并加summary-null反例；玩家时刻使用实际capturedAtGameTick，PowerShell脚本成功与原生进程LASTEXITCODE也不能混为一谈。最近复验同日，后续返航分层的新后缀仍待，不宣称已保存、实际供料或全部调用方都已吸收旧经验。对应IFX-001；任何未完目标/状态或物料变化、unknown仍立即停写。

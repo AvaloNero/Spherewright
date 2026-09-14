@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-15 / EXP-007/185/242/299原action等待与施工时钟分层（`validated`限本次四段成功及六前缀核销）：Luna raw-9a09c3df已完成G1–G3；G4于58889945接受，固定四轮30现实秒等待后仍active并退出，不能据此重建或判成原生失败。root raw-4937d1cc读回原action在58892267正常成功、十带114→104；原生2322tick是游戏时长，与调用方现实时间预算不能等同。raw-2b250795/58901490完整核六原/fresh终态、4525实体/8842互返边、24累计新带fresh空货、全部旧配置/玩家/科研/J88/满供与零prebuild。accepted6保留，只续G5–G7的29 NEW及save；原退出和未及时取得终态的事实保留，不重放原塔或任何成功带段。
+
+13+48离线、解析、两审计/两退役入口拒绝通过，旧执行模式退役；下一同handle观察必须同时尊重原生终态/game tick和有界现实等待，每次等待不超过30秒，不能通过改产品超时、无限观察或重新提交掩盖停滞。具体后缀策略仍待Sol设计验证。root审计空货使用真正fresh inspect的observed/items，原list摘要只作配置/拓扑；离线fixture须从明确空的已核对象取材，不从无序全详情任选一条带，首次夹具错误拒绝仍保留。最近复验同日；原生施工规则、玩家/现场或供料变化时再验，当前无新save/实际消费或持续供应结论。对应IFX-001；历史“返航中准入”的离线正例不自动变成全部时序实机保证。
+
 2026-09-15 / EXP-007/185/242/299续建不额外等待全部无人机返航（`validated`限当前6070cf8调用路径、真实DTO离线复放，续建实机另验）：Sol只设计G1–G7及一次普通保存，保留4501和4505→4504→4503→4502；49 NEW带、两次实际源cover，与原两笔组成十写。对当前安装源的PrepareBuild/TryValidateBeltBuild/CreatePreparedPrebuilds/BuildUiIsIdle及普通save路径核对，未发现额外all-idle门；BuildUiIsIdle检查人工建设预览，不等于无人机idle。working=alive−idle且pending为零不是施工失败；仍须先取得原action成功终态、唯一逐对象/材料/拓扑证据，再以原位Walk、完整物资/科研、充足能量和零pending进入fresh原生prepare/commit。原生内部仍可拒绝，不承诺返航状态一定可建；player hash包含idle等计数，先读完实际父链，再最后读player/hash，陈旧拒绝即停，不内部重试。
 
 该窄规则替代历史私有后缀“每次后续commit前必须全idle”的额外限制，不改变Plugin/Bridge、安全hash、原生规则或最终独立审计的settled要求。末尾最多20×500ms只读；若建设和保存已成功但仍返航，分别记录constructionAndSaveSucceeded与readinessPending，保留10笔原action，后续只读核销而非重放。冻结后缀SHA-256 D49139AF5B75FD14530ACE89D958D2AAA7FA5EECCBF428F72B5F2DE701B7A129；root独立79+89离线、41十写审计离线、5错误入口拒绝和解析通过，其中15组raw-52cb3af7真实返航样本调用生产helper，均零游戏调用。尚无新增实体或保存；最近复验同日，安装态/玩家/现场变化或原生拒绝必须重新设计，不能据此跳过原生验证。对应IFX-001。

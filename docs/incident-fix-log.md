@@ -590,6 +590,8 @@
 
 ## IFX-001 — 已接受动作被客户端展示错误误报为失败
 
+- 2026-09-15新观察器正常施工分支实机通过：root只复放raw-0f9ffec2原步骤与施工页，G5剩余11→8→4→1、5轮/123.6840115现实秒后成功，超过旧四轮预算；G6/G7两轮/一轮成功。五张实际非空prebuild页证明同handle进展观察，不是无限等待或重放。未触发的故障分支仍只具offline证据；保存后的revision错误另列IFX-126，不能因该正例抹去原exit1。e8f50bb/绿CI后raw-a9656b39才完成无游戏写的十写计数复核归零。
+
 - 2026-09-15后缀原生预检实机正例：raw-da8328d5的三free候选17/7/6全部通过，零commit，root raw-37ae117c独立核原记录至58947998/R21/primary58361888/J88/accepted6。实际G7仍须父带cover5 NEW，29后缀及save尚未执行，不能把预检通过当等待策略已live验证。Sol本地摘要误取journal.sequence产生一次错误，随后仅读同一raw的真实durableThroughSequence=88；没有新增游戏调用或将原失败改写，复放不等于重试。
 
 - 2026-09-15私有有界观察修正offline：Sol冻结F3DBB671，仅续G5–G7+save并保留accepted6；root独立82+79/49离线、5入口拒绝与解析、21客户端/1 MCP通过，零游戏调用。按原action/prebuild负ID和真实进度观察，轮数、现实时间、无进展与原生game-tick边界均有上限；caller timeout不等于native失败，其他异常不吞掉。独立审查发现并修正save跨读完成时先拿旧primary断言的竞态：先核同session/healthy及revision，fresh原handle终态后才绑定新primary。额外revision、异session、隔离、进度缺失/倒退/外来对象与错误超时均有反例；pending进度用JSON-safe rows避免IFX-121。此时未preview/execute，不能将offline称为实机修复，未来只续三未提交路径及保存。

@@ -1,6 +1,8 @@
 # Environment research
 
-Audit date: 2026-09-14 (Asia/Singapore)
+Audit date: 2026-09-15 (Asia/Singapore)
+
+Natural exact19-rod diagnostic acceptance: Luna raw-4e957fa8 reverified all228 installed6070cf8 files, actual64 tools/1 resource/71120-character guide and authentication to the current Plugin, then observed20/20 followed by natural19/19 without game writes. The native600-tick window58556835–58557434 returned confirmed output_blocked at3403/r41 with both physical count and next-batch admission threshold19; the machine was stopped, powered and had full-cycle inputs. The MCP probe exited0 with pure stdout. Root raw-aa09799b independently checked all17 original MCP responses and retained the nonqualifying20 sample and earlier raw-c35afb54 fixed-probe exit1. Related63 Core+2 MCP tests and four invalid-mode rejections passed. Accepted5/revision1/primary58361888/original durable J88 remain unchanged; no restart/reinstall or final-package/sustained-supply claim. This closes the exact19 live gap left open in the historical paragraphs below.
 
 Latest same-cohort normal restart: raw-60b7db38 closed normally and dispatched Steam once; the initial main-thread read timed out, then the same new process reached the main menu without another launch or resume attempt. Raw-6025e3c8 reverified all228 installed files and actual64 tools/1 resource/71120-character playbook against that new Plugin, pure stdout and exit0. Luna resume-8a733578 protected-resumed the same primary and normally resaved58361888. Root raw-affa59de/58371550 independently preserved4500 entities/8802 reciprocal edges/108 details, player/research, original durable J88 and two fully supplied grids. Accepted5 is retained. This closes the actual restoration step left pending below, not final-package validation or sustained fuel supply; no reinstall occurred.
 

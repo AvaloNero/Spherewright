@@ -42,6 +42,10 @@ internal sealed class SpherewrightBlueprintBuildTool : BuildTool_BlueprintPaste,
         yaw = quarterTurns * 90f;
         castGroundPosSnapped = planet.aux.Snap(requestedPosition, true);
         dotsSnapped[0] = BlueprintUtils.RecalculateCursorPos(castGroundPosSnapped, yaw, data, 0, segment);
+        // Match the normal paste UI's cursor sequence. This only adjusts our one-dot
+        // preview array; all returned poses still undergo the usual range/collision/
+        // technology/material checks and become part of the fresh site approval hash.
+        BlueprintUtils.SnapTropic(actionBuild, data, dotsSnapped, 1, yaw, segment);
         gratBoxCursor = BlueprintUtils.GenerateAreaGratBoxByBPData(data, bpGratBoxArr,
             bpGratBoxConditionArr, dotsSnapped, 1, yaw, segment);
         bpCursor = BlueprintUtils.InitBuildPreviewByBPData(data, ref bpPool, 1);

@@ -9,6 +9,55 @@ public sealed class BlueprintSitePolicyTests
     private static readonly Dictionary<int, int> Slots = new() { [2302] = 12, [2303] = 12, [2101] = 12 };
 
     [Fact]
+    public void TropicAdjustedNativePoseRequiresNewApprovalEvenWhenRequestedAnchorIsUnchanged()
+    {
+        var site = new BlueprintSiteSnapshot
+        {
+            SessionId = "owned", PlanetId = 104, BlueprintHash = "bounded-wind",
+            Position = new Vector3Snapshot { X = 120, Y = -100, Z = 125 },
+            Objects = new List<BlueprintSiteObject>
+            {
+                new() { Index = 0, ItemId = 2203, Position = new Vector3Snapshot { X = 121, Y = -101, Z = 124 },
+                    Position2 = new Vector3Snapshot { X = 121, Y = -101, Z = 124 }, NativeCondition = "Ok" },
+            },
+        };
+        var requestedAnchor = (site.Position.X, site.Position.Y, site.Position.Z);
+        var before = BlueprintSitePolicy.AssessmentHash(site, "fresh-player");
+        // A copied native result, not an offline implementation of Unity's SnapTropic.
+        site.Objects[0].Position.X += .5f;
+        site.Objects[0].Position2.X += .5f;
+        Assert.Equal(requestedAnchor, (site.Position.X, site.Position.Y, site.Position.Z));
+        Assert.NotEqual(before, BlueprintSitePolicy.AssessmentHash(site, "fresh-player"));
+        Assert.False(site.Executable);
+    }
+
+    [Theory]
+    [InlineData("BlueprintWrongTropicRatio")]
+    [InlineData("BlueprintNotAlignTropicAnchor")]
+    [InlineData("BlueprintAreaCrossTropic")]
+    public void TropicRejectionRemainsBoundToSiteApproval(string nativeCondition)
+    {
+        var site = new BlueprintSiteSnapshot { SessionId = "owned", PlanetId = 104, BlueprintHash = "bounded-wind",
+            Objects = new List<BlueprintSiteObject> { new() { Index = 0, ItemId = 2203, NativeCondition = "Ok" } } };
+        var before = BlueprintSitePolicy.AssessmentHash(site, "fresh-player");
+        site.Objects[0].NativeCondition = nativeCondition;
+        Assert.NotEqual(before, BlueprintSitePolicy.AssessmentHash(site, "fresh-player"));
+    }
+
+    [Fact]
+    public void TropicAlignmentDoesNotRemoveOccupiedObjectOrNativeCheckApprovalEvidence()
+    {
+        var site = new BlueprintSiteSnapshot { SessionId = "owned", PlanetId = 104, BlueprintHash = "bounded-wind",
+            Objects = new List<BlueprintSiteObject> { new() { Index = 0, ItemId = 2203, NativeCondition = "Ok" } } };
+        var translatedOnly = BlueprintSitePolicy.AssessmentHash(site, "fresh-player");
+        site.NativeCheckPerformed = true; site.NativeCheckPassed = true;
+        var checkedSite = BlueprintSitePolicy.AssessmentHash(site, "fresh-player");
+        Assert.NotEqual(translatedOnly, checkedSite);
+        site.Objects[0].OccupiedObjectId = 17;
+        Assert.NotEqual(checkedSite, BlueprintSitePolicy.AssessmentHash(site, "fresh-player"));
+    }
+
+    [Fact]
     public void AdvisoryPowerSamplingDoesNotMakeUnchangedNativeSiteStaleEachTick()
     {
         var site = new BlueprintSiteSnapshot { SessionId = "owned", PlanetId = 104, BlueprintHash = "blueprint" };

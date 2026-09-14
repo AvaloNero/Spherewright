@@ -25,6 +25,23 @@ namespace Spherewright.Mcp.Tests;
 public sealed class SpherewrightToolsTests
 {
     [Fact]
+    public void BlueprintTropicSnappingGuidanceRequiresReturnedPosesAndFreshApproval()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.InspectBlueprintAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        foreach (var text in new[] { description, guide })
+        {
+            Assert.Contains("SnapTropic", text);
+            Assert.Contains("returned per-object poses", text);
+            Assert.Contains("fresh approval", text);
+        }
+        Assert.Contains("does not waive", guide);
+        Assert.Contains("Do not replay", guide);
+    }
+
+    [Fact]
     public void NativeOutputAdmissionThresholdGuidanceIsDiscoverableWithoutTreatingItAsStorageCapacity()
     {
         var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetOverseerProductionAsync))!;

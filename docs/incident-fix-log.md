@@ -1,6 +1,6 @@
 # Spherewright 首次问题与代码修复记录
 
-更新时间：2026-09-13（Asia/Singapore）
+更新时间：2026-09-14（Asia/Singapore）
 
 本文件专门记录项目第一次遇到的可复用工程问题：现场症状、根因、代码或协议
 修复、验证证据和仍有限制。它不是逐局流水账，也不是当前规则的唯一来源。
@@ -11,6 +11,14 @@
 状态取 `fixed | mitigated | open`。`fixed` 只表示写明范围内已有代码和验证证据，
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
+
+## IFX-130 — 跨纬线蓝图转换漏掉原生游标对齐
+
+- 首见：2026-09-14。16风机源蓝图的两个纬线分区比例为200/160、cursor Y为−6。raw-5d3ef722/57201312报BlueprintWrongTropicRatio；按源纬度重算后的raw-081e2e27/57213641改报BlueprintNotAlignTropicAnchor，仍有范围/占位问题。两次都只inspect，未执行最终原生建设检查或提交施工。
+- 根因：当前DLL的正常BuildTool_BlueprintPaste先RecalculateCursorPos，再SnapTropic，之后才生成分区和预览；SpherewrightBlueprintBuildTool.Translate漏了SnapTropic。第一次地面吸附与游标重算可跨到不同格网，不能用任意笛卡尔偏移或只保持纬度代替原生经纬对齐。
+- 修复/状态：`fixed_offline_live_pending`。在相同位置补调用原生SnapTropic，仅改工具自己的一点预览数组；不修改玩家、地形、库存、蓝图代码或原生拒绝条件。原有输入/分区限额约束扫描工作量，返回姿态仍进入范围、碰撞、科技、整图预算及审批哈希。
+- 离线证据：六项新增回归中，指南缺失测试先失败后通过；五项Core覆盖吸附后姿态、纬线拒绝、占位及原生检查状态仍影响审批。locked restore、完整Release零警告/错误、1852测试（58 Contracts/1670 Core/124 MCP）通过；编译后适配器反编译确认调用次序。源码MCP64工具/1资源/71120字符指南、纯stdout/正常退出通过。
+- 边界：测试未运行Unity；尚未冷部署、同档恢复或取得修复后原生正例，不宣布16风机可建或发电。下一正常保存当前16件成品和已成功短移，完成十写审计后冷部署；用同一蓝图重新评估实际姿态及剩余范围/占位，不重放成功备料/移动。关联EXP-300与game-api-foundry。
 
 ## IFX-129 — PowerShell Clamp整数重载把线段内部最近点错投到端点
 

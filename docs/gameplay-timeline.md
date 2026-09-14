@@ -3,6 +3,10 @@
 更新时间：2026-09-14（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-14 / 第四批两台完成，返航观察到期未触发重放：30370b1已推送且CI34810216529成功，raw-472be221 fresh预检后，Luna raw-2f128cf3唯一接受action22e97cfc-2253-4bac-9071-191a221090bf、build2c34ecc1-2fb2-425c-9bec-5f66f15c87a5。两对象4397/4398在57364376均完成，风机6→5→4；后续30秒无人机返航观察未settled，runner停止并交root，未重跑原动作。root raw-5fe8b742/57365954沿原handle/build确认成功终态、两对象durable/fresh及3/3无人机idle、Walk0/800MJ、healthy，无unknown/quarantine。
+
+root raw-e043ca40/57366895进一步核完整4398实体/8598互返边、48旧配置及2新详情、全玩家仅−2风机、原J88/两网满供/零prebuild，accepted2/revision22。31离线及六个退役入口拒绝通过，未延长超时或把返航等待当作施工失败。累计12/16，主档仍57310664，本批与上一对尚未保存。最后两组分别已有raw-d61f1e4c与raw-c5ece16b的原生现场正例，但不是已施工，须在前组完成后的现场再次fresh prepare；持续供给、三级Foundry、紫糖/机甲升级、准备与双包门保留。
+
 2026-09-14 / 稀疏对角模块正常施工，累计10/16风机：0946413已推送、CI34809572370成功；完整十写审计的计数在受保护记录raw-f342b9e3明确10→0后才开始新窗口。root从4391/4393明确导出两台对角模块，raw-3acca9ef原生重解析与完整现场检查通过，raw-272f8e98 fresh prepare通过。Luna raw-182ca0d0唯一blueprint-build（actionb530deb5-5e05-4e16-9ec5-2a88ee02ce8a、build43b6a11e-00c1-4b42-8c6b-186cb5ee21bf）在57353873完成4395/4396，正常扣料8→7→6，没有编辑蓝图数据、改变原八台或重放失败排列。
 
 root raw-d4ea3091/57356386独立核原始/fresh终态、逐对象durable/fresh材料/唯一实体、完整4396实体/8598互返边、46旧配置及2新详情、全玩家/原J88/两网满供/零prebuild；主网新增两发电节点，累计额定增量50000 J/t。三个明确批次各31项私有离线检查通过；accepted1/revision18、primary57310664，新增两台尚未保存。第四批仅raw-c5797c33/57355782两台整图原生预检通过，仍须单独fresh prepare，不提前计为施工；余六台与持续供给、完整三级Foundry、紫糖/机甲升级、准备和双包门保留。

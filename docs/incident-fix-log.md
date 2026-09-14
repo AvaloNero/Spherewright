@@ -54,6 +54,8 @@
 
 ## IFX-126 — 调用方把一次配方配置误算为一次revision递增
 
+- 2026-09-15钛后继修正：`fixed_offline_live_pending`限冻结8FB213D0私有执行器；当前安装源码证明build调度+Complete各一次、save直接terminal后只由调度+1。等待中的保存完成竞态先核owned/healthy/session及原handle，再以真正终态绑定新primary；完成后严格R+1，不放宽revision。root独立185执行器、45+50审计、5入口/解析与21客户端通过，另将原raw-0f9ffec2真实保存前session和raw-2cc7f598真实保存后session直接传给生产helper验证27→28；失败反例保留。九钛路径及普通save尚未live，旧G执行器不再运行，原exit1不改写。
+
 - 2026-09-15反向再现并核销：F3DBB671把build的+2套给普通save，raw-0f9ffec2三段29 NEW施工及58959632唯一保存已成功，但保存后期待27→29而实际28导致exit1，最终summary未生成。root此前审查也漏掉此处；82离线里合成save夹具复用了错误假设，不能当真实保存证据。UtilityActions的ExecuteSaveOnMainThread直接设置terminal/succeeded，不调用Complete，随后执行调度仅增一次，与原save27→28一致。root raw-2cc7f598先证原/fresh唯一save，raw-f2c294bb再核全部十终态、4554实体/8896边/67详情/全旧配置/玩家科研/J88/空货/满电/零prebuild，primary58959632/R28/accepted10保持。旧live两入口退役；50审计、32+50计数offline/入口/解析/21客户端通过。未重存、重建、宽放全局revision或补造原summary；只关闭本次成功动作核销，下一个Ti执行器须按真实保存路径另行修正/验证。
 
 - 后续实机状态：`fixed`限私有后缀与原台不重放。d1eeec2/CI34741102959成功后，raw-7519f0dc仅配置3965/3966为r58，53604513/53604622成功，真实revision112→114→116；3964/r16保留。root raw-48839c6c于53614437核全部十笔原始/fresh终态、4179实体/8160互返边/418详情、三台16/58/58空机及原玩家/J85/两网，17+54审计离线通过。原执行器exit1和其遗漏测试保持为历史事实；未投料或保存新配置，持续产量和实际恢复仍待。

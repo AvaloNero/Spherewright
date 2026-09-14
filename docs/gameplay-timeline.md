@@ -3,6 +3,10 @@
 更新时间：2026-09-15（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-15 / 三段剩余带路fresh预检通过：b3b0b93已推送、CI34892650249成功，Sol唯一preview raw-da8328d5 exit0，未施工。G5/G6/G7自由候选的NEW/建材为17/7/6，estimatedGameTicks为15300/6300/5400；均完整native_grid/full_path_stage1、prepared/commitAllowedNow且零blockers。第三段只是未来G6尾端的占位替身，实际G7仍须fresh source-cover并只新建5，后缀预算29不变。root raw-37ae117c只复放原保护记录，核三计划、14详情、六原成功终态、四组session/player、原J88/两网/零prebuild，零新增游戏调用。
+
+末session58947998/R21/primary58361888、player58947999为3idle/0working/0pending，accepted6保持。Sol一次本地摘要误用不存在的journal.sequence而停止，随后只复放同一原raw的durableThroughSequence=88，没有重跑预检；缺失字段不能补成0。当前不接source/仓/sorter、不save或Move，冻结SHA F3DBB671不变；本预检结论push/绿CI后仅交Luna一次G5/G6/G7+save，完成到第十写即冻结并由root独立核验，不提前宣称持续供料。
+
 2026-09-15 / G5–G7有限续建等待修正，offline通过：Sol冻结私有后缀SHA-256 F3DBB671C300CB43E7C5827AC9E2DD07B0E7271DE4194B0E13082A846B2689E7，root独立82+79离线、49十写审计、5入口拒绝及解析通过；同批21客户端/1 MCP回归通过，均零游戏调用。仅剩17+7+5=29 NEW带及普通save，accepted6→10；G7必须取实际G6尾端fresh source-cover。原塔与G0–G4不重做，不接source/仓/sorter或启动3050，预计最终4554实体/8896互返边、75带/15普通sorter/3塔。
 
 每次同handle等待至多30现实秒；G5/G6/G7最多40/20/16轮，Stopwatch在2430/1230/990秒后不发起新调用，保存最多2轮/150秒；最后已开始的有界请求可能稍晚返回，不把该限制写成精确终止时刻。非terminal再读同批预建筑与session，绑定原负ID集合、完整页及真实有限constructionProgress；八轮且至少3600tick无进展、两轮tick不动或到原生时限即保留pending并停写。完工跨读和保存新primary先核原终态；只接住精确caller timeout，通信/协议/原生失败仍抛出。最终返航就绪单列，不掩盖成功save。当前尚无新live预检或写入，accepted6/R21/primary58361888/J88保持；等待本切片push/绿CI后先只读preview。

@@ -588,6 +588,8 @@
 
 ## IFX-001 — 已接受动作被客户端展示错误误报为失败
 
+- 2026-09-15后缀原生预检实机正例：raw-da8328d5的三free候选17/7/6全部通过，零commit，root raw-37ae117c独立核原记录至58947998/R21/primary58361888/J88/accepted6。实际G7仍须父带cover5 NEW，29后缀及save尚未执行，不能把预检通过当等待策略已live验证。Sol本地摘要误取journal.sequence产生一次错误，随后仅读同一raw的真实durableThroughSequence=88；没有新增游戏调用或将原失败改写，复放不等于重试。
+
 - 2026-09-15私有有界观察修正offline：Sol冻结F3DBB671，仅续G5–G7+save并保留accepted6；root独立82+79/49离线、5入口拒绝与解析、21客户端/1 MCP通过，零游戏调用。按原action/prebuild负ID和真实进度观察，轮数、现实时间、无进展与原生game-tick边界均有上限；caller timeout不等于native失败，其他异常不吞掉。独立审查发现并修正save跨读完成时先拿旧primary断言的竞态：先核同session/healthy及revision，fresh原handle终态后才绑定新primary。额外revision、异session、隔离、进度缺失/倒退/外来对象与错误超时均有反例；pending进度用JSON-safe rows避免IFX-121。此时未preview/execute，不能将offline称为实机修复，未来只续三未提交路径及保存。
 
 - 2026-09-15返航中实际准入补证：root只复放raw-9a09c3df原意图/player/唯一commit，证明G2预检0idle/3working、G3/G4预检1idle/2working，均零pending build/repair且fresh原生接受。对应58888204/58889136/58889939；不是追加游戏调用、放宽hash或把任意working当可建。三次动作后来成功并纳入raw-2b250795六前缀，原四轮等待退出与未保存事实不改写。下方离线正例的live待验边界据此窄范围更新，下一等待策略与三路径后缀仍须单独验证。

@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-15 / EXP-188/195/200/229/299三段未提交后缀原生复验（`validated`限零写预检）：raw-da8328d5的17/7/6 NEW自由候选全部通过完整原生检查；root raw-37ae117c只复放原证据，核三计划/14详情/六成功前缀/四组session与player/J88/两网/零prebuild。末读58947998/R21/primary58361888、accepted6保持，实际后缀仍29 NEW；G7自由6点不替代未来实际G6尾cover5 NEW，不能重复扣源点或假定已预约。冻结F3DBB671的有界等待尚未live，施工/保存/供料另验。最近复验同日；现场、材料、来源、玩家或session变化仍须fresh prepare。原摘要取错journal.sequence的本地失败保留，改读既有durableThroughSequence，不补零、不重跑游戏调用或新增公开字段。
+
 2026-09-15 / EXP-007/185/242/299有界进展观察（`validated`限当前源码与调用方offline，后缀live仍待）：F3DBB671仅续原未提交三路径及save；root独立82+79离线、49十写审计、5入口/解析及21客户端/1 MCP回归通过。固定四轮现实等待不是原生施工时限：当前源码为started+max(72000,estimatedGameTicks×20)，原G4计划9000、deadline59069945，而58892267已成功；377条原等待记录覆盖120.700567现实秒，不含可推造的退出game tick。仅按同action原负prebuild集合及当前有限非null进度观察：剩余集合只能缩小、既有进度不能倒退，不猜归一化上限；缺字段、外来/重复或重现对象即停。queued空目标过渡与立即terminal分别处理，完成跨snapshot/session读优先fresh原终态。
 
 每轮等待≤30秒；本次17/7/5 NEW分别最多40/20/16轮，Stopwatch在2430/1230/990秒后不开始新调用，保存2轮/150秒，已发起的有界请求可能稍晚返回。八轮且≥3600tick无进展、两轮tick不前进或原生deadline触发保留pending，不声明原生失败、不reprepare/replay。精确caller-timeout才允许后续同handle观察；其他错误保持。保存完成revision先核owned/healthy身份及原handle终态，再绑定新primary，不能用旧primary断言抢先误报；pending进度使用JSON-safe rows。最终constructionAndSaveSucceeded和readinessPending仍分离。最近复验同日，当前尚未live续段、保存或接源；此设计不修改Plugin超时、MCP面或正常原生规则，实际进度样本/异常分支另验。对应IFX-001/121，替代固定四轮预算的后缀策略而非删除原历史失败。

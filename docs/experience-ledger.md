@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-15 / EXP-007/018/037/185/242/299石墨烯输送骨架及十写复验（`validated`限本次正常施工、保存与完整核销）：raw-0f9ffec2完成G5/G6/G7的17/7/5 NEW及唯一save58959632，材料104→75；同handle等待后的三原生成功终态分别58958041/58958753/58959233，不重放原塔/G0–G4。root raw-f2c294bb/58967777核十原/fresh终态、4554实体/8896互返边/67详情、53新带真正fresh空货、所有旧配置/玩家/科研/J88/满供与零prebuild，accepted10不清零。50审计和32+50计数复核offline、解析/退役与入口/21客户端通过；归零仍须此审计push及绿CI后的fresh边界证明。最近复验同日，无新Plugin/MCP或重启，骨架与正常保存不等于连接供源、持续产量或完整Foundry；后续钛和分拣器分别验收。
+
+IFX-126再现的是相反方向的错误：当前普通build通过Complete和执行调度共+2，而普通save直接写成功terminal、只由执行调度+1，真实27→28。F3把save误写+2，合成测试也继承同一假设；root此前审查只修了旧primary竞态，漏掉动作族差异。原save仍已成功，raw-2cc7f598原/fresh证据和源码共同核销；不能放宽全局revision、补造执行器summary或重存。原live入口退役，仅留offline历史helper；独立十写proof明确callerPostSaveGuardFailed与原summary缺失。下游Ti必须复用真实保存DTO与实际生产路径测试，不把相互一致的合成夹具当原生证据。此项收紧既有EXP-037/299，替代下方F3关于save计数的离线假设，其他有界同handle等待/材料/拓扑约束不撤销。
+
 2026-09-15 / EXP-188/195/200/229/299三段未提交后缀原生复验（`validated`限零写预检）：raw-da8328d5的17/7/6 NEW自由候选全部通过完整原生检查；root raw-37ae117c只复放原证据，核三计划/14详情/六成功前缀/四组session与player/J88/两网/零prebuild。末读58947998/R21/primary58361888、accepted6保持，实际后缀仍29 NEW；G7自由6点不替代未来实际G6尾cover5 NEW，不能重复扣源点或假定已预约。冻结F3DBB671的有界等待尚未live，施工/保存/供料另验。最近复验同日；现场、材料、来源、玩家或session变化仍须fresh prepare。原摘要取错journal.sequence的本地失败保留，改读既有durableThroughSequence，不补零、不重跑游戏调用或新增公开字段。
 
 2026-09-15 / EXP-007/185/242/299有界进展观察（`validated`限当前源码与调用方offline，后缀live仍待）：F3DBB671仅续原未提交三路径及save；root独立82+79离线、49十写审计、5入口/解析及21客户端/1 MCP回归通过。固定四轮现实等待不是原生施工时限：当前源码为started+max(72000,estimatedGameTicks×20)，原G4计划9000、deadline59069945，而58892267已成功；377条原等待记录覆盖120.700567现实秒，不含可推造的退出game tick。仅按同action原负prebuild集合及当前有限非null进度观察：剩余集合只能缩小、既有进度不能倒退，不猜归一化上限；缺字段、外来/重复或重现对象即停。queued空目标过渡与立即terminal分别处理，完成跨snapshot/session读优先fresh原终态。

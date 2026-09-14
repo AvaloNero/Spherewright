@@ -3,6 +3,12 @@
 更新时间：2026-09-15（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-15 / 石墨烯三段续建和正常保存完成，原十写严格核销：2113170已推送、CI34893413289成功，Luna唯一运行F3DBB671后缀raw-0f9ffec2。G5在58958041完成17 NEW，G6在58958753完成7 NEW，G7经真实G6尾端fresh source-cover在58959233完成5 NEW；材料104→87→80→75，没有重复扣源点或重做原六笔。唯一save在58959632原生成功、零物料差量，累计accepted10。
+
+脚本在保存后错误要求revision27→29而exit1，实际是27→28，未写最终执行器summary。root raw-2cc7f598仅三只读核原/fresh save完全一致、primary58959632/healthy和3idle；当前UtilityActions保存直接设置terminal，不调用会再递增revision的Complete，不能把build的+2套给save（IFX-126）。原F3及root审查的漏测保留，live两入口永久退役（CF33C8F6），未重跑或伪造缺失summary。
+
+root原十写审计raw-f2c294bb至58967777通过：十原/fresh终态一致、4554实体/8896互返边/67详情、53累计新带全部fresh空货、全部旧4500配置、玩家完整材料/inc/燃料/手搓/原位Walk静止和三机idle、科研、durable J88、两网满供与零prebuild。仅128带→75及4塔→3，15普通sorter保持；新29带和全部旧前缀都被本次主档覆盖。最终proof明确callerPostSaveGuardFailed与原summary缺失，不把进程exit1改成成功。50审计、32+50计数复核offline、解析、两退役入口/三计数入口拒绝与21客户端通过，计数复核尚未live。accepted10/R28/primary58959632保持；本结论push/绿CI后才做只读计数归零，下一仅九段钛空载带75 NEW及save。尚未接真实来源、共仓预约或15分拣器，不称纳米管/紫糖持续生产或完整三级Foundry完成。
+
 2026-09-15 / 三段剩余带路fresh预检通过：b3b0b93已推送、CI34892650249成功，Sol唯一preview raw-da8328d5 exit0，未施工。G5/G6/G7自由候选的NEW/建材为17/7/6，estimatedGameTicks为15300/6300/5400；均完整native_grid/full_path_stage1、prepared/commitAllowedNow且零blockers。第三段只是未来G6尾端的占位替身，实际G7仍须fresh source-cover并只新建5，后缀预算29不变。root raw-37ae117c只复放原保护记录，核三计划、14详情、六原成功终态、四组session/player、原J88/两网/零prebuild，零新增游戏调用。
 
 末session58947998/R21/primary58361888、player58947999为3idle/0working/0pending，accepted6保持。Sol一次本地摘要误用不存在的journal.sequence而停止，随后只复放同一原raw的durableThroughSequence=88，没有重跑预检；缺失字段不能补成0。当前不接source/仓/sorter、不save或Move，冻结SHA F3DBB671不变；本预检结论push/绿CI后仅交Luna一次G5/G6/G7+save，完成到第十写即冻结并由root独立核验，不提前宣称持续供料。

@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-15 / EXP-299与IFX-136后缀实机核销（`validated`限三建一存及十写审计）：217cbcd/CI34965837162绿后，Luna v4/437AFBC9的raw-ea0471e3一次正常exit0，保留4640，仅新4641–4643及save59894127，accepted6→10不归零。三个fresh实际位置probe分别保留1500/1200/900 J/t剩余需求（含未来两源600），当时各余40100；166节点夹读仅允许已解释的实时发电变化，不能把该截面当未来容量许可。root C9BA4818先原记录零新游戏调用核证通过，再raw-55d965f1一次217读exit0，末59900026/R97/primary59894127/J88；完整十终态、全场47页4643实体/9084互返边、153详情/128空带、库存仅四只sorter净减且余2、机甲settled、科研/两网/零prebuild核清。两原料源保持未接，不能称持续产出；安装仍6070cf8。调用方真实readinessPending/awaiting_drone_return保留，后来的独立settled只核销当前可继续边界，不能改写原报告或重做成功动作。下一新源接通时必须分别fresh原生预检与600/300 J/t预算，并按有货的阶段核纯度，不能继续断言全路线为空。新现场、源开启、人工变化、保存恢复及十写触发复验，最近复验同日。
+
+同批独立审计复核（EXP-299）：Sol指出F05候选未完整绑定completion phase/preview，以及Dp-Plan只核宽松路径/偏移；root显式核ready与awaiting_drone_return两种一致形状、准确preview，并复用冻结S2-AssertPlan补完整单段路径、空target/resource/belt-path、virtual slot=-1、offset=0及实际端点位置。三个真实历史plan正例及各12反例、ready/pending正反例纳入C9BA4818共133项离线通过，再用于上述真实217读。prepare_save的完整字段未单独验收；正常保存由准确原/fresh terminal、R97、primary tick及protected resume能力共同证明，不冒充新的恢复实测。旧F05/5+5脚本不用于此次验收。
+
 2026-09-15 / EXP-299与IFX-136续建顺序（`validated`限离线）：Sol的冻结候选9E2F32F9经root完整生产流复核，启用为437AFBC9，只发布显式offline及精确审批execute。原/fresh终态、唯一new详情先成立，临时只准计划两端的预期互返新边；既有连接原样保留，完整link通过后才加入已建集合。61项调用方、733D3B62的15项helper、728DE1F3的8项真实fcab双端回放及C1D2CEB4的17项纯入口/解析通过，尚未新建。原已成功第一只不再prepare；后续index1–3每步仍新token、原生真实点、166节点前后夹读及1500/1200/900 J/t余量预算，含未来两源600。开场实际R90目录的原生静态规格在同进程/程序集/科研不变前提下复用，现场probe分别绑定90/92/94；不能改写DTO revision。末实机仍59820632/R90/primary59372664/J88/accepted6，下一仅三建一存至10再独立审计。旧v3和5+5审计不再live，安装仍6070cf8。现场变化、人工操作、读回或十写边界触发复验，最近复验同日。
 
 同批审计修订（EXP-299，`validated`限离线）：六旧+四新pure predicates/CF88BC93显式导入Ca-Edges和三项Sra依赖，161项检查使用真实六笔历史动作、实际47页场景和fcab链，未来三建/save明确只是合成；完整审计候选F05F1B85另85项离线通过、live入口仍关闭。初次真实负例发现PowerShell以bool为左值比较非空状态字符串会发生类型转换，故仅比较文字不够，必须同时限定native模式/action状态的string类型；修正后正负例通过，原exit1保留。不能把这些离线结果当成217次fresh十写审计已发生，生产路径仍需独立复核，未新增游戏调用或公共字段。

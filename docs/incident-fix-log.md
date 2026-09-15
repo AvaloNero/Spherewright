@@ -14,7 +14,8 @@
 
 ## IFX-136 — 已成功新分拣器登记晚于端点读回，合法新边被旧配置拒绝
 
-- 当前修复：`fixed_offline_live_pending`，限私有v4/437AFBC9。Sol将单一原/fresh终态与new详情绑定到临时两端读回集合，完整互返link/旧配置核验后再登记；root独立61项调用方、helper15项及真实fcab双端回放8项通过。后三建一存保留accepted6→10，17项纯入口/解析检查证明无默认执行、无重复preview、精确参数在导入前校验，绿CI仍是执行门。首轮合成fixture误把index1继续设为4640、随后修为4641–4643，并按commit时先增accepted；两次真实离线exit1保留，不是游戏写入或原生失败。没有新实机结果，完整十写审计和持续供给仍待。
+- 当前实机状态：`fixed`仅私有v4/437AFBC9的三次后续sorter读回。217cbcd绿CI后raw-ea0471e3正常exit0，原index1–3均以同handle终态/new详情/两端互返核验后登记，4641–4643建成且正常save至59894127/R97；原4640没有重放。调用方constructionAndSaveSucceeded=true但readinessPending=true，root C9BA4818的原记录核证及raw-55d965f1一次217读均exit0，末59900026核十原/fresh动作、4643实体/9084边/153详情/128空带、全玩家已settled、J88/科研/两网及零prebuild。accepted10保留，未接两源或归零，不外推全部旧私有调用方、持续供料或版本完成。
+- 离线修复截面：`fixed_offline_live_pending`，限私有v4/437AFBC9。Sol将单一原/fresh终态与new详情绑定到临时两端读回集合，完整互返link/旧配置核验后再登记；root独立61项调用方、helper15项及真实fcab双端回放8项通过。后三建一存保留accepted6→10，17项纯入口/解析检查证明无默认执行、无重复preview、精确参数在导入前校验，绿CI仍是执行门。首轮合成fixture误把index1继续设为4640、随后修为4641–4643，并按commit时先增accepted；两次真实离线exit1保留，不是游戏写入或原生失败。当时没有新实机结果，后继验收见上条。
 - 指南落地：830e3c1/CI34960271729绿后，包内agent-playbook及其MCP嵌入资源回归加入“原/fresh成功terminal及唯一new详情→临时两端核验→完整互返link→完成本地步骤”，明确保全旧边、不泛化跳过连接、不重放成功prefix。3项相关MCP测试及Release测试项目构建零警告错误通过；仅源码指南，6070cf8运行安装未更新，后缀执行仍待。
 - 首见：2026-09-15。a06e0c5/CI34958424703绿后，Luna按固定获批参数运行v3/72E822DD；raw-af7af77c/PTY36067真实exit1，但106原回复全部成功。唯一accepted 34e96953在59810683→59810859正常建4640，2011仅6→5，两次terminal一致；原new详情和4610后态已落盘，原末session59810628/R88，尚未读到4622后态，也未做第二笔施工或save。
 - 根因：v3先核同handle终态并读new详情，然后调用继承S2-ReadEndpoint；后者仅按s2New剥离已准入的新边。4640却要等两端与link验证完成后才登记，导致4610的合法slot4新边被当成旧配置变化。属于私有调用方过渡状态顺序错误，不是原生施工失败或应该重放的结果不明。

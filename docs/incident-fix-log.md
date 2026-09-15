@@ -12,6 +12,13 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-133 — 分拣器物理槽与Foundry探针设备落点被假定为同一点
+
+- 首见：2026-09-15，Sol唯一S2预检raw-d723c7d0在第五候选exit1。四Ti连接先通过，随后871→4505的普通sorter native prepare成功，源slot7/过滤1123；Foundry probe请求origin也等于该sorter位置，但返回制造台position偏移0.257892250217m，调用方严格同点断言拒绝。第六候选和全场分页未运行，零accepted游戏写。
+- 原因界限/状态：`open`。已证错误假设是把指定的探针origin、原生sorter物理槽和探针设备实际落点视为相同；具体投影/原生覆盖语义由Sol按6070cf8源码继续核对。不得仅扩大位置容差或把投影制造台覆盖当作真实sorter覆盖。尚未修改Plugin/MCP或宣称修复完成。
+- 验证：root raw-877f4502正常exit0、仅复放原47记录，核五native prepare/五probe成功与第五后置拒绝，完整玩家/端点配置/科研/两网和开场J88保持。最后session59422241、probe59422252/R81/primary59372664，投影点网3及4500探针余32400真实，但实际sorter覆盖仍未证明。
+- 下一边界：Sol同一问题第1轮，已交第2轮有限离线设计；不重开档、不改S1成功九只、不commit/save/reset，不重跑失败脚本。后续计划仍需明确授权、fresh预检、独立核证，三轮仍不能解决才交主会话重设计；unknown/quarantine不等待次数。
+
 ## IFX-132 — 只读审计把数组格数当成物品总量
 
 - 首见/根因：2026-09-15，Sol共仓三项native预检raw-70987988已成功且零commit，root原记录审计却在来源保留量检查exit1。表达式`$detail.buffers.count`读取了PowerShell数组自身Count，得到30个格而非每格count的合计；不是原生缺料、距离越界或Sol设计失败。

@@ -14,6 +14,7 @@
 
 ## IFX-135 — 把发电设备含实时缓冲的配置哈希当成静态几何证据
 
+- 指南产品化（仍未核销执行器修复）：根因2471be7/CI34949557238已推送并绿；现已把buffer敏感哈希、完整前/probe/后静态证据、唯一合法实时发电count变化及禁止改写hash/复用token写入MCP嵌入的agent-playbook。新资源测试与既有发电单位/无人机边界共3项通过，MCP测试项目Release build零警告错误；仅源码/嵌入资源离线通过，安装6070cf8和原71120字符指南未冷部署更新，工具/资源数量及协议不变。
 - 首见：2026-09-15，1f7faaa/CI34947900705绿后，Luna以940375B5仅做四下游零写预览。raw-1511dbee在首个4610→4622 native prepare和供电probe成功后，于前后节点比较处真实exit1；只有66个成功Bridge响应、一个prepare/probe，没有commit或重试。
 - 根因：`GameStateReader.CapturePower`把`generateCurrentTick`写入`power-generation-current-tick`/`joules_per_tick`缓冲；`CanonicalStateHash.FactoryConfiguration`仍包含buffer的role/item/count/inc，并非所有设备都适用的纯静态指纹。两侧166节点中85台发电设备（77风机、4火电、4聚变）仅实时发电量和两个派生hash变化，其余所有DTO字段除捕获tick外相同。不得改公共hash或删掉材料/配置准入来让调用方通过。
 - 独立证据：root7047340F/raw-8098fc09正常exit0，核原66回复、完整开场47页4639实体/9068互返边及两侧73+93节点；原哈希相等断言可稳定复现失败，逐字段静态配置与原生/Core几何等价成立。首点由3478覆盖、保守余量2.225818m；实际capacity1534000/全工作预约1528100/剩余六sorter1800，余4100 J/t，原4500探针余1400。不是当前缺电或原生放置失败。

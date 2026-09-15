@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-15 / EXP-188/290/299与IFX-135的MCP指南落地（`validated`限离线资源）：2471be7/绿CI后，将真实哈希域、完整节点前/probe/后静态复核、唯一合法generation buffer仅非负count可变及禁止改写hash/旧token写入agent-playbook；3项嵌入资源/发电单位/无人机指南测试及MCP测试项目Release build零警告错误通过。没有公共工具/字段/动作或hash域变更。当前安装6070cf8、71120字符旧指南仍未更新，不能把源码嵌入测试当冷部署或实机修复。无游戏调用，原1511首点边界/accepted5保持；调用方v2及独立几何审计仍须按Sol的窄方案离线验证，原未完成门不变，最近复验同日。
+
 2026-09-15 / EXP-188/290/299发电节点哈希适用性复验（`validated`限根因，修复待验；IFX-135）：raw-1511dbee首Ti接点native prepare/probe通过后，940375B5因跨tick configurationStateHash不同而exit1，66回复均成功、零commit。root7047340F/raw-8098fc09独立核销：完整开场4639/9068不变，两侧166节点的85台发电机仅实时generation count和派生state/config hash变化，静态字段、网络、连接及原生覆盖相同。`FactoryConfiguration`确实包含buffers，名称不能推出通用静态性；F55/54及调用方的跨tickhash相等假设对运行发电机降级为`invalidated`，其几何投影/覆盖算法保留。仅节点1就有492→488 J/t，两hash因此变化；新wind4639保持417 J/t也不能反证其他发电机改变了配置。
 
 首点原生/Core都由3478覆盖、保守余量2.225818m，capacity1534000−预约1528100−六只1800=4100 J/t，原4500探针余1400；此刻缺电不是blocker，也不能据此声称连续燃料或其余三点通过。7项原失败/变异及13项独立preview离线检查通过；Core新增2203/2204/2211三例，相关13项哈希回归/测试项目Release build零警告错误。最后原session59699280/R88/primary59372664、player59699285、node59699302，J88只开场，accepted5；无结尾补读或新游戏调用。下一有限修订只在逐字段静态证据不变、唯一合法瞬时发电buffer的元数据不变时允许其非负count变化，纯节点不放宽，另验夹读时序；不改公共hash/版本/prepare/commit。最近复验同日，修订与fresh重验仍待，所有旧成功部分保持。

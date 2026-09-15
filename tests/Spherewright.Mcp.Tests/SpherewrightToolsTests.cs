@@ -588,6 +588,21 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void PackagedPowerNodeGuidanceDistinguishesRuntimeBuffersFromStaticEvidence()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("not a universal static-topology fingerprint", guide);
+        Assert.Contains("power-generation-current-tick", guide);
+        Assert.Contains("complete before/probe/after snapshots", guide);
+        Assert.Contains("network, connections and all other static fields", guide);
+        Assert.Contains("nonnegative integer count may vary", guide);
+        Assert.Contains("preserve its role, fuel item/name, units and inc", guide);
+        Assert.Contains("unexplained hashes still stop the plan", guide);
+        Assert.Contains("Do not rewrite returned hashes", guide);
+        Assert.Contains("each real action still requires fresh native prepare/commit", guide);
+    }
+
+    [Fact]
     public void FlightGuidanceRequiresNativeShoreCompletionAndBoundedStableArrival()
     {
         var services = new ServiceCollection();

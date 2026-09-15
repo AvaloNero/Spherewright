@@ -658,6 +658,7 @@
 
 ## IFX-066 — 调用端把有效配置预检误判为回包失败
 
+- 同类复验（2026-09-16）：私有晶格硅Build纯判据再次要求expectedStateHash等于玩家请求hash；root在任何新游戏调用之前按StructuredActions的组合绑定及AddPreparedPlan纠正，保留请求fresh玩家hash和服务端所有检查，仅核计划hash的规范格式。9F28D5EE的50离线检查使用不同hash域正例及畸形hash负例，真实完整调用方模拟亦通过；随后FFB53D39/raw-83494010的两条原生Build预检正常exit0，root raw-9b8ee532仅重核原27文件/25响应通过。此后继限私有Build回包解释，无Plugin/MCP接口改变、无游戏commit或安全放宽，不计作物理方案失败；既有包内指南原则仍适用，施工/实际sorter与产出未验。
 - 首见：2026-09-08，塑料供油906的有限过滤配置；状态`fixed_offline_live_pending`。
 - 根因：调用端先把确认过的inserter.filterItemId=null误当无效（当前reader明确把原生0映射为null），继而要求普通配置plan回显targetObjectId、要求expectedStateHash等于请求哈希。后两次原生prepare均已通过，却被本地新增断言拒绝；没有commit。主会话按两次上限中断，没有让第三次猜字段继续。
 - 修复：包内/MCP内嵌playbook明确null与请求0的区别、可选目标字段及服务端计划哈希；保留正确请求hash、prepared/token/commitAllowed/blockers和各mode明示检查。MCP回归用不同服务端hash和缺省target验证现有转发，不改Plugin或放宽原生校验。

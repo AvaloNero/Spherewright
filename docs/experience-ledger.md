@@ -1,6 +1,6 @@
 # Spherewright experience ledger
 
-更新时间：2026-09-15（Asia/Singapore）
+更新时间：2026-09-16（Asia/Singapore）
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
@@ -15,6 +15,8 @@
 - 证据只记录可复核的脱敏摘要、动作/实体 ID 或代码测试位置；不记录 token、存档内容或 runtime descriptor。
 
 ## 当前经验
+
+2026-09-16 / EXP-299七动作阶段交接（`validated`限离线/源码与安装文件复核）：Sol设计、root A92D3F66仅做843防回填/正常取料/唯一1113预约、空炉101改r37、3铁1铜及save，accepted3→10后冻结。97调用方、34FB2478的87检查/15全流程场景、六坏入口/解析和44 Core仓储测试通过，root独立复跑exit0，零游戏调用；228安装文件仍匹配6070cf8，无新握手/部署。每个prepare拒绝或accepted后20次同handle观察仍未终态都停在准确前缀，不换键重做；模糊receipt另标不确定，不虚构accepted数或重计幂等回放。保存须先按原终态的primary及完整session核验，再同步全部调用方缓存。唯一预约证明后，843可见HPS应允许正常降至0，报告真实格数/总量，不能继续固定29/2900；预约前仍严格验证满格以避免多预约。配置+2 revision来自Complete与外层执行各一次，而非两个accepted或原生Notify；普通recipe prepare可无公开target，但私有payload/终态仍必须绑定101/37。此阶段无sorter施工和产出，后续几何、持续生产及十写全厂审计仍待；原生/安装、调用方、DTO或现场变化时复验，最近复验同日。
 
 2026-09-15 / EXP-299仓储输入限制复验（`validated`限当前DLL/代码，实机配置待验）：Sol/root独立复读AE0BA95F原生路径，普通sorter→InsertInto→AddItem(useBan:true)只遍历size-bans；普通仓PickFrom→TakeTailItems(useBan:false)仍可出仓，人工TakeItem也不读bans且从前向后取料。因此bans30不能称为“冻结所有自动I/O”；843阶段须每次fresh核实际存货和唯一1113原生投影过滤，出仓改变条件时停止，不能据compact buffers推原生格号。filter-empty-or-matching请求bannedGridCount用-1以保留已有30，不传30。包内/MCP资源的既有“not a global inventory freeze”进一步明确普通自动出仓，未新增工具、字段或Plugin调用。距离审计采用209b玩家60526443/buildArea80和已证位置：843约60.095m、101约67.487m，历史1511约34.931m/562约68.244m；现场仍须fresh范围预检，不能靠旧距离授权。此批零新游戏调用，最新仍60526528/R102/primary60175189/accepted3；手动包/安装版MCP尚未重打或替换，正常配置与后续连续产量仍待，最近复验同日。
 

@@ -12,8 +12,18 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-138 — 保存 helper 更新新主档后，外层适配器仍读取旧缓存
+
+- 首见：2026-09-15，cf5e89b及CI34975670198成功后，Luna唯一执行09EDD665/raw-c678d01e，PTY97882真实exit1。两源与save都已accepted，停止发生在保存后的本地边界断言；没有重复提交、第四动作或隔离。
+- 原生结果：G源4644在60173927建成，Ti源4645在60175018建成，2011仅2→1→0；正常save于60175189完成。三个原/fresh terminal分别一致，末session60175202/R102/primary60175189、owned/healthy、resume可用。不能把调用方exit1改写成exit0，也不能把它当作需要重新保存的原生失败。
+- 根因：`S2-CompleteSaveBoundary`更新s2的revision/primary后回调`S2-AssertBoundary`；本次override却取尚未同步的ssExpectedPrimary=59894127。新主档60175189被旧缓存拒绝，外层随后同步ss的代码未执行。静态函数存在/闭包与独立函数正负例不能覆盖这种跨helper状态交接。
+- 状态/修复：`mitigated`限原动作核销，显式新边界核验已离线通过。root72D1F9FB用真实原保存动作及真实末session复现同错，19项正负例通过；修订核验先由已证原terminal得出新primary，严格校验session/revision/ownership/mode，再允许采用，不从第二份旧缓存取期望值，也不靠当前session自行认领未知主档。原09EDD665与原exit1保留，不再live或重跑。
+- 独立原记录核销：raw-7bdb662b/PTY2230正常exit0，零新游戏调用；172原成功响应、三终态、两原生plan/probe、两组166节点夹读、唯一双端互返/过滤/扣料均通过。G/Ti实际覆盖余量1.883685/2.542486m，每步600/300 J/t预约后均余40100；动态发电变化87台，其他静态证据保持。
+- 未到达的边界：原开场60171287为47页4643实体/9084边；原末player60175086、power60175101均在save前。没有保存后closing scene或settled玩家证据，不伪造完整completion。accepted3保持，下一仅补有限只读核验；持续供料、保存后重启及其余版本门仍待。关联EXP-299/IFX-137。
+
 ## IFX-137 — AST 导入丢失函数参数，完整离线预加载掩盖正式依赖缺口
 
+- 后继实机范围：09EDD665已由Luna实际导入并完成两源的终态/双端核验及正常save，root72D1F9FB/raw-7bdb662b核全部172原响应通过。调用方随后因独立的保存缓存交接问题停止，见IFX-138；不能把未到达的保存后共享仓/全场阶段一并标为已实机验证。
 - 首见/边界：2026-09-15，Sol 的两源续接调用方在执行前独立审查中暴露；没有新增游戏调用、accepted 或原生失败。旧下游成功前缀、主档59894127/R97和J88保持，最新实读仍59932861。
 - 根因：把 `FunctionDefinitionAst.Body.Extent.Text` 直接交给 `Set-Item Function:`，会丢掉声明处的参数，并把带大括号的函数体当成待返回的脚本块。root 的纯复现中，本应返回5的调用实际返回 `ScriptBlock` 且参数集合为空。另有正式路径漏导入终态、双端核验和共享仓配置函数；完整旧调用方的offline预加载会把它们带入测试环境，使测试通过不能证明正式启动可用。
 - 修复/状态：`fixed_offline_live_pending`，仅本次私有调用方09EDD665。按完整函数声明保留参数及函数体，只显式安装命名依赖；补齐38个source、3个runtime依赖，并核44个本地执行函数的调用闭包。新进程只加载正式的functions-only依赖和真实导入器，不执行旧调用方顶层或其offline分支；分别实际运行参数、数值拒绝、共享仓配置及终态正负例，不以函数存在代替执行。

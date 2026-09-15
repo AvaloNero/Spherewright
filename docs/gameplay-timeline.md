@@ -3,6 +3,12 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / C源接点TooFar，第三轮未解交回主会话：50bd341/CI35025581225绿后，Sol批准A3B4160C/D08C3E2C的有限零写预检，root的21基础、7完整流程/46检查、入口/解析及21公共action-client通过；预期上限148读/prepare，任一失败即停。Luna raw-65833656/PTY11373真实exit1：共69回复，前68成功，唯一101→4664/2011/filter1113 prepare返回BUILD_CONNECTION_INVALID；exact-slot attempts48、nativeChecks1、lastNative TooFar，后备4个候选检查仍TooFar，bestFacing2.892°虽小于11°也不能放行。TooSkew是单独保留的前置候选拒绝，不掩盖实际原生TooFar；这些是一次prepare内已有的有界检查，不是外部重复提交。
+
+开场61193221的47页全场仍4664实体/9128互返有向边，五个端点详情/玩家14带4sorter、J88/科研/两网和零prebuild通过；最后session61193618为R120/primary60758779/healthy，最后电力观察61193634。未执行B、Foundry功率代理或关闭全场，不能补称完整148调用通过、当前四sorter预算已实测或全部19带货物本轮fresh已读。accepted由原started/stopped一致证明为5，纠正Luna摘要误报4；没有新增commit、施工、移动、配置或保存。
+
+root C0B47A1F/raw-3913747c仅读取并封存原71文件，重放同一调用方到准确第69次拒绝，保留68完成调用/0成功plan/0写/accepted5，5专用检查与三入口/解析通过，PTY12211 exit0；没有发新游戏调用。审计通过表示失败边界已核清，不把原caller改记成功，也不从raw完成记录推导进程exit值。已成功C19不动；连同先前两轮离线否决，第3轮仍未完成C/H连接，按用户规则停止相似尝试，由主会话重新设计，Sol仅移交证据、Luna等待。先提交本负例与边界，不重放原101→4664、不以Move处理非OutOfReach错误、不扩大动作白名单。
+
 2026-09-16 / C19输出带正常建成，独立只读尾审通过：26632b5/CI35022424183绿后，Luna以冻结EF7873DC唯一执行raw-ff312c36/PTY79281。原生动作22561a88于61134156开始、61142640成功完成，耗8484游戏tick；传送带33→14、普通分拣器4不变，19个新实体按计划路径为4664→…→4646。18份现场进度的存活负ID逐步19→16→13→10→7→4→1，随后两次相同成功终态换成完整19正ID；没有重试、额外动作或原生unknown/quarantine。
 
 原caller随后读取19详情和完整61142668快照（47页/4664实体/9128互返有向边），但在尾审下一次读取之前触及600秒本地截止，真实exit1；stopped明确terminal_readback、acceptedKnown5、acceptanceUncertain=false、1132次原生响应，不能改记caller全程passed或把已建带当未执行。root 9F63647F逐条核1135原文件/1132回复、唯一commit意图/回执、全部同handle状态/进度、原两份全场和19详情；10项离线、三坏入口/解析及Sol独立审查通过后，仅以raw-5e972858/PTY87748进行78次fresh只读尾审，正常exit0、零写，61154706→61155160/R120/primary60758779/J88。fresh全场61154730仍4664/9128，新带全空、两自由端和18内部双向边准确，三旧设备/完整玩家/科研/两网/零prebuild保持，玩家ready、14带/4sorter；原1135文件哈希封存，accepted4→5不归零。

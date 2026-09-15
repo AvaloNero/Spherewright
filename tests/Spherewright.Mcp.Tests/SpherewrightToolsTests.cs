@@ -626,6 +626,23 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void OpeningPlaybookReconcilesNewSorterEdgesBeforeCompletingStep()
+    {
+        var resource = AgentPlaybookResources.GetOpeningMovementPlaybook();
+        Assert.Equal(AgentPlaybookResources.OpeningMovementUri, resource.Uri);
+        var guide = resource.Text;
+        Assert.Contains("pending-readback record", guide);
+        Assert.Contains("matching fresh successful terminal", guide);
+        Assert.Contains("uniquely returned new object ID and prepared source/destination", guide);
+        Assert.Contains("only that proven object's expected reciprocal edges on those two endpoints", guide);
+        Assert.Contains("preserve every old edge and other configuration field", guide);
+        Assert.Contains("both physical endpoint slots before marking the local step complete", guide);
+        Assert.Contains("Do not broadly skip connections, admit an unproved ID", guide);
+        Assert.Contains("A post-check exception never authorizes replay", guide);
+        Assert.Contains("continue only the unsubmitted suffix after fresh reconciliation", guide);
+    }
+
+    [Fact]
     public void FactoryReadGuidanceDoesNotBudgetGenerationAsFuelStock()
     {
         var services = new ServiceCollection();

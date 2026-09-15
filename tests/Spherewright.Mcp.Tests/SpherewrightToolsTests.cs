@@ -626,6 +626,21 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void OpeningPlaybookSeparatesNativeGridSpanFromMetreDistance()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("metre distance and native grid span are independent limits", guide);
+        Assert.Contains("5.5m and3.499 grid units", guide);
+        Assert.Contains("`TooFar` is not `OutOfReach`", guide);
+        Assert.Contains("existing interior belt segments", guide);
+        Assert.Contains("free physical slots and every old reciprocal edge", guide);
+        Assert.Contains("never native placement approval", guide);
+        Assert.Contains("preserve the whole successful route", guide);
+        Assert.Contains("prepare each new pair once, and stop on rejection", guide);
+        Assert.Contains("No arbitrary neighbor search, automatic rerouting or replay", guide);
+    }
+
+    [Fact]
     public void OpeningPlaybookReconcilesNewSorterEdgesBeforeCompletingStep()
     {
         var resource = AgentPlaybookResources.GetOpeningMovementPlaybook();

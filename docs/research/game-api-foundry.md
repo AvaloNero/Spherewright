@@ -1,5 +1,13 @@
 # v0.4 Foundry DSP API evidence
 
+## Reject an impossible device-to-device span before execution (2026-09-16)
+
+The audited `raw-e3fc3280` details expose 12 free native slots on furnace 101 and 9 on warehouse 843. All 108 free pairs exceed 7.5 m; the shortest is 10.723445807 m, for example 101 slot 5 to 843 slot 11. The reverse direction has the same distance lower bound. Root's 74F86EE2/`raw-dd8ec26b` recomputes those retained coordinates and freshly decompiles `BuildTool_Inserter` from native DLL SHA-256 `AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85`. Its `CheckBuildConditions` computes `forward=lpos2-lpos`; for two non-belt endpoints the maximum magnitude is 7.5 m and maximum grid span 3.799, with over-length candidates returning `TooFar`.
+
+`CaptureSorterEndpoints` and `GetInserterEndpointPoints` use the same prefab-slot world transformation. `BuildStepPlan.Inserter` and `CreatePreview` preserve those positions before `TryValidateInserterBuild` calls native `CheckBuildConditions`; it does not run a placement step that relocates them. `TryPrepareBeltAttachment` requires exactly one belt endpoint, so cannot rescue this two-device pair. No angle or grid-span estimate can make a pair pass the already violated distance bound.
+
+This is a source/original-observation design rejection, not a newly executed native prepare or live failure. Twelve private proof checks, three invalid-entry/parser checks and 15 existing Core endpoint-geometry tests pass; no new game calls, writes or installation changes occur. Preserve the completed recipe/storage staging and redesign transport. A shorter measured pair alone would still not prove native placement, materials, collision, power or sustained production.
+
 ## Crystal-silicon staging uses existing configuration semantics (2026-09-16)
 
 Subsequent local live evidence: Luna's sole8F3477E1 run (`raw-ac35cc9c`) completes all seven ordinary staging actions and save60758779; all124 native replies succeed. Root's `raw-0120da03` replays those original replies through the same predicates with no new game calls, proving the actual recipe37 prepared budget/optional target and101/37 terminal, three synchronous warehouse/recipe configurations, normal withdrawals and unchanged selected topology. The final snapshot60758878 hasR112/J88, warehouse843 with2900HPS/bans30/one1113 reservation and furnace101 still empty/disconnected. The original exit1 is the already durable report's later integer-key JSON display failure (IFX-121), not an API failure. This does not prove sorter placement, full ten-write audit, sustained crystal silicon or save/restart recovery.

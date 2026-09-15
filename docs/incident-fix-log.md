@@ -14,6 +14,7 @@
 
 ## IFX-138 — 保存 helper 更新新主档后，外层适配器仍读取旧缓存
 
+- 后继保存后核验：b49dab3绿CI后root B460F5FC以43项离线/四坏入口和解析检查后执行一次raw-311cbc26，81个真实只读回复及全部现场核验已完成，60239798→60240896/R102/primary60175189/J88/accepted3；场景60239826有4645实体/9092互返边，24详情、三个原/fresh终态、全玩家settled/零prebuild/两网保持。最终报告元数据错误使原PTY86254 exit1，见IFX-134后继；root412BE6DD的8项离线及raw-31e6aa43/PTY31804原81响应核证exit0，零新游戏调用。现在只关闭保存后现场缺口，不改写09EDD665原exit1，也不宣称持续产出或重启恢复通过。
 - 首见：2026-09-15，cf5e89b及CI34975670198成功后，Luna唯一执行09EDD665/raw-c678d01e，PTY97882真实exit1。两源与save都已accepted，停止发生在保存后的本地边界断言；没有重复提交、第四动作或隔离。
 - 原生结果：G源4644在60173927建成，Ti源4645在60175018建成，2011仅2→1→0；正常save于60175189完成。三个原/fresh terminal分别一致，末session60175202/R102/primary60175189、owned/healthy、resume可用。不能把调用方exit1改写成exit0，也不能把它当作需要重新保存的原生失败。
 - 根因：`S2-CompleteSaveBoundary`更新s2的revision/primary后回调`S2-AssertBoundary`；本次override却取尚未同步的ssExpectedPrimary=59894127。新主档60175189被旧缓存拒绝，外层随后同步ss的代码未执行。静态函数存在/闭包与独立函数正负例不能覆盖这种跨helper状态交接。
@@ -57,6 +58,7 @@
 
 ## IFX-134 — 本地材料摘要使用错误的目录集合名
 
+- 后继同类报告形状错误（2026-09-15）：root保存后审计B460F5FC已完成全部81读和现场断言，却在最终报告读取`Qs-Scene.snapshotId`时exit1；该聚合helper只返回scene/tick/entities/directedEdges/pages，真实snapshotId在已校验的原生分页DTO。原raw-311cbc26保留，未重扫游戏。412BE6DD以永久禁用transport的原记录游标重放同一读/核验代码，改从原47页第一页取元数据并再次验证同快照/同tick；8项离线正负例及raw-31e6aa43核证exit0，零新游戏调用，原exit1不改写。报告字段也须用真实返回形状测试，不能把旁边helper的返回形状类推；它不是原生保存/施工失败或Sol设计失败。
 - 后继实机复验：3df7b0d绿CI后，01AE4CFF/raw-bd31d77b真实四步备料与完成摘要正常exit0，root raw-d0e283b8独立原/fresh核销通过，末59587601/R86/primary59372664/J88/accepted4。正确buildings目录及gameTick完成证明均实际运行；不补改原750fffe5的exit1，不声称Plugin/MCP代码改变或风机已经建成。
 - 首见/根因：2026-09-15，root raw-750fffe5已完成10个普通只读响应，最后59562452/R81/primary59372664/J88/accepted0。汇总把BuildCatalog.buildings误写为items而exit1；不是MCP字段缺失、原生动作失败或Sol方案失败，没有prepare/commit。
 - 修复/状态：`fixed`限私有汇总与调用方。root raw-e92926da检查全部原响应的成功/顺序和两来源后，使用真实buildings重建摘要、正常exit0；零新游戏调用。01AE4CFF将目录解释抽为实际执行也使用的校验，真实目录正例与缺失buildings/未解锁/错误发电值/意外消费者反例纳入89专用检查；21客户端及解析/4错误入口通过。离线摘要中的整数键预算另改为可JSON编码的字符串键/物品行，未进入游戏执行。

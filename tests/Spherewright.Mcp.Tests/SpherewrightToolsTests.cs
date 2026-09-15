@@ -1374,6 +1374,8 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("TakeItem searches forward", guide);
         Assert.Contains("original bans to restore", guide);
         Assert.Contains("not a global inventory freeze", guide);
+        Assert.Contains("Ordinary sorter withdrawals can continue even with all grids banned", guide);
+        Assert.Contains("exactly one matching projected filter", guide);
         Assert.Contains("plan only the unfinished steps", guide);
         Assert.Contains("Never repeat stock removal", guide);
         Assert.Contains("never repeatedly drain stock or relax the full stateHash", description);

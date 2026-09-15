@@ -106,6 +106,8 @@
 
 ## 0.4.0 — Overseer, Foundry & Governor
 
+2026-09-15 S2第2轮有限修订离线通过：Sol冻结D6D4EF25，root独立356项；真实位置几何54B56A01、预检复放356BE6B1、七动作审计2AE59571分别38/199/139项及继承回归通过，四解析/13错误入口拒绝、现有40 Core供电测试通过。IFX-133更新为fixed_offline_live_pending，仅私有调用方；Plugin/MCP与安装态不变。每候选用两类节点各前后一次完整过滤快照夹住原生probe，检查165节点身份/位置/配置及两点覆盖集合；不能把revision未变当成人工未改场景。预览保留原五计划及各自tick，只补未做的index5，真正六次施工仍全部fresh prepare。当前零新游戏调用/写入，accepted0/R81/primary59372664/J88仍是最后已证边界；先push/绿CI后唯一零写后缀预检及root复核，再单独批准Luna，持续供给与其余0.4门不变。
+
 2026-09-15 S2供电原生根因复核：Sol第2轮提出完整节点覆盖集合等价法，root独立504FB195/raw-ee11bfc3通过22原DTO正反例、40 Core、解析/4入口，证明当前DLL下sorter真实点和Snap后探针的区别及条件覆盖关系，未改Plugin/MCP。原S1场景165节点中第五两点都由875/3753覆盖，保守余量1.883685/1.701861m；不同tick旧记录不是fresh验收。IFX-133仍open，Sol执行器修订、全场新观察及未做第六预检均待；accepted0/R81/primary59372664/J88无变化，不核销持续供给或其他0.4门。
 
 2026-09-15 S2首次现场预检边界（IFX-133）：62beba2/CI34927108204通过后，Sol唯一raw-d723c7d0在第5候选后置检查exit1、立即停止；前四Ti连接native prepare/真实pose预算均通过，871→4505的第五native prepare也成功（slot7/1123），但原分拣器位置与Foundry探针设备落点相差0.257892m。root raw-877f4502零新增游戏调用独立复现；原47记录含五prepare/五probe、零commit，第六候选及全场分页未运行。最后session59422241、probe59422252/R81/primary59372664、accepted0；不能从投影点余量35100推定实际分拣器覆盖。已交Sol作第2轮有界修订，不改成功S1、不直接放宽容差、不重开档；持续供给和其余0.4门保留。

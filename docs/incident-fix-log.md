@@ -14,6 +14,8 @@
 
 ## IFX-133 — 分拣器物理槽与Foundry探针设备落点被假定为同一点
 
+- 当前状态：`fixed_offline_live_pending`，仅私有S2调用方。Sol第2轮D6D4EF25冻结，root独立356离线及几何38/预检199/七动作139、继承、四解析/13拒绝入口通过；40既有Core供电回归通过。新方案保留实际/投影点和原失败，用完整节点覆盖等价证明而非扩大容差；每候选在probe前后各读73纯节点/92发电节点，核身份/位姿/配置不变。revision不能代表全部人工改动，故不再以开场快照加revision替代fresh节点证据。意图/收据持久记录夹读及几何，root另从原始响应核证；下列open段落保留历史截面。
+- 待验：新完整场景与唯一index5后缀预览，随后六次fresh施工及原生consumer读回；未新增游戏调用/写入，最后已证R81/primary59372664/J88/accepted0。只准在本结论push/绿CI后做零写预览，未准Luna施工；不改Plugin/MCP、成功S1、accepted计数或存档。
 - 首见：2026-09-15，Sol唯一S2预检raw-d723c7d0在第五候选exit1。四Ti连接先通过，随后871→4505的普通sorter native prepare成功，源slot7/过滤1123；Foundry probe请求origin也等于该sorter位置，但返回制造台position偏移0.257892250217m，调用方严格同点断言拒绝。第六候选和全场分页未运行，零accepted游戏写。
 - 原因界限/状态：`open`。已证错误假设是把指定的探针origin、原生sorter物理槽和探针设备实际落点视为相同；具体投影/原生覆盖语义由Sol按6070cf8源码继续核对。不得仅扩大位置容差或把投影制造台覆盖当作真实sorter覆盖。尚未修改Plugin/MCP或宣称修复完成。
 - 验证：root raw-877f4502正常exit0、仅复放原47记录，核五native prepare/五probe成功与第五后置拒绝，完整玩家/端点配置/科研/两网和开场J88保持。最后session59422241、probe59422252/R81/primary59372664，投影点网3及4500探针余32400真实，但实际sorter覆盖仍未证明。

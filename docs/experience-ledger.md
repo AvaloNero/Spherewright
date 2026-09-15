@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-15 / EXP-299下游十写计数交接（`validated`限本轮原证据）：8f208bd及CI34967466050成功后，12FE0EEC的40离线/6纯入口与解析通过，root raw-65a846aa一次37读、PTY48981正常exit0；59932861/R97/primary59894127/J88，30个明确见证、完整玩家/科研/两网/零prebuild保持，计数保护记录10→0，不是游戏世界reset或新保存，也未重复全厂分页。Sol复核发现原Cr-Proof只按真值判断bool会接纳字符串/数字，且未要求freshSceneTick或全部detail/prebuild的结束tick上界。实际原字段未错；保留原12FE与raw，root另建零游戏核证器0C24FF01，81项真实proof/30详情正例及类型/时间反例通过，raw-62a711c2原记录核证exit0，确认37原响应、全部实际类型和两端时间界限，无重复现场读取或再次归零。不能把事后核证说成旧binder已全面修复；旧入口不再live，未来counter必须前置严格类型/时序。源执行器只可绑定65原交接加62核证及其绿色发布，不能靠passed真值或未证future字段放行。最近复验同日，后续源接通/人工变化/重启须fresh检查。
+
 2026-09-15 / EXP-299与IFX-136后缀实机核销（`validated`限三建一存及十写审计）：217cbcd/CI34965837162绿后，Luna v4/437AFBC9的raw-ea0471e3一次正常exit0，保留4640，仅新4641–4643及save59894127，accepted6→10不归零。三个fresh实际位置probe分别保留1500/1200/900 J/t剩余需求（含未来两源600），当时各余40100；166节点夹读仅允许已解释的实时发电变化，不能把该截面当未来容量许可。root C9BA4818先原记录零新游戏调用核证通过，再raw-55d965f1一次217读exit0，末59900026/R97/primary59894127/J88；完整十终态、全场47页4643实体/9084互返边、153详情/128空带、库存仅四只sorter净减且余2、机甲settled、科研/两网/零prebuild核清。两原料源保持未接，不能称持续产出；安装仍6070cf8。调用方真实readinessPending/awaiting_drone_return保留，后来的独立settled只核销当前可继续边界，不能改写原报告或重做成功动作。下一新源接通时必须分别fresh原生预检与600/300 J/t预算，并按有货的阶段核纯度，不能继续断言全路线为空。新现场、源开启、人工变化、保存恢复及十写触发复验，最近复验同日。
 
 同批独立审计复核（EXP-299）：Sol指出F05候选未完整绑定completion phase/preview，以及Dp-Plan只核宽松路径/偏移；root显式核ready与awaiting_drone_return两种一致形状、准确preview，并复用冻结S2-AssertPlan补完整单段路径、空target/resource/belt-path、virtual slot=-1、offset=0及实际端点位置。三个真实历史plan正例及各12反例、ready/pending正反例纳入C9BA4818共133项离线通过，再用于上述真实217读。prepare_save的完整字段未单独验收；正常保存由准确原/fresh terminal、R97、primary tick及protected resume能力共同证明，不冒充新的恢复实测。旧F05/5+5脚本不用于此次验收。

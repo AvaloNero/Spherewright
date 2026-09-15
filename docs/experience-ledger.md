@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-15 / EXP-188/290/299（并复核IFX-132）的IFX-135窄修正（`validated`限离线，fresh待验）：Sol v2/82EC3592保留原生放置、几何、预算和四建一存上限；发电节点按完整静态字段及唯一实时buffer核证，纯节点继续要求hash相等。root独立97项调用方、F8D41603的27项节点/几何、0AE2825E的13项预览原证据核验和4项缺count纯函数回归正常exit0，八个错误入口在导入前拒绝。真实1511的85/166变化正例通过，不捏造新现场。新发现双方缺count会产生scalar Count=1，必须先验证精确七字段和非null Property.Value；缺字段反例应保持其他证据有效，不能靠另一个hash错误偶然拒绝。初次测试包装器读取未设置LASTEXITCODE的exit1保留，独立重跑成功；机械生成私有核验器时也已避开JavaScript replacement string对PowerShell文本中美元符号的展开，失败发生在写入前。公共哈希/动作、运行安装6070cf8和原成功施工不变。accepted5、最后原session59699280/R88/primary59372664/J88仅开场；只在本切片推送绿CI后重新做四点零写预览，不核销施工或持续产出。复验触发为新的字段/单位、DSP/目录、人工改动或每个fresh现场，最近复验同日。
+
 2026-09-15 / EXP-188/290/299与IFX-135的MCP指南落地（`validated`限离线资源）：2471be7/绿CI后，将真实哈希域、完整节点前/probe/后静态复核、唯一合法generation buffer仅非负count可变及禁止改写hash/旧token写入agent-playbook；3项嵌入资源/发电单位/无人机指南测试及MCP测试项目Release build零警告错误通过。没有公共工具/字段/动作或hash域变更。当前安装6070cf8、71120字符旧指南仍未更新，不能把源码嵌入测试当冷部署或实机修复。无游戏调用，原1511首点边界/accepted5保持；调用方v2及独立几何审计仍须按Sol的窄方案离线验证，原未完成门不变，最近复验同日。
 
 2026-09-15 / EXP-188/290/299发电节点哈希适用性复验（`validated`限根因，修复待验；IFX-135）：raw-1511dbee首Ti接点native prepare/probe通过后，940375B5因跨tick configurationStateHash不同而exit1，66回复均成功、零commit。root7047340F/raw-8098fc09独立核销：完整开场4639/9068不变，两侧166节点的85台发电机仅实时generation count和派生state/config hash变化，静态字段、网络、连接及原生覆盖相同。`FactoryConfiguration`确实包含buffers，名称不能推出通用静态性；F55/54及调用方的跨tickhash相等假设对运行发电机降级为`invalidated`，其几何投影/覆盖算法保留。仅节点1就有492→488 J/t，两hash因此变化；新wind4639保持417 J/t也不能反证其他发电机改变了配置。

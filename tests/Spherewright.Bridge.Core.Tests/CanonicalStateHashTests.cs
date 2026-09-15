@@ -1,5 +1,6 @@
 using Spherewright.Bridge.Core.Safety;
 using Spherewright.Bridge.Core.Logistics;
+using Spherewright.Bridge.Core.Factory;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Factory;
 using Spherewright.Contracts.Logistics;
@@ -184,6 +185,36 @@ public sealed class CanonicalStateHashTests
         snapshot.InserterStage = "Sending";
         snapshot.InserterStackCount = 1;
         Assert.NotEqual(filtered, CanonicalStateHash.Factory(snapshot));
+    }
+
+    [Theory]
+    [InlineData(2203, 0)]
+    [InlineData(2204, 1120)]
+    [InlineData(2211, 1802)]
+    public void FactoryConfiguration_PowerGeneratorBindsInstantaneousGeneration(int buildingItemId, int fuelItemId)
+    {
+        var snapshot = new FactoryEntitySnapshot
+        {
+            SessionId = "session",
+            PlanetId = 103,
+            ObjectId = 12,
+            ObjectKind = FactoryObjectKinds.Entity,
+            ItemId = buildingItemId,
+            ComponentKind = "power-generator",
+            CapturedAtGameTick = 100,
+        };
+        snapshot.Buffers.Add(FactoryBufferSemantics.PowerGeneration(492, fuelItemId, string.Empty));
+
+        var original = CanonicalStateHash.FactoryConfiguration(snapshot);
+        snapshot.CapturedAtGameTick = 101;
+        Assert.Equal(original, CanonicalStateHash.FactoryConfiguration(snapshot));
+
+        // This domain includes buffers. A different hash is not, by itself,
+        // evidence that a generator moved or its static configuration changed.
+        snapshot.Buffers[0].Count = 488;
+        Assert.NotEqual(original, CanonicalStateHash.FactoryConfiguration(snapshot));
+        snapshot.Buffers[0].Count = 492;
+        Assert.Equal(original, CanonicalStateHash.FactoryConfiguration(snapshot));
     }
 
     [Fact]

@@ -12,6 +12,14 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-135 — 把发电设备含实时缓冲的配置哈希当成静态几何证据
+
+- 首见：2026-09-15，1f7faaa/CI34947900705绿后，Luna以940375B5仅做四下游零写预览。raw-1511dbee在首个4610→4622 native prepare和供电probe成功后，于前后节点比较处真实exit1；只有66个成功Bridge响应、一个prepare/probe，没有commit或重试。
+- 根因：`GameStateReader.CapturePower`把`generateCurrentTick`写入`power-generation-current-tick`/`joules_per_tick`缓冲；`CanonicalStateHash.FactoryConfiguration`仍包含buffer的role/item/count/inc，并非所有设备都适用的纯静态指纹。两侧166节点中85台发电设备（77风机、4火电、4聚变）仅实时发电量和两个派生hash变化，其余所有DTO字段除捕获tick外相同。不得改公共hash或删掉材料/配置准入来让调用方通过。
+- 独立证据：root7047340F/raw-8098fc09正常exit0，核原66回复、完整开场47页4639实体/9068互返边及两侧73+93节点；原哈希相等断言可稳定复现失败，逐字段静态配置与原生/Core几何等价成立。首点由3478覆盖、保守余量2.225818m；实际capacity1534000/全工作预约1528100/剩余六sorter1800，余4100 J/t，原4500探针余1400。不是当前缺电或原生放置失败。
+- 状态：`open`。Sol已提出仅对唯一、单位正确的实时发电buffer允许非负整数count变化，其他字段/身份/连接/位置/朝向/目录半径严格保留，纯节点仍校验哈希，并补明确前/probe/后时序；尚未改执行器或重试。旧F55/54和940375B5的跨tick哈希相等假设不适用于运行发电机，先冻结其live用途；原生几何公式本身未被否定。
+- 测试/边界：7项原失败及静态字段/缓冲反例、13项独立预览离线测试通过；Core新增三类发电机buffer敏感性回归，所在13项哈希测试通过，相关测试项目Release build为0 warning/0 error。最后原session59699280/R88/primary59372664、player59699285、probe59699290、node59699302；J88仅开场、全场59698938，无结尾全场或session补读，accepted5不变。本条只定位blocker，不把首点通过当作完整四点预检/施工或持续供给。
+
 ## IFX-134 — 本地材料摘要使用错误的目录集合名
 
 - 后继实机复验：3df7b0d绿CI后，01AE4CFF/raw-bd31d77b真实四步备料与完成摘要正常exit0，root raw-d0e283b8独立原/fresh核销通过，末59587601/R86/primary59372664/J88/accepted4。正确buildings目录及gameTick完成证明均实际运行；不补改原750fffe5的exit1，不声称Plugin/MCP代码改变或风机已经建成。

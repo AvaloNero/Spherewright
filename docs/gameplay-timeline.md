@@ -3,6 +3,12 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / H两实际端点零写预检离线闭环：ef25478/CI35047924420绿后，Sol以H11原审计06085FD0及691原记录绑定当前4677实体/9156互返边，冻结preview0DE80FEB/powerD4F0BA8D。固定先4677→101/slot1，再842/slot11→4668，均2011/filter1105；belt虚拟slot−1不当作完工物理槽。opening59、每候选15、closing57共146调用，240秒整片/每请求30秒，任何失败即停；只新prepare，不commit、施工、保存、移动、转料或归零，旧token全部丢弃。四端完整配置/旧边/空带、3带/2sorter、ready玩家、J88/科研、完整两网和开闭47页场景都须fresh保持；每候选独立用四个原生节点快照夹住功率代理，按未来两只普通sorter600J/t验证，不把两个预检合成一次预约。
+
+root审稿发现Reset清空已经构造的不可变146调用序列，以及transport失败后才计数会漏记已发出的拒绝；最终改为Reset保留序列、单次请求守卫和try/finally dispatch，发送前记attempt/prepare并另记nativeSent。保留供电所有数值/类型、预算item/count、expiry、无混入其他动作、正剩余毫秒和完整旧场条件。15基础、root1146BC3C的30纯检查、三坏入口/解析、21公共action-client通过；fixture5575920D实际调用Hs-Run，仅替换transport，Sol PTY24729 exit0/9场景10检查。其首轮失败是合成power probe漏geometryMarginMetres，补齐fixture后通过，未修改生产caller。
+
+root9788AA50独立复跑完整fixture并加两个精确失败计数检查，PTY60883 exit0：正例146调用；首端原生拒绝到达68attempt/sent、1prepare、0保留结果；第二端拒绝到达83attempt/sent、2prepare、1保留结果；均确实到达指定错误、dispatch关闭，没有用其他先行拒绝冒充。三冻结输入前后SHA不变，全部0游戏/证据写入，合成tick不是实机时间。最新真实仍61450736/R127/primary61386568/J88/accepted9；推送绿CI后才交Luna唯一preview，不称端点原生已通过。后续实际写仍只先目的端到第10次，完整审计/显式handoff后再源端；持续晶格硅、保存恢复与其余0.4门未变。
+
 2026-09-16 / H11高纯硅输入带实机闭合：4773cb0/CI35046563257通过后，Luna唯一执行冻结A540449C，raw-72c3210d/PTY15066真实exit0。fresh开场61445131/R125、原C19与4665/4666已保存前缀通过后，一次prepare/commit正常建成11节2001；action65c80cde在61450410成功，两次同handle终态一致。实际带路顺序4668→4667→4669→4670→4671→4672→4673→4674→4675→4676→4677，14→3带、2sorter及全部其他玩家物品/inc保持。原10次进度页数量为11/8/8/8/5/5/5/2/2/2，固定负ID集合随实际完工递减；没有重发整条带路、未知结果或隔离。
 
 开闭快照61445156/61450431分别47页、4666实体9136互返边与4677实体9156互返边；只新增11个唯一实体及10条内部双向连接，全部旧场配置和C输出前缀不变。H11仍为空带，两端842/slot11与101/slot1未接分拣器；两网满供、科研/J88 durable/零prebuild和库存闭合。末61450736/R127/primary61386568/accepted8→9，未归零、未保存、移动、配置或转料。末player为returning_only_no_next_write_authorized，下一步骤仍需fresh就绪，不能把本次成功终态当下一写准入。

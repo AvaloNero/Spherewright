@@ -14,6 +14,8 @@
 
 ## IFX-140 — 建造调用方用假想排队状态测试成功，遗漏真实预建筑递减
 
+- H实际端点预检调用方后继（`fixed_offline_live_pending`）：首稿Reset清空146调用序列，导致干净offline在固定step自检失败；并非游戏路线或原生预检失败。root指出后，0DE80FEB保留不可变序列、单次请求guard/dispatch，并把attempt和prepare计数移到transport前，防止原生拒绝漏计；同时补齐原供电typed门、预算/expiry/无复合动作与正剩余时限。15基础、root30纯、9完整Hs-Run模拟场景10检查和两拒绝计数检查、三入口/解析及21公共客户端通过，0游戏调用。fixture首轮漏geometryMarginMetres的失败单独保留，补齐合成DTO后原caller未变。root9788AA50/PTY60883 exit0核first拒绝68调用/1prepare、second拒绝83调用/2prepare及第一结果保留，未将generic throw当正确拒绝。R127/accepted9实机边界未变，当前仍未执行H sorter preview或任何新写。
+
 - H11多轮实机后继（`fixed`限本机当前调用路径）：4773cb0绿CI后，A540449C唯一raw-72c3210d/PTY15066 exit0，61450410正常完成11新带。原10次progress页11/8/8/8/5/5/5/2/2/2及原handle最终正ID证明本次确实走过多轮递减分支，不只依赖短等待mock。root29BC9349/PTY45806在691原记录688回复上核销全部分段事实，6原记录检查并封存06085FD0；另19离线、三入口/解析及21公共客户端通过，0新增游戏调用。审稿只补prepare原记录token的typed脱敏形状和正/负例，不修改A540或秘密绑定语义。材料14→3带、完整旧场和C输出前缀保持，末61450736/R127/accepted9；无人机仍非idle且无下一写，不改判已成功施工，也不声称已接料、保存恢复、真实网络故障或持续晶格硅通过。
 
 - H11后继审稿（`fixed_offline_live_pending`）：窄caller显式初始化Gb纯helper依赖，不依赖旧REPL；对三种belt模式及每页snapshot使用严格string检查，负speed明确拒绝。一个bool snapshot反例最初先因旧tick拒绝，改成fresh正例成功后只改类型再拒绝，保留这一测试误因。最终A540449C/25基础、00D99219/14实际业务流模拟28检查通过，root37纯检查/入口/解析及75 Core通过；反向字节SHA证执行体与37检查对应C7版相同。14→3带、accepted8→9/R125→127仍是待实机条件；无游戏调用，不计作物理方案失败，也不扩Plugin或动作白名单。

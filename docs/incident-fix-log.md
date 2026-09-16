@@ -12,6 +12,14 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-147 — 普通保存草稿遗漏计划过期检查并把重放回执先计为新写
+
+- 状态：`fixed_offline_live_pending`，仅本批私有保存调用方，冻结前审阅发现；无游戏写入或Plugin改动。
+- 根因：复用旧正常保存helper没有验证expiry与非save附带字段，回执在确认idempotentReplay前就增加accepted；会把意外重放错误算成新增写入。
+- 修正：C7A86AE5先验证原生带zone的未来expiry、非脱敏token、零材料/目标及无其他动作投影。回执可先保留合法handle，但只有typed accepted且明确非replay才计2→3；重放或未知flag保持2和不确定性，已明确新接受但key错误则保留3及handle。正常保存必须另核R+1、精确primary、原内存身份与新票据，失败晋升不部分修改缓存，不重试或伪造回滚。
+- 验证：29基础检查/PTY28176 exit0；独立42D3AF85/3AA03360的15个完整Lss-Run场景/PTY32401 exit0，正常138调用、revision竞争140调用，13负例核具体首个错误与调用/意图/accepted/handle/cache边界；六坏入口import前exit1、解析0，9DA0CD15审计器29检查/PTY62183 exit0及Sol静态审阅通过。全部0游戏/证据写入。
+- 证据限制：原记录审计只核秘密字段脱敏形状，存档身份等值与票据轮换属于冻结live caller的内存见证，不比较两个REDACTED伪证等值；不读Header、不声称protected resume或持续产出通过。当前仍61774204/R133/primary61386568/J89/accepted2，须本片推送绿CI后Luna单次fresh执行。关联EXP-299和本档日记。
+
 ## IFX-146 — 单格容量恢复草稿混用了旧连接数与包装层，缺少提交前意图
 
 - 状态：`fixed`，仅本批私有单格容量调用方与一次本机正常配置；离线和下述真实执行/独立核销通过，不能外推持续产出或恢复。

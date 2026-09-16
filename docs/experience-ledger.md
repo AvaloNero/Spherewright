@@ -24,6 +24,8 @@
 - 证据/限制：[本档恢复边界](./gameplay-timeline.md#2026-09-17--晶格硅缓冲连接成功十写与保存仍待闭合)；未读取其他存档、未执行 load/save、未证明异常退出的原因。关联 EXP-302 与 AGENTS 第5/10节；恢复、手动保存或下个工序结束时复验。
 - 后续复验：用户另行授权五个固定槽的只读检查，LastExit62776058 与四份 autosave 均比62675846新，embedded完整 gameName和Journal identity均匹配。前述“其他备份未查”仅描述此前截面，现已找到同身份较新候选；不推断工厂内容完整或七写已恢复，也不倒推退出原因。元数据检查授权不是加载授权，healthy ticket仍只选primary。详见[固定槽检查](./gameplay-timeline.md#2026-09-17--用户授权的固定恢复槽只读检查)；原先未证实保存的历史事实保留，禁止宣称进度永久丢失。
 
+- 授权后实现切片：用户明确确认窄入口，规范已同步。当前DLL的v7/v13/patch22前缀允许有界读取完整内嵌identity；账户/截图只跳过，不能用文件名前缀代替。`OwnedSavePrefixReader`25项离线正负例通过；此时尚未接入loader或部署，旧primary和七写恢复结论不变。后续必须绑定实际候选tick及文件证据，加载/Journal通过后才正常重存。API布局与原生只读共享句柄依据见[research](./research/game-api-m0.md#2026-09-17-bounded-owned-save-identity-prefix)。
+
 ### EXP-302 — 以有限业务工序复用执行与核验
 
 - 日期/最近复验：2026-09-17；状态：`observed`。适用：已支持原语的本地规划、调用和阶段审计，不改变 Plugin/MCP 的准入。

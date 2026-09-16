@@ -17,7 +17,7 @@
 - 状态：`open`，恢复能力缺口；现有隐私边界按设计生效，不是自动放宽 selector 的理由。
 - 事实：进程退出后 primary 落后，但用户授权的固定槽只读检查发现 LastExit 与四份 autosave 的 embedded owned/Journal 身份均匹配且时间更晚；完整证据见[存档日记](./gameplay-timeline.md#2026-09-17--用户授权的固定恢复槽只读检查)。未加载，不能证明所有实体仍完整。
 - 原因：`OwnedWorldResumeSourceSelector` 对 healthy ticket 只返回 OwnedPrimary；LastExit 仅可用于真实 quarantine，公开 prepare/commit 无来源选项。原生 ReadHeader 不返回 embedded gameName，ReadHeaderAndDescAndProperty 的下层解析也丢弃它，时间/mtime不能替代精确身份验证。
-- 当前处理：保留成功动作证据与 accepted10，不伪造 quarantine、不离线改票据、不覆盖主档或重放成功动作。现有 selector 的5项测试通过，尚未实现或批准新的加载路径；需要明确恢复授权后再设计绑定身份、来源、完整性和 Journal 的窄入口。关联 EXP-303。
+- 当前处理：保留成功动作证据与 accepted10，不伪造 quarantine、不离线改票据、不覆盖主档或重放成功动作。用户随后明确确认实现/验证窄恢复入口，AGENTS已同步；第一切片新增无游戏DLL的 bounded embedded identity parser，25项离线测试通过。默认 selector 的5项既有测试保持；加载路径集成、候选tick贯穿采用/终态与冷部署实机仍待，不能把parser通过标成已经恢复。关联 EXP-303。
 
 ## IFX-151 — 原记录审计不能按审计电脑的墙钟重演施工轮询分组
 

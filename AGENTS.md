@@ -133,7 +133,7 @@ DSP native gameplay systems
 - 导入只调用 DSP 正常保存 API，把当前内存世界另存为服务端生成的高熵 owned 名称；原始保存名和路径不得进入公共 DTO、日志或文档，原存档不得覆盖、改名、删除或成为恢复目标。保存及 header 复读证明成功前不得取得 ownership。
 - 导入是显式时间边界：逐档 Journal 从导入时开始，标记历史覆盖不完整；不得根据导入时已有的物品、科技、升级或设备补造此前的“首次”事件。
 - 正常保存只允许当前 owned identity，并调用 DSP 正常保存 API。
-- 健康的计划重启只载入 ticket-bound exact primary；只有隔离恢复可以采用已经在读取 header 时满足最低 tick 的受限 LastExit 路径。
+- 健康的计划重启默认只载入 ticket-bound exact primary；真实隔离仍沿用受限 LastExit。2026-09-17 用户另行明确批准修复 IFX-152：允许在既有 prepare/commit 中显式请求较新的固定 LastExit，必须有本次对话确认、有效 healthy ticket、调用方已知进度下界，并在载入前核对内嵌完整 owned identity、当前版本、和平、Journal 连续性及文件证据，commit 重验并绑定实际候选 tick。来源改变/证据不全即拒绝，不降级到旧主档，不伪造隔离、离线改票据或复制覆盖原档；默认路径保持兼容。不增加任意文件名/目录扫描、自动存档加载或 save picker。正常采用后才按既有路径保存同一 owned identity；先核销旧成功前缀，不能重放旧 caller。
 - 本机 Steam 版冷部署/重启前先复核 EXP-001/002：普通保存并核销终态，正常关闭已确认的 DSP 进程，同批程序集安装及哈希复核，再通过已确认的 Steam `-applaunch 1366540` 启动一次。不得直接启动游戏 EXE；等待真实游戏进程、当前 descriptor 和菜单 ready 后才 fresh prepare protected resume。启动失败不是恢复失败，不消费票据、不重复启动并发实例，也不据此换档。
 - 恢复票据必须一次性、可过期，并有 durable consumed tombstone；恢复后重新生成 session，旧 cursor、plan 和 capability 全失效。
 - 新签发的恢复票据还必须绑定该 owned save 当前已落盘 Journal 的身份、跟踪边界和最小 durable sequence。prepare/commit 在载入前检查，世界采用后再检查一次；Journal 缺失、被重建或序列倒退时不消费票据、不自动保存且不开放游戏写入。旧票据仅为兼容可无此水位，下一次健康保存必须升级为新语义。

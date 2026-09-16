@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-299材料范围预检边界（`validated`限离线）：运行目录37/62都能产1113，须与当前完整现场配置相交才能证明本星球只有101/r37生产；不能把目录能力当实际生产者。仓储按每物品runtime stackSize核验，三项单独prepare不证明合并背包容量。5485158B为铁5/电路板1/石材4预留三个实际空格，只允许79调用/3prepare/0commit；全部token丢弃，未来重新预检。整厂列表不含detail-only带货，容量上界仍unknown；自然库存流动、source/player hash变化分别报告，不推断prepare因果。27基础、9CB0B46E完整15场景/8guard（PTY7053 exit0）、四坏入口/解析与21公共客户端通过，0游戏/证据写入；26/95端口在模拟中明确synthetic，不是实机证明。旧测试错误文本期望的exit1不改写，caller不变。关联IFX-149；目录/DTO/现场改变时重验，最近复验同日。
+
 2026-09-16 / EXP-299普通保存及嵌套审计复验（`validated`限本次本机保存和原记录）：Luna C7/PTY41817 exit0完成唯一正常保存61814274；修订root2FA/PTY3523 exit0核141文件/138响应、完整状态及逐字段结果，独立7CCBAB41且原manifest不变。旧9DA/PTY8384 exit1保留；修复审计表示不能改变原执行的事实或造成新save。末61814703/R134/J89/accepted3、4679/9164、843库存2900高纯硅/100晶格硅保持；没有归零或新游戏调用。32离线/三坏入口/解析及Sol审核仍是原记录实证之外的不同证据层；秘密比较仍属原caller见证，未读Header/重启，不核销持续产量和恢复。IFX-147/148在此窄范围完成复验，最近复验同日，caller/序列化/原生保存或现场变化时重验。
 
 2026-09-16 / EXP-299嵌套意图的审计表示边界（`validated`仅类型复现/离线修正）：原证据JSON解码为嵌套PSCustomObject，重放构造的Payload含嵌套Hashtable，仅顶层强制类型不能完成规范化。原C7保存caller已成功，9DA审计PTY8384却在lssa.original.intent.request严格比较退出1；这不是游戏失败，更不能重交save。2FA76120仅对重构请求Ci-Clone(JSON往返)，不编辑原record、不全局放宽comparer，错key及string planet仍拒绝。32离线/PTY50645 exit0、三坏入口/解析和Sol静态审核通过，0新游戏/证据写入；新原记录审计尚待，旧退出码保留。最后现场61814703/R134/primary61814274/J89/accepted3；关联IFX-148，最近复验同日，任何嵌套集合/DTO/序列化变化时复验。

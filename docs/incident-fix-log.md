@@ -14,10 +14,12 @@
 
 ## IFX-145 — 原生Journal时间字符串经PowerShell解码后被误拒绝
 
-- 后继只读方案（离线）：182BAE5E固定69读，绑定原E848755E而不重交施工；首次事件actualTime按A9EC验证后的UtcTicks比较，完整其余Journal、旧场和端口不放宽。144基础、root236、1E8C1528完整8场景16检查、三坏入口/解析及21公共客户端通过。草稿proof整数0误作bool由首轮offline捕获并修正；最终PTY94128/97276均exit0，0游戏/证据写入。fresh读取尚未执行，状态仍为fixed_offline_live_pending。
+- fresh实机复验：539283b/CI35064535986绿后，Luna182BAE5E/raw-50414722/PTY18325 exit0，69只读在61707001–61707511闭合原action、完整场与四项缺失收尾。root6327554E/PTY95922 exit0核71文件/69回复并封存E44C8F1C；15离线、三坏入口/解析与Sol静态审阅通过，0新增游戏调用，原记录未变。R131/primary61386568/J89/accepted1保持，不重交施工。
 
-- 原记录复验：a8297a6绿CI后，root746D52BD/PTY76511 exit0完整核235文件/232回复，重现原错误且A9EC窄适配后完整J89通过；独立E848755E和manifest复查通过，审计0游戏调用。24基础/14停点/14时间、三入口/解析及Sol静态复核通过。原caller exit1、四项缺失收尾和notSustainedProduction边界仍保留，当前并非fresh实机闭合。
-- 状态：`fixed_offline_live_pending`，时间类型适配已有14纯检查，完整原记录已核销；fresh只读收尾仍待。原施工caller exit1保留，不改成整片成功。
+- 后继只读方案（离线）：182BAE5E固定69读，绑定原E848755E而不重交施工；首次事件actualTime按A9EC验证后的UtcTicks比较，完整其余Journal、旧场和端口不放宽。144基础、root236、1E8C1528完整8场景16检查、三坏入口/解析及21公共客户端通过。草稿proof整数0误作bool由首轮offline捕获并修正；最终PTY94128/97276均exit0，0游戏/证据写入。该离线切片当时尚未执行fresh读取，状态为fixed_offline_live_pending。
+
+- 原记录复验：a8297a6绿CI后，root746D52BD/PTY76511 exit0完整核235文件/232回复，重现原错误且A9EC窄适配后完整J89通过；独立E848755E和manifest复查通过，审计0游戏调用。24基础/14停点/14时间、三入口/解析及Sol静态复核通过。原caller exit1、四项缺失收尾和notSustainedProduction边界仍保留；该原记录审计本身不等于fresh实机闭合。
+- 状态：`fixed`，仅本机私有调用方的Journal类型边界及后继fresh只读收尾；14纯检查、完整原记录核销与一次fresh实机通过。原施工caller exit1保留，不改成整片成功，也不声称持续产出或保存恢复通过。
 - 实际边界：Luna BA5B5939/raw-a00f08e6/PTY61852只执行一次。两相同success terminal证明4679于61651154建成、2011只1→0、842/slot11→4668/实际slot4；J89已durable记首次1113。stop发生在closing/actualTime，acceptedKnown1、revisionKnown131、pending0且无commit uncertainty；0新重试/补写。
 - 根因：GameplayJournalEntry.ActualTime公开类型为string，Plugin FormatActualTime使用O格式。真实ConvertFrom-Json将该ISO值转换为System.DateTime；BA5B的新事件La-String拒绝。原mock使用synthetic串，未复现实际JSON时间解码。
 - 修正：保全冻结BA5B及原记录；独立只读A9EC2049从精确原函数生成窄适配，仅替换actualTime校验，其他session、历史条目、durable、kind/source/item与gameTick门保留。接受带显式时区的原生round-trip串或已解码UTC/Local DateTime、DateTimeOffset，拒绝弱类型/无zone/Unspecified；不改全局decoder及原plan expiry类型，不重交施工。
@@ -25,11 +27,11 @@
 
 ## IFX-144 — 最后供给端沿用未接通阶段的场景与动态状态假设
 
-- 状态：`fixed_offline_live_pending`，仅本批私有H-source caller与供电adapter；没有修改Plugin、成功前缀或原生规则。
+- 状态：`fixed`，仅本批私有H-source caller与供电adapter的场景/端口/动态货物判据，已由E848755E原施工审计及E44C8F1C后继fresh只读复验；原caller的独立时间类型中断见IFX-145。没有修改Plugin、成功前缀或原生规则。
 - 根因：草稿遗漏已建H炉端的四条有向边；把无planetId的JournalSnapshot套用普通实体capture门；接通后仍直接比较源端旧connections，没有仅归一化已核销的新边。旧两只未来sorter预算也需改为当前已建一只、仅剩一只。
 - 修正：BA5B5939按4678/9160→4679/9164核验完整场；Journal独立session/tick、旧88条、durable及唯一1113/J89时间边界；仅消去本次唯一新边并精确验证842/slot11和belt实际槽，其余端口/配置不变。允许合法1105/1113货物流动，逐行stack与aggregate严格一致，拒绝串料/弱类型/非零inc。456E69F5复用既有原生供电判据，只更新R129/457消费者与剩余300J/t预算。
 - 验证：21基础、root17功率和31独立纯函数检查、完整14场景PTY30760 exit0、三坏入口exit1及解析0，公共客户端21通过。完整正例覆盖J88、J89/非空货物和原prebuild跨窗口；负例覆盖就绪/前缀/原生拒绝/hash/收据/终态/端口/货物/功率，并核对实际模拟提交次数与保留handle/accepted。独立J89正例PTY3652 exit0；所有测试0游戏/证据写入。
-- 边界：没有真实H-source施工或持续产出结论。最后实机61603347/R129/primary61386568/J88，账本accepted0来自已封存交接，不是本片重置。供电17检查使用历史原生节点与显式合成当前计数，不冒充fresh供电。关联EXP-299与本档日记；推送/绿CI后才交Luna唯一fresh接线。
+- 边界：上述离线切片当时尚无真实施工，基线为61603347/R129/primary61386568/J88/accepted0；17功率检查使用历史节点与显式合成计数，不冒充fresh供电。后继唯一施工和只读复验现已证明4679及真实物流、末61707511/R131/J89/accepted1；843仍bans30，持续产出与保存恢复仍待。关联EXP-299、IFX-145与本档日记。
 
 ## IFX-143 — 归一化端口比较遗漏当前指向，动态物料允许弱类型
 

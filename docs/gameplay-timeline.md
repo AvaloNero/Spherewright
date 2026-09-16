@@ -3,6 +3,12 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / H源fresh只读收尾完成：539283b已推送并通过CI35064535986；Luna唯一运行182BAE5E，PTY18325 numeric exit0、raw-50414722共71保护记录/69原生读取。61707001开场、61707511收尾，原4679动作两次fresh终态与封存一致，场景61707004完整47页/4679实体/9164互返边，13详情保全C/H连接、配方、过滤及合法货物。玩家ready、3带/0sorter、零prebuild、durable J89、科研和两网通过；R131/primary61386568/accepted1保持，无prepare/commit/save/Move/transfer/config。
+
+root6327554E用固定原响应重验完整Hsc-Run，PTY95922 exit0；独立raw-44524c8a封存E44C8F1C，71文件manifest前后保持，既有235条施工记录也未改变。审计15离线、三坏入口exit1、解析0及Sol静态审阅通过，0新游戏调用。原进程exit来自Luna，不从completed记录推断；审计不重放墙钟、请求UUID或秘密值，安装哈希复验仍由原冻结reader实时检查见证，未重做MCP工具发现。
+
+IFX-145的缺失fresh科研/供电/prebuild/session已补齐，但原BA5B caller exit1不会被改写成exit0。843仍bans30，尚未开放自动输入；原J89只能证明首次1113，不能证明持续产出。下一由Sol设计一格容量恢复、Luna经批准执行；后续独立采样和正常保存/恢复均未通过，accepted不归零，已建前缀不重做。
+
 2026-09-16 / H源只读收尾离线闭合：Sol冻结182BAE5E reader及1E8C1528完整fixture，绑定E848755E原施工审计，不修改BA5B或原记录。固定69读：开闭session、两次原action终态、47页完整场、13详情及玩家/Journal/科研/供电/零prebuild；整片240秒、每请求30秒，禁止prepare、commit、保存、移动、转料、配置或计数归零。只证明当前成功前缀仍在和缺失收尾齐备，不把一次读取当持续产出。
 
 最终offline PTY94128 exit0/144；完整fixture PTY97276 exit0/8场景16检查，真实DateTime正例69读，负例在1/3/50/52/69/63/67调用分别拒绝session、终态、全场、端口、日记、新实体及供电漂移，并锁定具体错误而非任意异常。root2240DBF8独立236检查、三坏入口exit1/解析0和21公共客户端通过，全部0游戏/证据写入。首稿proof的整数0误套bool门已离线修正；Journal首次事件的时间按UTC瞬间规范比较，其他字段与89条历史保持严格。

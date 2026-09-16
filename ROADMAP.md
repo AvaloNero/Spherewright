@@ -106,6 +106,8 @@
 
 ## 0.4.0 — Overseer, Foundry & Governor
 
+2026-09-16 H源fresh只读收尾通过：539283b/CI35064535986成功后，Luna唯一182BAE5E/raw-50414722/PTY18325 exit0，69读零写，61707001–61707511完整核原action两终态、4679实体/9164互返边、13详情及玩家/科研/两网/J89/零prebuild。root6327554E/PTY95922 exit0独立重验71原文件/69回复，封存E44C8F1C且原文件未变；15离线、三坏入口/解析与Sol静态复核通过。末R131/primary61386568/accepted1、玩家ready，未重放4679或重置计数；IFX-145的fresh收尾已闭合，原施工caller exit1保留。843仍bans30，下一只设计首个1113预约格的正常容量恢复；持续晶格硅、该链保存恢复和其他版本门仍待。
+
 2026-09-16 H源只读收尾方案离线通过：Sol冻结182BAE5E reader与1E8C1528 fixture，固定69次读取、零prepare/commit，复用已封存的原action和4679，不重放施工。144基础、root236独立guard、8完整场景/16检查、三坏入口/解析及21公共客户端通过；真实DateTime正例与session、终态、全场、端口、Journal、新实体和供电漂移拒绝均覆盖，负例锁定调用数及具体错误。草稿proof整数误用bool已在离线修正；actualTime按同一UTC瞬间比较，未放宽其他日记字段。最后实机仍61651777/knownR131/primary61386568/J89/accepted1；本片推送绿CI后才交Luna一次fresh只读。输出仓容量、持续生产和保存恢复仍待，不核销版本门。
 
 2026-09-16 H源中断原记录已独立核销：a8297a6/CI35061430964成功后，root746D52BD/PTY76511 exit0、独立proof E848755E确认235原文件/232回复不变，完整核验4679施工、1→0材料、双向槽、两47页4678/9160→4679/9164与唯一原action终态。原时间错误准确复现；A9EC仅适配actualTime后，原J89全部判据通过。24基础/14停点/14时间离线、三入口/解析及Sol静态复核通过，审计0新游戏调用。保留originalCallerCompleted=false、末61651777/knownR131/primary61386568/accepted1；缺少的最终科研/电力/prebuild/session不能补造，下一只做fresh只读收尾。持续生产及保存恢复仍待。

@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-299与IFX-140等待分支复验（`validated`限当前私有caller离线）：短等待的完整流程正例不覆盖约30秒后才进入的进度分支。root在施工前发现Ci-Wait误取refreshTerminalFirst，而原S2契约是refreshSameHandleFirst；Sol只改属性名为B0BFC352，root反向字节SHA复得前版2A198F02，未改变时限、物理方案或动作语义。54ECC951以60次真实Ci-Wait轮询、原S2空页进度/R121及第61次同handle终态覆盖该分支，root独立16检查/20基础通过，0游戏/证据写入。继承helper必须实际测试触发条件及返回字段，不能仅靠函数存在、短正例或静态字符串。四项真实offline导入另证授权参数快照保全；这些结果不验证真实延迟/断线。最新实机仍61242765/R120/J88/accepted5，B0尚待执行；helper/调用方或DTO变化时复验，最近复验同日。
+
 2026-09-16 / EXP-299与IFX-140两步普通sorter调用方复验（`validated`限源码/离线）：当前建造在创建prebuild和Complete各增一次revision，不能按一action一revision推断；同一net消费者随逐步完工增加，后续功率预检须绑定新revision/consumer数。原生设备空槽occupied=false、otherObjectId=整数0、otherSlot=null；belt虚拟槽−1不是完工物理槽，实际两侧connection slot必须0–15并严格互返。只有同handle原/fresh成功终态、唯一new详情和两端旧配置/端口pose/旧邻边全部通过，才把pending对象登记为完成；任一失败保留accepted和原handle，不重放已成功前缀。
 
 证据与限制：DDCC8325在BEA21525运行15完整模拟场景通过；Sol纯测试暴露物理slot16缺口后，2A198F02只收窄两处上界，root反向字节SHA复得BEA，另跑新版完整213调用正例、15纯判据/20基础/坏入口及21公共客户端通过。不能声称15完整场景都直接运行于最终SHA，也不能把合成完整全场当fresh实机。两步每次保留四sorter/1200J/t是保守预算，不是精确剩余数量或跨计划预约；第二写须无人机ready，末次returning只表示无后续写授权。dot-source前必须快照包括外部SHA/commit/CI在内的授权参数；PowerShell逗号数组中的算式可能被拆成额外元素，关键预算改用命名字段，不靠目测位置。调用方及pure测试器的同名变量/旧端口形状错误都在离线发现修正，原失败记录保留。最新实机仍61242765/R120/J88/accepted5，无新施工/保存/持续生产；现场、DTO、调用方或安装变化时复验，最近复验同日。

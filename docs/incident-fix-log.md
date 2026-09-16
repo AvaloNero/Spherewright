@@ -14,6 +14,8 @@
 
 ## IFX-140 — 建造调用方用假想排队状态测试成功，遗漏真实预建筑递减
 
+- 后续离线分支修正：2cbd445的15流程场景只走短waiting，没有触发原Ci-Wait较长轮询后的进度分支。root施工前审计发现它误读refreshTerminalFirst，真实S2-ObserveProgress只提供refreshSameHandleFirst；StrictMode会在分支首次执行时停止，但不意味原生失败或重放许可。Sol冻结B0BFC352只改一处字段名，root逆向SHA证其他字节不变；54ECC951新增实际Ci-Wait60次waiting、原S2空页/R121进度、第61次同handle终态，root独立16项检查和20基础通过。状态仍`fixed_offline_live_pending`，原15场景覆盖不足明确保留，未因此产生任何游戏写入；没有扩大等待时限或修改成功前缀。
+
 - 2026-09-16两接点后继（`fixed_offline_live_pending`）：Sol在root批准的两个C输出接点上补有限两步执行器。审计纠正一action只增一次revision的错误假设（普通prebuild及Complete各一次）、逗号数组中算式被拆成额外元素导致电网consumer期望错误、空设备端otherObjectId应为0，以及导入覆盖外部审批SHA；均未进入游戏。root DDCC8325真实运行BEA21525的15完整流程场景通过，保留部分成功及模糊回执的已接受身份。Sol独立pure的slot16反例随后真实exit1，定位带虚拟端转成物理连接后缺上界；最终2A198F02只把endpoint slot及sorter reciprocal otherSlot上界改为15。root反向替换精确复得BEA字节SHA，另在最终版本运行完整正例213模拟调用和15纯判据，20基础/坏入口/解析及21公共客户端通过。纯测试器自身同名变量的末端SHA误报也已用专属快照修复，原exit1不抹去。此处不改Plugin/原生准入，不把离线两步成功写成已施工；最后实机仍R120/accepted5。实际执行须逐步fresh prepare、临时pending双边核验后登记、第一步成功不重做，R124/accepted7只是待验条件。
 
 - 2026-09-16 审计范围后继：C-sorter成功路径审计器草稿曾从raw完成记录硬编码originalExitCode=0，Sol复核指出IFX-121已有“保护记录完成后stdout仍失败”反例。F71AE549改为明确进程退出值不能由raw推出，并限制同一原trace只封存一次；该成功审计器未执行，因为实际raw-65833656在首个prepare就被原生TooFar拒绝。实际使用C0B47A1F只重放原71文件/69回复至准确拒绝，raw-3913747c/PTY12211正常exit0、5专用检查/三入口/解析通过，0新游戏调用，原Luna PTY11373 exit1与accepted5保留。审计通过不能改写被审执行的失败，也不能把未执行的B、功率代理或关闭全场补算通过。

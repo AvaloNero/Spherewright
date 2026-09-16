@@ -3,6 +3,10 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / C两sorter长等待分支在施工前补验：2cbd445推送且CI35037435669通过；root再读当前S2 helper发现Ci-Wait用refreshTerminalFirst，而实际返回refreshSameHandleFirst。原15场景及新版正例使用短等待，不能覆盖跨进度轮询的分支；没有因此调用游戏或把原离线通过改成实机通过。Sol仅改该属性名，最终caller B0BFC352，root逆向替换后SHA精确等于2A198F02，物理接点/计划/两写和600秒上限未变。
+
+Sol补充的54ECC951 pure真实调用Ci-Wait：60次同负prebuild waiting、60次逻辑500ms暂停（不实际sleep）、原S2-ObserveProgress空页/R121后，必须第61次同handle读取成功终态；不只查字符串或假造helper结果。root独立运行16项检查（PTY97584 exit0）与原20基础通过；此前另4项真实offline依赖导入证明审批SHA/commit/CI及模式快照不被覆盖。全为0新游戏/证据写入。最新现场仍61242765/R120/primary60758779/J88/accepted5，后续只授权本补验推送及绿CI之后Luna唯一执行B0；2A未live，不重跑预览或C19。两条C连接的施工、H输入、保存和持续产出依然待实测。
+
 2026-09-16 / C输出两sorter施工器离线验收：d20841a/CI35033879029通过后，Sol只实现root已批准的101/slot4→4661和4648→843/slot7；均为2011/filter1113，H输入仍不在本片。源码核实普通建造在预建筑创建及最终Complete各增一次revision，因此两步待验为R120→122→124、accepted5→7、sorter4→3→2，14带及全部C19保留。成功终态先绑定原handle/幂等键/唯一新ID及精确扣料，再以临时pending集合核两端物理槽/配置/旧边，完整互返后才登记新对象；每步另做47页全场、166节点功率括窗、Journal/科研/完整玩家和零prebuild核验。第二写前须无人机ready，末次返回中仅标returning，不伪称可继续写入。
 
 root冻结DDCC8325测试器在BEA21525上真实执行完整15场景（PTY69924 exit0）：正常两步、无人机返回、首步/第二步原生拒绝、两阶段陈旧revision、缺料、错误槽/端点hash、回执丢失/错键、新位姿/旧边/端口损坏及第二步电网漂移均按预期停止或通过，保全已接受前缀。Sol纯测试发现虚拟带端解析后的物理slot16仍被旧私有guard接受，遂只将两处上界收窄为15；root逆向替换后SHA精确回到BEA，最终2A198F02以同一测试器再跑完整正例（213模拟调用，PTY49418 exit0）及独立15项纯判据（42872513，PTY48911 exit0），另20基础、坏入口/解析和21公共action-client通过。原15场景并非全部直接重跑在新SHA上；两处收窄的差异和新版正例/反例分别证明，均无游戏/证据写入。

@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-299与IFX-145 中断记录的分段核销（`validated`限本次原始事实）：746D52BD/PTY76511在235原文件/232回复上核施工、扣料、完整旧场和新4679双边，准确重现原时间类型错误；只用A9EC修时间后原J89全部门通过，封存E848755E，独立manifest复查保持。审计不调用游戏、不复用原run写证明、不声称重放墙钟/秘密值，不补造最终四个缺失读取或原complete。
+
+24基础/14停点/14时间检查、三坏入口/解析与Sol静态复核通过；有终态的正常施工和其后的调用方校验失败必须分别报告。原Luna exit1、accepted1/knownR131、末61651777保持，不能将独立审计exit0替换原进程结果。fresh科研/供电/prebuild/session及持续产出仍待；最近复验同日，后续现场/证据变化时复验，不重做成功前缀。
+
 2026-09-16 / EXP-299与IFX-145 原生时间串的调用方类型边界（`validated`限原记录定位和纯函数）：JSON wire的string不保证PowerShell对象仍是string。Plugin Journal用DateTimeOffset.ToString("O")；ConvertFrom-Json默认可返回DateTime，不能用synthetic非日期串覆盖真实JSON路径。本次BA5B施工已两次成功terminal，但首个1113/J89读回在actualTime的La-String处停止，不能把caller exit1说成游戏施工失败，也不能把它改写为整片成功或重放。
 
 保全原235记录/accepted1/4679，A9EC2049只适配新Journal时间字段，不全局切换-DateKind以破坏既有plan expiry类型。显式带时区的原生round-trip串、UTC/Local DateTime或DateTimeOffset保留同一瞬间；拒绝弱类型、伪日期和无时区串，其他Journal身份、旧88条、durable与gameTick门不变。BF578392的14纯检查通过，0游戏/证据写入；真实完整判据核销与fresh收尾仍待，不将局部类型测试当实机持续产出。最近复验同日，关联IFX-144；所有外部JSON调用方或PowerShell版本变化时复验。

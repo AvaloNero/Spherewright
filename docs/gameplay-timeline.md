@@ -3,6 +3,12 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / H源中断后的独立原记录核销通过：a8297a6/CI35061430964成功，root只运行746D52BD audit-original一次，PTY76511 exit0；独立raw-f315ed0e/proof E848755E在新run封存，原raw-a00f08e6的235文件/232回复前后SHA及数量保持。原61649845开场、61649868的4678实体/9160边、61651154终态、61651162的4679/9164全场、材料/双向physical槽和原准备时74900J/t保守余量逐段通过；没有新游戏调用或重放原动作。
+
+精确复现原DateTime类型错误，再以A9EC仅替换时间字段判据，完整J89及原保护JSON串/默认日期解码的同一时间瞬间通过。foundation263CC720的24、stop auditor14、时间14检查及三坏入口/解析0通过；Sol静态审阅无阻止seal的缺陷，root另逐文件复查235项manifest。审计器草稿的预期请求键顺序问题在离线修正，不是新实机失败。
+
+证明明确outcome=construction-success-readback-stopped、originalCallerCompleted=false，原Luna PTY61852 exit1保持；末仍61651777/knownR131/primary61386568/J89/accepted1与returning-only。缺失的最终科研、两网、零prebuild、session四项必须另做fresh读取，不能从历史或原stop填补；无保存、归零、持续产出或恢复结论。下一由Sol准备有限只读收尾，Luna无新写入授权。
+
 2026-09-16 / H源原动作成功、调用方日记收尾停止：20bee0a/CI35060332473成功后，Luna只执行一次BA5B5939；PTY61852 exit1、raw-a00f08e6共235记录/232回复。root先只读原记录，确认同一action0ce88e10两次successful terminal、61650483开始/61651154完成，新4679为842/slot11→4668/实际slot4的2011/filter1105、满供且携带1105；材料2011只1→0，3带不变。closed scene为4679实体；已有H炉端4678未重做。这里不是完整独立审计已通过的声明。
 
 新Journal在61651777已durableThrough89、无pending/error，J89记录61651594首次factory-production-register产出1113。调用方在closing对new.actualTime调用La-String时报错；stop保留accepted1、revisionKnown131、pendingReadbackId0、knownNewIds4678/4679、commitOutcomeUncertain=false。末玩家仍2idle/1returning，无待建/修；没有最终科研/供电/零prebuild/session收尾，不伪造complete记录或PTY exit0。无save/Move/transfer/config/reset，主档仍61386568。

@@ -14,11 +14,12 @@
 
 ## IFX-145 — 原生Journal时间字符串经PowerShell解码后被误拒绝
 
-- 状态：`fixed_offline_live_pending`，时间类型适配已有14纯检查；完整原记录核销及fresh只读收尾仍待。原施工caller exit1保留，不改成整片成功。
+- 原记录复验：a8297a6绿CI后，root746D52BD/PTY76511 exit0完整核235文件/232回复，重现原错误且A9EC窄适配后完整J89通过；独立E848755E和manifest复查通过，审计0游戏调用。24基础/14停点/14时间、三入口/解析及Sol静态复核通过。原caller exit1、四项缺失收尾和notSustainedProduction边界仍保留，当前并非fresh实机闭合。
+- 状态：`fixed_offline_live_pending`，时间类型适配已有14纯检查，完整原记录已核销；fresh只读收尾仍待。原施工caller exit1保留，不改成整片成功。
 - 实际边界：Luna BA5B5939/raw-a00f08e6/PTY61852只执行一次。两相同success terminal证明4679于61651154建成、2011只1→0、842/slot11→4668/实际slot4；J89已durable记首次1113。stop发生在closing/actualTime，acceptedKnown1、revisionKnown131、pending0且无commit uncertainty；0新重试/补写。
 - 根因：GameplayJournalEntry.ActualTime公开类型为string，Plugin FormatActualTime使用O格式。真实ConvertFrom-Json将该ISO值转换为System.DateTime；BA5B的新事件La-String拒绝。原mock使用synthetic串，未复现实际JSON时间解码。
 - 修正：保全冻结BA5B及原记录；独立只读A9EC2049从精确原函数生成窄适配，仅替换actualTime校验，其他session、历史条目、durable、kind/source/item与gameTick门保留。接受带显式时区的原生round-trip串或已解码UTC/Local DateTime、DateTimeOffset，拒绝弱类型/无zone/Unspecified；不改全局decoder及原plan expiry类型，不重交施工。
-- 验证：BF578392/14纯检查复現真实ISO默认解码、DateKind String对照、UTC/offset同瞬间、未改其他expiry及非法形状拒绝，0游戏/证据写入。首轮发现ParseExact可给无zone串补本地时区，增加显式zone形状检查后通过。未将这一纯检查称为完整实机收尾、持续产出或保存恢复通过；关联EXP-299与本档日记。
+- 验证：BF578392/14纯检查复现真实ISO默认解码、DateKind String对照、UTC/offset同瞬间、未改其他expiry及非法形状拒绝，0游戏/证据写入。首轮发现ParseExact可给无zone串补本地时区，增加显式zone形状检查后通过。未将这一纯检查称为完整实机收尾、持续产出或保存恢复通过；关联EXP-299与本档日记。
 
 ## IFX-144 — 最后供给端沿用未接通阶段的场景与动态状态假设
 

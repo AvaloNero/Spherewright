@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-299单格容量恢复的公开回归（`validated`仅Core离线）：新增ReopeningOneReservedGridPreservesAllTailStockAndTheSynchronousBoundary，以合成30格filtered状态证明SetBans30→29只改变禁用尾格数，首个1113预约格、29格历史1105、库存/inc及输入对象全部保全。完整hash必须变化；配置同步readback既不能接受误开全部格位，也不能把稍后1113到货算作该配置动作的即时结果。空格不进入公开buffers，其偏移仍非原生格索引。
+
+Debug构建及StorageConfigurationPolicy/Readback共45测试通过；两个冻结Release reader SHA保持。没有Plugin/API修改、部署或游戏调用。此合成测试不证明实际SetBans执行、原生送货、持续产量或恢复，实机仍61707511/R131/primary61386568/J89/accepted1，843容量恢复由独立fresh计划验收。最近复验同日，投影/readback或原生仓储规则改变时复验，关联IFX-145收尾后的下一步。
+
 2026-09-16 / EXP-299与IFX-145只读收尾实机复验（`validated`限本机本次读取）：Luna182BAE5E/raw-50414722/PTY18325 exit0用69只读闭合原施工后的缺失观察，61707001–61707511证明原4679终态、全场4679/9164、13详情、玩家ready、科研/两网/J89/零prebuild仍一致。root6327554E/PTY95922以71原文件重验完整读序列和结果，封存E44C8F1C；15离线、三坏入口/解析及Sol审阅通过，原记录未变且审计0新游戏调用。
 
 原施工成功、旧caller中断、新只读caller成功与独立审计成功是四个不同事实，不能互换退出码或补造旧complete。accepted1不归零；843仍禁用全部30格自动输入，不能据首次1113或接线完成声称持续产出。恢复容量必须另取fresh完整stateHash，正常配置的同步库存保全与后续原生送货分开验证；不清仓或重建已成功实体。安装核验属于冻结reader见证，工具面数量仍是历史同批握手。最近复验同日，后续现场/安装/DTO改变时复验，持续生产和保存恢复仍待。

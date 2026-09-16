@@ -34,6 +34,49 @@ public sealed class StorageConfigurationReadbackTests
     }
 
     [Fact]
+    public void ReopeningOneReservedGridPreservesAllTailStockAndTheSynchronousBoundary()
+    {
+        // Synthetic native-grid states, not an implementation or proof of inserter delivery.
+        var sizes = new Dictionary<int, int> { [1105] = 100, [1113] = 100 };
+        var grids = new[] { new StorageUiGrid(1113, 0, 0, 1113, 100) }
+            .Concat(Enumerable.Range(0, 29).Select(_ => new StorageUiGrid(1105, 100, 0, 0, 100)));
+        var before = new StorageUiState("filtered", 30, grids);
+        var beforeHash = StorageConfigurationPolicy.Fingerprint(before);
+        var after = StorageConfigurationPolicy.Project(before,
+            StorageConfigurationOperations.SetBans, 0, 29, sizes);
+        var proof = StorageConfigurationPolicy.CreateReadback(761, 200, before, after,
+            StorageConfigurationOperations.SetBans, 0, 29, sizes, 3);
+
+        Assert.Equal(beforeHash, StorageConfigurationPolicy.Fingerprint(before));
+        Assert.NotEqual(beforeHash, StorageConfigurationPolicy.Fingerprint(after));
+        Assert.Equal("filtered", after.Mode);
+        Assert.Equal(1, after.Grids.Count - after.Bans);
+        Assert.Equal(1113, Assert.Single(after.Grids.Take(after.Grids.Count - after.Bans)).Filter);
+        for (var i = 0; i < before.Grids.Count; i++) Assert.Same(before.Grids[i], after.Grids[i]);
+        Assert.Equal(30, proof.ConfigurationBefore.BannedGridCount);
+        Assert.Equal(29, proof.ConfigurationAfter.BannedGridCount);
+        Assert.Equal(proof.ConfigurationBefore.GridFilterItemIds, proof.ConfigurationAfter.GridFilterItemIds);
+        Assert.Equal(29, proof.BuffersBefore.Count);
+        Assert.Equal(2900, proof.BuffersAfter.Sum(buffer => buffer.Count));
+        Assert.All(proof.BuffersAfter, buffer =>
+        {
+            Assert.Equal(1105, buffer.ItemId);
+            Assert.Equal(100, buffer.Count);
+            Assert.Equal(0, buffer.Inc);
+        });
+
+        var later = new StorageUiState("filtered", 29,
+            new[] { new StorageUiGrid(1113, 1, 0, 1113, 100) }.Concat(after.Grids.Skip(1)));
+        Assert.NotEqual(StorageConfigurationPolicy.Fingerprint(after), StorageConfigurationPolicy.Fingerprint(later));
+        Assert.Throws<ArgumentException>(() => StorageConfigurationPolicy.CreateReadback(761, 201,
+            before, later, StorageConfigurationOperations.SetBans, 0, 29, sizes, 3));
+        Assert.Throws<ArgumentException>(() => StorageConfigurationPolicy.CreateReadback(761, 200,
+            before, new StorageUiState("filtered", 0, after.Grids),
+            StorageConfigurationOperations.SetBans, 0, 29, sizes, 3));
+        Assert.DoesNotContain(proof.BuffersAfter, buffer => buffer.ItemId == 1113);
+    }
+
+    [Fact]
     public void EmptyWaterReservationCreatesNoItemAndListsHaveIndependentCopies()
     {
         var before = new StorageUiState("default", 0, new[]

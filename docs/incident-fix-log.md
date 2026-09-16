@@ -22,6 +22,8 @@
 
 ## IFX-148 — 原记录审计只规范化意图顶层，嵌套request仍为Hashtable
 
+- 2026-09-16 后续备料审计复核（离线）：首稿045EC575/PTY56124 exit1把等值嵌套对象的JSON属性顺序当差异；游戏caller1C9DAEBA未改且尚未实机。修订DDA11699在证据序列化后复用既有Hda-Same，忽略对象属性排列但仍严格核字段集合、值类型与数组顺序；20离线检查（PTY70048 exit0）、三坏入口和Sol静态复核通过，不更改原raw，不扩大既有正常保存实机结论。
+
 - 状态：`fixed`，仅私有正常保存原记录审计器；32离线与下述独立原记录复验通过，游戏caller成功，不是存档故障。
 - 原记录复验：2FA76120/PTY3523 exit0完整重验141文件/138回复和唯一保存结果，封存7CCBAB41，manifest不变，0新游戏调用。保留9DA/PTY8384 exit1；最终61814703/R134/primary61814274/J89/accepted3，无重放/归零，不冒充Header或protected resume。
 - 事实：Luna C7A86AE5/PTY41817 exit0一次正常保存至61814274、accepted3；旧root9DA0CD15/PTY8384 exit1在`lssa.original.intent.request object mismatch`停止，独立proof未生成。原141文件和成功存档不重写。

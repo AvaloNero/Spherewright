@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-299有限备料与失败前缀（`validated`仅离线）：1C9DAEBA把五步材料动作绑定原DE6F9A5C范围证据，但全部重新prepare，不复用预检token。每步净量相对开场与上一步分别核验，不能继续套用旧“无原料”背包假设；transfer同步before/after证明守恒，稍后的来源库存变化只作自然流动观察。accepted先区分明确非replay，丢响应或不明回执保留意图/key/已知handle和不确定性，不把success=false一概当未接受；原handle最多40轮，成功前缀不再提交。27基础、163D9298完整24场景/PTY73514 exit0、四坏入口/解析和21客户端通过，0真实游戏/证据写入，未来实机另验。
+
+同批审计复核IFX-148：证据净量用排序itemId/delta行；重构意图先按原序列化投影，再用Hda-Same递归按字段名比较，保留标量类型和数组顺序，不能用JSON对象属性排列证明差异。045EC575离线exit1保留；修订DDA11699只适配原record时间、脱敏token形状与原intent key，不补造秘密，不从raw推断进程退出码。当前原生DLL研究再次确认grade1分拣器在创建、科技变更和升级路径均为单件；仍须fresh唯一入口/完整C19路径/初始空载等前提，不能仅凭10-cell常量把packet数当物品数，容量尚未放行。最近复验同日；caller、序列化、DLL、拓扑或任一前提变化时重验。
+
 2026-09-16 / EXP-299材料预检本机复验（`validated`仅范围准入）：Luna548/raw-2a388539/PTY35136 exit0实际79调用/3prepare/0commit，三源库存3000铁/3600电路板/2206石材和player/source hash前后稳定；rootD721/PTY90011 exit0独立重验81文件/79响应并封存DE6F9A5C，manifest保持，0新游戏调用。末61876601/R134/primary61814274/J89/accepted3，不归零、不取料，未来必须重新prepare。正常路径本机通过不把13个离线拒绝场景改称实机；23审计离线/三入口及静态审查是另层证据。
 
 审计时保留原expiry值，仅把谓词比较时钟映射到原recordedAt；不填新token或未来expiry冒充原始新鲜度，token存在/唯一性归属原caller。容量草案同时纠正：2101目录的slotCount12是接口，库存格数须读storageConfiguration；1200可作更保守的外部停点，不能从12接口推原生库存容量。packet上限和物品数亦须分别证明，当前整厂列表不含带货，持续窗容量仍unknown；不能把202已观察buffer库存当全链上界。关联IFX-149，最近复验同日；新仓/拓扑/DTO/配方或时钟适配变化时重验。

@@ -14,18 +14,20 @@
 
 ## IFX-148 — 原记录审计只规范化意图顶层，嵌套request仍为Hashtable
 
-- 状态：`fixed_offline_live_pending`，仅私有正常保存原记录审计器；游戏caller成功，不是存档故障。
+- 状态：`fixed`，仅私有正常保存原记录审计器；32离线与下述独立原记录复验通过，游戏caller成功，不是存档故障。
+- 原记录复验：2FA76120/PTY3523 exit0完整重验141文件/138回复和唯一保存结果，封存7CCBAB41，manifest不变，0新游戏调用。保留9DA/PTY8384 exit1；最终61814703/R134/primary61814274/J89/accepted3，无重放/归零，不冒充Header或protected resume。
 - 事实：Luna C7A86AE5/PTY41817 exit0一次正常保存至61814274、accepted3；旧root9DA0CD15/PTY8384 exit1在`lssa.original.intent.request object mismatch`停止，独立proof未生成。原141文件和成功存档不重写。
 - 根因及修正：Hda-Same严格区分PSCustomObject和Hashtable；`[pscustomobject]$Payload`只转换外层，原JSON记录里的嵌套request与重构hashtable不一致。2FA76120仅让重构Payload按原证据序列化路径Ci-Clone，完整字段及值类型继续严格比较，原raw不改、不通用放宽helper、不重放游戏。
-- 离线验证：新增嵌套请求正例、错UUID及字符串planet拒绝，完整32检查/PTY50645 exit0；三坏入口import前exit1/解析0，Sol静态审核通过，0游戏/证据写入。新原记录审计仍待，不能把旧exit1改写为成功，也不声称Header、恢复或持续产出通过。
+- 离线验证：新增嵌套请求正例、错UUID及字符串planet拒绝，完整32检查/PTY50645 exit0；三坏入口import前exit1/解析0，Sol静态审核通过，0游戏/证据写入。当时原记录重验未完成，后继复验见上；不能把旧exit1改写为成功，也不声称Header、恢复或持续产出通过。
 
 ## IFX-147 — 普通保存草稿遗漏计划过期检查并把重放回执先计为新写
 
-- 状态：`fixed_offline_live_pending`，仅本批私有保存调用方，冻结前审阅发现；无游戏写入或Plugin改动。
+- 状态：`fixed`，仅本批私有保存调用方；过期/replay拒绝为离线回归，正常路径已由一次本机保存及独立原记录复验闭合，没有Plugin改动。
+- 本机复验：C7A86AE5/PTY41817 exit0仅保存一次到61814274，2FA76120/PTY3523 exit0独立核141文件/138响应并封存7CCBAB41；R134/accepted3/J89及完整产线保持。没有再执行过期或重放的游戏负例，不据此声称恢复或持续产出通过；旧审计类型失败另见IFX-148。
 - 根因：复用旧正常保存helper没有验证expiry与非save附带字段，回执在确认idempotentReplay前就增加accepted；会把意外重放错误算成新增写入。
 - 修正：C7A86AE5先验证原生带zone的未来expiry、非脱敏token、零材料/目标及无其他动作投影。回执可先保留合法handle，但只有typed accepted且明确非replay才计2→3；重放或未知flag保持2和不确定性，已明确新接受但key错误则保留3及handle。正常保存必须另核R+1、精确primary、原内存身份与新票据，失败晋升不部分修改缓存，不重试或伪造回滚。
 - 验证：29基础检查/PTY28176 exit0；独立42D3AF85/3AA03360的15个完整Lss-Run场景/PTY32401 exit0，正常138调用、revision竞争140调用，13负例核具体首个错误与调用/意图/accepted/handle/cache边界；六坏入口import前exit1、解析0，9DA0CD15审计器29检查/PTY62183 exit0及Sol静态审阅通过。全部0游戏/证据写入。
-- 证据限制：原记录审计只核秘密字段脱敏形状，存档身份等值与票据轮换属于冻结live caller的内存见证，不比较两个REDACTED伪证等值；不读Header、不声称protected resume或持续产出通过。当前仍61774204/R133/primary61386568/J89/accepted2，须本片推送绿CI后Luna单次fresh执行。关联EXP-299和本档日记。
+- 证据限制：原记录审计只核秘密字段脱敏形状，存档身份等值与票据轮换属于冻结live caller的内存见证，不比较两个REDACTED伪证等值；不读Header、不声称protected resume或持续产出通过。当时离线边界为61774204/R133/primary61386568/J89/accepted2，推送绿CI后的唯一实机及核销见上，不构成再次执行授权。关联EXP-299和本档日记。
 
 ## IFX-146 — 单格容量恢复草稿混用了旧连接数与包装层，缺少提交前意图
 

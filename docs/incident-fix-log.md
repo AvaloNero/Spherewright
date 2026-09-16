@@ -14,6 +14,8 @@
 
 ## IFX-140 — 建造调用方用假想排队状态测试成功，遗漏真实预建筑递减
 
+- 第二C后缀审稿修正（`fixed_offline_live_pending`）：原首条成功并停在ready门后，07C8E0F1只续未提交第二条。root发现草稿在加载descriptor后reset会清空它，且对已建4665只用原prebuild约束/互返不足以排除带物理slot两侧同步漂移；已改为reset在先，并对原4665完整配置比对，成对slot4→5负例拒绝。root DB762930的9完整模拟场景、20基础、三入口/解析、真实offline导入审批快照/初始化顺序及21公共客户端通过，0游戏/证据写入。未知回执或完工端口异常仍冻结原handle，不重放首条；本片只核销调用方缺口，不声称第二C已经施工，真实accepted6/R122及末观察61314590保持。
+
 - 首C实机后继：cdce207/CI35038136279后raw-9cdbfd20唯一build于61313958正常完成4665，材料/双端/全4665实体9132边已核；B0随后因20次无人机未idle而正常冻结下一写，Luna PTY82504 exit1不改写。原20样本只覆盖216游戏tick，不能从约13.578秒墙钟推定返航时长；公开working只是alive−idle，不直接证明卡死。root 5C4851FA在242原记录/239成功回复上复核原动作、两全场、功率、20非ready及停止摘要，6专用检查/三入口/解析和Sol复核通过，并封存原文件哈希，零新游戏调用。状态`fixed`仅首个成功前缀及停止保全，不表示两步完整caller已成功或当前无人机ready；accepted6/R122、primary60758779/J88保留。后续只允许fresh ready后续未执行4648→843，不重建4665、不延长重跑B0、不自动保存或进H。
 
 - 后续离线分支修正：2cbd445的15流程场景只走短waiting，没有触发原Ci-Wait较长轮询后的进度分支。root施工前审计发现它误读refreshTerminalFirst，真实S2-ObserveProgress只提供refreshSameHandleFirst；StrictMode会在分支首次执行时停止，但不意味原生失败或重放许可。Sol冻结B0BFC352只改一处字段名，root逆向SHA证其他字节不变；54ECC951新增实际Ci-Wait60次waiting、原S2空页/R121进度、第61次同handle终态，root独立16项检查和20基础通过。状态仍`fixed_offline_live_pending`，原15场景覆盖不足明确保留，未因此产生任何游戏写入；没有扩大等待时限或修改成功前缀。

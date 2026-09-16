@@ -106,6 +106,8 @@
 
 ## 0.4.0 — Overseer, Foundry & Governor
 
+2026-09-16 第二C仅续未执行后缀的离线验收：154f36c/CI35039567257已绿。Sol冻结07C8E0F1，绑定原首条审计12146435及242文件，fresh重新核4665/两端/全场和无人机ready后，仅允许4648→843/slot7的一次新prepare/commit。root以DB762930真实调用C2s-Run的9个模拟流程全部通过，另20基础、三坏入口/解析、真实offline导入授权快照及21公共action-client通过，0游戏/证据写入。草稿中reset清空已加载descriptor和已建带端物理槽可成对漂移的缺口均在实机前修正并覆盖；不放宽原生规则。最新真实边界仍61314590/R122/primary60758779/J88/accepted6；本片推送及绿CI后才允许Luna一次执行，首条和C19不重做，不保存或进H，尚不核销第二条施工或持续供料。
+
 2026-09-16 C输出首条已建、第二条未执行：cdce207/CI35038136279绿后，Luna唯一执行B0BFC352/raw-9cdbfd20，4665于61313958正常完工，101/slot4→4665→4661/实际slot4、filter1113，sorter4→3，19带保全。原caller在第一步全场/材料核验后因20次无人机仍非idle而停止，真实PTY82504 exit1；1prepare/1commit、accepted6/R122、uncertain=false，不是原生失败或重做许可。root 5C4851FA以原242文件/239回复核完整首段及停止边界通过并封存，两个47页快照为4664/9128→4665/9132；末session61314373、末player61314590，J88/primary60758779未变。第二条4648→843尚未prepare/commit；下一只在fresh ready且首条保全后续这一未执行后缀，不重跑B0、不建H、不称持续供料或0.4接近完成。
 
 2026-09-16 同两接点等待分支补验：2cbd445/CI35037435669已绿，但root随后发现私有Ci-Wait读取了不存在的refreshTerminalFirst；真实S2进度契约返回refreshSameHandleFirst。未授权Luna施工，Sol仅改这一属性名为B0BFC352，root逆向字节SHA精确复得2A198F02。新增实际Ci-Wait的60次waiting→原S2空页进度→第61次同handle终态测试，root独立16纯判据通过，20基础/解析通过；不改物理方案、调用或超时上限。后续执行仅用冻结B0，不再使用2A；仍零新游戏调用，R120/accepted5保持，C施工/H输入/持续产出等实机门不据此核销。

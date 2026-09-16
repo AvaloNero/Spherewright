@@ -3,6 +3,10 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / 第二C未提交后缀完成离线审核：154f36c/CI35039567257绿后，Sol冻结07C8E0F1。它以12146435首条审计及原242文件逐一hash/ACL证明起点，只导入B0离线谓词，不重跑原执行器；开场fresh核原4665配置/物理连接、全4665实体9132边及无人机ready，仍非ready则零写停止。唯一新动作是4648→843/slot7/filter1113，逐步新token及原生功率/端点hash，原handle终态后再核双端、4666实体9136边和库存3→2；accepted6→7/R122→124是待实机条件，不是已发生事实。末步无人机尚非idle可如实报告，因为此片不再提交其他动作；不save、不建H、不移动、转料、配置或重置计数。
+
+root冻结DB762930真实运行C2s-Run的9场景，PTY6020 exit0：正常和末步returning各139模拟调用/仅一新commit；开场不ready、首条配置漂移、第二条native拒绝、prepare后hash变、电网成员漂移均零新commit；回执丢失保留结果不明而不猜accepted，完工端口错误保留已接受原handle/待核新ID，不重放。另20基础、三坏入口/解析、实际offline导入后的模式及审批快照、reset先于descriptor加载检查，以及21公共客户端通过，全部0游戏/证据写入。审稿先修reset清掉descriptor及双侧同时改带物理slot仍可互返的漏洞；后者加入原4665配置精确比对与成对slot4→5负例。最新真实观察仍61314590，最后session仍61314373/R122/primary60758779/J88/accepted6；绿CI后才交Luna唯一执行，不把模拟场景或旧观察冒充当前就绪。
+
 2026-09-16 / C输出第一条正常建成，caller在下一写之前因无人机未idle停止：cdce207/CI35038136279绿后，Luna唯一执行B0BFC352/raw-9cdbfd20，239次原生回复全成功、242条保护记录。唯一动作b9feceff于61313234→61313958正常完成4665，2011仅4→3、14普通带不变；两个同handle终态一致。实际连接101/slot4→4665→4661/物理slot4、filter1113，两端端口/旧邻边和全部C19保全；本次原生功率括窗按4sorter/1200J/t保守预算余38900J/t，不沿用旧preview74900。开场61312702/47页为4664实体/9128互返边，首条完工后61313965/47页为4665/9132，三旧设备、玩家全库存/inc、J88/科研/两网满供和零prebuild通过。
 
 随后20次玩家读取61314374→61314590都为idle2/working1、pendingBuild0/pendingRepair0；记录墙钟约13.578秒，仅推进216游戏tick，不能把墙钟等待当固定游戏时间。公开working是alive−idle，未公开逐机返航阶段，不能据汇总证明无人机卡死或精确飞行状态。原Ci-WaitReady按既定边界拒绝下一写，PTY82504真实exit1、phase step0-readback、originalHandle保留、pending0、uncertain=false、accepted6/R122。最后session61314373为healthy/primary60758779，末玩家比它更新；不伪造该tick的session。第二条尚无prepare/commit，没有H、save、Move、transfer或配置，不把一次正常扣料/接线当持续晶格硅供应。

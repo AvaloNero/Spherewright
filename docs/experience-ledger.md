@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-299与IFX-140未提交后缀复验（`validated`仅私有caller离线）：完成前缀不仅要fresh互返，还要对照原已封存实体配置；两侧一起把带物理slot4改5仍互返，但不能当原4665未变。07C8E0F1在fresh准入前增加原新实体Assert-AuditConfig及成对漂移反例；reset必须先于当前descriptor加载，避免入口随后把真实transport依赖清空。原B0只offline导入，独立suffix固定一条第二C，继承accepted6/R122但运行内prepare/commit只报告差量，不把计数重置或旧首动作算成本次写入。开场必须fresh ready，最终一步无后续写时可保留returning，不能据此授权下一片。
+
+证据：root DB762930在冻结07C8E0F1上运行实际C2s-Run/原判据的9完整mock场景全通过，只有transport/pause模拟；20基础、三入口拒绝/解析、真实offline导入快照及reset顺序、21公共action-client通过，0游戏/证据写入。缺失回执不虚构新handle/accepted，终态后的坏端口仍保留成功前缀与待核新对象。这些检查不覆盖真实断线、原生施工成功或当前无人机状态；最新真实边界仍61314590/R122/J88/accepted6，第二C仍待实测。现场、原证据、调用方或安装变化时复验，最近复验同日；H与持续晶格硅门未变。
+
 2026-09-16 / EXP-299与IFX-140首C已完成前缀复验（`validated`限本机原记录）：B0BFC352/raw-9cdbfd20的原生build在61313958完成4665，101/slot4→4665→4661/实际slot4/filter1113，2011仅4→3。两个同handle成功terminal、完整4665实体/9132互返边及材料/旧配置均通过；其后20次非ready耗尽只阻止下一条，不等于已完成建造失败。必须保留accepted6/R122和原handle、标清第二条未prepare/commit，不能重跑整片或把caller exit1改写成功。原power此刻1200保守余38900J/t，不能重用早前preview的74900数字。
 
 时间与观察限制：61314374→61314590仅216游戏tick，原记录约13.578秒墙钟不等于同量游戏时间。公开ConstructionDrones.Working=Math.Max(0,alive−idle)，idle2/working1且无待建/维修目标只能证明尚不满足下一写ready，不直接暴露单架返航阶段或卡死原因。正常终态后再次施工前必须fresh确认ready；最终一步没有后续写入时可如实保留非ready，不能宣称能立即再建。5C4851FA用原242文件/239回复、六检查/三入口/Sol审查核完整首段与准确停止，已逐文件封存，0新游戏调用；不改原B0时限，不以原记录声称当前ready。源源码、DTO、现场或caller变化时复验，最近复验同日。关联EXP-299/IFX-140，H与持续供料仍待。

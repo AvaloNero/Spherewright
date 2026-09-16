@@ -14,10 +14,10 @@
 
 ## IFX-152 — 健康票据无法选择较新的、已验证同身份 LastExit
 
-- 状态：`fixed_offline_live_pending`。显式用户授权后的窄入口已实现，默认恢复边界未放宽；未部署/加载，不声称七写已恢复。
-- 事实：进程退出后 primary 落后，但用户授权的固定槽只读检查发现 LastExit 与四份 autosave 的 embedded owned/Journal 身份均匹配且时间更晚；完整证据见[存档日记](./gameplay-timeline.md#2026-09-17--用户授权的固定恢复槽只读检查)。未加载，不能证明所有实体仍完整。
+- 状态：`fixed`，限当前DSP的显式授权正常路径；离线拒绝分支不冒充实机负例。`43b16c2`同批冷部署后，本机恢复、正常重存和七写核销通过；默认恢复边界未放宽。
+- 事实：进程退出后 primary 落后，固定槽只读检查仅先证明较新候选的embedded owned/Journal身份。用户随后确认受保护恢复，LastExit62776058载入后正常保存62776089；root完整核4681实体/9168互返边、原背包与J89，最后七写保留。详见[恢复实机记录](./gameplay-timeline.md#2026-09-17--较新同身份-lastexit-恢复与七写核销通过)。
 - 原因：`OwnedWorldResumeSourceSelector` 对 healthy ticket 只返回 OwnedPrimary；LastExit 仅可用于真实 quarantine，公开 prepare/commit 无来源选项。原生 ReadHeader 不返回 embedded gameName，ReadHeaderAndDescAndProperty 的下层解析也丢弃它，时间/mtime不能替代精确身份验证。
-- 修复与验证：既有prepare新增显式mode/对话确认/已知进度下界/精确候选tick；固定LastExit完整内嵌identity、版本、和平、Journal和整文件SHA绑定，commit重验并持只读lease至采用/Journal完成，无fallback。candidate水位贯穿认领、confirmed与terminal；未证明或切换GameData时不得保存。MCP拒绝旧Plugin缺失echo。相关Core68/MCP工具107通过，完整Release零warning/error、1927项(58/1737/132)通过；真实源MCP64tools/1resource/指南一致且stdout无杂项。授权候选只读校验134ms，tick62776058/11569595bytes/identity匹配；未native load。冷部署、七写核销及持续生产待验。关联EXP-303与protocol。
+- 修复与验证：既有prepare新增显式mode/对话确认/已知进度下界/精确候选tick；固定LastExit完整内嵌identity、版本、和平、Journal和整文件SHA绑定，commit重验并持只读lease至采用/Journal完成，无fallback。candidate水位贯穿认领、confirmed与terminal；未证明或切换GameData时不得保存。MCP拒绝旧Plugin缺失echo。相关Core68/MCP工具107通过，完整Release零warning/error、1927项(58/1737/132)通过；源与冷部署MCP均64tools/1resource/指南一致且stdout无杂项。唯一恢复action成功，独立只读全场审计通过；无施工重放、票据篡改或回退旧primary。持续生产、异机及最终发行包仍待，关联EXP-303与protocol。
 
 ## IFX-151 — 原记录审计不能按审计电脑的墙钟重演施工轮询分组
 

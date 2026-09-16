@@ -3,6 +3,18 @@
 更新时间：2026-09-17（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-17 — 较新同身份 LastExit 恢复与七写核销通过
+
+用户明确确认后，`43b16c2` / CI35130859164 通过并完成同批冷部署，228 个安装文件逐项匹配（4 Plugin、224 MCP）。Plugin SHA-256 `0B62AF94DF9A4B000B61B26E3219F426428924A6E1885D504F694646CB6798F6`，MCP SHA-256 `B8A3B3C98372C04AF1238DBE10F97B50AEEC62A6EB651736B4C2DE02230D67FF`；原票据未改。Steam 启动一次，安装版实际握手为64 tools / 1 resource，75431字符指南与源码一致、stdout无杂项；这是开发安装态，不是最终发行包。
+
+Luna Max 通过已审阅的共享审计传输，仅执行一次显式 `verified_newer_lastexit` prepare/commit，绑定候选 **62776058**、已知进度下界62675846及精确身份/文件证据。action `901abf03-4a73-4e29-bb9d-2243610fe24c` 成功终止，正常重存同一 owned identity 至 **62776089**，末读62776107 / durable J89，新session和一次性票据均更新。真实调用段18:11:50–18:11:57 UTC；没有回退到旧primary61814274、加载自动槽、重放旧施工或修改存档。完成证据SHA-256 `F32CF5A53E857B6D60A18AD3FAA6D410FB4D9E78BFF4D118039DE0C8B16651E7`。
+
+root 独立只读核验61次，覆盖 **62785849–62788248**：完整4681实体、9168条互返有向连接、零预建筑，静态身份/配置与施工后完整快照逐项一致；843禁用29格、4679进料、4680仓和4681的843/3→4680/11及filter1113保留。背包/手持物与最后施工记录一致，玩家稳定Walk、无待施工或手搓；Journal原条目保持、durable89且无pending/error，owned/saved/healthy无blocker。原164文件manifest未变。独立审计SHA-256 `BA75313599B52889869C76F77FDCD885EBCD1A1B6DB45B1DFA57ADB7F7C43A7F`。
+
+**计数与边界**：旧十次accepted以原已封存终态和此次恢复后的完整状态核销，最后七次施工确认保留并已有覆盖主档；不把新session读回冒充已消失旧session的fresh十写审计。恢复是新的一次accepted，已经独立核验，下一工序计数从 **1** 继续，不提前归零。两网当前供电比均1；net3容量1498000 J/t、需求90254 J/t，183氢发电当前0。4680读到833晶格硅只是库存截面，不是持续产量或长期消费验收。下一工序先fresh核稳定供电与1113→1402→6004真实上游/端口，预算内为保存留位。
+
+离线与本机层级分开：当前完整Release构建零warning/error、1927测试通过（58 Contracts / 1737 Core / 132 MCP），直接相关68 Core与107 MCP工具测试已过；本次共享ActionClient回归21项、零游戏调用。IFX-152正常恢复路径至此本机通过，异常/文件竞态拒绝仍以离线测试为证；不声称异机或最终ZIP验证。既有六项打包/CI改动保留，不混入本恢复里程碑。
+
 ### 2026-09-17 — 用户授权的固定恢复槽只读检查
 
 用户随后明确授权只读检查 LastExit 与四个固定自动槽的时间/世界身份，不包含加载或修改。当前 DLL 的 `GameSave.SaveCurrentGame/ReadHeader` 使用 v7 头、截图长度、AccountData v0、cluster generation，然后直接写 GameData v13/patch22、AccountData v0 和 embedded gameName；此段未压缩。按原生布局有界读取，跳过截图及账号内容，字符串长度限定后只在内存比较 gameName 与 ticket 内完整 owned 身份，并按 `GameplayJournalIdentity` 的 v1 算法核对 Journal identity；止于 GameDesc 之前。不使用文件名前缀判所有权。

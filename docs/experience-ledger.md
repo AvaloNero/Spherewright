@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-188/299与IFX-135复验（`validated`限两束诊断及调用方）：发电容量下降并非永久缺电证明。Luna0B14329E/raw-acd23e6f/PTY80948 exit0的两束20读取相隔1469 tick，183都重新发电1954 J/t、net3容量1534000且83254实际需求全满足。相关罐/带/分拣器的空截面不能推出中间无供料；当前fuelId、J/t不等于燃料库存或余热。2617端点是188→2615，不能把计划文字中的上游关系当原生直接端点。没有新增施工、转料、配置、保存或重启，accepted9不变；后续仍须完整fresh现场，不能据此重用旧token或宣布长期供电稳定。
+
+诊断首稿在离线审查中再次错误冻结跨tick configurationStateHash；按既有FactoryConfiguration源码/IFX-135纠正为保全明确静态字段、endpoint hash和hash格式，让动态buffer/派生state/config hash自然变化，未改公共哈希协议。缺少buffer.count必须检查真实属性，不能接受PowerShell隐式scalar Count=1。93台发电机逐实体tick等于页tick；第二束不足600时如实返回insufficient，不补poll。tank/belt null明确unknown，详情observed空才可写零；两个窗口不是连续供料证明。本caller58离线（含动态变化全20读）、三坏入口/解析及Sol静态复核通过。root90A3C339/38b9a3 exit0核22原文件/完整结果/原等待/manifest，独立封存BB099003；审计7离线检查、三坏入口/解析及21公共客户端通过，零新游戏调用。本轮Journal/玩家/预建筑未读，不继承为fresh；最后session62516180、最后实体62516227/R143/primary61814274。最近复验同日；现场、DTO、caller或程序集变化后重验，不把私有诊断修正标作新工具或发行门完成。
+
 2026-09-16 / EXP-299 fresh 容量下降负例（`validated`限本次准入拒绝）：843→4680几何与原生prepare成立，不代表稍后满载供电仍有余量。Luna E3/raw-c0acda69/PTY47086 exit1在第69调用之后、commit/intent之前拒绝：容量1498000、满基础负载1531100、出口0，未来300缺33400 J/t；同tick附近实际需求309221仍全部满足。相同R143也不能冻结发电容量，历史2600余量不是预约，瞬时供电正常也不能代替声明的满载预算。容量变化的具体原因须另证，不从差值猜测燃料、太阳能或风况。
 
 root A118AE7A/PTY56587 exit0使用71原文件完整重现原判定与stopped，manifest不变，封存1A3E61F4；原expiry仍按原record时间核，脱敏token不补证秘密。7个容量/禁写检查、父36检查、三坏入口/解析、21客户端及Sol静态复核通过；封存中的start/最后session/最后采样tick均从原记录派生并断言，不能硬写未经绑定的时刻。异常退出不等于没发调用：必须检查该次started/stopped和已保存响应，再区分read/prepare/intent/commit/accepted；本次69读取与预检、0commit、accepted9，而非0调用。没有结束全场或施工证据，不宣称完成或归零。最近复验同日；后续只由Sol设计补足预算的最小方案，新的accepted10无论动作种类都触发严格审计。关联IFX-147/151；现场、caller、DTO或程序集变化时重验。

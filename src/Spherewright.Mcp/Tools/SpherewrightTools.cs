@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
+using Spherewright.Bridge.Core.Safety;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Celestial;
 using Spherewright.Contracts.Diagnostics;
@@ -1371,15 +1372,35 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Prepare from an idle main menu: gameLoaded=false is expected, not a load failure. Use the current restartResumeAvailable/restartResumeToken, then let prepare verify native preload/menu/no-loader readiness, ticket, source header and durable Journal checkpoint. Do not wait for gameLoaded=true before prepare. Healthy planned restarts select only the exact primary sealed in the ticket; quarantine recovery alone selects a qualifying fixed LastExit. It never enumerates saves, accepts a save name, consumes the ticket or loads anything during prepare.")]
+    [Description("Prepare from an idle main menu: gameLoaded=false is expected, not a load failure. Use the current restartResumeAvailable/restartResumeToken; prepare checks native preload/menu/no-loader readiness, protected ticket and durable Journal. Do not wait for gameLoaded=true before prepare. Default healthy restarts select the exact ticket-bound primary; real quarantine selects a qualifying fixed LastExit. Only after explicit user conversation confirmation may verified_newer_lastexit bind a newer fixed LastExit to an exact approved tick and known progress floor. It verifies embedded full identity, current version, peaceful mode and bounded full-file evidence; commit rechecks and adoption must cover the candidate tick. No automatic fallback, arbitrary names, autosave selection, enumeration, ticket consumption or load during prepare.")]
     public static async Task<CallToolResult> PrepareOwnedWorldResumeAsync(
         IBridgeClient bridgeClient,
         string resumeToken,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        [Description("default, or explicitly user-authorized verified_newer_lastexit; never choose it automatically.")] string recoveryMode = OwnedWorldResumeModes.Default,
+        [Description("Caller attests to actual explicit user confirmation in the conversation; never infer it.")] bool userConfirmedInConversation = false,
+        [Description("Known latest progress that must not be rolled back; required only for verified recovery.")] long? minimumRecoveryGameTick = null,
+        [Description("Exact user-approved newer fixed LastExit candidate tick; required only for verified recovery.")] long? expectedRecoveryGameTick = null)
     {
+        var request = new PrepareOwnedWorldResumeRequest
+        {
+            ResumeToken = resumeToken, RecoveryMode = recoveryMode,
+            UserConfirmedInConversation = userConfirmedInConversation,
+            MinimumRecoveryGameTick = minimumRecoveryGameTick, ExpectedRecoveryGameTick = expectedRecoveryGameTick,
+        };
+        var invalid = OwnedWorldRecoveryPolicy.ValidateRequest(request);
+        if (invalid is not null)
+            return ToToolResult(BridgeCallResult<PreparedOwnedWorldResumePlan>.Failed(BridgeError.Create(
+                BridgeErrorCodes.InvalidRequest, invalid, false, "Do not load a different save or infer conversation confirmation.")), invalid);
         var result = await bridgeClient.PrepareOwnedWorldResumeAsync(
-            new PrepareOwnedWorldResumeRequest { ResumeToken = resumeToken },
+            request,
             cancellationToken).ConfigureAwait(false);
+        if (recoveryMode == OwnedWorldResumeModes.VerifiedNewerLastExit && result.Success
+            && (result.Value is null || !OwnedWorldRecoveryPolicy.HasMatchingEcho(request, result.Value)))
+            result = BridgeCallResult<PreparedOwnedWorldResumePlan>.Failed(BridgeError.Create(
+                BridgeErrorCodes.BridgeNotReady,
+                "The Plugin did not confirm the exact verified recovery mode, identity and candidate tick; no token is exposed.",
+                false, "Install a matching Plugin/MCP cohort and prepare again; never commit an old Plugin's default-primary plan."));
         return ToToolResult(result, "One-time exact owned-world resume plan prepared; no save was loaded or enumerated.");
     }
 
@@ -1390,7 +1411,7 @@ public static partial class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Healthy planned restarts load only the exact ticket-bound primary through DSPGame.StartGame. Quarantine recovery alone may load the qualifying fixed LastExit. Both revalidate native menu readiness, source header/minimum tick and durable Journal checkpoint before loading; adoption must prove the embedded owned identity, planet, peaceful state and Journal continuity. Sandbox state/resource multiplier are reported, not gates. Poll the unique action to terminal, then fresh-read gameLoaded=true, owned/saved/healthy state, save tick and durable Journal. Never replay an accepted resume or choose another save to satisfy a mistaken readiness wait.")]
+    [Description("Default healthy planned restarts load only the exact ticket-bound primary through DSPGame.StartGame. Real quarantine may load a qualifying fixed LastExit. An explicitly confirmed verified_newer_lastexit plan instead rechecks its exact candidate tick, identity and full-file evidence and holds a read-only file lease through adoption; drift rejects without fallback. All paths revalidate native menu readiness and durable Journal before loading; adoption must prove embedded owned identity, planet, peaceful state and Journal continuity before primary resave. Sandbox/resource multiplier are evidence, not gates. Poll the unique action to terminal, then fresh-read gameLoaded=true, owned/saved/healthy state, save tick and durable Journal; reconcile successful unsaved work, never replay it. Never replay an accepted resume or choose another save to satisfy a mistaken readiness wait.")]
     public static async Task<CallToolResult> CommitOwnedWorldResumeAsync(
         IBridgeClient bridgeClient,
         string planToken,

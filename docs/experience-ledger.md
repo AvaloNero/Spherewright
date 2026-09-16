@@ -26,6 +26,8 @@
 
 - 授权后实现切片：用户明确确认窄入口，规范已同步。当前DLL的v7/v13/patch22前缀允许有界读取完整内嵌identity；账户/截图只跳过，不能用文件名前缀代替。`OwnedSavePrefixReader`25项离线正负例通过；此时尚未接入loader或部署，旧primary和七写恢复结论不变。后续必须绑定实际候选tick及文件证据，加载/Journal通过后才正常重存。API布局与原生只读共享句柄依据见[research](./research/game-api-m0.md#2026-09-17-bounded-owned-save-identity-prefix)。
 
+- 后续离线集成：显式`verified_newer_lastexit`不能自动fallback；调用方必须声明真正的本次对话确认、已知下界及精确候选tick。完整SHA而非仅prefix/mtime防同头部正文变化，commit只读lease与原生reader共享，直到Journal确认才释放并允许正常重存；candidate水位不能在Journal确认时退回旧ticket水位。68相关Core/107MCP工具及1927完整回归通过，真实候选只读134ms通过；仍未部署/加载。EXP-069/071/084/234中healthy-only-primary的现行含义从此为**默认路径**，本显式授权例外不改其历史证据，不允许任意槽或旧token复活。详见IFX-152及protocol；实机恢复和最后七写核销后再升级验证边界。
+
 ### EXP-302 — 以有限业务工序复用执行与核验
 
 - 日期/最近复验：2026-09-17；状态：`observed`。适用：已支持原语的本地规划、调用和阶段审计，不改变 Plugin/MCP 的准入。

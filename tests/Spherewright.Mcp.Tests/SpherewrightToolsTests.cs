@@ -240,8 +240,47 @@ public sealed class SpherewrightToolsTests
         var commit = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.CommitOwnedWorldResumeAsync))!;
         var commitDescription = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(commit,
             typeof(System.ComponentModel.DescriptionAttribute))!).Description;
-        Assert.Contains("Healthy planned restarts load only the exact ticket-bound primary", commitDescription);
-        Assert.Contains("Quarantine recovery alone", commitDescription);
+        Assert.Contains("Default healthy planned restarts load only the exact ticket-bound primary", commitDescription);
+        Assert.Contains("Real quarantine", commitDescription);
+        Assert.Contains("verified_newer_lastexit", commitDescription);
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task VerifiedRecoveryRequiresAnExactPluginEchoBeforeExposingToken(bool echo, bool blocked)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            ResumePlan = echo ? new PreparedOwnedWorldResumePlan
+            {
+                Prepared = true, PlanToken = "recovery-plan", RecoveryMode = OwnedWorldResumeModes.VerifiedNewerLastExit,
+                RecoveryEvidenceVersion = 1, CandidateGameTick = 62776058, MinimumGameTick = 62776058,
+                ExactEmbeddedIdentityVerified = true,
+            } : null,
+        };
+        var result = await SpherewrightTools.PrepareOwnedWorldResumeAsync(bridge, "ticket",
+            recoveryMode: OwnedWorldResumeModes.VerifiedNewerLastExit, userConfirmedInConversation: true,
+            minimumRecoveryGameTick: 62675846, expectedRecoveryGameTick: 62776058);
+        Assert.Equal(blocked, result.IsError);
+        Assert.Equal(62776058, bridge.LastResumePrepareRequest!.ExpectedRecoveryGameTick);
+        Assert.Equal(62675846, bridge.LastResumePrepareRequest.MinimumRecoveryGameTick);
+        Assert.True(bridge.LastResumePrepareRequest.UserConfirmedInConversation);
+        if (blocked) Assert.DoesNotContain("planToken", result.StructuredContent!.Value.GetRawText());
+    }
+
+    [Theory]
+    [InlineData(false, 62675846, 62776058)]
+    [InlineData(true, -1, 62776058)]
+    [InlineData(true, 62776059, 62776058)]
+    public async Task InvalidRecoveryNeverReachesBridge(bool confirmed, long minimum, long expected)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareOwnedWorldResumeAsync(bridge, "ticket",
+            recoveryMode: OwnedWorldResumeModes.VerifiedNewerLastExit, userConfirmedInConversation: confirmed,
+            minimumRecoveryGameTick: minimum, expectedRecoveryGameTick: expected);
+        Assert.True(result.IsError);
+        Assert.Null(bridge.LastResumePrepareRequest);
     }
 
     [Theory]
@@ -1986,6 +2025,7 @@ public sealed class SpherewrightToolsTests
         public PrepareMoveRequest? LastMoveRequest { get; private set; }
         public SessionState? SessionSnapshot { get; set; }
         public PrepareOwnedWorldResumeRequest? LastResumePrepareRequest { get; private set; }
+        public PreparedOwnedWorldResumePlan? ResumePlan { get; set; }
 
         public string? LastSessionId { get; private set; }
 
@@ -2579,7 +2619,7 @@ public sealed class SpherewrightToolsTests
             CancellationToken cancellationToken)
         {
             LastResumePrepareRequest = request;
-            return Task.FromResult(BridgeCallResult<PreparedOwnedWorldResumePlan>.Succeeded(new PreparedOwnedWorldResumePlan
+            return Task.FromResult(BridgeCallResult<PreparedOwnedWorldResumePlan>.Succeeded(ResumePlan ?? new PreparedOwnedWorldResumePlan
             {
                 Prepared = true,
                 PlanToken = "resume-plan",

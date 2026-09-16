@@ -40,6 +40,11 @@ internal sealed class OwnedWorldResumeCoordinator
 
     public GameCallResult<PreparedOwnedWorldResumePlan> PrepareOnMainThread(PrepareOwnedWorldResumeRequest request)
     {
+        var requestError = OwnedWorldRecoveryPolicy.ValidateRequest(request);
+        if (requestError is not null)
+            return GameCallResult<PreparedOwnedWorldResumePlan>.Failed(BridgeError.Create(
+                BridgeErrorCodes.InvalidRequest, requestError, false,
+                "Use the default path, or obtain explicit conversation confirmation for one exact newer LastExit candidate."));
         var readinessError = TestWorldCoordinator.ValidateMainMenuReady();
         if (readinessError is not null)
         {
@@ -56,7 +61,7 @@ internal sealed class OwnedWorldResumeCoordinator
                 "Use only the one-time restartResumeToken issued for the exact quarantined Spherewright-owned session."));
         }
 
-        if (!TryResolveResumeSource(ticket, out var resumeSource, out var rejection))
+        if (!TryResolvePayload(ticket, request, out var payload, out var lease, out var rejection))
         {
             return GameCallResult<PreparedOwnedWorldResumePlan>.Failed(BridgeError.Create(
                 BridgeErrorCodes.StaleState,
@@ -65,11 +70,11 @@ internal sealed class OwnedWorldResumeCoordinator
                 "Keep the ticket and inspect the exact normal shutdown or latest healthy owned-save evidence."));
         }
 
-        var payload = new OwnedWorldResumePlanPayload(ticket, resumeSource);
+        lease?.Dispose(); // Prepare never keeps a handle or starts loading.
         PreparedPlan<OwnedWorldResumePlanPayload> plan;
         try
         {
-            plan = _plans.Add(payload.Fingerprint, payload);
+            plan = _plans.Add(payload!.Fingerprint, payload);
         }
         catch (InvalidOperationException)
         {
@@ -96,10 +101,16 @@ internal sealed class OwnedWorldResumeCoordinator
             PlanToken = plan.Token,
             ExpiresAtUtc = plan.ExpiresAtUtc,
             ExpectedPlanetId = ticket.ExpectedPlanetId,
-            MinimumGameTick = ticket.MinimumGameTick,
+            MinimumGameTick = payload!.MinimumGameTick,
+            RecoveryMode = payload.Request.RecoveryMode,
+            RecoveryEvidenceVersion = payload.VerifiedRecovery ? OwnedWorldRecoveryPolicy.EvidenceVersion : 0,
+            CandidateGameTick = payload.VerifiedRecovery ? payload.MinimumGameTick : (long?)null,
+            ExactEmbeddedIdentityVerified = payload.VerifiedRecovery,
             CommitAllowedNow = blockers.Count == 0,
             CommitBlockers = blockers,
-            CompletionCondition = string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
+            CompletionCondition = payload.VerifiedRecovery
+                ? "Only the explicitly approved fixed LastExit may load: exact embedded identity, current version, peaceful mode, durable Journal, full-file evidence and the candidate tick are bound and rechecked; no fallback. Adoption must cover the candidate tick before normal primary resave."
+                : string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
                 ? "A healthy planned restart loads only the exact primary owned save named inside the protected ticket after its header proves the minimum game tick and its protected per-save journal proves the ticket's durable checkpoint; adoption still requires the embedded high-entropy owned name, planet, and peaceful mode. Sandbox state and resource multiplier are preserved and reported but do not gate adoption."
                 : "Quarantine recovery loads only the fresh fixed LastExit slot after its header proves the minimum game tick and its protected per-save journal proves the ticket's durable checkpoint; adoption still requires the embedded high-entropy owned name, planet, and peaceful mode. Sandbox state and resource multiplier are preserved and reported but do not gate adoption.",
         });
@@ -166,16 +177,18 @@ internal sealed class OwnedWorldResumeCoordinator
         var readinessError = TestWorldCoordinator.ValidateMainMenuReady();
         var payload = plan.Payload;
         var rejection = "The one-time resume ticket changed after prepare.";
+        OwnedSaveRecoveryLease? sourceLease = null;
         if (readinessError is not null
             || !_tickets.TryGetActiveTicket(payload.Ticket.ResumeToken, out var currentTicket, out _)
             || currentTicket is null
-            || !TryResolveResumeSource(currentTicket, out var currentResumeSource, out rejection)
-            || currentResumeSource != payload.ResumeSource
-            || !string.Equals(new OwnedWorldResumePlanPayload(currentTicket, currentResumeSource).Fingerprint, payload.Fingerprint, StringComparison.Ordinal))
+            || !TryResolvePayload(currentTicket, payload.Request, out var currentPayload, out sourceLease, out rejection)
+            || !string.Equals(currentPayload!.Fingerprint, payload.Fingerprint, StringComparison.Ordinal))
         {
+            sourceLease?.Dispose();
             return GameCallResult<OwnedWorldResumeResult>.Failed(BridgeError.Create(
                 BridgeErrorCodes.StaleState,
-                readinessError?.Message ?? rejection,
+                readinessError?.Message ?? (string.IsNullOrWhiteSpace(rejection)
+                    ? "The protected source evidence changed after prepare; no load was started." : rejection),
                 false,
                 "Do not load a save; return to an idle main menu and prepare from the exact current ticket."));
         }
@@ -184,13 +197,15 @@ internal sealed class OwnedWorldResumeCoordinator
         {
             ActionId = Guid.NewGuid().ToString("D"),
             Ticket = currentTicket,
-            ResumeSource = currentResumeSource,
+            ResumeSource = payload.ResumeSource,
+            MinimumGameTick = payload.MinimumGameTick,
         };
         try
         {
-            _sessions.ExpectNextSessionToBeResumed(currentTicket);
+            _sessions.ExpectNextSessionToBeResumed(currentTicket, sourceLease);
+            sourceLease = null; // Tracker owns the lease through adoption/Journal confirmation.
             DSPGame.StartGame(
-                currentResumeSource == OwnedWorldResumeSourceKind.LastExit
+                payload.ResumeSource == OwnedWorldResumeSourceKind.LastExit
                     ? GameSave.LastExit
                     : currentTicket.OwnedSaveName);
         }
@@ -202,6 +217,10 @@ internal sealed class OwnedWorldResumeCoordinator
                 $"DSP rejected the exact protected owned-world resume through its normal loader ({exception.GetType().Name}).",
                 false,
                 "Inspect the local Spherewright and Unity logs; do not load another save."));
+        }
+        finally
+        {
+            sourceLease?.Dispose();
         }
 
         var result = new OwnedWorldResumeResult
@@ -242,15 +261,16 @@ internal sealed class OwnedWorldResumeCoordinator
             Succeeded = false,
             Message = action.ResumeSource == OwnedWorldResumeSourceKind.LastExit
                 ? "DSP accepted the fixed LastExit load; Spherewright is validating the one-time owned-world provenance proof."
-                : "DSP accepted the exact ticket-bound primary owned save because LastExit was not refreshed; Spherewright is validating the same one-time provenance proof.",
+                : "DSP accepted the exact ticket-bound primary owned save; Spherewright is validating the one-time provenance proof.",
         };
         if (session.OwnedBySpherewright
             && session.LocalPlanetId == action.Ticket.ExpectedPlanetId
-            && session.GameTick >= action.Ticket.MinimumGameTick)
+            && session.GameTick >= action.MinimumGameTick)
         {
             result.SessionId = session.SessionId;
             result.PlanetId = session.LocalPlanetId;
-            if (string.Equals(session.OwnedSaveState, OwnedSaveStates.Saved, StringComparison.Ordinal))
+            if (string.Equals(session.OwnedSaveState, OwnedSaveStates.Saved, StringComparison.Ordinal)
+                && session.LastOwnedSaveGameTick >= action.MinimumGameTick)
             {
                 result.State = NormalActionStates.Completed;
                 result.Terminal = true;
@@ -258,6 +278,12 @@ internal sealed class OwnedWorldResumeCoordinator
                 result.Message = action.ResumeSource == OwnedWorldResumeSourceKind.LastExit
                     ? "The exact owned LastExit payload passed provenance checks and was resaved under its high-entropy Spherewright name."
                     : "The exact ticket-bound primary owned save passed provenance checks and was resaved under the same high-entropy Spherewright name.";
+            }
+            else if (string.Equals(session.OwnedSaveState, OwnedSaveStates.SaveFailed, StringComparison.Ordinal))
+            {
+                result.State = NormalActionStates.ActionFailed;
+                result.Terminal = true;
+                result.Message = "The protected world was adopted but its normal primary resave failed; inspect the current world without replaying resume.";
             }
             else
             {
@@ -272,6 +298,55 @@ internal sealed class OwnedWorldResumeCoordinator
         }
 
         return true;
+    }
+
+    private static bool TryResolvePayload(OwnedWorldResumeTicket ticket, PrepareOwnedWorldResumeRequest request,
+        out OwnedWorldResumePlanPayload? payload, out OwnedSaveRecoveryLease? lease, out string rejection)
+    {
+        payload = null;
+        lease = null;
+        rejection = string.Empty;
+        if (request.RecoveryMode == OwnedWorldResumeModes.Default)
+        {
+            if (!TryResolveResumeSource(ticket, out var source, out rejection)) return false;
+            payload = new OwnedWorldResumePlanPayload(ticket, source, request, null);
+            return true;
+        }
+        if (IsLiveDspProcess(ticket.SourceProcessId))
+        {
+            rejection = "The source DSP process is still running; no recovery load is permitted.";
+            return false;
+        }
+        if (!string.IsNullOrWhiteSpace(ticket.QuarantineActionId) || ticket.GameplayJournalCheckpoint is null)
+        {
+            rejection = "Verified recovery requires a healthy ticket with a verified durable Journal checkpoint.";
+            return false;
+        }
+        try
+        {
+            // No caller-supplied path or autosave enumeration. Ticket/Journal already validated by the store.
+            lease = OwnedSaveRecoveryLease.Open(GameSave.SavePath(GameSave.LastExit), ticket.OwnedSaveName);
+            TryReadSaveEvidence(ticket.OwnedSaveName, out _, out var primaryTick);
+            rejection = OwnedWorldRecoveryPolicy.ValidateCandidate(request,
+                string.IsNullOrWhiteSpace(ticket.QuarantineActionId), ticket.GameplayJournalCheckpoint is not null,
+                ticket.MinimumGameTick, ticket.IssuedAtUtc, ticket.GameVersion,
+                lease.Prefix, lease.WrittenAtUtc, primaryTick) ?? string.Empty;
+            if (rejection.Length == 0)
+            {
+                payload = new OwnedWorldResumePlanPayload(ticket, OwnedWorldResumeSourceKind.LastExit, request, lease);
+                return true;
+            }
+        }
+        catch (Exception exception) when (exception is IOException || exception is InvalidDataException
+            || exception is UnauthorizedAccessException || exception is ArgumentException
+            || exception is NotSupportedException || exception is System.Security.SecurityException
+            || exception is System.Security.Cryptography.CryptographicException)
+        {
+            rejection = $"The fixed LastExit could not prove bounded protected recovery evidence ({exception.GetType().Name}).";
+        }
+        lease?.Dispose();
+        lease = null;
+        return false;
     }
 
     private static bool TryResolveResumeSource(
@@ -376,10 +451,20 @@ internal sealed class OwnedWorldResumeCoordinator
     {
         public OwnedWorldResumePlanPayload(
             OwnedWorldResumeTicket ticket,
-            OwnedWorldResumeSourceKind resumeSource)
+            OwnedWorldResumeSourceKind resumeSource,
+            PrepareOwnedWorldResumeRequest request,
+            OwnedSaveRecoveryLease? lease)
         {
             Ticket = ticket;
             ResumeSource = resumeSource;
+            Request = new PrepareOwnedWorldResumeRequest
+            {
+                RecoveryMode = request.RecoveryMode,
+                UserConfirmedInConversation = request.UserConfirmedInConversation,
+                MinimumRecoveryGameTick = request.MinimumRecoveryGameTick,
+                ExpectedRecoveryGameTick = request.ExpectedRecoveryGameTick,
+            };
+            MinimumGameTick = lease?.Prefix.GameTick ?? ticket.MinimumGameTick;
             Fingerprint = CanonicalStateHash.Combine(
                 "resume-owned-world",
                 ticket.ResumeToken,
@@ -399,12 +484,23 @@ internal sealed class OwnedWorldResumeCoordinator
                 ticket.QuarantineActionId,
                 ticket.IssuedAtUtc,
                 ticket.ExpiresAtUtc,
-                resumeSource);
+                resumeSource,
+                Request.RecoveryMode,
+                Request.UserConfirmedInConversation,
+                Request.MinimumRecoveryGameTick,
+                Request.ExpectedRecoveryGameTick,
+                lease?.Fingerprint ?? string.Empty);
         }
 
         public OwnedWorldResumeTicket Ticket { get; }
 
         public OwnedWorldResumeSourceKind ResumeSource { get; }
+
+        public PrepareOwnedWorldResumeRequest Request { get; }
+
+        public bool VerifiedRecovery => Request.RecoveryMode == OwnedWorldResumeModes.VerifiedNewerLastExit;
+
+        public long MinimumGameTick { get; }
 
         public string Fingerprint { get; }
     }
@@ -416,5 +512,7 @@ internal sealed class OwnedWorldResumeCoordinator
         public OwnedWorldResumeTicket Ticket { get; set; } = null!;
 
         public OwnedWorldResumeSourceKind ResumeSource { get; set; }
+
+        public long MinimumGameTick { get; set; }
     }
 }

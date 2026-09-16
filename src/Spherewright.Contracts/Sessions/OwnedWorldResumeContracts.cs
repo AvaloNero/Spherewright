@@ -1,8 +1,22 @@
 namespace Spherewright.Contracts.Sessions;
 
+public static class OwnedWorldResumeModes
+{
+    public const string Default = "default";
+    public const string VerifiedNewerLastExit = "verified_newer_lastexit";
+}
+
 public sealed class PrepareOwnedWorldResumeRequest
 {
     public string ResumeToken { get; set; } = string.Empty;
+
+    public string RecoveryMode { get; set; } = OwnedWorldResumeModes.Default;
+
+    public bool UserConfirmedInConversation { get; set; }
+
+    public long? MinimumRecoveryGameTick { get; set; }
+
+    public long? ExpectedRecoveryGameTick { get; set; }
 }
 
 public sealed class CommitOwnedWorldResumeRequest
@@ -23,6 +37,14 @@ public sealed class PreparedOwnedWorldResumePlan
     public int ExpectedPlanetId { get; set; }
 
     public long MinimumGameTick { get; set; }
+
+    public string RecoveryMode { get; set; } = OwnedWorldResumeModes.Default;
+
+    public int RecoveryEvidenceVersion { get; set; }
+
+    public long? CandidateGameTick { get; set; }
+
+    public bool ExactEmbeddedIdentityVerified { get; set; }
 
     public bool CommitAllowedNow { get; set; }
 

@@ -235,6 +235,7 @@ internal sealed class SpherewrightBridgeHost : IDisposable
 
     public void Dispose()
     {
+        _sessionTracker.Dispose();
         if (!_started)
         {
             return;

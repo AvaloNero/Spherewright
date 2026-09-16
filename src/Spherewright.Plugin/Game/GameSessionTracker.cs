@@ -6,7 +6,7 @@ using Spherewright.Plugin.RuntimeDescriptor;
 
 namespace Spherewright.Plugin.Game;
 
-internal sealed class GameSessionTracker
+internal sealed class GameSessionTracker : IDisposable
 {
     private readonly bool _writesConfigured;
     private readonly bool _userSaveImportConfigured;
@@ -30,6 +30,8 @@ internal sealed class GameSessionTracker
     private string? _writeQuarantineReason;
     private OwnedWorldResumeTicket? _expectedResumeTicket;
     private OwnedWorldResumeTicket? _pendingJournalResumeTicket;
+    private OwnedSaveRecoveryLease? _resumeSourceLease;
+    private DateTimeOffset _resumeSourceLeaseAcquiredAtUtc;
     private string? _resumeAdoptionError;
     private FlightCheckpointTicket? _expectedFlightCheckpoint;
     private string? _currentFlightCheckpointId;
@@ -138,6 +140,14 @@ internal sealed class GameSessionTracker
 
     public void UpdateOnMainThread()
     {
+        if (_resumeSourceLease is not null
+            && DateTimeOffset.UtcNow - _resumeSourceLeaseAcquiredAtUtc > TimeSpan.FromMinutes(5))
+        {
+            const string rejection = "Verified recovery did not complete adoption and Journal validation within its bounded wait; no fallback or primary save is allowed.";
+            if (_pendingJournalResumeTicket is not null) RejectResumeGameplayJournalContinuityOnMainThread(rejection);
+            CancelExpectedResumedSession();
+            _resumeAdoptionError = rejection;
+        }
         // DSP keeps a synthetic GameData alive for the animated main-menu demo.
         // Treating that demo as a loaded world can consume a pending exact-load
         // expectation before DSPGame.StartGame has created the real save loader.
@@ -147,6 +157,12 @@ internal sealed class GameSessionTracker
         {
             if (GameLoaded || _observedData is not null)
             {
+                if (_expectedResumeTicket is not null || _pendingJournalResumeTicket is not null
+                    || (_ownedSaveState == OwnedSaveStates.WaitingToSave && ConfirmedPlannedResumeMinimumGameTick.HasValue))
+                {
+                    _resumeAdoptionError = "The recovery world exited before protected adoption completed.";
+                    CancelExpectedResumedSession();
+                }
                 _observedData = null;
                 _ownedData = null;
                 _ownedSaveName = null;
@@ -170,6 +186,14 @@ internal sealed class GameSessionTracker
 
         if (!GameLoaded || !ReferenceEquals(_observedData, currentData))
         {
+            if (GameLoaded && (_expectedResumeTicket is not null || _pendingJournalResumeTicket is not null
+                || (_ownedSaveState == OwnedSaveStates.WaitingToSave && ConfirmedPlannedResumeMinimumGameTick.HasValue)))
+            {
+                const string rejection = "The recovery GameData changed before the protected primary resave; no primary save is allowed.";
+                if (_pendingJournalResumeTicket is not null) RejectResumeGameplayJournalContinuityOnMainThread(rejection);
+                CancelExpectedResumedSession();
+                _resumeAdoptionError = rejection;
+            }
             _observedData = currentData;
             _sessionId = Guid.NewGuid().ToString("D");
             ConfirmedPlannedResumeMinimumGameTick = null;
@@ -252,7 +276,8 @@ internal sealed class GameSessionTracker
 
         if (_expectedResumeTicket is not null && !IsCurrentSessionOwned)
         {
-            if (!TryValidateResumeCandidate(currentData, _expectedResumeTicket, out var pending, out var rejection))
+            if (!TryValidateResumeCandidate(currentData, _expectedResumeTicket,
+                    _resumeSourceLease?.Prefix.GameTick, out var pending, out var rejection))
             {
                 if (pending)
                 {
@@ -262,6 +287,7 @@ internal sealed class GameSessionTracker
                 _resumeAdoptionError = rejection;
                 _resumeTickets.Consume(_expectedResumeTicket.ResumeToken);
                 _expectedResumeTicket = null;
+                ReleaseResumeSourceLease();
                 _ownedSaveState = OwnedSaveStates.None;
                 _logger.LogError("Spherewright rejected an owned-world resume candidate because provenance did not match");
                 return;
@@ -317,8 +343,9 @@ internal sealed class GameSessionTracker
 
         _resumeTickets.Consume(ticket.ResumeToken);
         ConfirmedPlannedResumeMinimumGameTick = string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
-            ? ticket.MinimumGameTick : (long?)null;
+            ? _resumeSourceLease?.Prefix.GameTick ?? ticket.MinimumGameTick : (long?)null;
         _pendingJournalResumeTicket = null;
+        ReleaseResumeSourceLease();
         _logger.LogInfo("Spherewright confirmed gameplay-journal continuity and consumed the one-time resume ticket");
     }
 
@@ -330,6 +357,7 @@ internal sealed class GameSessionTracker
         }
 
         _pendingJournalResumeTicket = null;
+        ReleaseResumeSourceLease();
         _ownedData = null;
         ConfirmedPlannedResumeMinimumGameTick = null;
         _ownedSaveName = null;
@@ -767,6 +795,8 @@ internal sealed class GameSessionTracker
     {
         error = null;
         if (!IsCurrentSessionOwned
+            || _pendingJournalResumeTicket is not null
+            || _resumeSourceLease is not null
             || string.IsNullOrWhiteSpace(_ownedSaveName)
             || GameMain.data?.localLoadedPlanetFactory is null)
         {
@@ -865,7 +895,7 @@ internal sealed class GameSessionTracker
         _logger.LogError("Spherewright quarantined writes for the current owned session");
     }
 
-    public void ExpectNextSessionToBeResumed(OwnedWorldResumeTicket ticket)
+    public void ExpectNextSessionToBeResumed(OwnedWorldResumeTicket ticket, OwnedSaveRecoveryLease? sourceLease = null)
     {
         if (ticket is null)
         {
@@ -875,12 +905,22 @@ internal sealed class GameSessionTracker
         if (((GameMain.data is not null || GameMain.isRunning) && !DSPGame.IsMenuDemo)
             || _expectedOwnedSaveName is not null
             || _expectedResumeTicket is not null
-            || _expectedFlightCheckpoint is not null)
+            || _expectedFlightCheckpoint is not null
+            || _pendingJournalResumeTicket is not null
+            || _resumeSourceLease is not null)
         {
             throw new InvalidOperationException("An owned world can only be resumed from an idle main menu.");
         }
 
+        if (sourceLease is not null && (ticket.GameplayJournalCheckpoint is null
+            || !string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
+            || !sourceLease.Prefix.MatchesExpectedIdentity
+            || sourceLease.Prefix.GameTick <= ticket.MinimumGameTick))
+            throw new InvalidOperationException("Verified recovery requires a newer bound candidate and a healthy Journal-bearing ticket.");
+
         _expectedResumeTicket = ticket;
+        _resumeSourceLease = sourceLease;
+        _resumeSourceLeaseAcquiredAtUtc = DateTimeOffset.UtcNow;
         _ownedSaveState = OwnedSaveStates.WaitingForWorld;
         _ownedSaveError = null;
         _resumeAdoptionError = null;
@@ -889,12 +929,21 @@ internal sealed class GameSessionTracker
     public void CancelExpectedResumedSession()
     {
         _expectedResumeTicket = null;
+        ReleaseResumeSourceLease();
         if (!IsCurrentSessionOwned)
         {
             _ownedSaveState = OwnedSaveStates.None;
             _ownedSaveError = null;
         }
     }
+
+    private void ReleaseResumeSourceLease()
+    {
+        try { _resumeSourceLease?.Dispose(); }
+        finally { _resumeSourceLease = null; }
+    }
+
+    public void Dispose() => ReleaseResumeSourceLease();
 
     public void MarkCurrentSessionFlightCheckpoint(FlightCheckpointTicket ticket)
     {
@@ -1100,6 +1149,7 @@ internal sealed class GameSessionTracker
     private static bool TryValidateResumeCandidate(
         GameData currentData,
         OwnedWorldResumeTicket ticket,
+        long? recoveryCandidateGameTick,
         out bool pending,
         out string rejection)
     {
@@ -1113,9 +1163,10 @@ internal sealed class GameSessionTracker
             return false;
         }
 
-        if (GameMain.gameTick < ticket.MinimumGameTick)
+        if (!OwnedWorldRecoveryPolicy.AllowsAdoption(GameMain.gameTick,
+                recoveryCandidateGameTick ?? ticket.MinimumGameTick, recoveryCandidateGameTick.HasValue))
         {
-            rejection = "The resumed payload is older than the authenticated source-session ticket.";
+            rejection = "The resumed payload did not match the authenticated ticket or exact recovery candidate tick window.";
             return false;
         }
 

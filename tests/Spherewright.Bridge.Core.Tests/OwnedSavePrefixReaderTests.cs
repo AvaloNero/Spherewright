@@ -87,7 +87,7 @@ public sealed class OwnedSavePrefixReaderTests
     public void InvalidUtf8IdentityIsRejected()
     {
         using var stream = Fixture(identity: "x");
-        stream.Position = stream.Length - 5;
+        stream.Position = stream.Length - 9;
         stream.WriteByte(0xff);
         stream.Position = 0;
         Assert.Throws<DecoderFallbackException>(() => OwnedSavePrefixReader.Read(stream, Identity));
@@ -109,7 +109,7 @@ public sealed class OwnedSavePrefixReaderTests
     public void RejectsInvalidStringLengths(int first, int second)
     {
         using var stream = Fixture(identity: "x");
-        stream.Position = stream.Length - 6;
+        stream.Position = stream.Length - 10;
         stream.WriteByte((byte)first);
         stream.WriteByte((byte)second);
         stream.Position = 0;
@@ -129,7 +129,18 @@ public sealed class OwnedSavePrefixReaderTests
         Assert.Throws<EndOfStreamException>(() => OwnedSavePrefixReader.Read(stream, Identity));
     }
 
-    private static MemoryStream Fixture(string identity = Identity, bool sandbox = false,
+    [Fact]
+    public void MatchingIdentityWithoutADescriptionStillFailsClosed()
+    {
+        using var stream = Fixture();
+        stream.SetLength(stream.Length - 8);
+        stream.Position = 6;
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true)) writer.Write(stream.Length);
+        stream.Position = 0;
+        Assert.Throws<EndOfStreamException>(() => OwnedSavePrefixReader.Read(stream, Identity));
+    }
+
+    internal static MemoryStream Fixture(string identity = Identity, bool sandbox = false,
         int accountVersion = 0, int dataVersion = 13, int patch = 22, string accountName = "not-exposed")
     {
         var stream = new MemoryStream();
@@ -145,6 +156,7 @@ public sealed class OwnedSavePrefixReaderTests
             writer.Write(dataVersion); writer.Write(patch);
             Account(writer, accountVersion, accountName);
             writer.Write(identity);
+            writer.Write(9); // Current researched GameDesc version, without importing its content.
             writer.Write(99);
             stream.Position = 6; writer.Write(stream.Length);
         }

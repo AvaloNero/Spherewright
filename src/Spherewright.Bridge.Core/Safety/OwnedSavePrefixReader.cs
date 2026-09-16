@@ -56,6 +56,8 @@ public static class OwnedSavePrefixReader
             var bytes = reader.ReadBytes(identityBytes);
             if (bytes.Length != identityBytes) throw new EndOfStreamException();
             var identity = new UTF8Encoding(false, true).GetString(bytes);
+            if (reader.ReadInt32() != 9)
+                throw new InvalidDataException("The GameDesc prefix version is unsupported.");
             return new OwnedSavePrefixEvidence(
                 fileLength, gameTick, new DateTimeOffset(savedAtTicks, TimeSpan.Zero),
                 string.Join(".", version.Select(value => value.ToString(CultureInfo.InvariantCulture))),

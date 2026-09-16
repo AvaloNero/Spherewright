@@ -12,6 +12,13 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-148 — 原记录审计只规范化意图顶层，嵌套request仍为Hashtable
+
+- 状态：`fixed_offline_live_pending`，仅私有正常保存原记录审计器；游戏caller成功，不是存档故障。
+- 事实：Luna C7A86AE5/PTY41817 exit0一次正常保存至61814274、accepted3；旧root9DA0CD15/PTY8384 exit1在`lssa.original.intent.request object mismatch`停止，独立proof未生成。原141文件和成功存档不重写。
+- 根因及修正：Hda-Same严格区分PSCustomObject和Hashtable；`[pscustomobject]$Payload`只转换外层，原JSON记录里的嵌套request与重构hashtable不一致。2FA76120仅让重构Payload按原证据序列化路径Ci-Clone，完整字段及值类型继续严格比较，原raw不改、不通用放宽helper、不重放游戏。
+- 离线验证：新增嵌套请求正例、错UUID及字符串planet拒绝，完整32检查/PTY50645 exit0；三坏入口import前exit1/解析0，Sol静态审核通过，0游戏/证据写入。新原记录审计仍待，不能把旧exit1改写为成功，也不声称Header、恢复或持续产出通过。
+
 ## IFX-147 — 普通保存草稿遗漏计划过期检查并把重放回执先计为新写
 
 - 状态：`fixed_offline_live_pending`，仅本批私有保存调用方，冻结前审阅发现；无游戏写入或Plugin改动。

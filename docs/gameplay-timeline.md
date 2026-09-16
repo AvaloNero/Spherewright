@@ -3,6 +3,10 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / 硅链正常保存成功，审计嵌套类型修复：e85e1e3已推送且CI35073893772绿，Luna唯一C7A86AE5/raw-5add1d9b/PTY41817 exit0，138调用/一写；开场61813866，e716e7d5于61814274保存，末61814703/R134/primary61814274/J89/accepted3。开闭4679实体/9164互返边和13详情保持，843高纯硅2900/晶格硅100前后不变；无施工、配置、转料、移动、重启或归零。
+
+root旧9DA0CD15/PTY8384 exit1停在原意图比较：只把重构Payload顶层转PSCustomObject，嵌套request仍Hashtable，严格比较因此拒绝。2FA76120只对重构请求做与原证据相同的JSON往返，原141记录不改，字段/数值类型仍严格比较；新增嵌套正例、错key及字符串planet拒绝，32离线/PTY50645 exit0、三坏入口/解析及Sol静态复核通过（IFX-148）。下一只重验这次原保存证据，不重跑C7或把旧audit exit1改称通过；原保存成功与独立核销完成分开陈述，持续晶格硅及该链protected resume仍待。
+
 2026-09-16 / H接线和输出容量的普通保存方案离线完成：f1604b9/CI35071431026已绿。Sol C7A86AE5绑定独立容量证明0A498D36，只做一次prepare_save/commit_save及原handle双终态；完整开闭场4679/9164、13详情、玩家ready、科研/两网、J89和零prebuild保持。终态须R133→134、primary等于完成tick，精确存档身份不变且planned-restart票据在原调用方内存中确实更新；不补造Header或恢复验证，accepted2→3不归零。
 
 29基础检查（PTY28176 exit0）、独立42D3AF85/3AA03360完整15场景（PTY32401 exit0）、六坏入口import前exit1/解析0、9DA0CD15审计器29检查（PTY62183 exit0）及Sol静态审核通过。正例138调用、完成revision竞争140调用；pending、陈旧现场、缺就绪、容量变化、原生拒绝、过期计划、丢失/错键回执、异常终态、旧primary/票据/身份及结尾漂移均在具体边界拒绝，保留已知accepted/handle，未执行任何游戏动作。IFX-147记录冻结前修正的expiry及replay计数缺口；本片推送绿CI后才交Luna一次fresh执行。

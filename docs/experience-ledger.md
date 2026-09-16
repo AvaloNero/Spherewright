@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-299嵌套意图的审计表示边界（`validated`仅类型复现/离线修正）：原证据JSON解码为嵌套PSCustomObject，重放构造的Payload含嵌套Hashtable，仅顶层强制类型不能完成规范化。原C7保存caller已成功，9DA审计PTY8384却在lssa.original.intent.request严格比较退出1；这不是游戏失败，更不能重交save。2FA76120仅对重构请求Ci-Clone(JSON往返)，不编辑原record、不全局放宽comparer，错key及string planet仍拒绝。32离线/PTY50645 exit0、三坏入口/解析和Sol静态审核通过，0新游戏/证据写入；新原记录审计尚待，旧退出码保留。最后现场61814703/R134/primary61814274/J89/accepted3；关联IFX-148，最近复验同日，任何嵌套集合/DTO/序列化变化时复验。
+
 2026-09-16 / EXP-299普通保存与回执计数边界（`validated`仅离线）：保存成功、protected-resume票据更新和恢复成功是三层证据。原生save可成功但票据签发只warning，因此C7A86AE5须fresh核R+1/精确primary、原内存身份不变及票据确实更新，不以save终态单独宣称可恢复；审计只验证秘密已脱敏，等值/轮换仍明确归于冻结live caller见证，不能拿两个REDACTED作证明。计划须有原生带zone的未来expiry、真实token及零目标/材料；回执先保留合法handle，仅明确accepted且非replay才计新写，未知或重放不重算，错键但已知新接受则保留计数与不确定性。
 
 29基础、42D3AF85完整15场景/PTY32401 exit0、六坏入口/解析、9DA0CD15审计器29检查及Sol静态复核通过，0游戏/证据写入。完整场景覆盖正常138调用、revision竞争140调用与13种精确失败边界；失败晋升不半更新缓存，已证明保存后的结尾漂移也不能抹去新primary。IFX-147仅冻结前私有脚本修正，不记作三轮游戏设计失败；当前实机仍61774204/R133/primary61386568/J89/accepted2，fresh保存及恢复另验。

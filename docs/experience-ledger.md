@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-299单仓施工边界复核（`validated`限离线）：Sol55290C46 fresh单prepare/单commit，原handle有界等终态并复读，真实正实体ID不能预猜；全场只许增加一个无连接2101，旧4679实体/9164互返边与13详情保持，仓体默认30格/12物理空端口分开核验。12端口不是12格容量，free port原DTO为otherObjectId=0/otherSlot=null。提交前需再次复核原expiry；typed拒绝、回放、未知收据及新接受但错key分别保留准确计数/handle/不确定性，不因本地读取失败换键重建。失败阶段与代码/测试修正分开计数；冻结caller在对方测试期间不得修改，先通知并解除冻结。
+
+38基础、root2B31EADE完整30场景/16guard（PTY11977 exit0）、六入口/解析与21公共ActionClient检查通过；模拟涵盖延迟施工、返航无人机、completion race及有限未完工。83CC4494原记录审计器23离线（PTY22252 exit0）与Sol静态审核通过，只用原record/intent时钟和原意图key，秘密等值仍属原caller见证；不重演墙钟等待，流不匹配即停止而非补造结果。最新真实61957615/R141/primary61814274/J89/accepted8未变，尚未建仓；推送绿CI后仅允许该单仓正常施工，不含连接、持续产出、保存/恢复或reset。关联IFX-147/148/150；最近复验同日，DLL/DTO/现场/冻结hash变化时重验。
+
 2026-09-16 / EXP-299原生吸附预检本机复验（`validated`限单候选零写）：Luna C50/raw-8a155208/PTY99440 exit0实际137调用/1prepare/0commit，原生落点与请求相差0.506243m，原场4679/9164及13详情保持；root5118F2CB/PTY17415 exit0核139原文件/137响应并封存293E979E，原manifest不改。末61957615/R141/primary61814274/J89/accepted8，预检token丢弃。IFX-150正常路径通过，负例仍离线；后续必须fresh建造并独立读实际端口/容量，不能将推算间距或放置预检提升为连接/持续产出保证。最近复验同日，现场、候选、DLL或caller变化时重验。
 
 2026-09-16 / EXP-299原生落点与纸面几何分离（`validated`限源码与离线）：当前核心建造对明确preferredPosition执行原生Snap；C50F1B21因此只把纸面点作为请求，单次native prepare后独立记录实际plannedPosition/偏移并按本候选有限范围拒绝异常。2m是外部保守界限，不是DLL保证或通用布局规则；原生落点通过也不证明未来实体、可用端口或分拣器间距，须另行fresh施工/双端验证。预检期间玩家变化只说明现场已变，不能未经证据归因于prepare。

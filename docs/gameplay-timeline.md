@@ -3,6 +3,12 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / 最后H供给端的有限执行方案离线通过：基线a2f90ac/CI35058288792成功，Sol caller BA5B5939只接842/slot11→4668的普通sorter/filter1105，最大一写、800调用/600秒/每请求30秒。保全C19、双C、H11和4678；fresh完整场、原生prepare/端口hash、材料1→0、原action双终态及新ID/双边physical slot读回缺一不可。root adapter456E69F5在当前R129/457消费者基线上只追加300J/t预算；不保存、移动、转料、改配置或再次归零。
+
+验证均为离线：21基础；root功率17和独立纯函数07CFEEFD的31检查；793F4A19/PTY30760 exit0完整14场景，J89/J88正例各158次模拟调用、progress219次，均一模拟提交。拒绝覆盖未就绪、成功前缀漂移、原生拒绝、prepare后hash变化、丢失/错键收据、终态材料、端口、串料、货物stack汇总和供电。unknown receipt保留不确定，其他已接受异常保留原handle/accepted，不重放；三坏入口exit1、解析零错误及21公共客户端通过，0游戏调用/证据写入。独立J89正例PTY3652也通过。
+
+IFX-144记录草稿的阶段边数、Journal无planetId及新边归一化问题，均在实机前修正；非空1105/1113与唯一durable J89是允许的正常接通变化，不再要求永远空载。最后实机仍61603347/R129/primary61386568/J88/accepted0，H源尚未接；本片推送/绿CI后才由Luna唯一fresh执行。不是新的实机正例、持续生产或保存恢复完成。
+
 2026-09-16 / 十写审计计数已明确交接：0aff551已推送且CI35057952216成功后，root唯一运行C0F4637F，PTY68649 exit0；raw-042bd871的一条受保护记录封存C29A0AF7，绑定999ABE20审计和82原文件manifest，独立复查文件未增改。accepted10→0只更新外部执行账本，0游戏调用/写入，不是游戏重置或fresh现场读取；最后现场仍61603347/R129/primary61386568/J88，H源仍未接。
 
 31离线检查与三坏入口/解析通过；记录明确下一执行需fresh完整opening、不能复用旧token、重放已完成前缀或再次交接。账本实现曾误用JSON键顺序与action envelope的session前提，离线即拒绝；改为完整键集/typed值，以及session查询原生null envelope加精确result身份，其余方法仍要求完整session。下一唯一施工目标仍为842/slot11→4668的2011/filter1105，由Sol规划、root核验后Luna执行，尚未授予实机写入。

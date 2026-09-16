@@ -106,6 +106,8 @@
 
 ## 0.4.0 — Overseer, Foundry & Governor
 
+2026-09-16 H源只读收尾方案离线通过：Sol冻结182BAE5E reader与1E8C1528 fixture，固定69次读取、零prepare/commit，复用已封存的原action和4679，不重放施工。144基础、root236独立guard、8完整场景/16检查、三坏入口/解析及21公共客户端通过；真实DateTime正例与session、终态、全场、端口、Journal、新实体和供电漂移拒绝均覆盖，负例锁定调用数及具体错误。草稿proof整数误用bool已在离线修正；actualTime按同一UTC瞬间比较，未放宽其他日记字段。最后实机仍61651777/knownR131/primary61386568/J89/accepted1；本片推送绿CI后才交Luna一次fresh只读。输出仓容量、持续生产和保存恢复仍待，不核销版本门。
+
 2026-09-16 H源中断原记录已独立核销：a8297a6/CI35061430964成功后，root746D52BD/PTY76511 exit0、独立proof E848755E确认235原文件/232回复不变，完整核验4679施工、1→0材料、双向槽、两47页4678/9160→4679/9164与唯一原action终态。原时间错误准确复现；A9EC仅适配actualTime后，原J89全部判据通过。24基础/14停点/14时间离线、三入口/解析及Sol静态复核通过，审计0新游戏调用。保留originalCallerCompleted=false、末61651777/knownR131/primary61386568/accepted1；缺少的最终科研/电力/prebuild/session不能补造，下一只做fresh只读收尾。持续生产及保存恢复仍待。
 
 2026-09-16 H源施工已返回成功终态，但私有日记收尾被类型误判中断：20bee0a/CI35060332473成功后，Luna唯一BA5B/raw-a00f08e6/PTY61852 exit1；原记录中两次相同成功terminal于61651154证明4679、2011只1→0，842/slot11→4679→4668/实际slot4且满供。J89已durable记录61651594首次1113；caller在closing读取actualTime时停止，235记录/232回复，accepted1、已知R131，不重放、不归零。IFX-145确认PowerShell把原生ISO字符串解码为DateTime，A9EC2049纯适配/14离线通过，不改冻结施工caller或全局decoder。尚缺独立完整原记录核销及fresh只读收尾；持续产出、保存恢复与其他0.4门不据此通过。

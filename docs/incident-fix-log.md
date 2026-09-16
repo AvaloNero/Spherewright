@@ -14,6 +14,8 @@
 
 ## IFX-145 — 原生Journal时间字符串经PowerShell解码后被误拒绝
 
+- 后继只读方案（离线）：182BAE5E固定69读，绑定原E848755E而不重交施工；首次事件actualTime按A9EC验证后的UtcTicks比较，完整其余Journal、旧场和端口不放宽。144基础、root236、1E8C1528完整8场景16检查、三坏入口/解析及21公共客户端通过。草稿proof整数0误作bool由首轮offline捕获并修正；最终PTY94128/97276均exit0，0游戏/证据写入。fresh读取尚未执行，状态仍为fixed_offline_live_pending。
+
 - 原记录复验：a8297a6绿CI后，root746D52BD/PTY76511 exit0完整核235文件/232回复，重现原错误且A9EC窄适配后完整J89通过；独立E848755E和manifest复查通过，审计0游戏调用。24基础/14停点/14时间、三入口/解析及Sol静态复核通过。原caller exit1、四项缺失收尾和notSustainedProduction边界仍保留，当前并非fresh实机闭合。
 - 状态：`fixed_offline_live_pending`，时间类型适配已有14纯检查，完整原记录已核销；fresh只读收尾仍待。原施工caller exit1保留，不改成整片成功。
 - 实际边界：Luna BA5B5939/raw-a00f08e6/PTY61852只执行一次。两相同success terminal证明4679于61651154建成、2011只1→0、842/slot11→4668/实际slot4；J89已durable记首次1113。stop发生在closing/actualTime，acceptedKnown1、revisionKnown131、pending0且无commit uncertainty；0新重试/补写。

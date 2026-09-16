@@ -12,7 +12,16 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-141 — 原记录审计临时采用执行runId后未恢复独立审计身份
+
+- 状态：`fixed`，仅当前私有H端点原记录审计；在草稿静态审阅中发现，未运行有缺陷的原记录审计，未发生记录污染。
+- 根因：为了重构原结果中的rawPrefix，草稿临时采用原执行runId，但封存新proof前未恢复；受保护记录写入器会按当前runId命名，导致审计证明混入本应不可变的原执行文件集。
+- 修正：72C607AE在导入后保存独立审计身份，纯重放finally恢复、seal前再验证；读取前后核完整文件集/SHA及当前用户ACL，逐记录校验连续ordinal/原run和首尾，proof绑定caller/power/H11原证明及发布commit/CI，结束再核源码哈希。独立审计仍不发游戏请求，不重放原墙钟、请求UUID或秘密值。
+- 验证：root独立26离线、三坏入口/解析0及21公共客户端通过；唯一audit-success PTY94286 exit0，对raw-dd803f99的148原文件/146回复核销后在独立run封存63217811，原文件仍148且哈希不变。Luna原PTY23144 exit0、两个H端点prepare成功/0写入的事实保留；末61489408/R127/accepted9。没有Plugin修改、重建成功部分或持续产出声明，关联EXP-299及本档日记。
+
 ## IFX-140 — 建造调用方用假想排队状态测试成功，遗漏真实预建筑递减
+
+- H端点实际预检后继（`fixed`仅两个零写候选）：054fa365绿CI后，冻结0DE80FEB实际走完146调用/2prepare，原生4677→101与842→4668均通过；完整场、功率预算、材料、玩家和J88保持，末61489408/R127/accepted9。独立原记录审计63217811已通过，见IFX-141；此前Reset/dispatch/attempt离线修正现有本机正例，原生拒绝分支仍只由模拟覆盖，不称施工、持续供料或未知结果恢复通过。
 
 - H实际端点预检调用方后继（`fixed_offline_live_pending`）：首稿Reset清空146调用序列，导致干净offline在固定step自检失败；并非游戏路线或原生预检失败。root指出后，0DE80FEB保留不可变序列、单次请求guard/dispatch，并把attempt和prepare计数移到transport前，防止原生拒绝漏计；同时补齐原供电typed门、预算/expiry/无复合动作与正剩余时限。15基础、root30纯、9完整Hs-Run模拟场景10检查和两拒绝计数检查、三入口/解析及21公共客户端通过，0游戏调用。fixture首轮漏geometryMarginMetres的失败单独保留，补齐合成DTO后原caller未变。root9788AA50/PTY60883 exit0核first拒绝68调用/1prepare、second拒绝83调用/2prepare及第一结果保留，未将generic throw当正确拒绝。R127/accepted9实机边界未变，当前仍未执行H sorter preview或任何新写。
 

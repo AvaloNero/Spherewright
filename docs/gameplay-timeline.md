@@ -3,6 +3,10 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / H两端实际零写预检通过：054fa365/CI35049747851绿后，Luna唯一执行0DE80FEB/powerD4F0BA8D，raw-dd803f99/PTY23144 exit0。start61488517，146次原生调用、2次prepare、0写入；先4677→101/slot1，再842/slot11→4668，均普通sorter2011/filter1105。两候选各自以166节点括窗验证供电，未来两只sorter共600J/t计入预算后均余74900J/t；实际放置预检与功率代理分别证明，不创建功率或联合施工预约。开闭61488545/61489063均47页、4677实体/9156互返边；四端、3带/2sorter、ready玩家、科研/J88、两网及全部已建C/H前缀保持。
+
+末61489408/R127/primary61386568/accepted9，未施工、保存、移动、转料或归零。root72C607AE/PTY94286 exit0在148原文件/146回复上重走冻结纯判据，26离线、三坏入口/解析及21公共客户端通过，审计0新游戏调用，独立run封存63217811；原148文件数量与SHA保持。审稿发现并在使用前修正审计重用原runId的风险（IFX-141），没有实际污染原记录；补齐连续ordinal、原run/首尾、审计前后文件集和源码哈希。脱敏planToken仅证形状，不证秘密相等；原PTY退出来自独立执行结果，原墙钟不重放。下一只准设计fresh炉端接线，成功到accepted10后须完整审计和显式计数交接，才续供给端；此处不称接料、持续晶格硅或保存恢复已通过。
+
 2026-09-16 / H两实际端点零写预检离线闭环：ef25478/CI35047924420绿后，Sol以H11原审计06085FD0及691原记录绑定当前4677实体/9156互返边，冻结preview0DE80FEB/powerD4F0BA8D。固定先4677→101/slot1，再842/slot11→4668，均2011/filter1105；belt虚拟slot−1不当作完工物理槽。opening59、每候选15、closing57共146调用，240秒整片/每请求30秒，任何失败即停；只新prepare，不commit、施工、保存、移动、转料或归零，旧token全部丢弃。四端完整配置/旧边/空带、3带/2sorter、ready玩家、J88/科研、完整两网和开闭47页场景都须fresh保持；每候选独立用四个原生节点快照夹住功率代理，按未来两只普通sorter600J/t验证，不把两个预检合成一次预约。
 
 root审稿发现Reset清空已经构造的不可变146调用序列，以及transport失败后才计数会漏记已发出的拒绝；最终改为Reset保留序列、单次请求守卫和try/finally dispatch，发送前记attempt/prepare并另记nativeSent。保留供电所有数值/类型、预算item/count、expiry、无混入其他动作、正剩余毫秒和完整旧场条件。15基础、root1146BC3C的30纯检查、三坏入口/解析、21公共action-client通过；fixture5575920D实际调用Hs-Run，仅替换transport，Sol PTY24729 exit0/9场景10检查。其首轮失败是合成power probe漏geometryMarginMetres，补齐fixture后通过，未修改生产caller。

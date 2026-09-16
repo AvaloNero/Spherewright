@@ -14,6 +14,8 @@
 
 ## IFX-140 — 建造调用方用假想排队状态测试成功，遗漏真实预建筑递减
 
+- H11后继审稿（`fixed_offline_live_pending`）：窄caller显式初始化Gb纯helper依赖，不依赖旧REPL；对三种belt模式及每页snapshot使用严格string检查，负speed明确拒绝。一个bool snapshot反例最初先因旧tick拒绝，改成fresh正例成功后只改类型再拒绝，保留这一测试误因。最终A540449C/25基础、00D99219/14实际业务流模拟28检查通过，root37纯检查/入口/解析及75 Core通过；反向字节SHA证执行体与37检查对应C7版相同。14→3带、accepted8→9/R125→127仍是待实机条件；无游戏调用，不计作物理方案失败，也不扩Plugin或动作白名单。
+
 - 双C保存实机后继（`fixed`仅本机正常保存边界）：eb2fae5绿CI后，3B6CCBEB唯一raw-962aea9d/PTY7956 exit0，正常保存61386568/R125/accepted8，完整4666实体9136边和双C/C19/材料/J88保持。root E099ED92/PTY49284对127原文件124回复核销并封存601FAF0A，22基础+10独立检查、三入口/解析及21公共客户端通过，0新游戏调用。审稿补齐原请求守卫、规范intent UUID和双秘密字段脱敏负例，未修改原live caller；秘密同一/变更仍只是冻结caller实时检查的见证，不由占位符独立证明，不claimHeader、重启或持续产出。上述离线bootstrap/promotion修正现有这一窄live正例，模拟故障分支不因此变成实机通过。
 
 - 双C保存调用方后继（`fixed_offline_live_pending`）：Sol首轮干净offline PTY55903因四个S2 save pure helper未导入而exit1，0游戏/证据写入；3B6CCBEB以D6D4EF25精确SHA、完整函数AST/参数检查补齐，21基础通过。保存不能直接调用被父链覆写后仍硬绑旧primary的promotion helper，改为新primary/R+1完整通过后原子更新缓存，失败不丢已accepted身份。root12完整flow模拟、三坏入口/解析、7时限检查和21公共客户端通过，旧token、新primary错误及closing漂移分别守住正确边界；不扩原生API、不claimHeader、不把模拟写成实机，真实accepted7/R124保留。脱敏token比较的证据限制单列，后续原记录审计不能重新伪造凭据值来“证明”实时检查。

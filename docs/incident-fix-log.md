@@ -1,6 +1,6 @@
 # Spherewright 首次问题与代码修复记录
 
-更新时间：2026-09-16（Asia/Singapore）
+更新时间：2026-09-17（Asia/Singapore）
 
 本文件专门记录项目第一次遇到的可复用工程问题：现场症状、根因、代码或协议
 修复、验证证据和仍有限制。它不是逐局流水账，也不是当前规则的唯一来源。
@@ -11,6 +11,13 @@
 状态取 `fixed | mitigated | open`。`fixed` 只表示写明范围内已有代码和验证证据，
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
+
+## IFX-152 — 健康票据无法选择较新的、已验证同身份 LastExit
+
+- 状态：`open`，恢复能力缺口；现有隐私边界按设计生效，不是自动放宽 selector 的理由。
+- 事实：进程退出后 primary 落后，但用户授权的固定槽只读检查发现 LastExit 与四份 autosave 的 embedded owned/Journal 身份均匹配且时间更晚；完整证据见[存档日记](./gameplay-timeline.md#2026-09-17--用户授权的固定恢复槽只读检查)。未加载，不能证明所有实体仍完整。
+- 原因：`OwnedWorldResumeSourceSelector` 对 healthy ticket 只返回 OwnedPrimary；LastExit 仅可用于真实 quarantine，公开 prepare/commit 无来源选项。原生 ReadHeader 不返回 embedded gameName，ReadHeaderAndDescAndProperty 的下层解析也丢弃它，时间/mtime不能替代精确身份验证。
+- 当前处理：保留成功动作证据与 accepted10，不伪造 quarantine、不离线改票据、不覆盖主档或重放成功动作。现有 selector 的5项测试通过，尚未实现或批准新的加载路径；需要明确恢复授权后再设计绑定身份、来源、完整性和 Journal 的窄入口。关联 EXP-303。
 
 ## IFX-151 — 原记录审计不能按审计电脑的墙钟重演施工轮询分组
 

@@ -3,6 +3,22 @@
 更新时间：2026-09-17（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-17 — 用户授权的固定恢复槽只读检查
+
+用户随后明确授权只读检查 LastExit 与四个固定自动槽的时间/世界身份，不包含加载或修改。当前 DLL 的 `GameSave.SaveCurrentGame/ReadHeader` 使用 v7 头、截图长度、AccountData v0、cluster generation，然后直接写 GameData v13/patch22、AccountData v0 和 embedded gameName；此段未压缩。按原生布局有界读取，跳过截图及账号内容，字符串长度限定后只在内存比较 gameName 与 ticket 内完整 owned 身份，并按 `GameplayJournalIdentity` 的 v1 算法核对 Journal identity；止于 GameDesc 之前。不使用文件名前缀判所有权。
+
+| 固定槽 | header tick | 保存 UTC | 精确 owned / Journal 身份 |
+|---|---:|---|---|
+| LastExit | 62776058 | 2026-09-16 16:37:26.5527094 | 均匹配 |
+| AutoSave0 | 62767785 | 2026-09-16 16:34:51.0936580 | 均匹配 |
+| AutoSave1 | 62738994 | 2026-09-16 16:26:00.3215190 | 均匹配 |
+| AutoSave2 | 62710203 | 2026-09-16 16:17:06.3987198 | 均匹配 |
+| AutoSave3 | 62681417 | 2026-09-16 16:08:10.5861205 | 均匹配 |
+
+五槽均是当前0.10.34.28529、和平/非沙盒，magic/文件长度一致，时间晚于最后已读62675846；**存在覆盖最后施工时间的同身份恢复候选，不再是“只能回旧主档”**。但这不是世界全量有效性或4680/4681实体读回证明。没有枚举其他档、读取工厂/截图/账号值、加载世界、改票据或覆盖文件，accepted10继续保留。当前 healthy protected-resume 仍只选 exact primary61814274；不能把这次只读授权当成选择 LastExit 的加载授权，也不能伪造 quarantine 绕过入口。后续需明确同意受保护恢复，再核对实际实体、材料、Journal和正常保存。
+
+私有脱敏封存 SHA-256 `9B08BAF8A4639905657239FC84817F07E0A9772E6A7080C418D7B979B041304C`；Sol 独立复核 DLL 字段顺序，root 复验现有 `OwnedWorldResumeSourceSelectorTests` 5/5通过（Release/no-build，无游戏调用）。这5项证明现有选择规则，不是新恢复能力验收；缺口登记为 IFX-152。
+
 ### 2026-09-17 — 晶格硅缓冲连接成功；十写与保存仍待闭合
 
 Luna 在 `ab9edbd` / CI35119079824 通过后执行已批准的有限后继方案，正常扣除一个 2011、经无人机建成 **4681**：843 槽3 → 4681 → 4680 槽11，filter1113。action `e8f8ac7c-451e-46de-9d77-288b58468548` 于 **62674573** 成功，末读 **62675846 / R145 / durable J89 / accepted10**；实体 4680→4681、互返有向边 9164→9168，旧对象/连接保持。真实执行流耗时 68.143 秒，161 请求含 1 prepare、1 commit；旧容量拒绝方案没有重放。

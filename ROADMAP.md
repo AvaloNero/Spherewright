@@ -106,6 +106,8 @@
 
 ## 0.4.0 — Overseer, Foundry & Governor
 
+2026-09-16 C输出首条已建、第二条未执行：cdce207/CI35038136279绿后，Luna唯一执行B0BFC352/raw-9cdbfd20，4665于61313958正常完工，101/slot4→4665→4661/实际slot4、filter1113，sorter4→3，19带保全。原caller在第一步全场/材料核验后因20次无人机仍非idle而停止，真实PTY82504 exit1；1prepare/1commit、accepted6/R122、uncertain=false，不是原生失败或重做许可。root 5C4851FA以原242文件/239回复核完整首段及停止边界通过并封存，两个47页快照为4664/9128→4665/9132；末session61314373、末player61314590，J88/primary60758779未变。第二条4648→843尚未prepare/commit；下一只在fresh ready且首条保全后续这一未执行后缀，不重跑B0、不建H、不称持续供料或0.4接近完成。
+
 2026-09-16 同两接点等待分支补验：2cbd445/CI35037435669已绿，但root随后发现私有Ci-Wait读取了不存在的refreshTerminalFirst；真实S2进度契约返回refreshSameHandleFirst。未授权Luna施工，Sol仅改这一属性名为B0BFC352，root逆向字节SHA精确复得2A198F02。新增实际Ci-Wait的60次waiting→原S2空页进度→第61次同handle终态测试，root独立16纯判据通过，20基础/解析通过；不改物理方案、调用或超时上限。后续执行仅用冻结B0，不再使用2A；仍零新游戏调用，R120/accepted5保持，C施工/H输入/持续产出等实机门不据此核销。
 
 2026-09-16 C输出两接点施工调用方离线核验：Sol把root已通过预检的101/slot4→4661及4648→843/slot7固定为两步，不改C19、不把它们误称H输入。root以DDCC8325模拟器运行BEA21525完整15场景通过；后仅把两处物理槽上界收窄到15，反向字节SHA证明无其他变化，最终2A198F02另跑完整正例、15项纯判据及20基础检查通过，21公共action-client通过。每步单独fresh prepare/功率/端点hash、同handle终态、唯一新实体及双端核验，revision按原生预建筑/完工两次变更计120→122→124；部分失败不重放成功前缀。以上均零游戏调用，最新实机仍61242765/R120/primary60758779/J88/accepted5。下一只施工这两条C输出sorter，最多两写；不核销H输入、持续晶格硅、保存恢复或其余0.4门。

@@ -3,6 +3,12 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / C输出第一条正常建成，caller在下一写之前因无人机未idle停止：cdce207/CI35038136279绿后，Luna唯一执行B0BFC352/raw-9cdbfd20，239次原生回复全成功、242条保护记录。唯一动作b9feceff于61313234→61313958正常完成4665，2011仅4→3、14普通带不变；两个同handle终态一致。实际连接101/slot4→4665→4661/物理slot4、filter1113，两端端口/旧邻边和全部C19保全；本次原生功率括窗按4sorter/1200J/t保守预算余38900J/t，不沿用旧preview74900。开场61312702/47页为4664实体/9128互返边，首条完工后61313965/47页为4665/9132，三旧设备、玩家全库存/inc、J88/科研/两网满供和零prebuild通过。
+
+随后20次玩家读取61314374→61314590都为idle2/working1、pendingBuild0/pendingRepair0；记录墙钟约13.578秒，仅推进216游戏tick，不能把墙钟等待当固定游戏时间。公开working是alive−idle，未公开逐机返航阶段，不能据汇总证明无人机卡死或精确飞行状态。原Ci-WaitReady按既定边界拒绝下一写，PTY82504真实exit1、phase step0-readback、originalHandle保留、pending0、uncertain=false、accepted6/R122。最后session61314373为healthy/primary60758779，末玩家比它更新；不伪造该tick的session。第二条尚无prepare/commit，没有H、save、Move、transfer或配置，不把一次正常扣料/接线当持续晶格硅供应。
+
+root冻结5C4851FA在原242文件上以分段原事实和B0谓词核销，offline PTY26464与封存PTY95070均exit0、6专用检查/三坏入口/解析及Sol静态审查通过，零新游戏调用。原幂等键来自保护意图，完整原terminal/双端/功率/两全场/20非ready样本及准确停止摘要均复核，242文件逐个哈希封存；明确不是整条Ci-Run墙钟/RNG重放，也不从raw推断原进程exit。完整两条成功审计E5D8DAC8虽经12纯检查/四入口验证，因原caller已停不能拿它伪造第二条通过。首条成功前缀不回滚、不重做，计数不归零；下一只fresh证明ready并保全4665后执行4648→843这个未提交后缀，正常保存/H阶段继续挂起。
+
 2026-09-16 / C两sorter长等待分支在施工前补验：2cbd445推送且CI35037435669通过；root再读当前S2 helper发现Ci-Wait用refreshTerminalFirst，而实际返回refreshSameHandleFirst。原15场景及新版正例使用短等待，不能覆盖跨进度轮询的分支；没有因此调用游戏或把原离线通过改成实机通过。Sol仅改该属性名，最终caller B0BFC352，root逆向替换后SHA精确等于2A198F02，物理接点/计划/两写和600秒上限未变。
 
 Sol补充的54ECC951 pure真实调用Ci-Wait：60次同负prebuild waiting、60次逻辑500ms暂停（不实际sleep）、原S2-ObserveProgress空页/R121后，必须第61次同handle读取成功终态；不只查字符串或假造helper结果。root独立运行16项检查（PTY97584 exit0）与原20基础通过；此前另4项真实offline依赖导入证明审批SHA/commit/CI及模式快照不被覆盖。全为0新游戏/证据写入。最新现场仍61242765/R120/primary60758779/J88/accepted5，后续只授权本补验推送及绿CI之后Luna唯一执行B0；2A未live，不重跑预览或C19。两条C连接的施工、H输入、保存和持续产出依然待实测。

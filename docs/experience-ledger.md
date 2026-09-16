@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-299与IFX-140首C已完成前缀复验（`validated`限本机原记录）：B0BFC352/raw-9cdbfd20的原生build在61313958完成4665，101/slot4→4665→4661/实际slot4/filter1113，2011仅4→3。两个同handle成功terminal、完整4665实体/9132互返边及材料/旧配置均通过；其后20次非ready耗尽只阻止下一条，不等于已完成建造失败。必须保留accepted6/R122和原handle、标清第二条未prepare/commit，不能重跑整片或把caller exit1改写成功。原power此刻1200保守余38900J/t，不能重用早前preview的74900数字。
+
+时间与观察限制：61314374→61314590仅216游戏tick，原记录约13.578秒墙钟不等于同量游戏时间。公开ConstructionDrones.Working=Math.Max(0,alive−idle)，idle2/working1且无待建/维修目标只能证明尚不满足下一写ready，不直接暴露单架返航阶段或卡死原因。正常终态后再次施工前必须fresh确认ready；最终一步没有后续写入时可如实保留非ready，不能宣称能立即再建。5C4851FA用原242文件/239回复、六检查/三入口/Sol审查核完整首段与准确停止，已逐文件封存，0新游戏调用；不改原B0时限，不以原记录声称当前ready。源源码、DTO、现场或caller变化时复验，最近复验同日。关联EXP-299/IFX-140，H与持续供料仍待。
+
 2026-09-16 / EXP-299与IFX-140等待分支复验（`validated`限当前私有caller离线）：短等待的完整流程正例不覆盖约30秒后才进入的进度分支。root在施工前发现Ci-Wait误取refreshTerminalFirst，而原S2契约是refreshSameHandleFirst；Sol只改属性名为B0BFC352，root反向字节SHA复得前版2A198F02，未改变时限、物理方案或动作语义。54ECC951以60次真实Ci-Wait轮询、原S2空页进度/R121及第61次同handle终态覆盖该分支，root独立16检查/20基础通过，0游戏/证据写入。继承helper必须实际测试触发条件及返回字段，不能仅靠函数存在、短正例或静态字符串。四项真实offline导入另证授权参数快照保全；这些结果不验证真实延迟/断线。最新实机仍61242765/R120/J88/accepted5，B0尚待执行；helper/调用方或DTO变化时复验，最近复验同日。
 
 2026-09-16 / EXP-299与IFX-140两步普通sorter调用方复验（`validated`限源码/离线）：当前建造在创建prebuild和Complete各增一次revision，不能按一action一revision推断；同一net消费者随逐步完工增加，后续功率预检须绑定新revision/consumer数。原生设备空槽occupied=false、otherObjectId=整数0、otherSlot=null；belt虚拟槽−1不是完工物理槽，实际两侧connection slot必须0–15并严格互返。只有同handle原/fresh成功终态、唯一new详情和两端旧配置/端口pose/旧邻边全部通过，才把pending对象登记为完成；任一失败保留accepted和原handle，不重放已成功前缀。

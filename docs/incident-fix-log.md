@@ -14,6 +14,8 @@
 
 ## IFX-140 — 建造调用方用假想排队状态测试成功，遗漏真实预建筑递减
 
+- 首C实机后继：cdce207/CI35038136279后raw-9cdbfd20唯一build于61313958正常完成4665，材料/双端/全4665实体9132边已核；B0随后因20次无人机未idle而正常冻结下一写，Luna PTY82504 exit1不改写。原20样本只覆盖216游戏tick，不能从约13.578秒墙钟推定返航时长；公开working只是alive−idle，不直接证明卡死。root 5C4851FA在242原记录/239成功回复上复核原动作、两全场、功率、20非ready及停止摘要，6专用检查/三入口/解析和Sol复核通过，并封存原文件哈希，零新游戏调用。状态`fixed`仅首个成功前缀及停止保全，不表示两步完整caller已成功或当前无人机ready；accepted6/R122、primary60758779/J88保留。后续只允许fresh ready后续未执行4648→843，不重建4665、不延长重跑B0、不自动保存或进H。
+
 - 后续离线分支修正：2cbd445的15流程场景只走短waiting，没有触发原Ci-Wait较长轮询后的进度分支。root施工前审计发现它误读refreshTerminalFirst，真实S2-ObserveProgress只提供refreshSameHandleFirst；StrictMode会在分支首次执行时停止，但不意味原生失败或重放许可。Sol冻结B0BFC352只改一处字段名，root逆向SHA证其他字节不变；54ECC951新增实际Ci-Wait60次waiting、原S2空页/R121进度、第61次同handle终态，root独立16项检查和20基础通过。状态仍`fixed_offline_live_pending`，原15场景覆盖不足明确保留，未因此产生任何游戏写入；没有扩大等待时限或修改成功前缀。
 
 - 2026-09-16两接点后继（`fixed_offline_live_pending`）：Sol在root批准的两个C输出接点上补有限两步执行器。审计纠正一action只增一次revision的错误假设（普通prebuild及Complete各一次）、逗号数组中算式被拆成额外元素导致电网consumer期望错误、空设备端otherObjectId应为0，以及导入覆盖外部审批SHA；均未进入游戏。root DDCC8325真实运行BEA21525的15完整流程场景通过，保留部分成功及模糊回执的已接受身份。Sol独立pure的slot16反例随后真实exit1，定位带虚拟端转成物理连接后缺上界；最终2A198F02只把endpoint slot及sorter reciprocal otherSlot上界改为15。root反向替换精确复得BEA字节SHA，另在最终版本运行完整正例213模拟调用和15纯判据，20基础/坏入口/解析及21公共客户端通过。纯测试器自身同名变量的末端SHA误报也已用专属快照修复，原exit1不抹去。此处不改Plugin/原生准入，不把离线两步成功写成已施工；最后实机仍R120/accepted5。实际执行须逐步fresh prepare、临时pending双边核验后登记、第一步成功不重做，R124/accepted7只是待验条件。

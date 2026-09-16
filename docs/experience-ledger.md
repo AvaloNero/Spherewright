@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-188/299 恢复后功率准入（`validated`仅离线）：两个发电正截面可以支持重新设计一次 fresh 有界连接，不能当成持续燃料保证或豁免满载预算。Sol 0F577DA2 保留已成功实体，仅增加第二组六读取；两组都重新计算 ReservedDemandPerTick 加未来 300 J/t，要求 183 当前燃料1120、发电 J/t 为正，节点身份/静态拓扑和夹读时序一致，不冻结动态 buffer/configuration hash。一次重检若再次失败即触发第二次同阶段停止线，不能靠无界等待/重复准入代替实际供电干预。
+
+root CACD387A 的 48 全流场景/16 禁写检查（PTY39747 exit0）覆盖首/次热电失活、第二组容量不足和原 45 场景；仅替 transport/pause/persistence，保留真实调度、谓词与意图，八个合成正例 142/144 调用，0 游戏/运行证据写入。Sol 18 检查、九坏入口/解析、21 公共客户端通过。8BB0DD60 审计器 36 离线（PTY83373 exit0）和 Sol 静态复核通过：从新调用方实际安装的 Run 定义取原判据，只适配原 UUID、原时间/脱敏表示；最少145原文件，唯一 intent 仍沿用原标签，不能将旧136调用审计器误套新增读序列。真实成功记录尚不存在，不声称独立实机核验通过。成功 accepted10 后必须先十写审计，当前 R143/primary61814274/accepted9 不变，无 Plugin/MCP 变化或部署。关联 IFX-147/151；最近复验同日，现场、DTO、调用方或原生程序集变化时重验。
+
 2026-09-16 / EXP-188/299与IFX-135复验（`validated`限两束诊断及调用方）：发电容量下降并非永久缺电证明。Luna0B14329E/raw-acd23e6f/PTY80948 exit0的两束20读取相隔1469 tick，183都重新发电1954 J/t、net3容量1534000且83254实际需求全满足。相关罐/带/分拣器的空截面不能推出中间无供料；当前fuelId、J/t不等于燃料库存或余热。2617端点是188→2615，不能把计划文字中的上游关系当原生直接端点。没有新增施工、转料、配置、保存或重启，accepted9不变；后续仍须完整fresh现场，不能据此重用旧token或宣布长期供电稳定。
 
 诊断首稿在离线审查中再次错误冻结跨tick configurationStateHash；按既有FactoryConfiguration源码/IFX-135纠正为保全明确静态字段、endpoint hash和hash格式，让动态buffer/派生state/config hash自然变化，未改公共哈希协议。缺少buffer.count必须检查真实属性，不能接受PowerShell隐式scalar Count=1。93台发电机逐实体tick等于页tick；第二束不足600时如实返回insufficient，不补poll。tank/belt null明确unknown，详情observed空才可写零；两个窗口不是连续供料证明。本caller58离线（含动态变化全20读）、三坏入口/解析及Sol静态复核通过。root90A3C339/38b9a3 exit0核22原文件/完整结果/原等待/manifest，独立封存BB099003；审计7离线检查、三坏入口/解析及21公共客户端通过，零新游戏调用。本轮Journal/玩家/预建筑未读，不继承为fresh；最后session62516180、最后实体62516227/R143/primary61814274。最近复验同日；现场、DTO、caller或程序集变化后重验，不把私有诊断修正标作新工具或发行门完成。

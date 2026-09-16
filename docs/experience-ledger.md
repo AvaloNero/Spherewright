@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-299正常保存实机复验（`validated`限本机覆盖保存及原记录核销）：3B6CCBEB/raw-962aea9d用一次正常save在61386568更新主档，R124→125/accepted7→8，fresh闭场保持4666实体/9136互返边、C19与两连接、全部玩家材料/inc、六详情/J88/两网/零prebuild，末61387044且ready。保存的新边界须同时进入后续session与审计缓存，不继续套用旧primary60758779；保留累计计数，不能把保存当成重启/恢复、H供料或持续产出通过。
+
+证据与限制：Luna PTY7956 exit0；root E099ED92以127原文件/124回复、6原记录检查独立封存601FAF0A，22基础+10独立纯检查/三坏入口/解析及21公共客户端通过，0新游戏调用。原记录审计即使不重放整个执行器，消费每份回复前仍应复用冻结请求白名单/形状守卫；原intent必须是规范UUID，秘密字段必须已经脱敏。脱敏占位符不证明原秘密相等或发生变化，这部分只能明确归于冻结live caller及完成见证；普通save无独立Header读取，原caller exit也另由PTY证明。原save caller无改动，不声称真实网络故障已测；现场、安装、调用方或保存/恢复边界变化时复验，最近复验同日，关联IFX-140。
+
 2026-09-16 / EXP-299正常保存边界复验（`validated`仅当前私有caller离线）：不能在保存完成后沿用硬绑旧primary的Ci-State/S2覆写边界。3B6CCBEB先严格核同handle双终态、R+1/new primary和owned saved状态，成功才同步更新三个primary/revision缓存；失败不局部更新，也不回退已accepted计数/handle，关闭现场失败则保留已验证的新保存边界。干净bootstrap只导入所需四个冻结pure函数及完整参数，不能依赖旧REPL恰好载有函数。原生普通save不等于独立Header readback；私有token/saveName比较只在内存，脱敏原记录审计须明确该部分依赖冻结caller实时检查，不能伪造secret或把[REDACTED]比较当身份证明。
 
 证据：root998BF2E1/CDDED11C真实LcSave-Run的12完整mock场景全通过，21基础/三入口/解析/7原时限函数边界和21公共客户端通过，0游戏/证据写入。正常124调用/竞态126调用，147调用/240秒/每请求30秒是执行上界；两个全场及原6详情/玩家/Journal/电网谓词未替换。helper缺失首次offline exit1已记录并修正；未验证真实网络故障或保存成功。末真实61352042/R124/primary60758779/J88/accepted7不变，H及持续晶格硅仍待；保存实测、安装/现场或helper变化时复验，最近复验同日，关联IFX-140。

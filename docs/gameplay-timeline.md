@@ -3,6 +3,10 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / C19及双C输出连接正常保存闭环：eb2fae5/CI35043432923通过后，Luna唯一执行冻结3B6CCBEB/raw-962aea9d，PTY7956真实exit0。fresh开场61386097/R124/primary60758779，正常保存action22417544于61386568成功，两次同handle终态一致；末61387044/R125/primary61386568/J88 durable、accepted7→8不归零，1prepare/1commit/124原生回复，全部127保护记录保留。开闭快照61386125/61386597均47页、4666实体/9136互返边；六详情、19带和4665/4666连接、14带/2sorter及完整其他物品/inc、两网供电、科研与零prebuild保持，末玩家ready。没有H施工、移动、转料、配置或重启。
+
+root E099ED92经22基础、10独立纯检查、三坏入口/解析和21公共action-client后，唯一原记录审计PTY49284 exit0，6原记录检查通过，逐文件hash/ACL封存601FAF0A；审计0新游戏调用，不重放RNG/墙钟或save。审阅补齐冻结LcSave-Query请求守卫、原intent UUID校验及存档身份/恢复凭据的脱敏形状，原执行caller未改。原进程exit来自Luna PTY，不从完成记录推导；凭据刷新与私有存档名保持只由冻结caller的实时内存检查见证，脱敏raw不能独立比较秘密，普通save没有独立Header readback。此处证明覆盖保存，不是protected resume或持续晶格硅产出；下一由Sol规划H11输入带、Luna待root审核执行，成功C19/双C前缀不动。
+
 2026-09-16 / 双C正常保存片离线审核：96ac3a4/CI35041723693绿后，Sol冻结3B6CCBEB，绑定EF7DCB5C及197原文件，唯一目标是保存当前C19/4665/4666前缀，不接H、不重启。fresh开场R124/primary60758779/J88、完整4666实体9136边/六详情/14带2sorter/两网及无人机ready；只发一次新save prepare/commit，原handle两相同终态及R125/new primary/owned saved状态通过后才更新本地缓存，再核同一完整关闭现场。accepted7→8不归零；最多147原生请求、240秒整片、单请求30秒，超时保留原意图和handle，不再次prepare/commit。
 
 root998BF2E1/CDDED11C在冻结caller上实际执行12完整模拟场景，PTY76578 exit0：正常124调用、revision竞态126调用均一写成功；pending、无人机不ready、前缀漂移、旧revision、prepare拒绝、回执丢失、错误幂等键、新primary错误、旧恢复token未刷新和保存后配置漂移均按预期止步。未知回执只保留accepted7与不确定性，不虚构handle；已接受的错误回执/pending保留8与原handle；未通过promotion保持旧cache，已通过promotion后的closing失败保持新cache。只有transport/pause/意图存储模拟，0游戏/证据写入，不是实机断线或保存通过。

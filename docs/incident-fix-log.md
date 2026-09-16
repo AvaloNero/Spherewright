@@ -14,6 +14,8 @@
 
 ## IFX-140 — 建造调用方用假想排队状态测试成功，遗漏真实预建筑递减
 
+- 双C保存实机后继（`fixed`仅本机正常保存边界）：eb2fae5绿CI后，3B6CCBEB唯一raw-962aea9d/PTY7956 exit0，正常保存61386568/R125/accepted8，完整4666实体9136边和双C/C19/材料/J88保持。root E099ED92/PTY49284对127原文件124回复核销并封存601FAF0A，22基础+10独立检查、三入口/解析及21公共客户端通过，0新游戏调用。审稿补齐原请求守卫、规范intent UUID和双秘密字段脱敏负例，未修改原live caller；秘密同一/变更仍只是冻结caller实时检查的见证，不由占位符独立证明，不claimHeader、重启或持续产出。上述离线bootstrap/promotion修正现有这一窄live正例，模拟故障分支不因此变成实机通过。
+
 - 双C保存调用方后继（`fixed_offline_live_pending`）：Sol首轮干净offline PTY55903因四个S2 save pure helper未导入而exit1，0游戏/证据写入；3B6CCBEB以D6D4EF25精确SHA、完整函数AST/参数检查补齐，21基础通过。保存不能直接调用被父链覆写后仍硬绑旧primary的promotion helper，改为新primary/R+1完整通过后原子更新缓存，失败不丢已accepted身份。root12完整flow模拟、三坏入口/解析、7时限检查和21公共客户端通过，旧token、新primary错误及closing漂移分别守住正确边界；不扩原生API、不claimHeader、不把模拟写成实机，真实accepted7/R124保留。脱敏token比较的证据限制单列，后续原记录审计不能重新伪造凭据值来“证明”实时检查。
 
 - 第二C有限后缀实机通过（`fixed`仅当前调用路径）：07C8E0F1/raw-1d9c48d2在fresh ready且4665物理槽保全后，唯一动作acb14f48于61351508完成4666，未重放首条。原197记录/194回复及Luna PTY10314 exit0相互独立；root DBEAACDF原记录审计PTY60778 exit0，6原记录检查、11基础+9独立pure及四入口/解析，封存EF7DCB5C，0新游戏调用。开闭全场/材料/双端/功率/Journal闭合，accepted7/R124；末returning只说明不能直接授权下一写，不把成功改判失败。原B0首条后停止历史不删除；本后缀成功不等于原两步caller整段成功，也不证明真实断线恢复、保存恢复或持续供料。

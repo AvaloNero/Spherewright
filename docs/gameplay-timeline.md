@@ -3,6 +3,12 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / H源原动作成功、调用方日记收尾停止：20bee0a/CI35060332473成功后，Luna只执行一次BA5B5939；PTY61852 exit1、raw-a00f08e6共235记录/232回复。root先只读原记录，确认同一action0ce88e10两次successful terminal、61650483开始/61651154完成，新4679为842/slot11→4668/实际slot4的2011/filter1105、满供且携带1105；材料2011只1→0，3带不变。closed scene为4679实体；已有H炉端4678未重做。这里不是完整独立审计已通过的声明。
+
+新Journal在61651777已durableThrough89、无pending/error，J89记录61651594首次factory-production-register产出1113。调用方在closing对new.actualTime调用La-String时报错；stop保留accepted1、revisionKnown131、pendingReadbackId0、knownNewIds4678/4679、commitOutcomeUncertain=false。末玩家仍2idle/1returning，无待建/修；没有最终科研/供电/零prebuild/session收尾，不伪造complete记录或PTY exit0。无save/Move/transfer/config/reset，主档仍61386568。
+
+IFX-145：Contracts的ActualTime是string，Plugin用DateTimeOffset的O格式；当前PowerShell ConvertFrom-Json自动将其变成DateTime。测试原先用synthetic普通串，漏掉真实解码形状。root保全BA5B原件，新增A9EC2049只读Journal适配，限定原生带时区round-trip串或已解码日期类型；BF578392的14纯检查复现该行为并通过，不全局改变日期解码。首轮测试还拒绝了ParseExact默认补本地时区的无zone串，修正后通过；0游戏/证据写入。先发布此明确blocker，再独立核销原完整记录和fresh只读收尾；绝不重交施工，持续产出及保存恢复仍待。
+
 2026-09-16 / 最后H供给端的有限执行方案离线通过：基线a2f90ac/CI35058288792成功，Sol caller BA5B5939只接842/slot11→4668的普通sorter/filter1105，最大一写、800调用/600秒/每请求30秒。保全C19、双C、H11和4678；fresh完整场、原生prepare/端口hash、材料1→0、原action双终态及新ID/双边physical slot读回缺一不可。root adapter456E69F5在当前R129/457消费者基线上只追加300J/t预算；不保存、移动、转料、改配置或再次归零。
 
 验证均为离线：21基础；root功率17和独立纯函数07CFEEFD的31检查；793F4A19/PTY30760 exit0完整14场景，J89/J88正例各158次模拟调用、progress219次，均一模拟提交。拒绝覆盖未就绪、成功前缀漂移、原生拒绝、prepare后hash变化、丢失/错键收据、终态材料、端口、串料、货物stack汇总和供电。unknown receipt保留不确定，其他已接受异常保留原handle/accepted，不重放；三坏入口exit1、解析零错误及21公共客户端通过，0游戏调用/证据写入。独立J89正例PTY3652也通过。

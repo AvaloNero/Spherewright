@@ -16,6 +16,10 @@
 
 ## 当前经验
 
+2026-09-16 / EXP-299与IFX-145 原生时间串的调用方类型边界（`validated`限原记录定位和纯函数）：JSON wire的string不保证PowerShell对象仍是string。Plugin Journal用DateTimeOffset.ToString("O")；ConvertFrom-Json默认可返回DateTime，不能用synthetic非日期串覆盖真实JSON路径。本次BA5B施工已两次成功terminal，但首个1113/J89读回在actualTime的La-String处停止，不能把caller exit1说成游戏施工失败，也不能把它改写为整片成功或重放。
+
+保全原235记录/accepted1/4679，A9EC2049只适配新Journal时间字段，不全局切换-DateKind以破坏既有plan expiry类型。显式带时区的原生round-trip串、UTC/Local DateTime或DateTimeOffset保留同一瞬间；拒绝弱类型、伪日期和无时区串，其他Journal身份、旧88条、durable与gameTick门不变。BF578392的14纯检查通过，0游戏/证据写入；真实完整判据核销与fresh收尾仍待，不将局部类型测试当实机持续产出。最近复验同日，关联IFX-144；所有外部JSON调用方或PowerShell版本变化时复验。
+
 2026-09-16 / EXP-299与IFX-144 最后供料连接的阶段判据（`validated`仅私有caller离线）：接通源端后货物和首次生产事件可以正常变化，不能沿用未供料时的全空断言；只允许链内1105/1113、严格items/整数/inc0及逐行与aggregate货物计数相等。原有端口图只归一化本次已唯一核销的新边/槽，其他边与配置仍完整保持；843历史2900高纯硅不是串料，也不是已清仓。JournalSnapshot不含planetId，独立验证session/tick及前88条完整不变，只允许发生在本次观察期间且已durable的首个1113/J89。
 
 BA5B5939绑定999ABE20/C29A0AF7和已完成4678；root456E69F5只将剩余一只sorter300J/t计入保守预算。21基础、17功率、root07CFEEFD的31纯检查、793F4A19完整14模拟场景、三坏入口/解析及21公共客户端通过；正例J89/J88/progress为158/158/219调用且各一模拟提交，异常不重放，0游戏/证据写入。使用错误旧边数、复用不匹配DTO或把正常新边当漂移，均由静态/离线复核拒绝，不计作游戏方案实机失败。最近复验同日；下一真实执行仍必须fresh原生预检，不据模拟宣布持续生产、保存恢复或0.4完成。

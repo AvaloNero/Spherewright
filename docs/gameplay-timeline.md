@@ -3,6 +3,12 @@
 更新时间：2026-09-16（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-16 / 双C正常保存片离线审核：96ac3a4/CI35041723693绿后，Sol冻结3B6CCBEB，绑定EF7DCB5C及197原文件，唯一目标是保存当前C19/4665/4666前缀，不接H、不重启。fresh开场R124/primary60758779/J88、完整4666实体9136边/六详情/14带2sorter/两网及无人机ready；只发一次新save prepare/commit，原handle两相同终态及R125/new primary/owned saved状态通过后才更新本地缓存，再核同一完整关闭现场。accepted7→8不归零；最多147原生请求、240秒整片、单请求30秒，超时保留原意图和handle，不再次prepare/commit。
+
+root998BF2E1/CDDED11C在冻结caller上实际执行12完整模拟场景，PTY76578 exit0：正常124调用、revision竞态126调用均一写成功；pending、无人机不ready、前缀漂移、旧revision、prepare拒绝、回执丢失、错误幂等键、新primary错误、旧恢复token未刷新和保存后配置漂移均按预期止步。未知回执只保留accepted7与不确定性，不虚构handle；已接受的错误回执/pending保留8与原handle；未通过promotion保持旧cache，已通过promotion后的closing失败保持新cache。只有transport/pause/意图存储模拟，0游戏/证据写入，不是实机断线或保存通过。
+
+干净进程首次offline PTY55903 exit1暴露四个S2 save helper未随父调用方导入；Sol只增加D6D4EF25精确SHA、完整FunctionDefinitionAst及参数保全校验，随后PTY10302的21基础通过；root三坏入口/解析、7实际时限函数边界及21公共action-client通过。普通save源码只证明SaveCurrentGame结果/保存tick和新票据签发路径，没有独立ReadHeader；旧/new token与私有saveName仅在冻结caller内存比较，保护记录只保留changed/same布尔，不能凭两个[REDACTED]补证。真实现场仍61352042/R124/primary60758779/J88/accepted7，下一需本片推送与绿CI后Luna唯一执行，任何本次模拟new primary都不进入存档时间线。
+
 2026-09-16 / 第二C输出接线实机闭合：e66f8c8/CI35040910680绿后，Luna唯一执行07C8E0F1/raw-1d9c48d2，PTY10314真实exit0，197保护文件/194成功原生回复。开场61350190/R122，fresh重新证明首条4665与两端/原物理槽保全及3无人机ready后，只提交第二条；唯一action acb14f48在61350893→61351508正常完成4666，两次同handle成功终态一致。真实4648/slot4→4666→843/slot7、2011/filter1113，sorter3→2、14带及全玩家其他库存/inc不变，旧19带/18内部边和首条4665保留。
 
 开闭47页分别61350225/4665实体9132互返边和61351517/4666实体9136边。新分拣器实际位置与原生地面功率代理投影差0m，覆盖847/2031、最小保守余量4.208787m；本次按未来4sorter/1200J/t的保守预算余74600J/t，不套用首条38900或旧preview74900。关闭现场net3消费者456、三旧设备/科研/J88 durable/两网满供/零prebuild通过；末session61352042/R124/healthy、accepted7、primary60758779未覆盖。末玩家仍非idle，但无后续写，准确标为returning_only_no_next_write_authorized；这不是原生建造失败或新写入准入。

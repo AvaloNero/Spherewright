@@ -14,6 +14,8 @@
 
 ## IFX-140 — 建造调用方用假想排队状态测试成功，遗漏真实预建筑递减
 
+- 双C保存调用方后继（`fixed_offline_live_pending`）：Sol首轮干净offline PTY55903因四个S2 save pure helper未导入而exit1，0游戏/证据写入；3B6CCBEB以D6D4EF25精确SHA、完整函数AST/参数检查补齐，21基础通过。保存不能直接调用被父链覆写后仍硬绑旧primary的promotion helper，改为新primary/R+1完整通过后原子更新缓存，失败不丢已accepted身份。root12完整flow模拟、三坏入口/解析、7时限检查和21公共客户端通过，旧token、新primary错误及closing漂移分别守住正确边界；不扩原生API、不claimHeader、不把模拟写成实机，真实accepted7/R124保留。脱敏token比较的证据限制单列，后续原记录审计不能重新伪造凭据值来“证明”实时检查。
+
 - 第二C有限后缀实机通过（`fixed`仅当前调用路径）：07C8E0F1/raw-1d9c48d2在fresh ready且4665物理槽保全后，唯一动作acb14f48于61351508完成4666，未重放首条。原197记录/194回复及Luna PTY10314 exit0相互独立；root DBEAACDF原记录审计PTY60778 exit0，6原记录检查、11基础+9独立pure及四入口/解析，封存EF7DCB5C，0新游戏调用。开闭全场/材料/双端/功率/Journal闭合，accepted7/R124；末returning只说明不能直接授权下一写，不把成功改判失败。原B0首条后停止历史不删除；本后缀成功不等于原两步caller整段成功，也不证明真实断线恢复、保存恢复或持续供料。
 
 - 第二C后缀审稿修正（`fixed_offline_live_pending`）：原首条成功并停在ready门后，07C8E0F1只续未提交第二条。root发现草稿在加载descriptor后reset会清空它，且对已建4665只用原prebuild约束/互返不足以排除带物理slot两侧同步漂移；已改为reset在先，并对原4665完整配置比对，成对slot4→5负例拒绝。root DB762930的9完整模拟场景、20基础、三入口/解析、真实offline导入审批快照/初始化顺序及21公共客户端通过，0游戏/证据写入。未知回执或完工端口异常仍冻结原handle，不重放首条；本片只核销调用方缺口，不声称第二C已经施工，真实accepted6/R122及末观察61314590保持。

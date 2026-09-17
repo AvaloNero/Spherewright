@@ -51,6 +51,7 @@ function Wait-SpherewrightAction {
     )
 
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    $pollDelayMilliseconds = 250
     do {
         $response = Invoke-SpherewrightBridgeRequest -Method 'get_action_result' -SessionId $SessionId -Payload @{
             actionId = $ActionId
@@ -64,7 +65,13 @@ function Wait-SpherewrightAction {
             return $action
         }
 
-        Start-Sleep -Milliseconds 250
+        # Native construction can take minutes. Observe the same action with a
+        # bounded backoff, without extending its caller deadline or resubmitting.
+        $remainingMilliseconds = ($deadline - (Get-Date)).TotalMilliseconds
+        if ($remainingMilliseconds -le 0) { break }
+        $sleepMilliseconds = [int][Math]::Min($pollDelayMilliseconds, [Math]::Ceiling($remainingMilliseconds))
+        Start-Sleep -Milliseconds $sleepMilliseconds
+        $pollDelayMilliseconds = [Math]::Min(2000, $pollDelayMilliseconds * 2)
     } while ((Get-Date) -lt $deadline)
 
     throw "Action $ActionId did not reach a terminal state within $TimeoutSeconds seconds."

@@ -12,6 +12,14 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-161 — 长施工期间共享调用方固定高频轮询
+
+- 状态：`fixed_offline_live_pending`，仅外部PowerShell调用方观察频率，不改Plugin/MCP、施工或超时准入。
+- 证据：宽带14带原批次执行至保存212.48秒、735回复，其中625次`get_action_result`；共享`Wait-SpherewrightAction`每次非终态固定等待250ms。接口调用数不是模型请求数或token计费证据，亦不能据此认定游戏低速由轮询导致。
+- 修复：立即观察原action；非终态等待依次250/500/1000/2000ms并封顶，最后一次休眠按原deadline剩余时间裁剪。只改变轮询节奏，不延长deadline、不重新prepare/commit、不改幂等键；终态失败、通信异常和超时仍按原语义交回调用方核销。
+- 验证：既有`test-action-client.ps1`直接mock时钟/transport并执行真实Wait/NormalAction，54项检查覆盖立即/短动作成功、长pending封顶、同action与单次prepare/commit、失败、通信异常、deadline裁剪和跨截止响应；PowerShell5及7均通过，9项Bridge回归通过，全部零游戏调用。后续真实长动作仍待，不能把离线调用数下降写成实机或整体提速。
+- 复验：轮询、deadline、错误识别或transport变化时运行同入口；现有预建筑进展/游戏tick观察、十写与阶段审计不变。关联EXP-299/303及[本档记录](./gameplay-timeline.md#2026-09-18--共享观察退避离线验证与低干扰游戏时间采样)。
+
 ## IFX-160 — 私有执行入口把空自动参数误判为额外实参
 
 - 状态：`fixed`，限当前PowerShell启动/函数导入边界；不是Plugin、MCP或游戏故障。

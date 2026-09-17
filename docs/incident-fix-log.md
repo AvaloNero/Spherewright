@@ -14,11 +14,12 @@
 
 ## IFX-162 — 双传送带原生曲线接点尚未适配
 
-- 状态：`fixed_offline_live_pending`，限显式双带分拣器的源码适配；没有已部署或接线成功结论。
+- 状态：`fixed_offline_live_pending`，c5f3542同批冷部署及protected resume已通过；显式双带接线的原生预检/施工仍待，不把安装闭环当作功能实机通过。
 - 根因/边界：已保存的4965→4949在16个exact-slot组合中全部TooSkew，尚未进入native placement；现有fallback只实现单带＋设备。当前DLL另有双带CargoPath投影分支。三轮有限替代布局分别因角度、已有占位或有限布局末端间距失败，不能解释为游戏完全不支持belt↔belt，也不证明所有旧方式布局不可能。
 - 修复：保留exact优先和原单带分支，只对2011/2012的两个明确belt提供`native_two_belt_segments`。每端最多64 intervals、总64候选检查，按原生先destination后source扫描并保留end-only候选；独立双geometry hash与signed offsets进入克隆、等价、指纹和prepare/execute/finish重验，input/output依次tilt后仍走原角度与原生放置检查。正常预建筑/无人机/扣料/过滤/双端连接和pose/offset读回不变，不扫描邻带或内置寻路。
 - 验证：当前DSP完整Release构建0警告/0错误；Core solution locked restore、Debug/Release构建与两轮各1951测试（59 Contracts＋1747 Core＋145 MCP）通过，54调用方与9 Bridge离线检查通过。新增11个测试实例覆盖folded seed与最终门分离、非法姿态、双有序hash/offset、DTO隐私兼容及MCP/包内指南发现；它们不代替Unity投影/原生施工实机测试。独立静态审查未见阻断。最初两轮MCP文字断言失败（旧不支持表述/大小写）已修正后重跑，没有游戏调用。
-- 下一验收：同批冷部署、protected resume；先验证真实双段预检/哈希失效和旧single/exact兼容，再批准有限正常施工与保存恢复。当前宽带连接、处理器送料、持续紫糖和0.4发行门仍未通过，关联[API证据](./research/game-api-foundry.md#bounded-explicit-two-belt-inserter-attachment-2026-09-18)、EXP-299/303及本档日记。
+- 冷部署/恢复：228文件与64/1真实MCP校验，save68021204→resume自动save68021236/J90；独立4978实体/9686互返边、36条空带、材料和日记连续性通过，见[同档日记](./gameplay-timeline.md#2026-09-18--双带适配冷部署及同档恢复通过)。只有save和resume两accepted，没有接线施工。
+- 下一验收：真实双段预检/哈希失效和旧single/exact兼容，再批准有限正常施工与保存恢复。当前宽带连接、处理器送料、持续紫糖和0.4发行门仍未通过，关联[API证据](./research/game-api-foundry.md#bounded-explicit-two-belt-inserter-attachment-2026-09-18)、EXP-299/303及本档日记。
 
 ## IFX-161 — 长施工期间共享调用方固定高频轮询
 

@@ -825,6 +825,7 @@
 
 ## IFX-069 — 临时只读摘要猜测DTO字段并混合量纲
 
+- 2026-09-17再验：只读供电摘要把183的`power-generation-current-tick/count1997`说成氢库存，并把generator默认`isWorking=false`说成未工作。root核原回复和`GameStateReader`发现该分支只填归网/供电比/瞬时发电buffer，没有赋值工作标志；撤回这两项派生判断，零生成同样不能证明缺燃料，未据误读执行补料。相关[实机边界](./gameplay-timeline.md#2026-09-17--三段宽带原生路径通过满基础供电缺口阻止施工)保留原文件，未改游戏状态。包内/MCP同源playbook及现有list/inspect/power描述现明确量纲、未知燃料库存、非权威false和满基础预算；4项新指南回归、全部145项MCP测试及13项Core量纲测试通过，Release构建0警告/0错误。仍为`mitigated`：指导已产品化但未冷部署，不增加字段、工具或写路径，不宣称供电缺口或持续燃料已修好。
 - 首见：2026-09-08，2617源分拣器成功后的有限观察；状态`mitigated`，非Plugin故障。
 - 根因：临时客户端使用不存在的working而非isWorking，首样本raw-8d6ed94f摘要中断。静态复核还发现state/amount假设、非belt的null cargo解引用，以及可能将power-generation-current-tick混入氢物品汇总；后几项未实际运行到，不伪造第二次实机失败。
 - 处理与证据：保留原raw并禁用该私有脚本，不逐字段盲补后重跑过期窗口。改用已多次实测的既有prospective观察器和显式物品/对象选区，重新声明未来窗口。root raw-3f9efae8已独立证明源/桥/尾带和2606有真实氢；源施工唯一成功不受摘要失败影响，accepted1不变。

@@ -60,4 +60,17 @@ public sealed class AgentShoreCrossingGuideTests
         Assert.Contains("Stop on failure or non-ready arrival, retain the action", guide, StringComparison.Ordinal);
         Assert.Contains("not turn this into a candidate sweep or an automatic routing loop", guide, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void LandingMarginDoesNotReplaceNativeBuildingPlacementChecks()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("Move approach rule, not a building-placement gate", guide, StringComparison.Ordinal);
+        Assert.Contains("a successful movement preview does not approve its footprint", guide, StringComparison.Ordinal);
+        Assert.Contains("within the current native construction range", guide, StringComparison.Ordinal);
+        Assert.Contains("do not add a needless Move", guide, StringComparison.Ordinal);
+        Assert.Contains("native whole-footprint ground, collision, technology and material checks remain mandatory", guide, StringComparison.Ordinal);
+        Assert.Contains("`NeedGround` rejection must not be overridden using path samples", guide, StringComparison.Ordinal);
+        Assert.Contains("power coverage at the actual `plannedPosition`", guide, StringComparison.Ordinal);
+    }
 }

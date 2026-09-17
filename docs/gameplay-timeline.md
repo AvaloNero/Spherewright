@@ -3,6 +3,14 @@
 更新时间：2026-09-17（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-17 — 区分移动落地门与原生建筑放置门
+
+`837ee74`及CI35167145994成功。第二lab候选 **(-66,-155)** 只取得一次`prepare_move`地表预览：**64096850**、31.252m、33样本/66射线、零unknown。末端仅一个点高水至少0.1m，不满足Move的连续干地余量；没有commit_move或第二次build prepare。Sol起初据此退役建筑位置，root复核当前`TryValidateClickBuild`与DSP `BuildTool_Click.CheckBuildConditions`后纠正：移动终点条件不等于建筑完整footprint的原生地面门，且该点距玩家约31m、已在当前80m建造范围内，无须先走过去。不能把这份预览记成native build拒绝，也不能据它宣称可建。
+
+root独立核三份原成功回复、完整采样和零commit，三项离线断言通过，保护封存SHA-256 **90B71BC0764B4CD061812F01210F18610A71ED25DFEED4F3ACC86DF9DFC9E8F0**；新增游戏调用0。包内playbook及其嵌入资源回归增加“Move接近门不替代原生建筑门”，**5项AgentShoreCrossingGuideTests通过**，游戏适配器和准入不变。安装态仍为`43b16c2`，本次指南未冷部署、不冒称实机新包；**R8 / primary64052125 / accepted6** 保持。
+
+下一只允许该第二点的一次fresh 2901原生预检，成功后按实际吸附位置复核net3覆盖和完整新增负载；不Move、不配置2255、不施工或重放首个NeedGround目标。两条80m级输出/处理器路线属于后续材料与分段工序预算，不要求挤进当前剩余四写，但未核定路线仍不能宣称整链施工就绪。
+
 ### 2026-09-17 — 紫lab首个落点被原生地面检查拒绝，未施工
 
 `de4769c`及CI35166579605成功；Sol仅对局部格点 **(-50,-67)** 的2901/yaw0候选做一次原生预检。纸面最近旧带2395/风机82各约7.18m、lab placementRadius6.392m、风机覆盖7.7m，只证明有限中心距/覆盖线索，不证明有完整可建地面。正确请求在 **64075721–64075735** 的fresh session/玩家读取后返回 **BUILD_LOCATION_INVALID / NeedGround**，立即停止，未调用功率代理、未commit、未试第二坐标。lab仍在背包，**R8 / primary64052125 / J89沿用上次保存 / accepted6** 保持，不重做备料。

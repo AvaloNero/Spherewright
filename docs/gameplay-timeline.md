@@ -3,6 +3,12 @@
 更新时间：2026-09-17（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-17 — 第二lab候选整座地面预检仍失败
+
+在区分Move与建筑准入后，Sol仅对已有地表线索的 **(-66,-155)/2901/yaw0** 做一次正常`prepare_build`。fresh读取 **64157905–64157920** 后仍返回 **BUILD_LOCATION_INVALID / NeedGround**；这是该点首次、真实的原生建筑拒绝，不是重放首个(-50,-67)位置，也没有沿用移动token。立即停止，未调用Foundry、未取第二坐标、未commit/Move/配置。**R8 / primary64052125 / accepted6**保持，2901仍在背包；不能用中心样本或沿线路径最大水深去覆盖完整landPoints检查。
+
+root独立核三份原回复、精确错误和保存/玩家边界，零新增游戏调用；保护证明SHA-256 **965154BDB389913838C67657585AC19135E4B734DF2FB23361E314EE274B268A**。`683a263`的5项定向指南测试及CI35168213270成功。两处真实NeedGround位置均退役，下一由Sol基于不同的可核地面/局部空地证据给出第三轮有限设计；不继续相似沿岸盲试。当前已备料但未建lab，供料路线、宽带/紫糖和其他版本门不变。
+
 ### 2026-09-17 — 区分移动落地门与原生建筑放置门
 
 `837ee74`及CI35167145994成功。第二lab候选 **(-66,-155)** 只取得一次`prepare_move`地表预览：**64096850**、31.252m、33样本/66射线、零unknown。末端仅一个点高水至少0.1m，不满足Move的连续干地余量；没有commit_move或第二次build prepare。Sol起初据此退役建筑位置，root复核当前`TryValidateClickBuild`与DSP `BuildTool_Click.CheckBuildConditions`后纠正：移动终点条件不等于建筑完整footprint的原生地面门，且该点距玩家约31m、已在当前80m建造范围内，无须先走过去。不能把这份预览记成native build拒绝，也不能据它宣称可建。

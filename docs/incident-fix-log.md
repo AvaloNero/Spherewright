@@ -12,6 +12,12 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-158 — 普通建造调用方错用请求字段名
+
+- 状态：`fixed`，限私有有限风机caller；Plugin/MCP及原生建造路径未修改。
+- 根因：复用蓝图执行入口增加普通单风分支时，主会话把`itemId/position/yaw`用于`prepare_build`，而真实`PrepareBuildRequest`要求`buildingItemId/preferredPosition/preferredYaw`。首轮默认建筑ID为0而返回`INVALID_REQUEST`，9份原记录证明7调用、零commit/intent、accepted0；不能将其解释为选址失败。
+- 修复/验证：原入口用一个纯请求构造函数，按当前契约核序列化字段及值，新增4项请求检查；57风机/20备料纯检查通过。Luna仅fresh执行原未提交的两位置和save，正常生成4927/4928，随后完整4928实体独立阶段审计通过；[本档证据](./gameplay-timeline.md#2026-09-17--两台单风并网保存拒绝路径不作移动)记录原失败与修正后边界。没有重试已接受动作、增加工具或伪称公共产品缺陷修复；DTO变化时须复验出站请求而非仅验证返回对象，关联EXP-299/303。
+
 ## IFX-157 — Geodesic纸面路径遗漏自由端点先吸附
 
 - 状态：`mitigated`，限规划解释与嵌入指南；修正路线的完整原生正例及施工仍待，不是Plugin占位漏检。

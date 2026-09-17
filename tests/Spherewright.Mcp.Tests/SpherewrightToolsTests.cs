@@ -1013,6 +1013,21 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void AgentPlaybook_DistinguishesSnappedPowerAssessmentFromRequestedConsumerPosition()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("snapped `site.machines[].position`", guide, StringComparison.Ordinal);
+        Assert.Contains("not the requested `site.origin`", guide, StringComparison.Ordinal);
+        Assert.Contains("not an exact-position power probe", guide, StringComparison.Ordinal);
+        Assert.Contains("either a positive or a negative coverage result", guide, StringComparison.Ordinal);
+        Assert.Contains("actual native `plannedPosition`", guide, StringComparison.Ordinal);
+        Assert.Contains("clear coverage margin", guide, StringComparison.Ordinal);
+        Assert.Contains("real planned consumers rather than the proxy machine", guide, StringComparison.Ordinal);
+        Assert.Contains("completed consumer's actual power network and supply", guide, StringComparison.Ordinal);
+        Assert.Contains("Missing geometry is unknown, not permission to build", guide, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void NewWorldCommit_AdvertisesDiscoverableOpeningPlaybook()
     {
         var services = new ServiceCollection();

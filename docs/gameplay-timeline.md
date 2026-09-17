@@ -3,6 +3,12 @@
 更新时间：2026-09-18（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-18 — 宽带尾端两格转向通过原生预检，尚未施工
+
+`4dbe2dd`已推送且CI35273345253成功。不重试4962→4743原端点对，Sol只计算两个明确source-cover候选，优先保留处理器槽2、转向后接lab槽1的方案；root核当前契约、原生非移除cover、全旧路径货物与精确旋转保全实现，再只对首选做一次fresh预检。7调用/0commit，**末读67887040 / R241 / primary67827487 / accepted0**：既有4961→4962输入互返、空带、78带/9sorter、玩家idle、lab槽1/2空闲均保持；完整native-grid放置通过，恰2个NEW点，预算仅2001×2，显式回传`full_path_stage1 / non_removing_belt_cover / whole_path_native_rotation_v1`。证明SHA-256 **0EEEF9F58AA45FCDE48C131C71CD8350B9CDB2247615E2DFC35879BDC0ABC238**。token丢弃，尚未构建或取得真实新尾端，slot1分拣器、供电及持续产出仍待，不能把预检当作接线已修复。
+
+原纸面证明内容哈希 **56E97D0DC7D1BEEF595D329F4F3AF868E67E7F1C40B03776FB3778EC3980040E** 已核；首次尝试在0游戏调用时因该新文件继承ACL被守卫拒绝。复核其唯一授权为当前用户后，只用既有保护函数收紧该精确文件ACL，内容/哈希不变，再做上述首次native预检；不是游戏失败、篡改证明或重放施工。下一只复用既有有限送料入口绑定两NEW与原源保全，施工后立即验证真实尾端附件，再扩展未建线路；不重建执行/审计框架。
+
 ### 2026-09-18 — 宽带真实尾端附件拒绝，入口修复未产生新施工
 
 仅对既有尾端 **4962→4743 槽 0** 作首次实际 `prepare`；适配器依据原生方向规则返回 `BUILD_CONNECTION_INVALID`：48 次 exact-slot 尝试均在 facing/投影门前拒绝（`nativeChecks=0`、`facingPairs=0`、`no_finite_projection`，角度门为 `<11°`，原因 `TooSkew`），尚未进入DSP放置检查。受保护 prepare 证据 SHA-256 **9E64B336EA058704782ADFA36337D55EB4DC6A2F3626EB29862C61E752C01436** 已核验。同前缀停止摘要为 40 calls、0 commit attempts、0 accepted，最后 action 为空；没有新写，仍保持 **R241 / primary67827487 / durable J90 / 已完成20带**。

@@ -3,6 +3,12 @@
 更新时间：2026-09-18（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-18 — 新 cohort 首次桥接预检：当前直段负例、槽位正例均未施工
+
+`c5f3542`已安装，`59025f7`已推送且CI35287176628成功。新 cohort 仅作两次 `prepare`，**68061766→68061854 / R1 / primary68021236 / durable J90 / accepted2保持**；无 commit、无游戏写，不保留或复用预检 token。已保存的 **4965→4949** 当前直段在16个 exact-slot 候选均因 `TooSkew`拒绝（`nativeChecks=0`）；新双带 fallback 已实际进入，16个 admitted seeds 但0 projection、0 check，停在 `no_finite_projection`，不再是 `unsupported_endpoint_family`。这只否决该端点对的当前直段，尚未进入原生放置检查，不是原生拒绝或“所有双带不可行”。
+
+另一真实端点 **4964→4743 槽1** 的 `exact_slots` 预检为正：offset 0/0、filter 1402、预算2011×1；仅 `prepare`，未造分拣器或接料。预检前后端点复读保持，已成功36条带仍保留、part0的16条带仍未建。该槽位正例不等于双带施工、宽带送料或紫糖持续产出通过。汇总证明SHA-256 **40CB838809F270F903A714E7F07B1B2FF48B470A6BFB7B39642A043C747DA5BB**，关联[IFX-162](./incident-fix-log.md#ifx-162--双传送带原生曲线接点尚未适配)。
+
 ### 2026-09-18 — 双带适配冷部署及同档恢复通过
 
 `c5f3542`已推送，CI35284977705成功。同源码重新locked restore、完整Release构建0警告/0错误、1951项测试及自包含MCP发布通过，开发cohort为228文件（4 Plugin＋224 MCP），不是最终发行包。Plugin SHA-256 **A49D4376998D8B26EF5B402D55590AAE9791C1CB21493E07719D4E73FDB5A7D0**，MCP **E5EFAAEDA32D54E07155E5A1C9D1BBE7532C4FF869E2C295B0BC8B44A0FA9E4D**。

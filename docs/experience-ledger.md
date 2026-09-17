@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-18 / EXP-299、EXP-303新 cohort 双带首预检（`observed`，限两次当前现场 `prepare`，施工待验）：4965→4949的16个exact-slot候选因`TooSkew`停止；已部署双带fallback实际接纳16个seed，却以0 projection/0 check的`no_finite_projection`结束，故不再归因于`unsupported_endpoint_family`，但也不是原生接线许可。4964→4743槽1的exact_slots（offset0/0、2011×1、filter1402）仅预检通过；不保留预检token、0游戏写、36条已建带/16条未建part0保持。具体端点、范围与证明见[本档日记](./gameplay-timeline.md#2026-09-18--新-cohort-首次桥接预检当前直段负例槽位正例均未施工)；不得把该槽位正例或冷部署成功外推为双带施工、送料、持续紫糖或保存恢复通过。最近复验同日；DLL、段形、端点或offset变化时重新fresh预检。
+
 2026-09-18 / EXP-072、EXP-299、EXP-303同批部署及恢复复验（`validated`限安装/恢复与静态前缀）：c5f3542的228文件经当前DLL完整Release/1951测试、逐文件旧新哈希和可恢复备份正常冷部署，真实64/1握手及同源指南通过；save68021204→protected resume自动save68021236，4978实体/9686互返边、36条空带和J90连续。见[该档日记](./gameplay-timeline.md#2026-09-18--双带适配冷部署及同档恢复通过)。玩家保存恢复坐标差0.02534mm落在既有0.1mm静止界内，审计不能以字符串逐位相同替代已定义数值容差；保留已成功快照，只补未完读回。私有旧入口改数据时也要复验真实shell形态；新cohort清单在预哈希阶段同样检查相对路径与解析后目录边界。最近复验同日；新安装、save/session、DSP/DLL或现场变化仍fresh核验，不由安装成功推断双带接线或生产成功，不将accepted因重启自动清零。
 
 2026-09-18 / EXP-299、EXP-303双带桥接边界（`validated`限当前源码/离线与API研究，冷部署和实机待验）：exact-slot负例后，三轮有界重设计仍未得到完整可施工候选，停止第四轮微调并交主会话。实际缺口是当前适配器未覆盖原生双CargoPath投影，并非“游戏禁止双带分拣器”；新增有界`native_two_belt_segments`只处理两条明确带段，保留各64interval、总64候选检查、双hash/offset绑定及原生end→start/双tilt顺序。1951项Debug/Release测试、完整Release及独立静态审查通过，见[IFX-162](./incident-fix-log.md#ifx-162--双传送带原生曲线接点尚未适配)。候选存在、源码完成和角度预筛都不证明具体桥可接；先冷部署并取得新现场的native完整许可，保留成功36带，不重做失败的旧候选或先铺未验证的上游。最近复验同日；DLL、段形、端点、offset或实现变化时重验双几何，不能只重验一个端点或把流动cargo当静态几何变化。

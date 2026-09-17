@@ -624,6 +624,11 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("never replay the completed route or whole module", guide);
         Assert.Contains("Native entity IDs can be reused after removal", guide);
         Assert.Contains("revalidate item, pose and endpoints", guide);
+        Assert.Contains("Do not impose an all-drones-idle gate on every ordinary build or save", guide);
+        Assert.Contains("zero pending build/repair targets", guide);
+        Assert.Contains("native validation still decides whether it can commit", guide);
+        Assert.Contains("initial idle boundary and independent stage-readiness audit", guide);
+        Assert.Contains("does not authorize overlapping actions, unknown outcomes or skipping state hashes", guide);
     }
 
     [Fact]

@@ -37,8 +37,10 @@ public sealed class ProtocolContractTests
         Assert.Null(legacy.WindGenerationAtCurrentPlanetPerTick);
     }
 
-    [Fact]
-    public void InserterAttachmentPlanIsOptionalAndRetainsSignedOffsetsWithoutPrivateGeometry()
+    [Theory]
+    [InlineData("native_single_belt_segment", 3, 0)]
+    [InlineData("native_two_belt_segments", -1, 5)]
+    public void InserterAttachmentPlanIsOptionalAndRetainsSignedOffsetsWithoutPrivateGeometry(string mode, int destinationSlot, int outputOffset)
     {
         var legacy = JsonSerializer.Deserialize<PreparedNormalAction>("{}", JsonOptions)!;
         Assert.Null(legacy.PlannedInserterAttachment);
@@ -46,17 +48,17 @@ public sealed class ProtocolContractTests
         {
             PlannedInserterAttachment = new InserterAttachmentPlanSnapshot
             {
-                Mode = "native_single_belt_segment", SourceSlot = -1, DestinationSlot = 3,
-                InputOffset = -4, OutputOffset = 0,
+                Mode = mode, SourceSlot = -1, DestinationSlot = destinationSlot,
+                InputOffset = -4, OutputOffset = outputOffset,
                 SourcePosition = new Vector3Snapshot { X = 1, Y = 200, Z = 4 },
                 DestinationPosition = new Vector3Snapshot { X = 1, Y = 200, Z = 0 },
             },
         };
         var json = JsonSerializer.Serialize(prepared, JsonOptions);
         var copy = JsonSerializer.Deserialize<PreparedNormalAction>(json, JsonOptions)!.PlannedInserterAttachment!;
-        Assert.Equal("native_single_belt_segment", copy.Mode);
-        Assert.Equal(-1, copy.SourceSlot); Assert.Equal(3, copy.DestinationSlot);
-        Assert.Equal(-4, copy.InputOffset); Assert.Equal(0, copy.OutputOffset);
+        Assert.Equal(mode, copy.Mode);
+        Assert.Equal(-1, copy.SourceSlot); Assert.Equal(destinationSlot, copy.DestinationSlot);
+        Assert.Equal(-4, copy.InputOffset); Assert.Equal(outputOffset, copy.OutputOffset);
         Assert.Equal(4, copy.SourcePosition.Z);
         Assert.DoesNotContain("geometryHash", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("pathId", json, StringComparison.OrdinalIgnoreCase);

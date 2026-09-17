@@ -167,7 +167,8 @@ internal sealed partial class NormalGameActionCoordinator
                 var step = preparation.Steps[0];
                 prepared.Value.PlannedInserterAttachment = new InserterAttachmentPlanSnapshot
                 {
-                    Mode = step.AttachmentGeometryHash is null ? "exact_slots" : "native_single_belt_segment",
+                    Mode = step.AttachmentDestinationGeometryHash is not null ? "native_two_belt_segments"
+                        : step.AttachmentGeometryHash is null ? "exact_slots" : "native_single_belt_segment",
                     SourceSlot = step.InputFromSlot, DestinationSlot = step.OutputToSlot,
                     InputOffset = step.InputOffset, OutputOffset = step.OutputOffset,
                     SourcePosition = Snapshot(step.Position), DestinationPosition = Snapshot(step.Position2),
@@ -1054,7 +1055,7 @@ internal sealed partial class NormalGameActionCoordinator
             return false;
         }
         // Vanilla DeterminePreviews rejects TooSkew BEFORE CheckBuildConditions.
-        // Exact slots are tried first; the bounded one-belt fallback retains a private
+        // Exact slots are tried first; the bounded segment fallback retains a private
         // geometry binding and still obeys the native angle/collision/material checks.
         if (candidate.InputObjectId <= 0 || candidate.InputObjectId >= factory.entityCursor
             || candidate.InputObjectId >= factory.entityPool.Length
@@ -3356,6 +3357,7 @@ internal sealed partial class NormalGameActionCoordinator
         public int OutputOffset { get; set; }
         public int AttachmentBeltObjectId { get; set; }
         public string? AttachmentGeometryHash { get; set; }
+        public string? AttachmentDestinationGeometryHash { get; set; }
         public BeltSourceState? SourceBeltAnchor { get; set; }
         public string BeltPathMode { get; set; } = BeltPathModes.NativeGrid;
         public bool IsConnectionNode { get; private set; }
@@ -3430,6 +3432,7 @@ internal sealed partial class NormalGameActionCoordinator
                 OutputOffset = preview.outputOffset,
                 AttachmentBeltObjectId = template.AttachmentBeltObjectId,
                 AttachmentGeometryHash = template.AttachmentGeometryHash,
+                AttachmentDestinationGeometryHash = template.AttachmentDestinationGeometryHash,
                 SourceBeltAnchor = template.SourceBeltAnchor,
                 BeltPathMode = template.BeltPathMode,
                 IsConnectionNode = preview.isConnNode,
@@ -3463,6 +3466,7 @@ internal sealed partial class NormalGameActionCoordinator
                    && OutputOffset == other.OutputOffset
                    && AttachmentBeltObjectId == other.AttachmentBeltObjectId
                    && string.Equals(AttachmentGeometryHash, other.AttachmentGeometryHash, StringComparison.Ordinal)
+                   && string.Equals(AttachmentDestinationGeometryHash, other.AttachmentDestinationGeometryHash, StringComparison.Ordinal)
                    && string.Equals(SourceBeltAnchor?.BindingHash, other.SourceBeltAnchor?.BindingHash, StringComparison.Ordinal)
                    && string.Equals(BeltPathMode, other.BeltPathMode, StringComparison.Ordinal)
                    && IsConnectionNode == other.IsConnectionNode
@@ -3498,7 +3502,9 @@ internal sealed partial class NormalGameActionCoordinator
             fields.Add(OutputToSlot);
             fields.Add(AttachmentBeltObjectId);
             fields.Add(SourceBeltAnchor?.BindingHash);
-            fields.Add(InserterBeltAttachmentPolicy.BindOffsets(InputOffset, OutputOffset, AttachmentGeometryHash));
+            fields.Add(InserterBeltAttachmentPolicy.BindOffsets(InputOffset, OutputOffset,
+                AttachmentDestinationGeometryHash is null ? AttachmentGeometryHash
+                    : InserterBeltAttachmentPolicy.BindGeometryPair(AttachmentGeometryHash!, AttachmentDestinationGeometryHash)));
             fields.Add(IsConnectionNode);
             fields.Add(Parameters.Count);
             foreach (var parameter in Parameters)

@@ -95,6 +95,27 @@ public static class InserterBeltAttachmentPolicy
         return Math.Max(FoldQuarterTurn(facing), FoldQuarterTurn(opposition)) < 40;
     }
 
+    // The native two-belt branch has no device-centre/back-of-device test.
+    // This folded seed screen is not the final, unfurled <11-degree check.
+    public static bool AcceptsBeltPairSearchSeed(Vector3Snapshot sourcePosition, Vector3Snapshot sourceForward,
+        Vector3Snapshot destinationPosition, Vector3Snapshot destinationForward)
+    {
+        if (!ValidPosition(sourcePosition) || !ValidPosition(destinationPosition)
+            || !ValidDirection(sourceForward) || !ValidDirection(destinationForward)) return false;
+        var direction = Subtract(destinationPosition, sourcePosition);
+        if (Dot(direction, direction) < 1e-10f) return false;
+        var facing = Math.Max(Angle(direction, sourceForward), 180 - Angle(direction, destinationForward));
+        var opposition = 180 - Angle(sourceForward, destinationForward);
+        return Math.Max(FoldQuarterTurn(facing), FoldQuarterTurn(opposition)) < 40;
+    }
+
+    public static string BindGeometryPair(string sourceGeometryHash, string destinationGeometryHash)
+    {
+        if (string.IsNullOrWhiteSpace(sourceGeometryHash) || string.IsNullOrWhiteSpace(destinationGeometryHash))
+            throw new ArgumentException("Both independently captured belt geometries are required.");
+        return CanonicalStateHash.Combine("inserter-two-belt-geometry-v1", sourceGeometryHash, destinationGeometryHash);
+    }
+
     public static bool AcceptsFinalRotations(QuaternionSnapshot first, QuaternionSnapshot second)
     {
         if (!ValidRotation(first) || !ValidRotation(second)) return false;

@@ -355,7 +355,9 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("5m maximum straight distance", guide);
         Assert.Contains("3.2 maximum local grid segments", guide);
         Assert.Contains("Predicted cardinal directions are not native approval", guide);
-        Assert.Contains("fallback excludes thermal generators and two-belt pairs", guide);
+        Assert.Contains("fallback excludes thermal generators", guide);
+        Assert.Contains("older versions also reject two-belt interpolation", guide);
+        Assert.Contains("native_two_belt_segments", guide);
         Assert.Contains("do not replay the unchanged pair", guide);
     }
 
@@ -485,7 +487,7 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
-    public void BoundedSingleBeltAttachmentIsDiscoverableWithoutWeakeningNativePlacementRules()
+    public void BoundedBeltAttachmentsAreDiscoverableWithoutWeakeningNativePlacementRules()
     {
         var services = new ServiceCollection();
         services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
@@ -494,11 +496,16 @@ public sealed class SpherewrightToolsTests
         var tool = Assert.Single(provider.GetServices<McpServerTool>(),
             value => value.ProtocolTool.Name == "spherewright_prepare_build").ProtocolTool;
         Assert.Contains("native_single_belt_segment", tool.Description);
+        Assert.Contains("native_two_belt_segments", tool.Description);
+        Assert.Contains("Two explicitly selected belt segments", tool.Description);
         Assert.Contains("plannedInserterAttachment", tool.Description);
         Assert.Contains("without retargeting", tool.Description);
         Assert.Contains("collision and materials remain mandatory", tool.Description);
         var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
         Assert.Contains("at most64 native path intervals", guide);
+        Assert.Contains("native_two_belt_segments", guide);
+        Assert.Contains("both geometry bindings", guide, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not a promise that a given pair is connectable", guide);
         Assert.Contains("geometry requires fresh prepare", guide);
         Assert.Contains("does not prove its two sorter attachments", guide);
         Assert.Contains("Closed paths", guide);

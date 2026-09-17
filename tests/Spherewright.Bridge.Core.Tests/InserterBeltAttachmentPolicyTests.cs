@@ -82,6 +82,50 @@ public sealed class InserterBeltAttachmentPolicyTests
     }
 
     [Theory]
+    [InlineData(0, true)] [InlineData(30, true)] [InlineData(45, false)] [InlineData(90, true)]
+    public void TwoBeltsUseNativeFoldedSeedScreenButStillNeedFinalFacing(double angle, bool expected)
+    {
+        var radians = angle * Math.PI / 180;
+        var destination = V((float)Math.Sin(radians), 0, -(float)Math.Cos(radians));
+        Assert.Equal(expected, InserterBeltAttachmentPolicy.AcceptsBeltPairSearchSeed(
+            V(0, 200, 0), V(0, 0, 1), V(0, 200, 3), destination));
+        if (angle != 0) Assert.False(NativeInserterEndpointGeometry.AcceptsStraightPair(V(0, 0, 3), V(0, 0, 1), destination, true));
+    }
+
+    [Theory]
+    [InlineData("samePosition")] [InlineData("nanPosition")] [InlineData("zeroForward")]
+    [InlineData("scaledForward")] [InlineData("nanForward")]
+    public void TwoBeltSeedRejectsMalformedOrCoincidentPoses(string change)
+    {
+        var source = V(0, 200, 0); var destination = V(0, 200, 3);
+        var sourceForward = V(0, 0, 1); var destinationForward = V(0, 0, -1);
+        switch (change)
+        {
+            case "samePosition": destination = source; break;
+            case "nanPosition": source.X = float.NaN; break;
+            case "zeroForward": sourceForward.Z = 0; break;
+            case "scaledForward": destinationForward.Z = -2; break;
+            case "nanForward": destinationForward.X = float.NaN; break;
+        }
+        Assert.False(InserterBeltAttachmentPolicy.AcceptsBeltPairSearchSeed(source, sourceForward, destination, destinationForward));
+    }
+
+    [Fact]
+    public void TwoGeometryBindingsAreOrderedCompleteAndBindBothOffsets()
+    {
+        var pair = InserterBeltAttachmentPolicy.BindGeometryPair("source", "destination");
+        Assert.Equal(pair, InserterBeltAttachmentPolicy.BindGeometryPair("source", "destination"));
+        Assert.NotEqual(pair, InserterBeltAttachmentPolicy.BindGeometryPair("destination", "source"));
+        Assert.NotEqual(pair, InserterBeltAttachmentPolicy.BindGeometryPair("source-changed", "destination"));
+        Assert.NotEqual(pair, InserterBeltAttachmentPolicy.BindGeometryPair("source", "destination-changed"));
+        var offsets = InserterBeltAttachmentPolicy.BindOffsets(-3, 5, pair);
+        Assert.NotEqual(offsets, InserterBeltAttachmentPolicy.BindOffsets(-2, 5, pair));
+        Assert.NotEqual(offsets, InserterBeltAttachmentPolicy.BindOffsets(-3, 4, pair));
+        Assert.Throws<ArgumentException>(() => InserterBeltAttachmentPolicy.BindGeometryPair("", "destination"));
+        Assert.Throws<ArgumentException>(() => InserterBeltAttachmentPolicy.BindGeometryPair("source", " "));
+    }
+
+    [Theory]
     [InlineData(0, true)] [InlineData(24, true)] [InlineData(24.2, false)] [InlineData(90, false)]
     public void FinalTiltRetainsNativeTwentyFourDegreeLimit(double angle, bool expected)
     {

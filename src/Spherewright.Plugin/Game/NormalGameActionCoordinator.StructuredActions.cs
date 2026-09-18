@@ -149,6 +149,7 @@ internal sealed partial class NormalGameActionCoordinator
             if (preparation.Kind == NormalBuildKinds.Belt)
             {
                 var anchor = preparation.Steps[0].SourceBeltAnchor;
+                var destinationAnchor = preparation.Steps[preparation.Steps.Count - 1].DestinationBeltAnchor;
                 prepared.Value.PlannedBeltPath = new BeltPathPlanSnapshot
                 {
                     NativeValidationMode = "full_path_stage1",
@@ -156,6 +157,10 @@ internal sealed partial class NormalGameActionCoordinator
                         : preparation.SourceObjectId > 0 ? "native_device_port" : "none",
                     ReusedSourceObjectId = anchor?.EntityId,
                     SourcePreservationMode = anchor is null ? null : BeltSourceRotationPolicy.PreservationMode,
+                    DestinationBindingMode = destinationAnchor is not null ? "non_removing_belt_cover"
+                        : preparation.DestinationObjectId > 0 ? "native_device_port" : "none",
+                    ReusedDestinationObjectId = destinationAnchor?.EntityId,
+                    DestinationPreservationMode = destinationAnchor is null ? null : BeltDestinationReusePolicy.PreservationMode,
                     NewObjectCount = preparation.Steps.Count,
                     RoutingMode = preparation.Steps[0].BeltPathMode,
                 };
@@ -636,30 +641,34 @@ internal sealed partial class NormalGameActionCoordinator
         steps = new List<BuildStepPlan>();
         rejection = string.Empty;
         BeltSourceState? sourceAnchor = null;
+        BeltDestinationState? destinationAnchor = null;
         var geodesic = routingMode == BeltPathModes.NativeGeodesic;
-        if (geodesic && (source.ObjectId != 0 || destination.ObjectId != 0
+        var sourceIsBelt = source.ObjectId > 0 && factory.entityPool[source.ObjectId].beltId > 0;
+        var destinationIsBelt = destination.ObjectId > 0 && factory.entityPool[destination.ObjectId].beltId > 0;
+        var dualCover = sourceIsBelt && destinationIsBelt && item.ID == 2001 && source.ObjectId != destination.ObjectId;
+        if (geodesic && (((source.ObjectId != 0 || destination.ObjectId != 0) && !dualCover)
             || !BeltPathRoutingPolicy.ValidGroundEndpoints(Snapshot(source.Pose.position),
                 Snapshot(destination.Pose.position), factory.planet.realRadius + .2f)))
         {
-            rejection = "belt_geodesic_ground_span_unsupported: requires explicit free ground endpoints, 1.5–30m apart after native snapping, with no raised/tilted route.";
-            return false;
-        }
-        var sourceIsBelt = source.ObjectId > 0 && factory.entityPool[source.ObjectId].beltId > 0;
-        if (destination.ObjectId > 0 && factory.entityPool[destination.ObjectId].beltId > 0)
-        {
-            rejection = "belt_destination_cover_unsupported: destination reuse/merging is not enabled by the bounded source-only subset.";
+            rejection = "belt_geodesic_ground_span_unsupported: requires explicit free ground endpoints or proven dual2001 empty-path covers, 1.5–30m apart, with no raised/tilted route.";
             return false;
         }
         if (sourceIsBelt)
         {
             if (!TryCaptureBeltSource(factory, source.ObjectId, out sourceAnchor, out rejection)
                 || !BeltSourceReusePolicy.Supports(source.ObjectId, sourceAnchor!.ItemId, item.ID, source.Slot,
-                    destination.ObjectId, sourceAnchor.Tilt, false, sourceAnchor.Connections[0].OtherObjectId,
+                    destinationIsBelt ? 0 : destination.ObjectId, sourceAnchor.Tilt, false, sourceAnchor.Connections[0].OtherObjectId,
                     sourceAnchor.Connections.Skip(1).Take(3).Count(c => c.OtherObjectId != 0)))
             {
                 rejection = "belt_source_cover_unsupported: requires one same-grade flat built belt with a free output, an open bounded path and a free destination. " + rejection;
                 return false;
             }
+        }
+        if (destinationIsBelt && ((source.ObjectId != 0 && !sourceIsBelt)
+            || !TryCaptureBeltDestination(factory, item, destination, sourceAnchor, out destinationAnchor, out rejection)))
+        {
+            rejection = "belt_destination_cover_unsupported: requires 2001, an empty unfed open head and a free source or distinct empty open tail. " + rejection;
+            return false;
         }
         var points = new Vector3[BeltBuildOccupancyPolicy.MaximumPathPoints];
         var maxSlope = 0f;
@@ -672,7 +681,7 @@ internal sealed partial class NormalGameActionCoordinator
             points,
             forceVertical: false,
             ref maxSlope,
-            useOldPath: false);
+            useOldPath: sourceIsBelt && destinationIsBelt);
         if (count < 2 || count >= points.Length)
         {
             rejection = "DSP's terrain grid did not return a complete, unsaturated bounded belt path.";
@@ -686,9 +695,25 @@ internal sealed partial class NormalGameActionCoordinator
             return false;
         }
 
+        if (destinationAnchor is not null && (count >= points.Length - BeltPathRoutingPolicy.NativeReservedPoints
+            || Vector3.Distance(points[0], source.Pose.position) > .01f
+            || Vector3.Distance(points[count - 1], destination.Pose.position) > .01f))
+        {
+            rejection = "belt_join_native_path_incomplete: no endpoint substitution may hide a truncated or mismatched native route.";
+            return false;
+        }
+
         points[0] = source.Pose.position;
         points[count - 1] = destination.Pose.position;
-        if (sourceAnchor is not null)
+        if (destinationAnchor is not null)
+        {
+            if (!BeltDestinationReusePolicy.TrySeparateNewPoints(points.Take(count).Select(Snapshot).ToArray(),
+                sourceAnchor is null ? null : Snapshot(sourceAnchor.Position), Snapshot(destinationAnchor.Position), points.Length,
+                out var newPoints, out rejection)) return false;
+            points = newPoints.Select(ToVector).ToArray();
+            count = points.Length;
+        }
+        else if (sourceAnchor is not null)
         {
             // Only the exact zero-cost source is partitioned out of the NEW-object
             // plan. It is retained as a native non-removing cover in BOTH validation
@@ -718,6 +743,7 @@ internal sealed partial class NormalGameActionCoordinator
 
             if (index == count - 1 && destination.ObjectId > 0)
             {
+                step.DestinationBeltAnchor = destinationAnchor;
                 step.OutputObjectId = destination.ObjectId;
                 step.OutputFromSlot = 0;
                 step.OutputToSlot = destination.Slot;
@@ -1149,10 +1175,7 @@ internal sealed partial class NormalGameActionCoordinator
             return false;
         }
         var geodesic = candidates[0].BeltPathMode == BeltPathModes.NativeGeodesic;
-        if (geodesic && (candidates.Any(step => step.SourceBeltAnchor is not null || step.InputObjectId != 0 || step.OutputObjectId != 0)
-            || !BeltPathRoutingPolicy.CompleteGroundPath(candidates.Select(step => Snapshot(step.Position)).ToArray(),
-                BeltBuildOccupancyPolicy.MaximumPathPoints, Snapshot(candidates[0].Position),
-                Snapshot(candidates[candidates.Count - 1].Position), factory.planet.realRadius + .2f)))
+        if (geodesic && !CompletePreparedGroundBeltPath(candidates, factory.planet.realRadius + .2f))
         {
             rejection = "belt_geodesic_prepared_ground_path_invalid";
             return false;
@@ -1184,20 +1207,31 @@ internal sealed partial class NormalGameActionCoordinator
             tool.SnapshotPlayerInventory();
             if (!TryAttachSourceCover(factory, item, candidates, previews, tool, out var cover, out rejection)) return false;
             tool.buildPreviews.AddRange(previews);
+            if (!TryAttachDestinationCover(factory, item, candidates, previews, tool, out var destinationCover, out rejection)) return false;
             var valid = tool.CheckFullPathConditions();
-            var rejected = previews.FirstOrDefault(preview => preview.condition != EBuildCondition.Ok || preview.coverObjId != 0)
-                ?? (cover is not null && cover.condition != EBuildCondition.Ok ? cover : null);
-            if (!valid || rejected is not null || !SourceCoverMatches(cover, candidates[0].SourceBeltAnchor))
+            var rejected = previews.FirstOrDefault(preview => preview.condition != EBuildCondition.Ok || preview.coverObjId != 0 || preview.willRemoveCover)
+                ?? (cover is not null && cover.condition != EBuildCondition.Ok ? cover : null)
+                ?? (destinationCover is not null && destinationCover.condition != EBuildCondition.Ok ? destinationCover : null);
+            if (!valid || rejected is not null || !SourceCoverMatches(cover, candidates[0].SourceBeltAnchor)
+                || !DestinationCoverMatches(destinationCover, candidates[candidates.Count - 1].DestinationBeltAnchor, previews))
             {
                 // Material checking precedes other native conditions. Describe a pure
                 // shortage without asserting that unchecked geometry would be valid.
                 var conditions = previews.Select(preview => preview.condition.ToString()).ToList();
                 if (cover is not null) conditions.Add(cover.condition.ToString());
+                if (destinationCover is not null) conditions.Add(destinationCover.condition.ToString());
                 rejectionError = BeltBuildRejectionPolicy.DescribeInventoryShortage(conditions,
-                    SourceCoverMatches(cover, candidates[0].SourceBeltAnchor),
+                    SourceCoverMatches(cover, candidates[0].SourceBeltAnchor)
+                        && DestinationCoverMatches(destinationCover, candidates[candidates.Count - 1].DestinationBeltAnchor, previews),
                     previews.Any(preview => preview.coverObjId != 0 || preview.willRemoveCover));
                 rejection = rejectionError?.Message
                     ?? $"DSP belt-path validation returned {rejected?.condition.ToString() ?? "rejected"}.";
+                return false;
+            }
+
+            if (destinationCover is not null && !EmptyJoinPreviewGraphMatches(tool, cover, destinationCover, previews))
+            {
+                rejection = "belt_join_native_preview_links_changed";
                 return false;
             }
 
@@ -1206,11 +1240,17 @@ internal sealed partial class NormalGameActionCoordinator
                 accepted.Add(BuildStepPlan.FromPreview(candidates[index], previews[index]));
             }
 
+            var targetAnchor = candidates[candidates.Count - 1].DestinationBeltAnchor;
+            if (targetAnchor is not null && accepted.Any(step => step.Tilt != 0
+                || Math.Abs(step.Position.magnitude - targetAnchor.Position.magnitude) > .05f))
+            {
+                rejection = "belt_join_native_adjustment_not_horizontal";
+                return false;
+            }
+
             // Native checking can adjust heights/poses. Its output is also a NEW-object
             // path, so it must pass the complete occupancy guard after adjustment.
-            if (geodesic && !BeltPathRoutingPolicy.CompleteGroundPath(accepted.Select(step => Snapshot(step.Position)).ToArray(),
-                BeltBuildOccupancyPolicy.MaximumPathPoints, Snapshot(candidates[0].Position),
-                Snapshot(candidates[candidates.Count - 1].Position), factory.planet.realRadius + .2f))
+            if (geodesic && !CompletePreparedGroundBeltPath(accepted, factory.planet.realRadius + .2f, candidates))
             {
                 rejection = "belt_geodesic_native_adjustment_unsupported: native checking moved an endpoint or raised the free ground path.";
                 return false;
@@ -1350,15 +1390,20 @@ internal sealed partial class NormalGameActionCoordinator
             tool.SnapshotPlayerInventory();
             previews = CreateLinkedPreviews(action.Plan.BuildSteps, item);
             BuildPreview? sourceCover;
+            BuildPreview? destinationCover;
             try
             {
                 if (!TryAttachSourceCover(factory, item, action.Plan.BuildSteps, previews, tool, out sourceCover, out var sourceRejection))
                     throw new InvalidOperationException("The prepared source cover is no longer valid: " + sourceRejection);
                 tool.buildPreviews.AddRange(previews);
+                if (!TryAttachDestinationCover(factory, item, action.Plan.BuildSteps, previews, tool, out destinationCover, out var destinationRejection))
+                    throw new InvalidOperationException("The prepared destination cover is no longer valid: " + destinationRejection);
                 if (!tool.CheckFullPathConditions() || !PreviewsExactlyMatch(action.Plan.BuildSteps, previews))
                     throw new InvalidOperationException("DSP rejected or changed the exact prepared belt path at commit.");
                 if (!SourceCoverMatches(sourceCover, action.Plan.BuildSteps[0].SourceBeltAnchor))
                     throw new InvalidOperationException("DSP changed the exact prepared non-removing source cover.");
+                if (!DestinationCoverMatches(destinationCover, action.Plan.BuildSteps[action.Plan.BuildSteps.Count - 1].DestinationBeltAnchor, previews))
+                    throw new InvalidOperationException("DSP changed the exact prepared non-removing destination cover.");
             }
             catch
             {
@@ -1367,7 +1412,8 @@ internal sealed partial class NormalGameActionCoordinator
                 throw;
             }
 
-            create = () => CreateWithSourceCoverProof(factory, tool, sourceCover, previews, action.Plan.BuildSteps[0].SourceBeltAnchor);
+            create = () => CreateWithBeltCoverProof(factory, tool, sourceCover, destinationCover, previews,
+                action.Plan.BuildSteps[0].SourceBeltAnchor, action.Plan.BuildSteps[action.Plan.BuildSteps.Count - 1].DestinationBeltAnchor);
             cleanup = () =>
             {
                 try { tool.ReleaseSnapshot(); }
@@ -1676,6 +1722,12 @@ internal sealed partial class NormalGameActionCoordinator
 
         if (plan.BuildKind == NormalBuildKinds.Belt)
         {
+            var destinationAnchor = plan.BuildSteps[plan.BuildSteps.Count - 1].DestinationBeltAnchor;
+            if (destinationAnchor is not null && !ProvesCompletedEmptyJoin(factory, destinationAnchor, entityIds))
+            {
+                rejection = "The reused destination or complete joined paths failed empty cargo, old identity/edges, native rotation or exact membership proof.";
+                return false;
+            }
             var sourceAnchor = plan.BuildSteps[0].SourceBeltAnchor;
             if (sourceAnchor is not null && (!TryBeltSourceTopology(factory, sourceAnchor.EntityId, out var topology, out var connections, nativeCompletionRotation: true)
                 || !BeltSourceReusePolicy.SameEvidence(sourceAnchor.CompletionTopologyHash, topology)
@@ -3125,7 +3177,7 @@ internal sealed partial class NormalGameActionCoordinator
 
         for (var index = 0; index < previews.Count; index++)
         {
-            if (previews[index].condition != EBuildCondition.Ok || previews[index].coverObjId != 0
+            if (previews[index].condition != EBuildCondition.Ok || previews[index].coverObjId != 0 || previews[index].willRemoveCover
                 || !plan[index].EquivalentTo(BuildStepPlan.FromPreview(plan[index], previews[index])))
             {
                 return false;
@@ -3359,6 +3411,7 @@ internal sealed partial class NormalGameActionCoordinator
         public string? AttachmentGeometryHash { get; set; }
         public string? AttachmentDestinationGeometryHash { get; set; }
         public BeltSourceState? SourceBeltAnchor { get; set; }
+        public BeltDestinationState? DestinationBeltAnchor { get; set; }
         public string BeltPathMode { get; set; } = BeltPathModes.NativeGrid;
         public bool IsConnectionNode { get; private set; }
         public List<int> Parameters { get; } = new List<int>();
@@ -3423,7 +3476,7 @@ internal sealed partial class NormalGameActionCoordinator
                 InputStepIndex = template.InputStepIndex,
                 OutputStepIndex = template.OutputStepIndex,
                 InputObjectId = preview.inputObjId,
-                OutputObjectId = preview.outputObjId,
+                OutputObjectId = template.DestinationBeltAnchor is null ? preview.outputObjId : template.OutputObjectId,
                 InputFromSlot = preview.inputFromSlot,
                 InputToSlot = preview.inputToSlot,
                 OutputFromSlot = preview.outputFromSlot,
@@ -3434,6 +3487,7 @@ internal sealed partial class NormalGameActionCoordinator
                 AttachmentGeometryHash = template.AttachmentGeometryHash,
                 AttachmentDestinationGeometryHash = template.AttachmentDestinationGeometryHash,
                 SourceBeltAnchor = template.SourceBeltAnchor,
+                DestinationBeltAnchor = template.DestinationBeltAnchor,
                 BeltPathMode = template.BeltPathMode,
                 IsConnectionNode = preview.isConnNode,
             };
@@ -3468,6 +3522,7 @@ internal sealed partial class NormalGameActionCoordinator
                    && string.Equals(AttachmentGeometryHash, other.AttachmentGeometryHash, StringComparison.Ordinal)
                    && string.Equals(AttachmentDestinationGeometryHash, other.AttachmentDestinationGeometryHash, StringComparison.Ordinal)
                    && string.Equals(SourceBeltAnchor?.BindingHash, other.SourceBeltAnchor?.BindingHash, StringComparison.Ordinal)
+                   && string.Equals(DestinationBeltAnchor?.BindingHash, other.DestinationBeltAnchor?.BindingHash, StringComparison.Ordinal)
                    && string.Equals(BeltPathMode, other.BeltPathMode, StringComparison.Ordinal)
                    && IsConnectionNode == other.IsConnectionNode
                    && Parameters.SequenceEqual(other.Parameters);
@@ -3502,6 +3557,11 @@ internal sealed partial class NormalGameActionCoordinator
             fields.Add(OutputToSlot);
             fields.Add(AttachmentBeltObjectId);
             fields.Add(SourceBeltAnchor?.BindingHash);
+            if (DestinationBeltAnchor is not null)
+            {
+                fields.Add("belt-destination-binding-v1");
+                fields.Add(DestinationBeltAnchor.BindingHash);
+            }
             fields.Add(InserterBeltAttachmentPolicy.BindOffsets(InputOffset, OutputOffset,
                 AttachmentDestinationGeometryHash is null ? AttachmentGeometryHash
                     : InserterBeltAttachmentPolicy.BindGeometryPair(AttachmentGeometryHash!, AttachmentDestinationGeometryHash)));

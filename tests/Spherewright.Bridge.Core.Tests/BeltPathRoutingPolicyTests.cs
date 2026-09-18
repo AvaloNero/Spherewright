@@ -63,6 +63,54 @@ public sealed class BeltPathRoutingPolicyTests
         Assert.Equal("belt_geodesic_requires_explicit_free_endpoints", BeltPathRoutingPolicy.ValidateRequest(r, true));
     }
 
+    [Fact]
+    public void GeodesicAcceptsOnlyAnExplicitlyBoundEmpty2001CoverPair()
+    {
+        var request = new PrepareBuildRequest
+        {
+            BuildingItemId = 2001, BeltPathMode = BeltPathModes.NativeGeodesic,
+            SourceObjectId = 754, DestinationObjectId = 755,
+            ExpectedSourceStateHash = "fresh-source", ExpectedDestinationStateHash = "fresh-destination",
+        };
+        Assert.Null(BeltPathRoutingPolicy.ValidateRequest(request, true));
+        Assert.NotNull(BeltPathRoutingPolicy.ValidateRequest(request, false));
+    }
+
+    [Theory]
+    [InlineData("single_source")]
+    [InlineData("zero_source")]
+    [InlineData("large_destination")]
+    [InlineData("same")]
+    [InlineData("source_hash")]
+    [InlineData("destination_hash")]
+    [InlineData("position")]
+    [InlineData("path_end")]
+    [InlineData("resource")]
+    [InlineData("wrong_item")]
+    public void DualCoverGeodesicRejectsPartialStaleOrCoordinateAmbiguousRequests(string fault)
+    {
+        var request = new PrepareBuildRequest
+        {
+            BuildingItemId = 2001, BeltPathMode = BeltPathModes.NativeGeodesic,
+            SourceObjectId = 754, DestinationObjectId = 755,
+            ExpectedSourceStateHash = "fresh-source", ExpectedDestinationStateHash = "fresh-destination",
+        };
+        switch (fault)
+        {
+            case "single_source": request.DestinationObjectId = null; break;
+            case "zero_source": request.SourceObjectId = 0; break;
+            case "large_destination": request.DestinationObjectId = BeltBuildOccupancyPolicy.MaximumFactorySlots + 1; break;
+            case "same": request.DestinationObjectId = 754; break;
+            case "source_hash": request.ExpectedSourceStateHash = " "; break;
+            case "destination_hash": request.ExpectedDestinationStateHash = null; break;
+            case "position": request.PreferredPosition = Ground(0); break;
+            case "path_end": request.PathEnd = Ground(10); break;
+            case "resource": request.ResourceNodeId = 1; break;
+            case "wrong_item": request.BuildingItemId = 2002; break;
+        }
+        Assert.Equal("belt_geodesic_requires_explicit_free_endpoints", BeltPathRoutingPolicy.ValidateRequest(request, true));
+    }
+
     [Theory]
     [InlineData(1f, false)]
     [InlineData(2f, true)]
@@ -123,7 +171,7 @@ public sealed class BeltPathRoutingPolicyTests
     }
 
     [Fact]
-    public void LegacyEchoIsOnlyCompatibleWithTheDefaultAndGeodesicCannotHideACover()
+    public void FreeGeodesicEchoRemainsCompatibleButCannotHideAHalfCover()
     {
         var echo = new BeltPathPlanSnapshot { NativeValidationMode = "full_path_stage1", SourceBindingMode = "none" };
         Assert.True(BeltPathRoutingPolicy.ConfirmsPlanEcho(BeltPathModes.NativeGrid, echo));
@@ -132,6 +180,44 @@ public sealed class BeltPathRoutingPolicyTests
         Assert.True(BeltPathRoutingPolicy.ConfirmsPlanEcho(BeltPathModes.NativeGeodesic, echo));
         Assert.False(BeltPathRoutingPolicy.ConfirmsPlanEcho(BeltPathModes.NativeGrid, echo));
         echo.ReusedSourceObjectId = 754;
+        Assert.False(BeltPathRoutingPolicy.ConfirmsPlanEcho(BeltPathModes.NativeGeodesic, echo));
+        echo.ReusedSourceObjectId = null;
+        echo.DestinationBindingMode = "non_removing_belt_cover";
+        echo.ReusedDestinationObjectId = 755;
+        Assert.False(BeltPathRoutingPolicy.ConfirmsPlanEcho(BeltPathModes.NativeGeodesic, echo));
+    }
+
+    [Theory]
+    [InlineData("source_mode")]
+    [InlineData("source_id")]
+    [InlineData("same_id")]
+    [InlineData("source_preservation")]
+    [InlineData("destination_mode")]
+    [InlineData("destination_id")]
+    [InlineData("destination_preservation")]
+    [InlineData("routing")]
+    public void DualCoverGeodesicEchoRequiresBothExactBoundCovers(string fault)
+    {
+        var echo = new BeltPathPlanSnapshot
+        {
+            NativeValidationMode = "full_path_stage1", RoutingMode = BeltPathModes.NativeGeodesic,
+            SourceBindingMode = "non_removing_belt_cover", ReusedSourceObjectId = 754,
+            SourcePreservationMode = BeltSourceRotationPolicy.PreservationMode,
+            DestinationBindingMode = "non_removing_belt_cover", ReusedDestinationObjectId = 755,
+            DestinationPreservationMode = BeltDestinationReusePolicy.PreservationMode,
+        };
+        Assert.True(BeltPathRoutingPolicy.ConfirmsPlanEcho(BeltPathModes.NativeGeodesic, echo));
+        switch (fault)
+        {
+            case "source_mode": echo.SourceBindingMode = "none"; break;
+            case "source_id": echo.ReusedSourceObjectId = 0; break;
+            case "same_id": echo.ReusedDestinationObjectId = 754; break;
+            case "source_preservation": echo.SourcePreservationMode = null; break;
+            case "destination_mode": echo.DestinationBindingMode = "none"; break;
+            case "destination_id": echo.ReusedDestinationObjectId = null; break;
+            case "destination_preservation": echo.DestinationPreservationMode = "stale"; break;
+            case "routing": echo.RoutingMode = BeltPathModes.NativeGrid; break;
+        }
         Assert.False(BeltPathRoutingPolicy.ConfirmsPlanEcho(BeltPathModes.NativeGeodesic, echo));
     }
 

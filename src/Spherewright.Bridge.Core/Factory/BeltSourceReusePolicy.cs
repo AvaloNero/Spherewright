@@ -89,14 +89,56 @@ public static class BeltSourceReusePolicy
             || plan.DestinationObjectId.GetValueOrDefault() != destinationId
             || plan.ItemBudget is null || plan.ItemBudget.Count != 1 || plan.ItemBudget[0] is null || plan.ItemBudget[0].ItemId != itemId
             || plan.ItemBudget[0].Count != echo.NewObjectCount || plan.ItemBudget[0].Direction != "construction-consumption") return false;
-        return echo.SourceBindingMode switch
+        if (sourceId > 0 && destinationId > 0 && sourceId == destinationId) return false;
+        return echo.DestinationBindingMode switch
         {
-            "none" => sourceId == 0 && !echo.ReusedSourceObjectId.HasValue,
-            "native_device_port" => sourceId > 0 && !echo.ReusedSourceObjectId.HasValue,
-            "non_removing_belt_cover" => sourceId > 0 && destinationId == 0 && echo.ReusedSourceObjectId == sourceId
-                && echo.SourcePreservationMode == BeltSourceRotationPolicy.PreservationMode,
+            // Older echoes omit this field (whose contract default is none), but can still bind a device destination.
+            "none" => !echo.ReusedDestinationObjectId.HasValue && echo.DestinationPreservationMode is null
+                && (destinationId == 0 ? ConfirmsSourceOnlyEcho(echo, sourceId)
+                    : IsGridOrLegacy(echo) && ConfirmsDeviceDestinationSourceEcho(echo, sourceId)),
+            "native_device_port" => destinationId > 0 && !echo.ReusedDestinationObjectId.HasValue
+                && echo.DestinationPreservationMode is null && IsGridOrLegacy(echo)
+                && ConfirmsDeviceDestinationSourceEcho(echo, sourceId),
+            "non_removing_belt_cover" => itemId == 2001 && destinationId > 0 && echo.ReusedDestinationObjectId == destinationId
+                && echo.DestinationPreservationMode == BeltDestinationReusePolicy.PreservationMode
+                && ConfirmsTargetCoverSourceEcho(echo, sourceId),
             _ => false,
         };
+    }
+
+    private static bool ConfirmsSourceOnlyEcho(BeltPathPlanSnapshot echo, int sourceId) => echo.SourceBindingMode switch
+    {
+        // Preserve legacy free/device echoes, whose old response shape did not bind a source preservation field.
+        "none" => sourceId == 0 && !echo.ReusedSourceObjectId.HasValue,
+        "native_device_port" => sourceId > 0 && !echo.ReusedSourceObjectId.HasValue,
+        "non_removing_belt_cover" => sourceId > 0 && echo.ReusedSourceObjectId == sourceId
+            && echo.SourcePreservationMode == BeltSourceRotationPolicy.PreservationMode,
+        _ => false,
+    };
+
+    private static bool ConfirmsDeviceDestinationSourceEcho(BeltPathPlanSnapshot echo, int sourceId) => echo.SourceBindingMode switch
+    {
+        "none" => sourceId == 0 && !echo.ReusedSourceObjectId.HasValue,
+        "native_device_port" => sourceId > 0 && !echo.ReusedSourceObjectId.HasValue,
+        _ => false,
+    };
+
+    private static bool IsGridOrLegacy(BeltPathPlanSnapshot echo) => echo.RoutingMode is null
+        || echo.RoutingMode == BeltPathModes.NativeGrid;
+
+    private static bool ConfirmsTargetCoverSourceEcho(BeltPathPlanSnapshot echo, int sourceId)
+    {
+        if (echo.RoutingMode == BeltPathModes.NativeGrid)
+            return echo.SourceBindingMode switch
+            {
+                "none" => sourceId == 0 && !echo.ReusedSourceObjectId.HasValue && echo.SourcePreservationMode is null,
+                "non_removing_belt_cover" => sourceId > 0 && echo.ReusedSourceObjectId == sourceId
+                    && echo.SourcePreservationMode == BeltSourceRotationPolicy.PreservationMode,
+                _ => false,
+            };
+        return echo.RoutingMode == BeltPathModes.NativeGeodesic
+            && echo.SourceBindingMode == "non_removing_belt_cover" && sourceId > 0
+            && echo.ReusedSourceObjectId == sourceId && echo.SourcePreservationMode == BeltSourceRotationPolicy.PreservationMode;
     }
 
     private static bool Complete(IReadOnlyList<FactoryConnectionSnapshot>? connections) => connections is not null

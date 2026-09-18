@@ -145,11 +145,118 @@ public sealed class BeltSourceReusePolicyTests
         p.PlannedBeltPath.ReusedSourceObjectId=754;
         Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(p,2001,0,0));
     }
+    [Fact]
+    public void TargetCoverRequiresNativeGridExactBindingAndUnchangedNewCost()
+    {
+        var target=TargetPlan();
+        Assert.True(BeltSourceReusePolicy.ConfirmsPlanEcho(target,2001,0,755));
+
+        target.PlannedBeltPath!.RoutingMode=BeltPathModes.NativeGeodesic;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(target,2001,0,755));
+        target.PlannedBeltPath.RoutingMode=BeltPathModes.NativeGrid;
+        target.PlannedBeltPath.ReusedDestinationObjectId=756;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(target,2001,0,755));
+        target.PlannedBeltPath.ReusedDestinationObjectId=755;
+        target.PlannedBeltPath.DestinationPreservationMode=null;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(target,2001,0,755));
+        target.PlannedBeltPath.DestinationPreservationMode=BeltDestinationReusePolicy.PreservationMode;
+        target.ItemBudget[0].Count=3;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(target,2001,0,755));
+        target.ItemBudget[0].Count=2;
+        target.ItemBudget[0].ItemId=2002;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(target,2002,0,755));
+    }
+    [Fact]
+    public void DeviceDestinationRetainsLegacyFreeAndDeviceSourceEchoesOnly()
+    {
+        var free=DeviceDestinationPlan("native_device_port");
+        Assert.True(BeltSourceReusePolicy.ConfirmsPlanEcho(free,2001,0,755));
+        free.PlannedBeltPath!.DestinationBindingMode="none";
+        Assert.True(BeltSourceReusePolicy.ConfirmsPlanEcho(free,2001,0,755));
+        free.PlannedBeltPath.RoutingMode=BeltPathModes.NativeGeodesic;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(free,2001,0,755));
+
+        var device=DeviceDestinationPlan("native_device_port");
+        device.SourceObjectId=754;
+        device.PlannedBeltPath!.SourceBindingMode="native_device_port";
+        Assert.True(BeltSourceReusePolicy.ConfirmsPlanEcho(device,2001,754,755));
+        device.PlannedBeltPath.SourceBindingMode="non_removing_belt_cover";
+        device.PlannedBeltPath.ReusedSourceObjectId=754;
+        device.PlannedBeltPath.SourcePreservationMode=BeltSourceRotationPolicy.PreservationMode;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(device,2001,754,755));
+        device.PlannedBeltPath.SourceBindingMode="native_device_port";
+        device.PlannedBeltPath.ReusedSourceObjectId=null;
+        device.PlannedBeltPath.SourcePreservationMode=null;
+        device.PlannedBeltPath.ReusedDestinationObjectId=756;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(device,2001,754,755));
+    }
+    [Fact]
+    public void TargetCoverGeodesicRequiresBothExactNonRemovingCovers()
+    {
+        var plan=Plan();
+        plan.DestinationObjectId=755;
+        plan.PlannedBeltPath!.DestinationBindingMode="non_removing_belt_cover";
+        plan.PlannedBeltPath.ReusedDestinationObjectId=755;
+        plan.PlannedBeltPath.DestinationPreservationMode=BeltDestinationReusePolicy.PreservationMode;
+        plan.PlannedBeltPath.RoutingMode=BeltPathModes.NativeGeodesic;
+        Assert.True(BeltSourceReusePolicy.ConfirmsPlanEcho(plan,2001,754,755));
+
+        plan.PlannedBeltPath.SourceBindingMode="none";
+        plan.PlannedBeltPath.ReusedSourceObjectId=null;
+        plan.PlannedBeltPath.SourcePreservationMode=null;
+        plan.SourceObjectId=null;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(plan,2001,0,755));
+    }
+    [Fact]
+    public void TargetCoverAllowsOnlyFreeOrCorrectlyPreservedSourceCover()
+    {
+        var sourceAndTarget=Plan();
+        sourceAndTarget.DestinationObjectId=755;
+        sourceAndTarget.PlannedBeltPath!.DestinationBindingMode="non_removing_belt_cover";
+        sourceAndTarget.PlannedBeltPath.ReusedDestinationObjectId=755;
+        sourceAndTarget.PlannedBeltPath.DestinationPreservationMode=BeltDestinationReusePolicy.PreservationMode;
+        sourceAndTarget.PlannedBeltPath.RoutingMode=BeltPathModes.NativeGrid;
+        Assert.True(BeltSourceReusePolicy.ConfirmsPlanEcho(sourceAndTarget,2001,754,755));
+
+        sourceAndTarget.PlannedBeltPath.SourcePreservationMode=null;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(sourceAndTarget,2001,754,755));
+        sourceAndTarget.PlannedBeltPath.SourcePreservationMode=BeltSourceRotationPolicy.PreservationMode;
+        sourceAndTarget.PlannedBeltPath.SourceBindingMode="native_device_port";
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(sourceAndTarget,2001,754,755));
+        sourceAndTarget.PlannedBeltPath.SourceBindingMode="non_removing_belt_cover";
+        sourceAndTarget.DestinationObjectId=754;
+        sourceAndTarget.PlannedBeltPath.ReusedDestinationObjectId=754;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(sourceAndTarget,2001,754,754));
+    }
+    [Fact]
+    public void StaleTargetModeCannotAuthorizeAFormerSourceOnlyEcho()
+    {
+        var stale=Plan();
+        stale.DestinationObjectId=755;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(stale,2001,754,755));
+        stale.PlannedBeltPath!.DestinationBindingMode="remove_and_replace";
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(stale,2001,754,755));
+    }
     private static PreparedNormalAction Plan() => new()
     {
         Prepared=true,BuildKind="belt",SourceObjectId=754,PlannedPath=new(){P(1),P(2)},
         ItemBudget=new(){new ActionItemBudget{ItemId=2001,Count=2,Direction="construction-consumption"}},
         PlannedBeltPath=new(){NativeValidationMode="full_path_stage1",SourceBindingMode="non_removing_belt_cover",ReusedSourceObjectId=754,NewObjectCount=2,SourcePreservationMode=BeltSourceRotationPolicy.PreservationMode}
+    };
+    private static PreparedNormalAction TargetPlan() => new()
+    {
+        Prepared=true,BuildKind="belt",DestinationObjectId=755,PlannedPath=new(){P(1),P(2)},
+        ItemBudget=new(){new ActionItemBudget{ItemId=2001,Count=2,Direction="construction-consumption"}},
+        PlannedBeltPath=new(){NativeValidationMode="full_path_stage1",SourceBindingMode="none",NewObjectCount=2,
+            DestinationBindingMode="non_removing_belt_cover",ReusedDestinationObjectId=755,
+            DestinationPreservationMode=BeltDestinationReusePolicy.PreservationMode,RoutingMode=BeltPathModes.NativeGrid}
+    };
+    private static PreparedNormalAction DeviceDestinationPlan(string destinationMode) => new()
+    {
+        Prepared=true,BuildKind="belt",DestinationObjectId=755,PlannedPath=new(){P(1),P(2)},
+        ItemBudget=new(){new ActionItemBudget{ItemId=2001,Count=2,Direction="construction-consumption"}},
+        PlannedBeltPath=new(){NativeValidationMode="full_path_stage1",SourceBindingMode="none",NewObjectCount=2,
+            DestinationBindingMode=destinationMode}
     };
     private static List<FactoryConnectionSnapshot> Connections() => Enumerable.Range(0,16)
         .Select(i=>new FactoryConnectionSnapshot{Slot=i}).ToList();

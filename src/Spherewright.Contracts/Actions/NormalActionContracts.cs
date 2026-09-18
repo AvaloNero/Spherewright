@@ -175,7 +175,7 @@ public sealed class PrepareBuildRequest
 
     public float PathLength { get; set; } = 6f;
 
-    /// <summary>Default grid routing; geodesic is an explicit bounded free-ground belt subset.</summary>
+    /// <summary>Default grid routing; geodesic is an explicit bounded free-ground or dual empty-cover belt subset.</summary>
     public string BeltPathMode { get; set; } = BeltPathModes.NativeGrid;
 
     public string ExpectedPlayerStateHash { get; set; } = string.Empty;

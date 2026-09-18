@@ -8,17 +8,15 @@ namespace Spherewright.Bridge.Core.Factory;
 public static class BeltPathRoutingPolicy
 {
     public const int NativeReservedPoints = 10;
-    public const string Recovery = "Choose one explicit free-ground route and fresh-prepare it; do not omit existing endpoint bindings to bypass rejection. Native placement and both later sorter attachments still require proof.";
+    public const string Recovery = "Choose one explicit free-ground route or two explicit empty-cover endpoints and fresh-prepare it; do not omit existing endpoint bindings to bypass rejection. Native placement and both later sorter attachments still require proof.";
 
     public static string? ValidateRequest(PrepareBuildRequest request, bool nativeBelt)
     {
         if (request.BeltPathMode == BeltPathModes.NativeGrid) return null;
         if (request.BeltPathMode != BeltPathModes.NativeGeodesic) return "belt_routing_mode_unknown";
-        if (!nativeBelt || request.BuildingItemId < 2001 || request.BuildingItemId > 2003
-            || request.SourceObjectId.HasValue || request.DestinationObjectId.HasValue || request.ResourceNodeId.HasValue
-            || !Valid(request.PreferredPosition) || !Valid(request.PathEnd))
-            return "belt_geodesic_requires_explicit_free_endpoints";
-        return null;
+        if (!nativeBelt) return "belt_geodesic_requires_explicit_free_endpoints";
+        if (IsExplicitFreeGroundRequest(request) || IsExplicitDualCoverRequest(request)) return null;
+        return "belt_geodesic_requires_explicit_free_endpoints";
     }
 
     public static bool ValidGroundEndpoints(Vector3Snapshot? start, Vector3Snapshot? end, float groundRadius)
@@ -48,9 +46,9 @@ public static class BeltPathRoutingPolicy
         if (echo is null) return false;
         if (requestedMode == BeltPathModes.NativeGrid)
             return echo.RoutingMode is null || echo.RoutingMode == BeltPathModes.NativeGrid;
-        return requestedMode == BeltPathModes.NativeGeodesic && echo.RoutingMode == requestedMode
-            && echo.NativeValidationMode == "full_path_stage1" && echo.SourceBindingMode == "none"
-            && !echo.ReusedSourceObjectId.HasValue && echo.SourcePreservationMode is null;
+        if (requestedMode != BeltPathModes.NativeGeodesic || echo.RoutingMode != requestedMode
+            || echo.NativeValidationMode != "full_path_stage1") return false;
+        return IsFreeGeodesicEcho(echo) || IsDualCoverGeodesicEcho(echo);
     }
 
     public static string BindGeometry(string mode, string geometryHash)
@@ -62,6 +60,29 @@ public static class BeltPathRoutingPolicy
 
     private static bool OnGround(Vector3Snapshot? p, float radius) => Valid(p)
         && Math.Abs(Math.Sqrt(DistanceSquared(p!, new Vector3Snapshot())) - radius) <= .05;
+    private static bool IsExplicitFreeGroundRequest(PrepareBuildRequest request) =>
+        request.BuildingItemId >= 2001 && request.BuildingItemId <= 2003
+        && !request.SourceObjectId.HasValue && !request.DestinationObjectId.HasValue && !request.ResourceNodeId.HasValue
+        && Valid(request.PreferredPosition) && Valid(request.PathEnd);
+    private static bool IsExplicitDualCoverRequest(PrepareBuildRequest request) => request.BuildingItemId == 2001
+        && ValidObjectId(request.SourceObjectId) && ValidObjectId(request.DestinationObjectId)
+        && request.SourceObjectId != request.DestinationObjectId
+        && !string.IsNullOrWhiteSpace(request.ExpectedSourceStateHash)
+        && !string.IsNullOrWhiteSpace(request.ExpectedDestinationStateHash)
+        && request.PreferredPosition is null && request.PathEnd is null && !request.ResourceNodeId.HasValue;
+    private static bool IsFreeGeodesicEcho(BeltPathPlanSnapshot echo) => echo.SourceBindingMode == "none"
+        && !echo.ReusedSourceObjectId.HasValue && echo.SourcePreservationMode is null
+        && echo.DestinationBindingMode == "none" && !echo.ReusedDestinationObjectId.HasValue
+        && echo.DestinationPreservationMode is null;
+    private static bool IsDualCoverGeodesicEcho(BeltPathPlanSnapshot echo) =>
+        echo.SourceBindingMode == "non_removing_belt_cover"
+        && ValidObjectId(echo.ReusedSourceObjectId) && echo.SourcePreservationMode == BeltSourceRotationPolicy.PreservationMode
+        && echo.DestinationBindingMode == "non_removing_belt_cover"
+        && ValidObjectId(echo.ReusedDestinationObjectId)
+        && echo.DestinationPreservationMode == BeltDestinationReusePolicy.PreservationMode
+        && echo.ReusedSourceObjectId != echo.ReusedDestinationObjectId;
+    private static bool ValidObjectId(int? value) => value.HasValue && value.Value > 0
+        && value.Value <= BeltBuildOccupancyPolicy.MaximumFactorySlots;
     private static bool Valid(Vector3Snapshot? p) => p is not null && Finite(p.X) && Finite(p.Y) && Finite(p.Z)
         && Math.Abs(p.X) <= 10000 && Math.Abs(p.Y) <= 10000 && Math.Abs(p.Z) <= 10000
         && DistanceSquared(p, new Vector3Snapshot()) >= 1;

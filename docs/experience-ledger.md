@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-18 / EXP-299、EXP-303目标带头复用产品化（`validated`限DLL/源码/离线，未冷部署）：非移除cover并不意味着旧路径不变，必须将空载、无外部输入、distinct open paths、完整成员/组件/边和材料预算作为一组绑定。刚创建只证明负prebuild互返边及旧路径/货物保持，全部无人机完成后才允许精确source＋NEW＋target路径重组和当前原生rotation；至少两NEW，cover不扣料、不移除、不作NEW占位豁免。双2001显式端点的geodesic需当前DLL的useOldPath分支和完整首尾/十格保留检查；不能用自由端纸面模型代替该原生调用。默认grid与3792的碰撞仍真实，纸面geodesic通过不构成许可。Release2028测试、完整DSP Release零警告/错误、源码MCP64/1及指南一致通过；安装c5f3542/最后实机68642650不变。下一次安装/DLL变化或首次施工须fresh预检、终态、材料/全路径和保存恢复复验，旧56带与4983/5000不重放。最近复验同日；[API与证据边界](./research/game-api-foundry.md#open-head-belt-destination-reuse-2026-09-18-research-only-not-implemented)。
+
 2026-09-18 / EXP-299、EXP-303目标带头能力边界（`observed`，限当前DLL调研）：有限布局重设计与正负控制收口后，优先核安装适配器是否覆盖原生业务路径，不继续扩散相似坐标。原生目标non-removing cover不拆目标、不重复扣目标材料，但可重组整条CargoPath，不能以endpoint hash代替路径/货物证据。首片限定空载、无外部输入、开放且不同的同级2001路径及空闲目标头部；实现与实机仍待，见[目标头部研究](./research/game-api-foundry.md#open-head-belt-destination-reuse-2026-09-18-research-only-not-implemented)。最近复验同日。
 
 2026-09-18 / EXP-188、EXP-299、EXP-303纸面插入器窗口末区间复验（`validated`，限私有离线模型）：普通同路径后继已被调用方证明时，筛查窗口必须包含“本段末点→后继首点”，并显式要求`windowComplete`；不得借此推及`hasExt`侧并、真实Quaternion.Slerp或完整原生放置。零投影仅能停止纸面假设，既不是native硬拒绝也不授权施工；旧真实拒绝保持，下一次接点仍须fresh native prepare，见[窗口修正记录](./gameplay-timeline.md#2026-09-18--纸面插入器窗口补齐末区间仍待原生复验)。最近复验同日。

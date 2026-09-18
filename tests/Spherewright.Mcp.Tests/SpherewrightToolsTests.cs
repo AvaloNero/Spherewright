@@ -430,6 +430,58 @@ public sealed class SpherewrightToolsTests
         Assert.Equal(2, echo.GetProperty("newObjectCount").GetInt32());
     }
 
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("endpoint_only", true)]
+    [InlineData("empty_open_path_native_geometry_v1", false)]
+    public async Task DestinationCoverRequiresWholeEmptyPathPreservationEcho(string? mode, bool blocked)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult()) { BuildBeltDestinationCover = true,
+            BuildBeltDestinationPreservationMode = mode, BuildBeltRoutingMode = BeltPathModes.NativeGrid };
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2001, "player",
+            preferredPositionX: 0, preferredPositionY: 200, preferredPositionZ: 0,
+            destinationObjectId: 755, expectedDestinationStateHash: "destination");
+        Assert.Equal(blocked, result.IsError);
+        if (blocked) Assert.Equal(JsonValueKind.Null, result.StructuredContent!.Value.GetProperty("result").ValueKind);
+        else
+        {
+            var plan = result.StructuredContent!.Value.GetProperty("result");
+            Assert.Equal(755, plan.GetProperty("plannedBeltPath").GetProperty("reusedDestinationObjectId").GetInt32());
+            Assert.Equal(2, plan.GetProperty("itemBudget")[0].GetProperty("count").GetInt32());
+            Assert.Equal(2, plan.GetProperty("plannedPath").GetArrayLength());
+        }
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task BoundGeodesicCannotExposeLegacyOrHalfCoverCapability(bool currentEcho, bool blocked)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult()) { BuildBeltSourceCover = true,
+            BuildBeltPreservationMode = "whole_path_native_rotation_v1", BuildBeltRoutingMode = BeltPathModes.NativeGeodesic,
+            BuildBeltDestinationCover = currentEcho, BuildBeltDestinationPreservationMode = currentEcho ? "empty_open_path_native_geometry_v1" : null };
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2001, "player",
+            sourceObjectId: 754, expectedSourceStateHash: "source", destinationObjectId: 755,
+            expectedDestinationStateHash: "destination", beltPathMode: BeltPathModes.NativeGeodesic);
+        Assert.Equal(blocked, result.IsError);
+        if (blocked) Assert.Equal(JsonValueKind.Null, result.StructuredContent!.Value.GetProperty("result").ValueKind);
+    }
+
+    [Fact]
+    public void EmptyOpenHeadReuseIsDiscoverableWithoutPromisingMergesOrFreeMaterials()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareBuildAsync))!;
+        var description = (System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(method,
+            typeof(System.ComponentModel.DescriptionAttribute))!;
+        foreach (var text in new[] { description.Description, AgentPlaybookResources.GetOpeningMovementPlaybook().Text })
+        {
+            Assert.Contains("empty_open_path_native_geometry_v1", text);
+            Assert.Contains("destinationBindingMode=non_removing_belt_cover", text);
+            Assert.Contains("both complete old paths", text);
+            Assert.Contains("at least two NEW", text, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     [Fact]
     public void AttachmentFailureStagesAreDiscoverableAndDoNotEncourageBlindPairRetries()
     {
@@ -2073,6 +2125,8 @@ public sealed class SpherewrightToolsTests
         public bool OmitBuildBeltEcho { get; set; }
         public string BuildBeltMode { get; set; } = "full_path_stage1";
         public bool BuildBeltSourceCover { get; set; }
+        public bool BuildBeltDestinationCover { get; set; }
+        public string? BuildBeltDestinationPreservationMode { get; set; }
         public string? BuildBeltPreservationMode { get; set; }
         public string? BuildBeltRoutingMode { get; set; }
         public int? BuildFilterEcho { get; set; }
@@ -2352,7 +2406,11 @@ public sealed class SpherewrightToolsTests
                     prepared.PlannedBeltPath = new BeltPathPlanSnapshot { NativeValidationMode = BuildBeltMode,
                         SourceBindingMode = BuildBeltSourceCover ? "non_removing_belt_cover" : request.SourceObjectId.HasValue ? "native_device_port" : "none",
                         ReusedSourceObjectId = BuildBeltSourceCover ? request.SourceObjectId : null,
-                        SourcePreservationMode = BuildBeltPreservationMode, NewObjectCount = 2, RoutingMode = BuildBeltRoutingMode };
+                        SourcePreservationMode = BuildBeltPreservationMode,
+                        DestinationBindingMode = BuildBeltDestinationCover ? "non_removing_belt_cover" : request.DestinationObjectId.HasValue ? "native_device_port" : "none",
+                        ReusedDestinationObjectId = BuildBeltDestinationCover ? request.DestinationObjectId : null,
+                        DestinationPreservationMode = BuildBeltDestinationPreservationMode,
+                        NewObjectCount = 2, RoutingMode = BuildBeltRoutingMode };
             }
             return Task.FromResult(BridgeCallResult<PreparedNormalAction>.Succeeded(prepared));
         }

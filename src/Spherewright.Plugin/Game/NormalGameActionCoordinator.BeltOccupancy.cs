@@ -53,7 +53,7 @@ internal sealed partial class NormalGameActionCoordinator
         {
             rejection = $"{failure!.Reason}: planned point {failure.PlannedIndex}, object {failure.ObjectId}; "
                 + "new belt centres must remain more than 0.25 m apart, including both ends. "
-                + "Only an explicitly proven non-removing source cover is separate from the NEW points; do not retry at the same site "
+                + "Only explicitly proven non-removing endpoint covers are separate from the NEW points; do not retry at the same site "
                 + "or omit the bound endpoint to bypass occupancy. No objects were created.";
             return false;
         }
@@ -63,6 +63,12 @@ internal sealed partial class NormalGameActionCoordinator
         {
             rejection = "belt_source_centre_ambiguous: the retained source overlaps another belt or its exact identity/pose is missing. "
                 + BeltSourceReusePolicy.Recovery;
+            return false;
+        }
+        var destination = steps[steps.Count - 1].DestinationBeltAnchor;
+        if (destination is not null && !BeltSourceReusePolicy.HasUniqueSourceCentre(destination.EntityId, Snapshot(destination.Position), belts))
+        {
+            rejection = "belt_destination_centre_ambiguous: the retained destination overlaps another belt or its identity/pose is missing.";
             return false;
         }
         return true;

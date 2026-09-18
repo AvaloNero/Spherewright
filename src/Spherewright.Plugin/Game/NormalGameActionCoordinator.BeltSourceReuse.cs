@@ -160,9 +160,11 @@ internal sealed partial class NormalGameActionCoordinator
             reason = string.Empty;
             return true;
         }
+        var destination = steps[steps.Count - 1].DestinationBeltAnchor;
         if (steps.Skip(1).Any(s => s.SourceBeltAnchor is not null) || steps.Count < 2
             || steps[0].InputObjectId != bound.EntityId || steps[0].InputFromSlot != 0 || steps[0].InputToSlot != 1
-            || steps[0].InputStepIndex != -1 || steps[steps.Count - 1].OutputObjectId != 0
+            || steps[0].InputStepIndex != -1 || steps[steps.Count - 1].OutputObjectId != (destination?.EntityId ?? 0)
+            || (destination is not null && (destination.SourcePath?.AnchorId != bound.EntityId || !EmptyJoinBindingsMatch(factory, destination)))
             || !TryCaptureBeltSource(factory, bound.EntityId, out var fresh, out reason)
             || !BeltSourceReusePolicy.SameEvidence(bound.BindingHash, fresh!.BindingHash)
             || !BeltSourceReusePolicy.Supports(bound.EntityId, fresh.ItemId, item.ID, 0, 0, fresh.Tilt, false,

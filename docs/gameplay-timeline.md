@@ -3,6 +3,12 @@
 更新时间：2026-09-18（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-18 — 空闲带头复用源码与离线验证完成，未动游戏
+
+主会话补齐既有prepare-build的2001目标cover，Terra完成纯策略/契约测试；两端完整空路径、组件拓扑及旧边均绑定，预建筑阶段不误宣称路径合并，完工再证明源＋NEW＋目标的精确成员和原生朝向。普通free/device/source-only流程保留，MCP新增目标确认字段而不新增tool，包内playbook同步。固定4984→4978默认grid纸面撞3792；DLL证明双cover支持geodesic，纸面两NEW可清，但尚无fresh native结果，不能批准施工。Release2028测试（59/1818/151）、完整DSP Release零警告/错误及源码MCP64 tools/1 resource/83468字符一致/额外stdout0通过。
+
+本批**0游戏调用、0accepted、无部署、无保存或重启**；运行仍c5f3542，最后独立实机快照仍68642650/R13、primary68629232、durableJ90、accepted8，56带与4983/5000保留。下一步是正常同批冷部署和protected resume后，验证明确新能力；不是宽带到货、持续产出、Foundry或0.4通过。
+
 ### 2026-09-18 — 接线重设计转向窄原生带头复用，尚未实现
 
 修正纸面窗口后，4981→4947正控制与4984→4978负控制仍吻合；有限替代没有形成完整许可，不再扩散坐标或交Luna试建。主会话定位到当前Plugin明确拒绝目标belt复用，而当前DLL有非移除目标cover路径；后者仍会重组CargoPath，不能仅删除拒绝。已同步开发规范为同级2001、空载、无外部输入、开放且不同路径、目标输入全空及至少两NEW的窄实现边界，[DLL研究](./research/game-api-foundry.md#open-head-belt-destination-reuse-2026-09-18-research-only-not-implemented)明确其成本/身份/路径风险。没有新增游戏调用或施工，最后实机快照仍R13/primary68629232/J90/accepted8；已完成caller全部执行模式退役，313项纯检查及实际`-File`拒绝旧lab模式通过。下一步是该安全子集的代码与测试，不是宣告接线或0.4完成。

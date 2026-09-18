@@ -2,6 +2,12 @@
 
 本文记录 v0.4 只读多行星监督链路采用的当前《戴森球计划》运行时接口。它补充 [game-api-m0.md](./game-api-m0.md)，不改变 owned-world、Unity 主线程或普通玩法写入边界。
 
+## 2026-09-18：网络容量是动态采样，不是静态配置
+
+复核当前DSP `0.10.34.28529`、Assembly-CSharp SHA-256 **AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85**：`PowerSystem.GameTick(long, bool, bool, int)`取得当前星球风强、光度和太阳方向，按发电类型调用`EnergyCap_Wind`、`EnergyCap_PV`、`EnergyCap_Gamma`、`EnergyCap_GTH`、`EnergyCap_Fuel`（PV部分帧复用`capacityCurrentTick`），累加当前能力。最终赋值`powerNetwork.energyCapacity = num23 - num27`，并分别计算required/served；它不等于固定装机铭牌总和。当前`GameStateReader`只将此原生字段深复制给DTO，没有新增推导。
+
+因此跨tick审计应严格检查网络成员和设备配置，动态容量另查当前供需、完整预算与声明观察窗口。不能要求容量与上次采样完全相等，也不能从其增加反推出新增设备、具体发电原因或持续供给。IFX-166的本机快照1560000→1632000、成员不变且ratio1，是该区别的实证；持续电力/燃料验收不因这一采样通过而完成。
+
 ## 2026-09-13：长周期制造台停机满输出被固定短窗永久跳过
 
 IFX-124实现前再次只读反编译当前同哈希AssemblerComponent.InternalUpdate：单产物和多产物分支均先令replicating=false再检查每个输出。Smelt拒绝produced+productCount>100；Assemble拒绝produced>9×productCount；Refine/Particle/Chemical及其他分支拒绝produced>19×productCount。因此支持的正批量下，第一个被拒绝的整数分别是101−productCount、9×productCount+1、19×productCount+1；不是100/10批/20批的物理存量上界。诊断原evidence键output_buffer_capacity保持兼容，但应解释为下一批生产的拒绝阈值，不能当作仓库容量或缺少的件数。当前smelt批量超过100时连空缓冲也拒绝；现有正容量契约不能表达这种零阈值，须明确拒绝该异常输入，不能伪造一个正阈值。矩阵实验室和采矿机原阈值不在此修复范围。

@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-18 / EXP-242、EXP-299、EXP-303两坡及无人机状态复验（`validated`限本次两坡正常施工/保存与独立阶段审计）：A原生build及12实体核验成功时working仍为3而两个pending均0，稍后自然归0；working不是未完成建筑数。此规则已经在包内playbook，问题是私有入口重新写回了已退役的全idle守卫，不是新公共缺陷。改为前动作terminal/实体/材料/连接已证＋零pending后fresh原生准入；working3正例/pending1负例及仅B/save后缀实机通过，原A不重放。两坡累计21条、保存69923507/R10/J90/accepted6，完整5030实体与9792互返边独立核验见[当档阶段证据](./gameplay-timeline.md#2026-09-18--两段原生高架坡道施工保存与独立核验通过)。最近复验同日；高位合接、送料、产量及重启恢复仍待，未知/非唯一读回/非零pending不因此放宽。
+
 2026-09-18 / EXP-299、EXP-303补料阶段复验（`validated`限正常取料/递归制造/保存与独立审计）：prepare_transfer绑定sourceObjectId与itemBudget，不能使用terminal专属targetItemId/requestedCount；零commit的本地守卫错误修正后须fresh prepare。源仓持续生产时按动作即时before/after证明扣料，不要求稍后库存永远保持扣后值。材料工序没有改变建筑配置，复用完整5009实体快照与源723详情即可独立核静态不变量，不机械重复70条无变化线路详情；空预建筑列表按0判断，不索引首项。三accepted、材料和保存结论见[本档补料证据](./gameplay-timeline.md#2026-09-18--处理器整桥材料正常生产并保存)。最近复验同日；新工序、DTO或现场变化重新核相应边界；accepted仍3，后续施工每步fresh，不复用旧token。
 
 2026-09-18 / EXP-299、EXP-303显式坡段首次现场复验（`validated`限两条固定0→3/3→0原生prepare正例，施工待）：12NEW上坡与9NEW下坡在完整stage1下通过，实际路径/层级/预算均有原回执；源码和部署不再是唯一证据，但不由两个preview推定高位双cover、真实sorter或送料完成。见[候选、物料和停止边界](./gameplay-timeline.md#2026-09-18--处理器两段坡道原生预检通过整桥仍待建成后核验)。合接前源输入保持未建；正常材料生产和保存也计accepted，跨十写拆开明确后缀。准备结果无preparedAtGameTick，辅助输出错误只继续未执行B，不重放A；最近复验同日，现场/材料/端点变化必须fresh完整prepare。

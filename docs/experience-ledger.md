@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-19 / EXP-299、IFX-121 normal save 后置断言边界复验（`validated`，限本次2022十写封窗后的唯一保存）：commit/同 action terminal 已成功时，初始执行摘要若未先核原回执，不能因私有后置断言异常反推游戏未写；结构化 stopped 的`acceptedKnown1/commitAttempts1/calls8`应保留为事实。public Player DTO 不提供顶层`inHandItemInc`，但现有`inHandItem`仍须正常比较；调用方只能断言实际公开字段。本次8项纯检查包含写前后真实 DTO 回归和变异拒绝。Journal 比较仅排除采集时刻`capturedAtGameTick`，仍须严格保全 J91、完整91条、稳定身份和零 pending/error。根核销、Sol终审与连续性证明分别为 SHA-256 `14CC20…E588D8`、`68A527…74FE33`、`DC621B…F191B1A`；未重跑保存。此经验不证明恢复、全厂状态、施工或持续供给；DTO、调用方或保存语义变化时重验。
+
 2026-09-19 / EXP-188、EXP-224、EXP-299 原生分拣器升级的静态/动态取证边界复验（`validated`，限2022的2011→2012单次升级）：同步 native terminal 的readback必须保全两端、recipe/filter及其明确报告的即时字段；本次`buffersBefore`/`buffersAfter`均为空且相等，只是空终态保全，不能写成带货升级实测。随后全厂比对只严格保全静态配置、姿态、拓扑、功率成员及允许的等级/计时/功率差，不能要求活物流的progress或buffers跨tick相等。本次5114实体/9968边/0预建筑和J91均通过，玩家相对R73的这一次升级净额仅2011＋1、2012−1；执行、收集、Terra比对与Sol最终独立验收分别为 SHA-256 `1B7E73…547601F`、`F99C41…3C3997`、`E86231…2F91E7D`、`D2EE56…5DDED8`。入口审阅中对延迟动态字段、定向双端/功率及显式审批参数作的收窄是离线调用方护栏，不是原生失败或新公共能力；不证明持续送料、供给、燃料、产率或恢复。DTO、动作读回或场景拓扑变化时重验。
 
 2026-09-19 / EXP-188、EXP-224、EXP-299 动态仓取料与Journal采样边界复验（`validated`，限1511→`r5×12`→`r84×12`→save）：动态补货仓不得把稍后观察到的存量当作动作终态；本批以 transfer terminal 1511的3000→2964、玩家+36及其后全物料净额核守恒，收集时观察到3000并非反证。Journal 的`capturedAtGameTick`是读取时间，比较可排除它，但必须继续严格保全稳定身份、完整91条、durable及零pending/error。四个唯一终态至R73/save71881678/accepted5→9，59只读、0写入及完整5114实体/9968边比对见[当档记录](./gameplay-timeline.md#2026-09-19--r512r8412-备带与保存完成动态仓按即时守恒核验)，证明分别为 SHA-256 `70569B…7775D6B`、`BD84E8…2480E5`、`31B259…FEE3E3`；不是持续供给、施工、产率或恢复证明。仓储/Journal DTO、动作域或场景变化时重验。

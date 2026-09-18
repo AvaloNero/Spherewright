@@ -489,6 +489,8 @@
 
 - 2026-09-19备带阶段续验：1511为动态补货仓，调用方不得硬钉预期3000→2964或30个满格；改以 fresh 可用量、原terminal即时源减/玩家增和末态静态配置核验。首次离线比较还把 Journal 的`capturedAtGameTick`当作稳定内容，修正为仅排除该读取时间字段，同时严格保全身份、91条entries、durable及零pending/error。四个动作（含保存）已在R73/save71881678完成，59只读差量比对未重采、重放或产生游戏异常；证明 **70569B5EA5D637D0C6400804A00F3DCB50A47A7FAAC02C46BC928D96D7775D6B**、**BD84E833971F3432767FEBDD6297BE352EA0D8859CCBBC341461C025642480E5**、**31B259D3D5EE199ABD890E4FF984F1C469E5C4539BAA1A870B89C15F96FEE3E3**。不新增事故编号或公共API，仍不证明新炉、供给、产率或恢复。
 
+- 2026-09-19 normal save 后置断言复验：2022十写封窗后的唯一 save 已在 R76/save72137944 成功，accepted0→1；私有调用方却在写后访问 public Player DTO 不存在的顶层`inHandItemInc`（现有`inHandItem`仍正常比较）。结构化 stopped 从一开始正确保留acceptedKnown1/commitAttempts1/calls8；初始执行摘要未先核原回执才误称未写。根 outcome resolution **14CC20D52BC63DC42E0BA588FCA56A41451DF502EAC72D335B6FD7C33DE588D8** 与 Sol final review **68A52731C92903307657D0A428FFB7CEDBFA498829107666C1570DDE1374FE33** 核销唯一 commit/terminal，未重放保存；这是调用方后置条件问题，非 native failure/quarantine。修订 runner 改只核实际公开玩家字段，8项纯检查包含写前后真实 DTO 回归和变异拒绝；唯一补读 Journal 的连续性证明 **DC621B46B991B78FE4D138D86EEC3E205ED08A3FA2E7D94537E866485F191B1A** 保全 J91/91条、稳定身份/entries、零pending/error，仅排除`capturedAtGameTick`。FileSmoke或理想夹具不能替代写后真实DTO兼容性；本条不证明恢复、全厂状态、施工或持续供给，也不新增事故编号或公共API。
+
 ## IFX-120 — 普通分拣器后置检查误用了高速分拣器计时枚举
 
 - 首见：2026-09-12。Luna raw-acc60e67正常建成电塔3832（49596520）和2011分拣器3833（49597555），后置脚本却在第二个成功动作后停止。没有原生拒绝、隔离、结果未知或重放。

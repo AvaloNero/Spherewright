@@ -3,6 +3,12 @@
 更新时间：2026-09-19（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-19 — 2022 十写封窗后的唯一 normal save 已完成，摘要误判已核销
+
+在 2022 升级十写封窗之后，独立授权的一次 normal save 已唯一成功：**R76 / save72137944 / J91 / accepted0→1**。根结果核销 SHA-256 **14CC20D52BC63DC42E0BA588FCA56A41451DF502EAC72D335B6FD7C33DE588D8** 与 Sol 最终独立复核 SHA-256 **68A52731C92903307657D0A428FFB7CEDBFA498829107666C1570DDE1374FE33** 均确认唯一 commit/terminal 成功；未重跑 save。
+
+私有调用方在写后访问 public Player DTO 不提供的顶层 `inHandItemInc`（现有 `inHandItem` 仍正常比较）；结构化 stopped 从一开始即正确记录 `acceptedKnown1/commitAttempts1/calls8`，初始执行摘要未先核原回执才误称未写。这是调用方后置断言问题，不是 native 失败或 quarantine。修正版 runner SHA-256 **49380E2E67B6541E56E074D6EB7F09ADF051653616C40BB217EBAED2E9A9A6EB** 的 8 项纯检查包含写前后真实 DTO 回归和变异拒绝。唯一补读 Journal 的原回执 SHA-256 **5BFB56C219B35F5ABCB6A2318E1F15F266BC836988F7EB4434FE0C5FC216FFBA**、连续性证明 SHA-256 **DC621B46B991B78FE4D138D86EEC3E205ED08A3FA2E7D94537E866485F191B1A**：J91/91 条、零 pending/error，稳定身份和 entries 严格相同，仅排除读取时刻 `capturedAtGameTick`。本条只证明 normal save、Journal 与可见玩家字段保全；不证明恢复、全厂采集、施工或持续供给。
+
 ### 2026-09-19 — 2022 硅石送料分拣器原生升级完成，静态阶段比对通过
 
 在既封存的 R73 备带边界之后，既有分拣器 **2022** 正常完成 `2011→2012` 原生升级，唯一终态保全 `2018→2022→2020` 的有向双端、recipe/filter 与姿态：**R75 / save71881678 / J91 / accepted9→10**。执行证明 SHA-256 **1B7E73B55F1EB2B40C0072232C27A4147CB23B0C9BFD58E2F714D8D56547601F**；Terra 的61次只读、0写入收集 manifest SHA-256 **F99C415188E33BBD6D18E78F84E2A0A6C99BA369D31FF6B7D2547C6BA63C3997**，完整阶段比对 SHA-256 **E862311AFCA24A5F7C55C2BFBD8BB6CFDC9BD5949A49E6B64A8AC02FF2F91E7D**；Sol 的最终独立验收 SHA-256 **D2EE56CC66F5AE7E4E752E616CDC14ED0F35F88E51942C60C617D939455DDED8**，末审 tick **72027592**。

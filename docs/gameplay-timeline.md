@@ -3,6 +3,14 @@
 更新时间：2026-09-19（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-19 — 高纯硅炉 `r56×1` 后缀与正常保存完成，施工仍待
+
+在既成 Move、取石材和 `r6×1` 前缀之后，`r56×1` 与一次 normal save 均唯一成功：**R67 / save71701504 / durable J91 / accepted3→5**。执行完成证明 SHA-256 **31BD02EE84895C24BF076B7F7998955C511467A568417337BCA01BB82809E78C**；Terra 以 61+4 次只读收集本阶段状态，续接 manifest SHA-256 **80F332BABA28C52E1CEA35D7626A7B206B0797DF8E80CC5C3AD8E2AC358EB9F7**，确定性比对证明 SHA-256 **A315E8DAAACFE36068492193EC24A5B2B23A029966A443D945387F772FD5D360**。
+
+比对确认 **5114 实体 / 9968 互返有向边 / 0 预建筑**与既封存的 5114 基线静态配置、连接和关键详情一致；玩家相对 `r56` 前状态仅净铁块−4、石材−2、磁线圈−2、电路板−4、熔炉＋1，J91 完整前缀且无 pending/error。首次 61 读的本地比较把早已完成的 `r6` 消耗混入玩家基线而停止；已改用 `r56` 前玩家回执并只补 J/power/prebuild/end 四读，未重采工厂、未发生游戏异常或重放。
+
+此前两次 caller 停止仍是既成前缀后的本地断言/字面量 revision 绑定问题；最终后缀以实读 revision 续接，已通过 Sol 入口审核及阶段原回执独立验收。`r56` 成功终态为 tick71701370/R66，保存后为 R67。固定西侧单炉只读 native preview 于 tick71733158 另报 `machine_previews_clear`、`nativeBuildCondition=Ok` 且 `geometryBoundaryUncertain=false`，原回执 SHA-256 **2FA2AC668EE508E6B12D0E3D91E13B86784D46C4E48490DC6367E59D6AE25E5**；它只是一处 site 正例，物流、施工、持续供电和产率均未验。
+
 ### 2026-09-19 — 高纯硅炉手搓前缀在 r6 后本地断言停止，精确后缀待验
 
 固定五动作的前 3 项已按正常机制唯一成功：短 Move、从 95 取石材×2、普通 replicator `r6×1`。`r6` 原生终态成功，玩家磁铁−2、铜块−1、磁线圈＋2；**R62** 只是旧调用方在该前缀后最后记录的本地 revision。随后本次 fresh **session** 回执实读为 **R64 / save71357324**；durable J91、accepted3及玩家 Walk/0速/无 pending/error 均为先前已验前缀边界，本次一读零写未改变它们。`r56` 与保存仍未执行。

@@ -3,6 +3,12 @@
 更新时间：2026-09-19（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-19 — 2022 硅石送料分拣器原生升级完成，静态阶段比对通过
+
+在既封存的 R73 备带边界之后，既有分拣器 **2022** 正常完成 `2011→2012` 原生升级，唯一终态保全 `2018→2022→2020` 的有向双端、recipe/filter 与姿态：**R75 / save71881678 / J91 / accepted9→10**。执行证明 SHA-256 **1B7E73B55F1EB2B40C0072232C27A4147CB23B0C9BFD58E2F714D8D56547601F**；Terra 的61次只读、0写入收集 manifest SHA-256 **F99C415188E33BBD6D18E78F84E2A0A6C99BA369D31FF6B7D2547C6BA63C3997**，完整阶段比对 SHA-256 **E862311AFCA24A5F7C55C2BFBD8BB6CFDC9BD5949A49E6B64A8AC02FF2F91E7D**；Sol 的最终独立验收 SHA-256 **D2EE56CC66F5AE7E4E752E616CDC14ED0F35F88E51942C60C617D939455DDED8**，末审 tick **72027592**。
+
+比对确认 **5114实体 / 9968互返有向边 / 0预建筑**，全厂除2022外静态配置与拓扑不变；2022仅允许等级、`progressRequired 600000→300000`和功率`300→600 J/t`变化。玩家相对 R73 的本次单升级仅普通分拣器＋1、高速分拣器−1，J91完整身份/entries与两网静态成员保全且采样满供。terminal upgradeReadback 的`buffersBefore`与`buffersAfter`均为空且相等，只证明空终态同步保全；跨 tick 的progress、buffers与货物流动不作恒等要求，不能称带货升级已实测。此单写没有新增保存、施工、持续送料/上游供给、燃料连续性、产率或恢复证明。
+
 ### 2026-09-19 — `r5×12`、`r84×12` 备带与保存完成，动态仓按即时守恒核验
 
 从 1511 正常取得铁块×36 后，`r5×12`、`r84×12` 与 normal save 均唯一成功：**R73 / save71881678 / J91 / accepted5→9**。执行证明 SHA-256 **70569B5EA5D637D0C6400804A00F3DCB50A47A7FAAC02C46BC928D96D7775D6B**；Terra 59 次只读、0 写入收集的 manifest SHA-256 **BD84E833971F3432767FEBDD6297BE352EA0D8859CCBBC341461C025642480E5**，确定性比对证明 SHA-256 **31B259D3D5EE199ABD890E4FF984F1C469E5C4539BAA1A870B89C15F96FEE3E3**；Sol 对关键原回执的独立验收为 `action-1264cec…-0001`，SHA-256 **D4FCE5F30448D3EB72F7993CD166AD35CFA6DEA380FE8151AE5F72DD87ADAE6E**。

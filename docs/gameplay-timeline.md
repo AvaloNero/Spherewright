@@ -3,6 +3,12 @@
 更新时间：2026-09-18（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-18 — 显式单跨度高架带源码闭环，实机待验
+
+主会话完成 `native_elevated_grid` 窄适配：2001、free→free、两端明确0..3层、≤30m、一次原生网格路径、缓坡和平端，不拼接或删点。缺失原生grid拒绝，完整stage1/科技/材料/占位与普通预建筑/无人机保持；新模式额外核预建筑链和完工空载精确路径、所有连接及原生位置/朝向/collider。MCP严格核回显层级，旧Plugin不能静默压地签发可用token；仍64 tools/1 resource，包内指南同步。预建筑与完工朝向不能混比，见IFX-167和[原生依据](./research/game-api-foundry.md#implemented-single-span-proof-2026-09-18-offline-only)。
+
+locked restore、完整DSP Release构建均通过（0警告/0错误）；Debug/Release各 **2112测试＝59 Contracts＋1876 Core＋177 MCP** 全通过，新增58个Core/26个MCP案例，含合成上/下坡、层高/路径拒绝、默认哈希保持和混装echo拒绝。Sol独立DLL复核纠正了初稿对4点以上路径误用两点短段阈值，现保留原生float运算的.28f条件并加三项边界测试，不以更窄实现替代原生规则。源码MCP真实握手/列表/资源读取通过：64/1、85029字符与仓库指南一致、额外stdout0。该证据不调用Bridge/gameplay，不是ZIP或异机验收。本批没有新游戏写入；最后现场记录仍tick69554348/R13、主档69380216、accepted8、durableJ90，当前安装200b4bc未更新。下一步是同批冷部署、protected resume和fresh具体坡路实测；处理器供料、持续紫糖与完整0.4准备/打包门未核销。
+
 ### 2026-09-18 — 处理器固定路线停止并定位显式高架能力缺口
 
 主会话在已封存5009实体上复算旧四段：原生吸附纸面模型与Core完整占位组合检查中，part0/3通过，part1起点撞 **4770**，part2末点撞 **3545**；固定外绕三段分别撞853、3057、3263。没有提交新的处理器建筑，也不把离线占位结果冒充native场地拒绝或“所有地表路线不可能”。旧三轮Sol停止证明保留，不进行第四轮相似微调。该场景没有2001半径>200.7的现成高架模块；现入口把自由端Snap回地面，现有cover只准等半径NEW，所以不能假装已有明确坡段能力。证明SHA-256 **F93AF0F15789D577BDD57E0A95CE53E7FB12D4D6143BCFC184B6157EAAAD7CBA**；仅额外一次session读取，**tick69554348 / R13 / primary69380216 / accepted8**，healthy、零新写。

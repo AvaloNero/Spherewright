@@ -44,7 +44,8 @@ internal sealed partial class NormalGameActionCoordinator
 
         var routingError = BeltPathRoutingPolicy.ValidateRequest(request, item.prefabDesc.isBelt);
         if (routingError is not null)
-            return InvalidPlan(routingError + ": " + BeltPathRoutingPolicy.Recovery);
+            return InvalidPlan(routingError + ": " + (request.BeltPathMode == BeltPathModes.NativeElevatedGrid
+                ? BeltElevationPolicy.Recovery : BeltPathRoutingPolicy.Recovery));
 
         var player = GameMain.mainPlayer;
         var factory = GameMain.localPlanet?.factory;
@@ -163,6 +164,8 @@ internal sealed partial class NormalGameActionCoordinator
                     DestinationPreservationMode = destinationAnchor is null ? null : BeltDestinationReusePolicy.PreservationMode,
                     NewObjectCount = preparation.Steps.Count,
                     RoutingMode = preparation.Steps[0].BeltPathMode,
+                    StartAltitudeLevel = request.BeltPathMode == BeltPathModes.NativeElevatedGrid ? request.BeltStartAltitudeLevel : null,
+                    EndAltitudeLevel = request.BeltPathMode == BeltPathModes.NativeElevatedGrid ? request.BeltEndAltitudeLevel : null,
                 };
             }
             prepared.Value.PlannedSorterFilterItemId = preparation.Kind == NormalBuildKinds.Inserter
@@ -480,6 +483,8 @@ internal sealed partial class NormalGameActionCoordinator
         ItemProto item,
         PrepareBuildRequest request)
     {
+        if (request.BeltPathMode == BeltPathModes.NativeElevatedGrid)
+            return TryPrepareElevatedBeltBuild(factory, player, item, request);
         FactoryEntitySnapshot? source = null;
         FactoryEntitySnapshot? destination = null;
         if (request.SourceObjectId.HasValue)
@@ -643,6 +648,14 @@ internal sealed partial class NormalGameActionCoordinator
         BeltSourceState? sourceAnchor = null;
         BeltDestinationState? destinationAnchor = null;
         var geodesic = routingMode == BeltPathModes.NativeGeodesic;
+        var elevated = routingMode == BeltPathModes.NativeElevatedGrid;
+        if (elevated && (item.ID != 2001 || source.ObjectId != 0 || destination.ObjectId != 0
+            || !BeltElevationPolicy.ValidEndpoints(Snapshot(source.Pose.position), Snapshot(destination.Pose.position),
+                factory.planet.radius + .2f)))
+        {
+            rejection = "belt_elevation_span_unsupported: requires one explicit free-to-free2001 span with verified native levels, 1.5–30m apart.";
+            return false;
+        }
         var sourceIsBelt = source.ObjectId > 0 && factory.entityPool[source.ObjectId].beltId > 0;
         var destinationIsBelt = destination.ObjectId > 0 && factory.entityPool[destination.ObjectId].beltId > 0;
         var dualCover = sourceIsBelt && destinationIsBelt && item.ID == 2001 && source.ObjectId != destination.ObjectId;
@@ -695,6 +708,14 @@ internal sealed partial class NormalGameActionCoordinator
             return false;
         }
 
+        if (elevated && (!BeltElevationPolicy.ValidNativeSlope(maxSlope)
+            || !BeltElevationPolicy.CompleteNativePath(points.Take(count).Select(Snapshot).ToArray(), points.Length,
+                Snapshot(source.Pose.position), Snapshot(destination.Pose.position), factory.planet.radius + .2f)))
+        {
+            rejection = "belt_elevation_native_path_incomplete: requires unsaturated complete native points, gentle slope, flat ends and no short-segment cleanup; no endpoint may hide truncation.";
+            return false;
+        }
+
         if (destinationAnchor is not null && (count >= points.Length - BeltPathRoutingPolicy.NativeReservedPoints
             || Vector3.Distance(points[0], source.Pose.position) > .01f
             || Vector3.Distance(points[count - 1], destination.Pose.position) > .01f))
@@ -705,6 +726,12 @@ internal sealed partial class NormalGameActionCoordinator
 
         points[0] = source.Pose.position;
         points[count - 1] = destination.Pose.position;
+        if (elevated && !BeltElevationPolicy.CompleteNativePath(points.Take(count).Select(Snapshot).ToArray(), points.Length,
+            Snapshot(source.Pose.position), Snapshot(destination.Pose.position), factory.planet.radius + .2f))
+        {
+            rejection = "belt_elevation_native_endpoint_adjustment_unsupported";
+            return false;
+        }
         if (destinationAnchor is not null)
         {
             if (!BeltDestinationReusePolicy.TrySeparateNewPoints(points.Take(count).Select(Snapshot).ToArray(),
@@ -1169,12 +1196,19 @@ internal sealed partial class NormalGameActionCoordinator
         rejection = string.Empty;
         rejectionError = null;
         if (candidates.Count < 2 || candidates.Any(step => step.BeltPathMode != candidates[0].BeltPathMode)
-            || (candidates[0].BeltPathMode != BeltPathModes.NativeGrid && candidates[0].BeltPathMode != BeltPathModes.NativeGeodesic))
+            || (candidates[0].BeltPathMode != BeltPathModes.NativeGrid && candidates[0].BeltPathMode != BeltPathModes.NativeGeodesic
+                && candidates[0].BeltPathMode != BeltPathModes.NativeElevatedGrid))
         {
             rejection = "belt_routing_mode_inconsistent";
             return false;
         }
         var geodesic = candidates[0].BeltPathMode == BeltPathModes.NativeGeodesic;
+        var elevated = candidates[0].BeltPathMode == BeltPathModes.NativeElevatedGrid;
+        if (elevated && !CompletePreparedElevatedBeltPath(candidates, factory.planet.radius + .2f))
+        {
+            rejection = "belt_elevation_prepared_path_invalid";
+            return false;
+        }
         if (geodesic && !CompletePreparedGroundBeltPath(candidates, factory.planet.realRadius + .2f))
         {
             rejection = "belt_geodesic_prepared_ground_path_invalid";
@@ -1250,6 +1284,11 @@ internal sealed partial class NormalGameActionCoordinator
 
             // Native checking can adjust heights/poses. Its output is also a NEW-object
             // path, so it must pass the complete occupancy guard after adjustment.
+            if (elevated && !CompletePreparedElevatedBeltPath(accepted, factory.planet.radius + .2f, candidates))
+            {
+                rejection = "belt_elevation_native_adjustment_unsupported: the native validator changed the explicit free path or endpoint levels.";
+                return false;
+            }
             if (geodesic && !CompletePreparedGroundBeltPath(accepted, factory.planet.realRadius + .2f, candidates))
             {
                 rejection = "belt_geodesic_native_adjustment_unsupported: native checking moved an endpoint or raised the free ground path.";
@@ -1509,6 +1548,10 @@ internal sealed partial class NormalGameActionCoordinator
             }
 
             create();
+            if (action.Plan.BuildKind == NormalBuildKinds.Belt
+                && action.Plan.BuildSteps[0].BeltPathMode == BeltPathModes.NativeElevatedGrid
+                && !ProvesCreatedElevatedPath(factory, action.Plan.BuildSteps, previews))
+                throw new InvalidOperationException("Native elevated prebuild identity, pose or complete free-path connection proof failed; do not replay construction.");
             foreach (var preview in previews)
             {
                 if (preview.objId >= 0)
@@ -1722,6 +1765,12 @@ internal sealed partial class NormalGameActionCoordinator
 
         if (plan.BuildKind == NormalBuildKinds.Belt)
         {
+            if (plan.BuildSteps[0].BeltPathMode == BeltPathModes.NativeElevatedGrid
+                && !ProvesCompletedElevatedPath(factory, plan, entityIds))
+            {
+                rejection = "The elevated path failed exact position, native rotation/collider, empty directed membership or free-end proof.";
+                return false;
+            }
             var destinationAnchor = plan.BuildSteps[plan.BuildSteps.Count - 1].DestinationBeltAnchor;
             if (destinationAnchor is not null && !ProvesCompletedEmptyJoin(factory, destinationAnchor, entityIds))
             {

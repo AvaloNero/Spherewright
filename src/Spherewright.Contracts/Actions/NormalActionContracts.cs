@@ -178,6 +178,11 @@ public sealed class PrepareBuildRequest
     /// <summary>Default grid routing; geodesic is an explicit bounded free-ground or dual empty-cover belt subset.</summary>
     public string BeltPathMode { get; set; } = BeltPathModes.NativeGrid;
 
+    /// <summary>Explicit native layer numbers; only native_elevated_grid accepts these fields.</summary>
+    public int? BeltStartAltitudeLevel { get; set; }
+
+    public int? BeltEndAltitudeLevel { get; set; }
+
     public string ExpectedPlayerStateHash { get; set; } = string.Empty;
 
     public int StateHashVersion { get; set; } = 1;

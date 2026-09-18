@@ -319,6 +319,157 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public async Task ElevatedGridMapsFreeEndpointsAndExactLevelsBeforeExposingToken()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            BuildBeltRoutingMode = BeltPathModes.NativeElevatedGrid,
+            BuildBeltNewObjectCount = 4,
+            BuildBeltStartAltitudeLevel = 0,
+            BuildBeltEndAltitudeLevel = 1,
+        };
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2001, "player",
+            preferredPositionX: 0, preferredPositionY: 200.2f, preferredPositionZ: 0,
+            pathEndX: 10, pathEndY: 199.95f, pathEndZ: 0,
+            beltPathMode: BeltPathModes.NativeElevatedGrid,
+            beltStartAltitudeLevel: 0, beltEndAltitudeLevel: 1);
+
+        Assert.False(result.IsError);
+        var request = Assert.IsType<PrepareBuildRequest>(bridge.LastBuildRequest);
+        Assert.Equal(BeltPathModes.NativeElevatedGrid, request.BeltPathMode);
+        Assert.Equal(0, request.BeltStartAltitudeLevel);
+        Assert.Equal(1, request.BeltEndAltitudeLevel);
+        Assert.Null(request.SourceObjectId);
+        Assert.Null(request.DestinationObjectId);
+        Assert.Null(request.ResourceNodeId);
+
+        var echo = result.StructuredContent!.Value.GetProperty("result").GetProperty("plannedBeltPath");
+        Assert.Equal("full_path_stage1", echo.GetProperty("nativeValidationMode").GetString());
+        Assert.Equal(BeltPathModes.NativeElevatedGrid, echo.GetProperty("routingMode").GetString());
+        Assert.Equal(4, echo.GetProperty("newObjectCount").GetInt32());
+        Assert.Equal("none", echo.GetProperty("sourceBindingMode").GetString());
+        Assert.Equal("none", echo.GetProperty("destinationBindingMode").GetString());
+        Assert.Equal(0, echo.GetProperty("startAltitudeLevel").GetInt32());
+        Assert.Equal(1, echo.GetProperty("endAltitudeLevel").GetInt32());
+    }
+
+    [Theory]
+    [InlineData("item", 2002)]
+    [InlineData("source", 754)]
+    [InlineData("source", -1)]
+    [InlineData("destination", 755)]
+    [InlineData("destination", -1)]
+    [InlineData("resource", 23)]
+    [InlineData("resource", -1)]
+    public async Task ElevatedGridRejectsAnyBoundOrNon2001EndpointBeforeBridge(string binding, int value)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104,
+            binding == "item" ? value : 2001, "player",
+            preferredPositionX: 0, preferredPositionY: 200.2f, preferredPositionZ: 0,
+            pathEndX: 10, pathEndY: 199.95f, pathEndZ: 0,
+            resourceNodeId: binding == "resource" ? value : 0,
+            sourceObjectId: binding == "source" ? value : 0,
+            destinationObjectId: binding == "destination" ? value : 0,
+            beltPathMode: BeltPathModes.NativeElevatedGrid,
+            beltStartAltitudeLevel: 0, beltEndAltitudeLevel: 1);
+
+        Assert.True(result.IsError);
+        Assert.Null(bridge.LastBuildRequest);
+        Assert.Equal(BridgeErrorCodes.InvalidRequest,
+            result.StructuredContent!.Value.GetProperty("error").GetProperty("code").GetString());
+    }
+
+    [Theory]
+    [InlineData(-99, 1)]
+    [InlineData(0, -99)]
+    [InlineData(0, 0)]
+    [InlineData(-1, 1)]
+    [InlineData(0, 4)]
+    public async Task ElevatedGridRejectsMissingOrUnsupportedLevelsBeforeBridge(int rawStart, int rawEnd)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2001, "player",
+            preferredPositionX: 0, preferredPositionY: 200.2f, preferredPositionZ: 0,
+            pathEndX: 10, pathEndY: 199.95f, pathEndZ: 0,
+            beltPathMode: BeltPathModes.NativeElevatedGrid,
+            beltStartAltitudeLevel: rawStart == -99 ? null : rawStart,
+            beltEndAltitudeLevel: rawEnd == -99 ? null : rawEnd);
+
+        Assert.True(result.IsError);
+        Assert.Null(bridge.LastBuildRequest);
+        Assert.Equal(BridgeErrorCodes.InvalidRequest,
+            result.StructuredContent!.Value.GetProperty("error").GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task DefaultBeltModeRejectsAltitudeFieldsBeforeBridge()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2001, "player",
+            beltStartAltitudeLevel: 0, beltEndAltitudeLevel: 1);
+
+        Assert.True(result.IsError);
+        Assert.Null(bridge.LastBuildRequest);
+        Assert.Equal(BridgeErrorCodes.InvalidRequest,
+            result.StructuredContent!.Value.GetProperty("error").GetProperty("code").GetString());
+    }
+
+    [Theory]
+    [InlineData("legacy")]
+    [InlineData("wrong-routing")]
+    [InlineData("wrong-stage")]
+    [InlineData("missing-start")]
+    [InlineData("missing-end")]
+    [InlineData("wrong-start")]
+    [InlineData("wrong-end")]
+    [InlineData("too-few-new")]
+    [InlineData("too-many-new")]
+    [InlineData("source-cover")]
+    [InlineData("destination-cover")]
+    public async Task ElevatedGridRejectsLegacyOrMismatchedEchoWithoutExposingToken(string echoCase)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            BuildBeltRoutingMode = BeltPathModes.NativeElevatedGrid,
+            BuildBeltNewObjectCount = 4,
+            BuildBeltStartAltitudeLevel = 0,
+            BuildBeltEndAltitudeLevel = 1,
+        };
+        switch (echoCase)
+        {
+            case "legacy":
+                bridge.BuildBeltRoutingMode = null;
+                bridge.BuildBeltStartAltitudeLevel = null;
+                bridge.BuildBeltEndAltitudeLevel = null;
+                break;
+            case "wrong-routing": bridge.BuildBeltRoutingMode = BeltPathModes.NativeGrid; break;
+            case "wrong-stage": bridge.BuildBeltMode = "endpoint_only"; break;
+            case "missing-start": bridge.BuildBeltStartAltitudeLevel = null; break;
+            case "missing-end": bridge.BuildBeltEndAltitudeLevel = null; break;
+            case "wrong-start": bridge.BuildBeltStartAltitudeLevel = 1; break;
+            case "wrong-end": bridge.BuildBeltEndAltitudeLevel = 0; break;
+            case "too-few-new": bridge.BuildBeltNewObjectCount = 3; break;
+            case "too-many-new": bridge.BuildBeltNewObjectCount = 65; break;
+            case "source-cover": bridge.BuildBeltSourceCover = true; break;
+            case "destination-cover": bridge.BuildBeltDestinationCover = true; break;
+        }
+
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "session", 104, 2001, "player",
+            preferredPositionX: 0, preferredPositionY: 200.2f, preferredPositionZ: 0,
+            pathEndX: 10, pathEndY: 199.95f, pathEndZ: 0,
+            beltPathMode: BeltPathModes.NativeElevatedGrid,
+            beltStartAltitudeLevel: 0, beltEndAltitudeLevel: 1);
+
+        Assert.True(result.IsError);
+        Assert.NotNull(bridge.LastBuildRequest);
+        var content = result.StructuredContent!.Value;
+        Assert.Equal(BridgeErrorCodes.BridgeNotReady, content.GetProperty("error").GetProperty("code").GetString());
+        Assert.Equal(JsonValueKind.Null, content.GetProperty("result").ValueKind);
+        Assert.DoesNotContain("\"planToken\"", content.GetRawText());
+    }
+
+    [Fact]
     public void NativeGeodesicSubsetIsDiscoverableInSchemaAndEmbeddedGuide()
     {
         var services = new ServiceCollection();
@@ -332,6 +483,29 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("beltPathMode=native_geodesic", guide);
         Assert.Contains("plannedBeltPath.routingMode", guide);
         Assert.Contains("both sorter attachments", guide);
+    }
+
+    [Fact]
+    public void NativeElevatedGridSubsetIsDiscoverableWithoutClaimingLivePlacement()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer().WithToolsFromAssembly(typeof(SpherewrightTools).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tool = Assert.Single(provider.GetServices<McpServerTool>(),
+            value => value.ProtocolTool.Name == "spherewright_prepare_build").ProtocolTool;
+        var properties = tool.InputSchema.GetProperty("properties");
+        Assert.Contains(BeltPathModes.NativeElevatedGrid,
+            properties.GetProperty("beltPathMode").GetProperty("description").GetString());
+        Assert.Contains(BeltPathModes.NativeElevatedGrid,
+            properties.GetProperty("beltStartAltitudeLevel").GetProperty("description").GetString());
+        Assert.Contains(BeltPathModes.NativeElevatedGrid,
+            properties.GetProperty("beltEndAltitudeLevel").GetProperty("description").GetString());
+
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("beltPathMode=native_elevated_grid", guide);
+        Assert.Contains("beltStartAltitudeLevel", guide);
+        Assert.Contains("beltEndAltitudeLevel", guide);
     }
 
     [Fact]
@@ -2129,6 +2303,9 @@ public sealed class SpherewrightToolsTests
         public string? BuildBeltDestinationPreservationMode { get; set; }
         public string? BuildBeltPreservationMode { get; set; }
         public string? BuildBeltRoutingMode { get; set; }
+        public int? BuildBeltNewObjectCount { get; set; }
+        public int? BuildBeltStartAltitudeLevel { get; set; }
+        public int? BuildBeltEndAltitudeLevel { get; set; }
         public int? BuildFilterEcho { get; set; }
 
         public PrepareDismantleRequest? LastDismantleRequest { get; private set; }
@@ -2400,8 +2577,10 @@ public sealed class SpherewrightToolsTests
                 prepared.BuildKind = "belt";
                 prepared.SourceObjectId = request.SourceObjectId;
                 prepared.DestinationObjectId = request.DestinationObjectId;
-                prepared.PlannedPath.AddRange(new[] { new Vector3Snapshot { Y = 200 }, new Vector3Snapshot { X = 1, Y = 200 } });
-                prepared.ItemBudget.Add(new ActionItemBudget { ItemId = request.BuildingItemId, Count = 2, Direction = "construction-consumption" });
+                var newObjectCount = BuildBeltNewObjectCount ?? 2;
+                for (var i = 0; i < newObjectCount; i++)
+                    prepared.PlannedPath.Add(new Vector3Snapshot { X = i, Y = 200 });
+                prepared.ItemBudget.Add(new ActionItemBudget { ItemId = request.BuildingItemId, Count = newObjectCount, Direction = "construction-consumption" });
                 if (!OmitBuildBeltEcho)
                     prepared.PlannedBeltPath = new BeltPathPlanSnapshot { NativeValidationMode = BuildBeltMode,
                         SourceBindingMode = BuildBeltSourceCover ? "non_removing_belt_cover" : request.SourceObjectId.HasValue ? "native_device_port" : "none",
@@ -2410,7 +2589,8 @@ public sealed class SpherewrightToolsTests
                         DestinationBindingMode = BuildBeltDestinationCover ? "non_removing_belt_cover" : request.DestinationObjectId.HasValue ? "native_device_port" : "none",
                         ReusedDestinationObjectId = BuildBeltDestinationCover ? request.DestinationObjectId : null,
                         DestinationPreservationMode = BuildBeltDestinationPreservationMode,
-                        NewObjectCount = 2, RoutingMode = BuildBeltRoutingMode };
+                        NewObjectCount = newObjectCount, RoutingMode = BuildBeltRoutingMode,
+                        StartAltitudeLevel = BuildBeltStartAltitudeLevel, EndAltitudeLevel = BuildBeltEndAltitudeLevel };
             }
             return Task.FromResult(BridgeCallResult<PreparedNormalAction>.Succeeded(prepared));
         }

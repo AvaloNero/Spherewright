@@ -514,8 +514,12 @@ public static partial class SpherewrightTools
         float pathLength = 6f,
         int stateHashVersion = 1,
         int initialSorterFilterItemId = 0,
-        [Description("native_grid (default) or native_geodesic: one explicit free-ground2001/2002/2003 route, 1.5–30m after native snapping. Free routes require start/end coordinates and no entity/resource binding. The sole bound geodesic subset is2001 with both explicit source/destination IDs and endpoint hashes, no coordinate/resource arguments, and both complete old paths proven empty, independent and unfed. It retains two non-removing covers and at least two NEW belts; no occupied-input merging or raised path. Require plannedBeltPath.routingMode and both cover/preservation echoes to match before commit. Geodesic belts may rotate their four sorter directions: check source, bridge and consumer facing AND native span, not endpoint coordinates alone. For grid-aligned attachments prefer native_grid with straight end segments; fresh-read actual ports and prepare the critical sorter before constructing the remaining route. Never relax native checks or replay an unchanged rejected pair.")]
+        [Description("native_grid (default), native_geodesic, or native_elevated_grid. Elevated grid is a separate2001 free-to-free subset: explicit start/end coordinates and beltStartAltitudeLevel/beltEndAltitudeLevel0..3, at least one raised; one native span1.5–30m, flat ends, slope<=0.5,4..64 NEW points, no cover/entity/resource binding or automatic bridge. Require exact routingMode/startAltitudeLevel/endAltitudeLevel/full_path_stage1/NEW-budget echoes. Native_geodesic supports one explicit free-ground2001/2002/2003 route1.5–30m after native snapping. Its sole bound subset is2001 with both source/destination IDs and endpoint hashes, no coordinate/resource arguments, and both complete old paths proven empty, independent and unfed. It retains two non-removing covers and at least two NEW belts; no occupied-input merging or raised geodesic. Require both cover/preservation echoes. Geodesic belts may rotate their four sorter directions: check source, bridge and consumer facing AND native span, not endpoint coordinates alone. For grid-aligned attachments prefer native_grid with straight end segments; fresh-read actual ports and prepare the critical sorter before constructing the remaining route. Never relax native checks or replay an unchanged rejected pair.")]
         string beltPathMode = BeltPathModes.NativeGrid,
+        [Description("Only with native_elevated_grid: explicit native start layer 0..3. 2001 free-to-free endpoints only; at least one endpoint must be above layer0. A layer is 1.3333333m; native snapping and full placement checks decide feasibility. Require the Plugin's matching startAltitudeLevel echo before commit.")]
+        int? beltStartAltitudeLevel = null,
+        [Description("Only with native_elevated_grid: explicit native end layer 0..3. One native span no longer than30m, gentle slope and flat ends; no automatic bridge, concatenation or existing-object reuse. Require matching endAltitudeLevel; complete route and later connections remain separately unproven.")]
+        int? beltEndAltitudeLevel = null,
         CancellationToken cancellationToken = default)
     {
         var request = new PrepareBuildRequest
@@ -526,15 +530,17 @@ public static partial class SpherewrightTools
                 PreferredDistance = preferredDistance,
                 PreferredPosition = CreateOptionalVector(preferredPositionX, preferredPositionY, preferredPositionZ),
                 PreferredYaw = preferredYaw,
-                ResourceNodeId = resourceNodeId > 0 || (beltPathMode == BeltPathModes.NativeGeodesic && resourceNodeId != 0) ? resourceNodeId : (int?)null,
+                ResourceNodeId = resourceNodeId > 0 || (beltPathMode != BeltPathModes.NativeGrid && resourceNodeId != 0) ? resourceNodeId : (int?)null,
                 ExpectedResourceStateHash = string.IsNullOrWhiteSpace(expectedResourceStateHash) ? null : expectedResourceStateHash,
-                SourceObjectId = sourceObjectId > 0 || (beltPathMode == BeltPathModes.NativeGeodesic && sourceObjectId != 0) ? sourceObjectId : (int?)null,
+                SourceObjectId = sourceObjectId > 0 || (beltPathMode != BeltPathModes.NativeGrid && sourceObjectId != 0) ? sourceObjectId : (int?)null,
                 ExpectedSourceStateHash = string.IsNullOrWhiteSpace(expectedSourceStateHash) ? null : expectedSourceStateHash,
-                DestinationObjectId = destinationObjectId > 0 || (beltPathMode == BeltPathModes.NativeGeodesic && destinationObjectId != 0) ? destinationObjectId : (int?)null,
+                DestinationObjectId = destinationObjectId > 0 || (beltPathMode != BeltPathModes.NativeGrid && destinationObjectId != 0) ? destinationObjectId : (int?)null,
                 ExpectedDestinationStateHash = string.IsNullOrWhiteSpace(expectedDestinationStateHash) ? null : expectedDestinationStateHash,
                 PathEnd = CreateOptionalVector(pathEndX, pathEndY, pathEndZ),
                 PathLength = pathLength,
                 BeltPathMode = beltPathMode,
+                BeltStartAltitudeLevel = beltStartAltitudeLevel,
+                BeltEndAltitudeLevel = beltEndAltitudeLevel,
                 ExpectedPlayerStateHash = expectedPlayerStateHash,
                 StateHashVersion = stateHashVersion,
             };
@@ -543,7 +549,9 @@ public static partial class SpherewrightTools
         if (routingError is not null)
             return ToToolResult(BridgeCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
                 BridgeErrorCodes.InvalidRequest, routingError, false,
-                Spherewright.Bridge.Core.Factory.BeltPathRoutingPolicy.Recovery)), "No construction plan prepared.");
+                beltPathMode == BeltPathModes.NativeElevatedGrid
+                    ? Spherewright.Bridge.Core.Factory.BeltElevationPolicy.Recovery
+                    : Spherewright.Bridge.Core.Factory.BeltPathRoutingPolicy.Recovery)), "No construction plan prepared.");
         var result = await bridgeClient.PrepareBuildAsync(sessionId, request, cancellationToken).ConfigureAwait(false);
         // Mixed-cohort installs must not silently turn a requested filter into a
         // legacy unfiltered plan. Do not expose that plan's commit capability.
@@ -566,6 +574,13 @@ public static partial class SpherewrightTools
                 BridgeErrorCodes.BridgeNotReady,
                 "The installed Plugin did not confirm the requested belt routing mode; no construction token is exposed.",
                 false, "Install matching Plugin/MCP files after a normal save and shutdown, then fresh-prepare. Never commit a silently substituted grid route."));
+        if (beltPathMode == BeltPathModes.NativeElevatedGrid && result.Success
+            && !Spherewright.Bridge.Core.Factory.BeltElevationPolicy.ConfirmsPlanEcho(
+                beltStartAltitudeLevel, beltEndAltitudeLevel, result.Value?.PlannedBeltPath))
+            result = BridgeCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
+                BridgeErrorCodes.BridgeNotReady,
+                "The installed Plugin did not confirm the exact requested belt altitude levels; no construction token is exposed.",
+                false, "Install matching Plugin/MCP files after a normal save and shutdown, then fresh-prepare. Never commit a silently substituted ground or different-height route."));
         return ToToolResult(result, "One owned-item construction plan prepared through DSP's build validator; no prebuild exists yet.");
     }
 

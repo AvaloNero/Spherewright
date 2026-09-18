@@ -12,6 +12,8 @@ public static class BeltPathRoutingPolicy
 
     public static string? ValidateRequest(PrepareBuildRequest request, bool nativeBelt)
     {
+        var elevationError = BeltElevationPolicy.ValidateRequest(request, nativeBelt);
+        if (elevationError is not null || request.BeltPathMode == BeltPathModes.NativeElevatedGrid) return elevationError;
         if (request.BeltPathMode == BeltPathModes.NativeGrid) return null;
         if (request.BeltPathMode != BeltPathModes.NativeGeodesic) return "belt_routing_mode_unknown";
         if (!nativeBelt) return "belt_geodesic_requires_explicit_free_endpoints";
@@ -46,6 +48,8 @@ public static class BeltPathRoutingPolicy
         if (echo is null) return false;
         if (requestedMode == BeltPathModes.NativeGrid)
             return echo.RoutingMode is null || echo.RoutingMode == BeltPathModes.NativeGrid;
+        if (requestedMode == BeltPathModes.NativeElevatedGrid)
+            return BeltElevationPolicy.ConfirmsPlanEcho(echo.StartAltitudeLevel, echo.EndAltitudeLevel, echo);
         if (requestedMode != BeltPathModes.NativeGeodesic || echo.RoutingMode != requestedMode
             || echo.NativeValidationMode != "full_path_stage1") return false;
         return IsFreeGeodesicEcho(echo) || IsDualCoverGeodesicEcho(echo);
@@ -54,7 +58,8 @@ public static class BeltPathRoutingPolicy
     public static string BindGeometry(string mode, string geometryHash)
     {
         if (mode == BeltPathModes.NativeGrid) return geometryHash; // Preserve the old default fingerprint.
-        if (mode != BeltPathModes.NativeGeodesic) throw new ArgumentException("Unknown belt routing mode.", nameof(mode));
+        if (mode != BeltPathModes.NativeGeodesic && mode != BeltPathModes.NativeElevatedGrid)
+            throw new ArgumentException("Unknown belt routing mode.", nameof(mode));
         return CanonicalStateHash.Combine("belt-routing-v1", mode, geometryHash);
     }
 

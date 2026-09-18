@@ -8,7 +8,7 @@ internal sealed partial class NormalGameActionCoordinator
 {
     // Read-only reproduction of current CargoTraffic.AlterBeltRenderer's final
     // entity/collider rotation calculation. Never writes pose, renderer or path.
-    private static bool ProvesNativeBeltRotation(PlanetFactory factory, int entityId)
+    private static bool ProvesNativeBeltRotation(PlanetFactory factory, int entityId, bool requireColliderExtent = false)
     {
         var entity = factory.entityPool[entityId]; // Caller already checked entity identity/pools.
         var traffic = factory.cargoTraffic;
@@ -40,6 +40,7 @@ internal sealed partial class NormalGameActionCoordinator
         QuaternionSnapshot Copy(Quaternion q) => new QuaternionSnapshot { X=q.x, Y=q.y, Z=q.z, W=q.w };
         return BeltSourceRotationPolicy.MatchesNativeRotation(Copy(entity.rot), Copy(derived))
             && BeltSourceRotationPolicy.MatchesNativeRotation(Copy(collider.q), Copy(derived))
+            && (!requireColliderExtent || collider.ext.z == (length > .6f ? length * .5f : .3f))
             && collider.pos.x == centre.x && collider.pos.y == centre.y && collider.pos.z == centre.z;
     }
 }

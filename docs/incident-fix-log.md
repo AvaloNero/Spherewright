@@ -12,6 +12,13 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-167 — 显式坡段缺口及预建筑与完工姿态的不同生命周期
+
+- 状态：`fixed_offline_live_pending`，仅新增2001显式free→free单跨度；不是所有地面候选都不可行，也未证明处理器已接通。
+- 根因：既有free路径按onTerrain吸附，不能表达层高；普通新带完工检查主要核位置邻域与出边，不能据此宣称完整坡路高度、native pitch/collider和自由端成立。三次SnapLine拼接也未被原生单次调用等价性证明。
+- 修复：新模式绑定明确层级与完整原生单次几何，保留完整原生预检/成本/无人机。预建筑按当前DLL球面旋转核验；完工复用实际CargoPath的3D旋转、collision geometry和空载有向成员证明，并另核所有槽无外部连接。MCP要求精确层级echo，缺失/降级不暴露token；旧模式不变。
+- 验证与边界：详见[当档源码/测试记录](./gameplay-timeline.md#2026-09-18--显式单跨度高架带源码闭环实机待验)与[API研究](./research/game-api-foundry.md#implemented-single-span-proof-2026-09-18-offline-only)。尚未冷部署或实机施工，不核销高架整桥、处理器供料、产量或保存恢复；未知读回仍隔离且不得重放。
+
 ## IFX-166 — 阶段审计误把动态发电容量作为静态等值
 
 - 状态：`mitigated`，限本次离线审计判据修正及同批原证据复核；未改Plugin、原生规则或公共协议。

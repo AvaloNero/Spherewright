@@ -3,6 +3,12 @@
 更新时间：2026-09-19（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-19 — 西侧 A 段前三次取料完成，第四次提交按原生 `STALE_STATE` 停止
+
+Luna PTY70306 的固定 A 段仅完成 723→玩家的铁块×18、磁铁×6、铜块×3 三次唯一 transfer：**R76→R79 / save72137944 / J91 / accepted1→4**，玩家净增正是上述三项。原始前缀为 `action-6fa66816c84a4a6a8af289375be85019-`；三个成功 terminal 的 SHA-256 分别为 **2DA7609C…BF88EF1**、**B94AEE6A…C594B5**、**7179C903…D5B203**。随后 26→玩家的电路板×4 native prepare 仍为可提交正例（SHA-256 **3CC156BF…3E3CAD**），但 commit 以可重试 `STALE_STATE` 拒绝，未生成 action 或 accepted（SHA-256 **26132F8F…D587DC**）；stopped 保全 **R79 / accepted4 / completedSteps3 / noReplay**（SHA-256 **734119FD…2CC919**）。
+
+这只表明 prepare 后玩家库存或来源仓内容已变，不能唯一归因于26的任何自然物流；前三次不重放，后续 PCB×4、马达×2、三次手搓与保存均未执行。Sol 的独立原回执复核为 SHA-256 **4E98683B44A0CC519F68AF44A533D52B45D600479DD3E8DCAEB50430FBB5F0D3**。同一私有入口另以既有真实 save DTO 修正了“先绑定实际 save tick、再跑边界断言”的离线顺序，尚未在本 A 段执行任何 save；不把该修正写成游戏保存、施工、全厂审计、持续吞吐或恢复证明。
+
 ### 2026-09-19 — 2022 十写封窗后的唯一 normal save 已完成，摘要误判已核销
 
 在 2022 升级十写封窗之后，独立授权的一次 normal save 已唯一成功：**R76 / save72137944 / J91 / accepted0→1**。根结果核销 SHA-256 **14CC20D52BC63DC42E0BA588FCA56A41451DF502EAC72D335B6FD7C33DE588D8** 与 Sol 最终独立复核 SHA-256 **68A52731C92903307657D0A428FFB7CEDBFA498829107666C1570DDE1374FE33** 均确认唯一 commit/terminal 成功；未重跑 save。

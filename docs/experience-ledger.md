@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-19 / EXP-299 有界 transfer 后缀与实际 save-tick 绑定复验（`observed`，限西侧 A 段当前前三次取料）：即使 native prepare 当时可提交，后续唯一 commit 仍可因玩家或来源仓内容变化返回 `STALE_STATE`；不得重放已成功前缀、复用旧 token，或把错误唯一归因于某一仓的自然物流。此次723三次 transfer 已到 **R79 / accepted4**，第四个26→电路板×4无 action/无 accepted；本次首个 `STALE_STATE` 已保全并停止当前 run。单独后缀只准重新 fresh/prepare 一次，若再次同类 `STALE_STATE` 立即停止。Sol 原回执复核 SHA-256 `4E9868…B5F0D3`。同一私有 leaf 还用既有真实 normal-save terminal/session DTO 验证：实际新 save tick 必须先回写再交共享 boundary guard 读取；此为离线调用方顺序修正，不是本阶段执行过 save 或任何 native 失败。DTO、库存/来源状态、动作语义或调用入口变化时重验。
+
 2026-09-19 / EXP-299、IFX-121 normal save 后置断言边界复验（`validated`，限本次2022十写封窗后的唯一保存）：commit/同 action terminal 已成功时，初始执行摘要若未先核原回执，不能因私有后置断言异常反推游戏未写；结构化 stopped 的`acceptedKnown1/commitAttempts1/calls8`应保留为事实。public Player DTO 不提供顶层`inHandItemInc`，但现有`inHandItem`仍须正常比较；调用方只能断言实际公开字段。本次8项纯检查包含写前后真实 DTO 回归和变异拒绝。Journal 比较仅排除采集时刻`capturedAtGameTick`，仍须严格保全 J91、完整91条、稳定身份和零 pending/error。根核销、Sol终审与连续性证明分别为 SHA-256 `14CC20…E588D8`、`68A527…74FE33`、`DC621B…F191B1A`；未重跑保存。此经验不证明恢复、全厂状态、施工或持续供给；DTO、调用方或保存语义变化时重验。
 
 2026-09-19 / EXP-188、EXP-224、EXP-299 原生分拣器升级的静态/动态取证边界复验（`validated`，限2022的2011→2012单次升级）：同步 native terminal 的readback必须保全两端、recipe/filter及其明确报告的即时字段；本次`buffersBefore`/`buffersAfter`均为空且相等，只是空终态保全，不能写成带货升级实测。随后全厂比对只严格保全静态配置、姿态、拓扑、功率成员及允许的等级/计时/功率差，不能要求活物流的progress或buffers跨tick相等。本次5114实体/9968边/0预建筑和J91均通过，玩家相对R73的这一次升级净额仅2011＋1、2012−1；执行、收集、Terra比对与Sol最终独立验收分别为 SHA-256 `1B7E73…547601F`、`F99C41…3C3997`、`E86231…2F91E7D`、`D2EE56…5DDED8`。入口审阅中对延迟动态字段、定向双端/功率及显式审批参数作的收窄是离线调用方护栏，不是原生失败或新公共能力；不证明持续送料、供给、燃料、产率或恢复。DTO、动作读回或场景拓扑变化时重验。

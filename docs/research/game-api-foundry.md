@@ -1,5 +1,21 @@
 # v0.4 Foundry DSP API evidence
 
+## Machine-site rejection boundaries (2026-09-19, local read-only evidence)
+
+Three original `get_foundry_plan` replies were rechecked offline against their SHA-256, revision59, exact check stage and missing-material budget. No new game request or construction was made during that replay. They concern one2302/r59 high-purity-silicon furnace; they do not prove a complete supply route or sustained production.
+
+| Local grid candidate | Captured game tick | Actual result |
+|---|---|---|
+| (-15,-103) | 71474431 | Existing-object collider guard rejected overlap4460; `nativeCheckPerformed=false`. |
+| (-10,-105) | 71474447 | Same guard rejected overlap4668; `nativeCheckPerformed=false`. |
+| (-8,-114), earlier western candidate | 71398498 | No occupied-object result; native check ran and returned `NotEnoughItem`, missing one2302. Still not a passed site. |
+
+The two tight-site failures stop similar candidate attempts; they do not justify a third blind location or removing successful production lines. The western candidate requires a fresh complete check after a furnace is normally manufactured. Material sufficiency, terrain, technology, placement, real input/output endpoints and the complete logistics/power budget remain separate obligations. A positive instantaneous power assessment is not continuous-fuel evidence.
+
+`FoundrySitePlanner.CheckPlannedClearance` compares **new planned machines with one another** using conservative bounding spheres. It is not an extra sphere-distance restriction against every existing object. For a single new machine, `GameStateReader.Foundry` reaches `InspectFoundryMachine`, which reuses the normal click-build adapter's existing-object oriented collider-volume guard before DSP `CheckBuildConditions`. A paper sphere overlap must not be relabeled as a native rejection; equally, reaching the native material gate must not be relabeled as complete placement approval. No collider, material or native-placement rule was changed.
+
+Original-response SHA-256, in table order: `5474566E4E36BC3A5E12FC86F679943A44A40FAE5CAF90581CAFAD33D567E2C6`, `C37385FDAA62CAB8B3CD405DF0AD302D8467C6E5E850C10D516227F651469267`, `F75CD5277BB3794BEE48FF91E5AB622E198B2A2F73337385F8F3EE30907B8958`. These are local live negative/material-gated observations plus offline replay, not a construction or restart pass.
+
 ## Explicit elevated single span (2026-09-18 research; not deployed)
 
 Current DSP `0.10.34.28529`, `Assembly-CSharp.dll` SHA-256 **AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85** was rechecked. `PlanetAuxData.Snap(Vector3,bool)` uses `realRadius + .2f` for terrain and, with `onTerrain:false`, native grid snapping plus `Max(radius, Floor((magnitude-radius)/1.3333333f)*1.3333333f+radius)+.2f`. `BuildTool_Path` exposes ordinary integer altitude, and its normal `UpdateRaycast` uses the latter snap for elevated placement. No live player/UI command needs to be changed to call that existing geometry function.

@@ -20,7 +20,8 @@
 - 验证：当前DSP完整Release构建0警告/0错误；Core solution locked restore、Debug/Release构建与两轮各1951测试（59 Contracts＋1747 Core＋145 MCP）通过，54调用方与9 Bridge离线检查通过。新增11个测试实例覆盖folded seed与最终门分离、非法姿态、双有序hash/offset、DTO隐私兼容及MCP/包内指南发现；它们不代替Unity投影/原生施工实机测试。独立静态审查未见阻断。最初两轮MCP文字断言失败（旧不支持表述/大小写）已修正后重跑，没有游戏调用。
 - 冷部署/恢复：228文件与64/1真实MCP校验，save68021204→resume自动save68021236/J90；独立4978实体/9686互返边、36条空带、材料和日记连续性通过，见[同档日记](./gameplay-timeline.md#2026-09-18--双带适配冷部署及同档恢复通过)。只有save和resume两accepted，没有接线施工。
 - 首次新 cohort 预检：4965→4949的16个exact-slot候选仍因TooSkew在原生放置前停止；双带fallback已接纳16个seed，却以0 projection/0 check的`no_finite_projection`结束，故不再是`unsupported_endpoint_family`，但不能称native已拒绝或所有双带不可行。4964→4743槽1的exact_slots（offset0/0、2011×1、filter1402）仅prepare为正；两次均无commit/游戏写，token丢弃，36条带保持、part0的16条带未建。汇总证明SHA-256 **40CB838809F270F903A714E7F07B1B2FF48B470A6BFB7B39642A043C747DA5BB**。
-- 下一验收：主会话结合原生曲线重设计明确局部段形，不重复未改变的4965→4949；最小正常施工后先核真实双带附件，再扩大依赖线路。双几何哈希失效、旧single/exact兼容和正常连接保存恢复仍须验证。当前宽带连接、处理器送料、持续紫糖和0.4发行门仍未通过，关联[API证据](./research/game-api-foundry.md#bounded-explicit-two-belt-inserter-attachment-2026-09-18)、EXP-299/303及本档日记。
+- 后续最小施工：4965正常source-cover四NEW后保存68219062/R4/J90，root4982实体/9694互返边/40空带审计通过；真实第二NEW4981→4949首次prepare仍拒绝，exact16 TooSkew/nativeChecks0，fallback为no_admissible_seed/seeds16/admitted0/projections0/checks0。该结果不同于旧直段no_finite_projection；纸面插值8.18°没有证明seed准入，尚不能归因为适配器偏离原生规则。详见[四格阶段](./gameplay-timeline.md#2026-09-18--宽带四格南转通过完整预检先验证转角再扩展)。
+- 下一验收：主会话先核对真实姿态与当前DLL的seed分支，不重复未改变的4981→4949或4965→4949、不先铺part0。只有真实附件许可后再扩展依赖线路。双几何哈希失效、旧single/exact兼容和正常连接保存恢复仍须验证。当前宽带连接、处理器送料、持续紫糖和0.4发行门仍未通过，关联[API证据](./research/game-api-foundry.md#bounded-explicit-two-belt-inserter-attachment-2026-09-18)、EXP-299/303及本档日记。
 
 ## IFX-161 — 长施工期间共享调用方固定高频轮询
 

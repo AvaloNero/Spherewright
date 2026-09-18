@@ -3,6 +3,16 @@
 更新时间：2026-09-18（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-18 — 宽带四格南转通过完整预检，先验证转角再扩展
+
+随后Luna只执行本片四NEW及保存：**68217473→68219075，80次请求／27.7992秒，accepted0→2**。原build action在68217986→68218786成功，2001为62→58，四个有序NEW为**4982→4981→4980→4979**；正常保存**68219062 / R4 / durable J90**。执行证明SHA-256 **CEF048FA66AAEF2E51EFE3647B4991FB09C618228FDAE7C34E2D9C43D0066F1D**。root独立复读原两action、全4982实体/9694互返边/0预建筑、40条空带、全部玩家count/inc及两个满供电网；仅四带扣料和原生证明的source/直接前驱转向，其他旧配置保持。末读68231662，审计SHA-256 **2910075F3709BDF578147E881ACA5EFD5A50FF2932019ECD9B00F6DDF0335B42**；accepted2未自动归零。
+
+最难接点先验的结果仍为负：真实第二NEW **4981→4949** 在fresh68233830的首次预检，exact16组合TooSkew、nativeChecks0；双带fallback为**no_admissible_seed / seeds16 / admitted0 / projections0 / candidateChecks0**，不同于旧直段的no_finite_projection。仅零写prepare，端点保持、token不保留，证明SHA-256 **776E697BEED686AD3FDBECD17A0B9F65283BE9F87B84FCB3F174A289848849EE**。四带施工/保存通过不等于分拣器可接；纸面8.18°也没有证明原生seed准入。保留全部成功40带，停止重试该未改变端点对，不铺part0的16带，交主会话核对真实姿态与原生准入分支。未接料，未证明持续紫糖或本片重启恢复。
+
+`c29c195`已推送，CI35288939474成功。root依据当前DLL的`CargoTraffic.GetBezierArc`先核固定局部转向：原直段对照无投影、北转近似42.02°不合格，南转第二NEW角段近似8.18°；该纸面计算使用双精度及归一化方向插值，**不是Unity四元数插值、真实分拣器许可或自动寻路**。四个NEW点对4978对象的Core占位检查通过后，仅对4965的明确南转source-cover做一次fresh native prepare：**68141404–68141480 / R1 / primary68021236**，完整`full_path_stage1 / native_grid / non_removing_belt_cover / whole_path_native_rotation_v1`通过，仅预算2001×4，token丢弃、0commit。预检证明SHA-256 **EEE6BB68A50469E4537FF235CF00411267F4CC0DA4B35BEC9169C36AA5120CB5**。
+
+已完成保存/恢复的两accepted在fresh **68151100**、原库存/日记/电网和独立恢复审计及绿CI证据下显式封存为0；封存SHA-256 **A86F30FF263BAE28C26F0987635C57BBECBC4A300E5B39E5B7F74F396E9A5A57**。只批准复用现有入口完成四NEW及正常保存，再用真实第二NEW角段检查到4949的附件；不重放原直段、不施工part0的16带。20条剩余带与9分拣器整批预算覆盖当前库存，net3条件容量1560000对满基础及九附件1549300余10700；total1570000还包含net4的10000，不能把总量当主网容量或持续燃料证明。
+
 ### 2026-09-18 — 新 cohort 首次桥接预检：当前直段负例、槽位正例均未施工
 
 `c5f3542`已安装，`59025f7`已推送且CI35287176628成功。新 cohort 仅作两次 `prepare`，**68061766→68061854 / R1 / primary68021236 / durable J90 / accepted2保持**；无 commit、无游戏写，不保留或复用预检 token。已保存的 **4965→4949** 当前直段在16个 exact-slot 候选均因 `TooSkew`拒绝（`nativeChecks=0`）；新双带 fallback 已实际进入，16个 admitted seeds 但0 projection、0 check，停在 `no_finite_projection`，不再是 `unsupported_endpoint_family`。这只否决该端点对的当前直段，尚未进入原生放置检查，不是原生拒绝或“所有双带不可行”。

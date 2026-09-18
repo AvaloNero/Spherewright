@@ -14,8 +14,8 @@
 
 ## IFX-162 — 双传送带原生曲线接点尚未适配
 
-- 状态：`fixed_offline_live_pending`，c5f3542同批冷部署及protected resume已通过；4981→4947已取得首次真实双带fallback原生预检正例，但显式双带施工、送料和保存恢复仍待，不把安装或预检闭环当作功能实机通过。
-- 根因/边界：已保存的4965→4949在16个exact-slot组合中全部TooSkew，尚未进入native placement；现有fallback只实现单带＋设备。当前DLL另有双带CargoPath投影分支。三轮有限替代布局分别因角度、已有占位或有限布局末端间距失败，不能解释为游戏完全不支持belt↔belt，也不证明所有旧方式布局不可能。
+- 状态：`fixed`（限4981→4947这一真实双带桥接）：c5f3542安装态已通过一次正常2011施工、材料/双端/供电读回与普通保存；持续送料、生产与重启恢复仍待，不能把此范围内修复写成整链完成。
+- 根因/边界：修复前的4965→4949在16个exact-slot组合中全部TooSkew，尚未进入native placement；旧fallback只实现单带＋设备。当前DLL另有双带CargoPath投影分支。三轮有限替代布局分别因角度、已有占位或有限布局末端间距失败，不能解释为游戏完全不支持belt↔belt，也不证明所有旧方式布局不可能。
 - 修复：保留exact优先和原单带分支，只对2011/2012的两个明确belt提供`native_two_belt_segments`。每端最多64 intervals、总64候选检查，按原生先destination后source扫描并保留end-only候选；独立双geometry hash与signed offsets进入克隆、等价、指纹和prepare/execute/finish重验，input/output依次tilt后仍走原角度与原生放置检查。正常预建筑/无人机/扣料/过滤/双端连接和pose/offset读回不变，不扫描邻带或内置寻路。
 - 验证：当前DSP完整Release构建0警告/0错误；Core solution locked restore、Debug/Release构建与两轮各1951测试（59 Contracts＋1747 Core＋145 MCP）通过，54调用方与9 Bridge离线检查通过。新增11个测试实例覆盖folded seed与最终门分离、非法姿态、双有序hash/offset、DTO隐私兼容及MCP/包内指南发现；它们不代替Unity投影/原生施工实机测试。独立静态审查未见阻断。最初两轮MCP文字断言失败（旧不支持表述/大小写）已修正后重跑，没有游戏调用。
 - 冷部署/恢复：228文件与64/1真实MCP校验，save68021204→resume自动save68021236/J90；独立4978实体/9686互返边、36条空带、材料和日记连续性通过，见[同档日记](./gameplay-timeline.md#2026-09-18--双带适配冷部署及同档恢复通过)。只有save和resume两accepted，没有接线施工。
@@ -23,7 +23,8 @@
 - 后续最小施工：4965正常source-cover四NEW后保存68219062/R4/J90，root4982实体/9694互返边/40空带审计通过；真实第二NEW4981→4949首次prepare仍拒绝，exact16 TooSkew/nativeChecks0，fallback为no_admissible_seed/seeds16/admitted0/projections0/checks0。该结果不同于旧直段no_finite_projection；纸面插值8.18°没有证明seed准入，尚不能归因为适配器偏离原生规则。详见[四格阶段](./gameplay-timeline.md#2026-09-18--宽带四格南转通过完整预检先验证转角再扩展)。
 - seed负例根因已核：真实折叠朝向42.23°/对向26.76°不满足<40°；当前DLL原生同样先执行此gate再进入双曲线分支。私有纸面计算遗漏此顺序，约8.18°投影结果在该seed下不可达，不是产品准入需要放宽。经验已进入MCP可读/包内playbook；42.23°负例及资源发现回归随定向66 Core＋1 MCP Release通过。源码指南未冷部署，不为指南刷新重启游戏。
 - 首次真实双带fallback正例：fresh 4981→4947在68290770以`native_two_belt_segments`返回prepared/允许commit，inputOffset3、outputOffset0、filter1402、2011×1；token丢弃、0commit/0游戏写，R4/save68219062/J90/accepted2与40条成功带保持。证明SHA-256 **4238F750C09504E9E453B465F0F37C545AE40F6087409676AA2C442DCEA5423D**。它不证明分拣器施工、附件送料或保存恢复；原4981→4949与4965→4949未重试，part0的16条带未建。
-- 下一验收：实际候选/吸附代理的3165供电覆盖及网3全部九附件满负载预算已独立通过，见本档首次正例；对该精确目标审核有限入口后，仅正常build一只sorter、双端/offset/真实供电读回及保存。双几何哈希失效、旧single/exact兼容和保存恢复仍须验证；当前宽带连接、处理器送料、持续紫糖和0.4发行门仍未通过，关联[API证据](./research/game-api-foundry.md#bounded-explicit-two-belt-inserter-attachment-2026-09-18)、EXP-299/303及本档日记。
+- 实机闭合：4981→4947仅建一只2011，68358324→68358618完成并保存68358779/R7/J90/accepted2→4；root独立核4983实体/9698互返边/0预建筑、40带和旧配置保持、实际两端/filter1402/材料/供电成立。安装态completion核offset3/0与pose；公开inspect DTO不暴露offset。执行/审计证明SHA-256分别为 **F4CACD56C1E963F90F6FC60971B67074FDFE8FD92025740D2FF2F28018FB1B3D**、**96D6B773E0B77CA9B04B0E633D8342793042A1B11A6A0BA905E47C96F4B8EA76**。本阶段未新增公共API、运行时变更或部署。
+- 下一验收：有界上游16带及其余附件都须fresh native预检；不重放旧失败端点或已完成前缀。持续送料、生产、燃料连续性和重启恢复仍须单独证明；当前处理器送料、持续紫糖和其余0.4发行门未通过，关联[API证据](./research/game-api-foundry.md#bounded-explicit-two-belt-inserter-attachment-2026-09-18)、EXP-299/303及本档日记。
 
 ## IFX-161 — 长施工期间共享调用方固定高频轮询
 

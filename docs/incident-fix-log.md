@@ -12,6 +12,13 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-165 — 合接后连接检查误用施工前快照
+
+- 状态：`mitigated`，限本机C1-B已成功施工的唯一核销及保存；未改Plugin或公共协议，不把调用方异常记成原生施工失败。
+- 根因：postcheck用`tail.connections`而非fresh `afterTail.connections`检查新边，旧快照自然不含新5008。原build已terminal成功，调用方因此提前退出、尚未保存；不能按调用进程exit1推定没有accepted。
+- 处置与验证：主会话从原commit回执锁定action及正确`d73d…`证据prefix，再fresh证明5003→5008→5007→4999六条互返边、仅扣两带及原配置保持。Luna仅fresh保存，primary69297240；独立全场核5008实体/9750互返边、69详情及精确42成员路径。完整证明SHA-256 **72F8ADDA5E712514E8E1FFD7C3E9C28E0B99C78ED6B8A17B9DA674E76F0DE0B7**，细节见[当档日记](./gameplay-timeline.md#2026-09-18--宽带入口双带合接保存与独立核验通过)。原调用方exit1保留，零build重放。
+- 后续边界：新工序必须明确区分before/after，按fresh实际实体而非猜测ID验证；普通保存使用fresh revision。调用方封存参数错误另按本地错误记录，不吞掉原失败或重复游戏动作。此处不核销持续供料、重启恢复，也不放宽结果未知时的停写规则。
+
 ## IFX-164 — 私有插入器纸面窗口漏掉同路径末区间
 
 - 状态：`fixed_offline`，仅限调用方已证明的普通同路径后继；没有新的native prepare/commit、施工或公共API、运行时、部署变更。

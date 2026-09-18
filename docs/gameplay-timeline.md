@@ -3,6 +3,14 @@
 更新时间：2026-09-19（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-19 — 西侧 A 段十写续接、保存与全静态核对完成
+
+此前已保存的单写、三次已成功取料与不重放的六动作后缀合计十个唯一 accepted：**R88 / save72418258 / J91 / accepted10 冻结**。后缀原始前缀 `action-79e62c76103b408b9c0dec1c58c4f51e-` 的电路板×4、马达×2、`r5×2`、`r6×3`、`r85×4` 与 normal save 全部终态成功；完整执行证明 SHA-256 **73DDE2D6A5586F61169ED14D1DF3F020C5773CB12AE188D85D0BA3029C438B07**。相对 R75 的完整 A 窗口，玩家仅净铁块＋12、齿轮＋2、磁线圈＋6、电动机＋2、普通分拣器＋4；磁铁、铜块和电路板净额为零。
+
+Terra 的一次68只读、0写入收集耗时 **18.349秒**（manifest SHA-256 **08CC5FD3ECC2ABAFD52AE389B54950A6B07D41B655AAE249B4BE6D6D01607CE5**）；确定性比对确认 **5114实体 / 9968互返有向边 / 0预建筑**、全厂静态配置与拓扑无差异、十个 fresh terminal 与原记录一致、J91完整且零 pending/error（SHA-256 **55F3EFB1585B696EB3B74F52E58B6ECF9F23AC1D328412D02D307F150D3113CF**）。三座动态来源仓只按各 transfer 的同步 terminal 守恒，不以跨 tick 存量作恒等要求；功率也只核静态网络身份、成员计数与容量。Sol 最终验收补件为 SHA-256 **BCF12A5DCB7F2EF6A601405EEB84FEFA468569706A03895A63DE3B7E0A864451**，末审 tick **72441253**。
+
+执行原记录分为两段约 **9.062秒**与**21.097秒**，中间的人工续接/审核不计入；上述收集耗时另列，入口准备未有统一封存起止。完整保护 proof 已在动作成功后先落盘；其后私有 stdout 仅因整数键 Hashtable JSON 序列化异常而退出，未重放、回滚或补交 save。leaf 已改为仅输出标量、proof叶名及字符串键净额，并以真实 complete 形状复验；这不是 native 失败。此条不证明 B 段、任何新施工、持续供给/吞吐、燃料连续性或恢复。
+
 ### 2026-09-19 — 西侧 A 段前三次取料完成，第四次提交按原生 `STALE_STATE` 停止
 
 Luna PTY70306 的固定 A 段仅完成 723→玩家的铁块×18、磁铁×6、铜块×3 三次唯一 transfer：**R76→R79 / save72137944 / J91 / accepted1→4**，玩家净增正是上述三项。原始前缀为 `action-6fa66816c84a4a6a8af289375be85019-`；三个成功 terminal 的 SHA-256 分别为 **2DA7609C…BF88EF1**、**B94AEE6A…C594B5**、**7179C903…D5B203**。随后 26→玩家的电路板×4 native prepare 仍为可提交正例（SHA-256 **3CC156BF…3E3CAD**），但 commit 以可重试 `STALE_STATE` 拒绝，未生成 action 或 accepted（SHA-256 **26132F8F…D587DC**）；stopped 保全 **R79 / accepted4 / completedSteps3 / noReplay**（SHA-256 **734119FD…2CC919**）。

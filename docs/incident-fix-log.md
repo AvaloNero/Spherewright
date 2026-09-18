@@ -851,6 +851,7 @@
 
 ## IFX-079 — 私有只读预检的同名参数被辅助脚本覆盖
 
+- 2026-09-18最小辅助修复：复现46被覆盖为2后，把共享私有审计helper的内部参数改为任务专属PlasticAuditExpectedRevision，保留ExpectedRevision命令参数别名及原审计比较语义。默认导入、旧别名49、新参数51与四个审计函数可见性共7项零游戏检查通过，调用者ExpectedRevision始终保持46。此修复只影响本地helper，不改变Plugin/MCP准入；其他导入变量仍需独立命名、导入后绑定，不新增执行框架。
 - 2026-09-18复发/复验：紫糖出口十写采集再次被旧helper的ExpectedRevision默认2覆盖46，只有1条健康session读回，没有游戏写入。独立参数改在导入后绑定，随后190条只读完整完成。外层转发遗失进程句柄造成回显不明，root先核已落盘manifest与190条原回执，没有重采工厂；完整十写独立审计通过，见[本档证据](./gameplay-timeline.md#2026-09-18--紫糖出口接通并保存十写独立审计通过)。原修复仅针对已改调用者，不能理解为其他临时入口天然免疫。
 - 首见：2026-09-09原油干线预检；状态`fixed_local_helper`，仅私有PowerShell调用端，无Plugin或MCP面变化。
 - 根因：dot-source会在调用方作用域绑定被加载脚本的参数；辅助文件将同名ExpectedRevision重置为默认2，覆盖调用者已指定的49，导致读取session后、prepare前误停。

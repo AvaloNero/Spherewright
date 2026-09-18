@@ -3,6 +3,16 @@
 更新时间：2026-09-18（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-18 — 宽带 part0 的16条带正常施工、保存与独立审计通过
+
+Luna 以一次正常16 NEW施工和一次正常保存完成头**4999**至尾**4984**的精确16节点链：**save68485352 / R10 / durable J90 / accepted4→6保留**。执行195次请求、118.9235秒；带为58→42，2011分拣器仍为8。执行证明SHA-256 **7CE96328E2E1E425CCBC21B0D92978A9F4990297684537B955D9C839EF580DE0**。
+
+root以115次游戏只读、36.8217秒（含封存基线与读回比对）独立审计：完整场景**4999实体 / 9728互返有向边 / 0预建筑**；新链4999→…→4984及两自由端精确，56条开放空带、旧4983配置/边、filter1402与net3 ratio1保持，物料仅扣16条带。两网成员关系不变，条件容量界1549300满足；玩家Walk静止且无人机idle，全部J90历史durable。审计末读**68501252**，证明SHA-256 **80078C93FE08A52DC253A6EC6FAAF28D22CCA8469E2635271E515CB9F8521E73**。当前311项纯检查与零游戏actual-File smoke通过；本阶段没有新公共API、运行时变更或部署。执行/审计耗时不含规划、文档编辑与Git/CI，不能外推整体提速。
+
+施工前发现belt-only cargo守卫把非带实体误纳入，已在0游戏调用时改为精确成员集，见IFX-163；这不是原生失败。后置fresh预检中，尾端**4984→4978 / filter1402**在exact16后被`BUILD_CONNECTION_INVALID`拒绝：nativeChecks0；fallback为seeds16/admitted16/projections16/facingPairs0、bestFacing30.986°（最终要求<11°），0 commit并停止该精确pair不重试；原回执SHA-256 **FBE87E003120B88DFEAFE4B4E513ABA72F6AD855F0A53ED7FA3956442E8FA2D7**。这不是施工失败或回滚。
+
+同一有界窗口的另一独立接点**2255 slot10→4999**也得到明确拒绝：源recipe36、slot10空闲，但exact36/nativeChecks0，fallback为seeds36/admitted12/projections0/facingPairs0、`no_finite_projection`；原回执SHA-256 **B5FB5EE92C421DF5545E59149AB02ADA86600429DE9DE74152C7331C0AE76539**。两接点总计12次读取、2次prepare、0 commit，R10/primary68485352/accepted6不变；均未进入原生放置检查，不能误记为碰撞负例或实际放置供电已验。两组pair冻结，不做第三个盲试候选；下一门是保留成功56带和4983桥的有界连接重设计。**送料/生产、燃料连续性与重启恢复仍未证明**。
+
 ### 2026-09-18 — 双带内段桥接正常施工、保存与独立审计通过
 
 在已批准的精确 **4981→4947** 上，Luna 用正常 `native_two_belt_segments` 建成唯一2011分拣器**4983**：filter 1402、安装态完成回执核 offset 3/0 与 pose，build **68358324→68358618** 成功；正常保存**68358779 / R7 / durable J90 / accepted2→4保留**。全有界执行49次请求、12.3224秒；2011为9→8、58带不变。公开 inspect DTO 不暴露offset，未把私有完成回执的offset伪称为该DTO字段。执行证明SHA-256 **F4CACD56C1E963F90F6FC60971B67074FDFE8FD92025740D2FF2F28018FB1B3D**。

@@ -12,6 +12,14 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-163 — belt-only cargo 守卫以范围比较误纳非带实体
+
+- 状态：`fixed`，限宽带当前精确成员集及其两处cargo检查循环；在Bridge前以0游戏调用拦截，未构成native失败或施工回滚。
+- 根因：`$id -le 4982`不是带身份或精确成员集判断，意外把2255、4743、854纳入belt-only cargo检查，可能让无关对象影响后续准入。
+- 修复：两处循环均改为精确**4943..4982**成员集；不放宽cargo unknown/非空/身份拒绝，不增通用框架或动作原语。
+- 验证：当前311项纯检查和零游戏actual-File smoke通过。326→311来自替换22条旧阶段fixture断言为7条当前绑定、精确成员与false-smoke断言，不是产品测试覆盖丢失；随后part0的16 NEW正常施工、保存与独立审计通过，但该实机正例不替代本守卫的负例覆盖。
+- 复验：成员集、循环、belt身份或cargo覆盖语义变更时重跑同一纯检查；指定带集合中的非带身份、unknown或非空cargo仍拒绝，其他哨兵按其静态身份核验；不能凭本修复重放旧端点或扩大施工范围。
+
 ## IFX-162 — 双传送带原生曲线接点尚未适配
 
 - 状态：`fixed`（限4981→4947这一真实双带桥接）：c5f3542安装态已通过一次正常2011施工、材料/双端/供电读回与普通保存；持续送料、生产与重启恢复仍待，不能把此范围内修复写成整链完成。
@@ -24,7 +32,8 @@
 - seed负例根因已核：真实折叠朝向42.23°/对向26.76°不满足<40°；当前DLL原生同样先执行此gate再进入双曲线分支。私有纸面计算遗漏此顺序，约8.18°投影结果在该seed下不可达，不是产品准入需要放宽。经验已进入MCP可读/包内playbook；42.23°负例及资源发现回归随定向66 Core＋1 MCP Release通过。源码指南未冷部署，不为指南刷新重启游戏。
 - 首次真实双带fallback正例：fresh 4981→4947在68290770以`native_two_belt_segments`返回prepared/允许commit，inputOffset3、outputOffset0、filter1402、2011×1；token丢弃、0commit/0游戏写，R4/save68219062/J90/accepted2与40条成功带保持。证明SHA-256 **4238F750C09504E9E453B465F0F37C545AE40F6087409676AA2C442DCEA5423D**。它不证明分拣器施工、附件送料或保存恢复；原4981→4949与4965→4949未重试，part0的16条带未建。
 - 实机闭合：4981→4947仅建一只2011，68358324→68358618完成并保存68358779/R7/J90/accepted2→4；root独立核4983实体/9698互返边/0预建筑、40带和旧配置保持、实际两端/filter1402/材料/供电成立。安装态completion核offset3/0与pose；公开inspect DTO不暴露offset。执行/审计证明SHA-256分别为 **F4CACD56C1E963F90F6FC60971B67074FDFE8FD92025740D2FF2F28018FB1B3D**、**96D6B773E0B77CA9B04B0E633D8342793042A1B11A6A0BA905E47C96F4B8EA76**。本阶段未新增公共API、运行时变更或部署。
-- 下一验收：有界上游16带及其余附件都须fresh native预检；不重放旧失败端点或已完成前缀。持续送料、生产、燃料连续性和重启恢复仍须单独证明；当前处理器送料、持续紫糖和其余0.4发行门未通过，关联[API证据](./research/game-api-foundry.md#bounded-explicit-two-belt-inserter-attachment-2026-09-18)、EXP-299/303及本档日记。
+- 下一验收：有界上游16带现已完成正常施工/保存/独立审计，未完成附件仍须重设计并fresh native预检；不重放旧失败端点或已完成前缀。持续送料、生产、燃料连续性和重启恢复仍须单独证明；当前处理器送料、持续紫糖和其余0.4发行门未通过，关联[API证据](./research/game-api-foundry.md#bounded-explicit-two-belt-inserter-attachment-2026-09-18)、EXP-299/303及本档日记。
+- 后置边界：part0已施工后，4984→4978/filter1402的fresh exact16预检仍为`BUILD_CONNECTION_INVALID`，nativeChecks0；fallback虽有seeds16/admitted16/projections16，仍无facing pair，bestFacing30.986°未达最终<11°。2255 slot10→4999的独立预检也为exact36/nativeChecks0、seeds36/admitted12/projections0的`no_finite_projection`。两次均0 commit并冻结精确pair，不是part0施工失败、回滚或“所有双带不可行”；仅重设计未完成连接。原回执SHA-256分别为 **FBE87E003120B88DFEAFE4B4E513ABA72F6AD855F0A53ED7FA3956442E8FA2D7**、**B5FB5EE92C421DF5545E59149AB02ADA86600429DE9DE74152C7331C0AE76539**。
 
 ## IFX-161 — 长施工期间共享调用方固定高频轮询
 

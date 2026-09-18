@@ -22,6 +22,8 @@
 
 ## IFX-168 — 私有调用方猜测数值、字段与枚举形状导致误停
 
+- 紫糖出口补料续验：私有入口补齐显式纯函数依赖，实际`pwsh -File`的额外参数检查先排除null，泛型List按ToArray序列化；零游戏调用的9项入口smoke与三坏入口拒绝通过，随后取料/制造/保存及独立审计通过。按动作即时源减/玩家增证明守恒，不把稍后源仓正常补货误判为失败。另一次离线分类把站点native一基storageIdx直接当StorageSlots零基Index，误报1793为空出口；依据读取器原样输出、执行器写入`requestedIndex+1`及真实站详情更正，未据错误结论提交配置。保留被替代证据，不声称选择器正确便已证明全链货流；见[补料与预检记录](./gameplay-timeline.md#2026-09-18--紫糖出口材料正常制造保存完整带路预检通过)。仍为mitigated，未新增通用工具或审计框架。
+
 - 共享硅仓修复续验：执行入口对PowerShell已装箱的Nullable整数取`.Value`会在严格模式报错，root在零游戏调用的审核中改为直接数值比较，补5项真实session形状正反例；原生修复三动作随后全部成功。阶段77读已完成后，摘要再次假定action-result具有gameTick，保留原exit1，仅从原回执使用startedAtGameTick/completedAtGameTick离线重建manifest；独立核验不重采。真实File模式拒绝3项、导入/config检查5项通过，仍为mitigated，不声称调用方错误已根治。
 
 - 高位合接阶段续验：root只读摘要把Player的capturedAtGameTick误写为gameTick，离线审计又对两条单对象回执直接做加法；两者均零游戏写。修正为真实DTO字段和显式数组后复用原回执完成独立5097实体/9928边审计，见[合接阶段](./gameplay-timeline.md#2026-09-18--处理器高架水平合接施工保存与独立核验通过)。仍为mitigated，不把辅助错误视为原生拒绝或重新执行理由。

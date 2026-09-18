@@ -12,6 +12,14 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-164 — 私有插入器纸面窗口漏掉同路径末区间
+
+- 状态：`fixed_offline`，仅限调用方已证明的普通同路径后继；没有新的native prepare/commit、施工或公共API、运行时、部署变更。
+- 根因：私有筛查已正确重建Bezier、自由端镜像及±0.15偏移，却没有把原生`segIndex..segIndex+segLength`窗口中“本段末点→同路径后继首点”的最后一个区间交给投影，可能把纸面窗口误判为零投影。
+- 修复：新增私有`Corner-WithNextSegment`，以`windowComplete`明示后继已接入，并保持最多64格的本地界；不扩展到`hasExt`侧并、Quaternion.Slerp、tilt或碰撞的完整原生重建。
+- 验证：当前DLL SHA-256 **AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85**；辅助哈希 **91260B5753B8E4EEB5BDF6BC9789B3E81F38BF6C2C43C09CDD960F9CD650BE97**。保护复核证明SHA-256 **816C99E126D68504E914B7009D82EC92E0363971C1F0646937AEB05A9F7927B1**记录5项纯检查通过、0游戏调用，并确认tail clamp和单区间pivot不变。
+- 复验/边界：零投影仍只是否决纸面假设，不能成为native硬结论；此前两次真实native拒绝不因本修复撤销。后续接点必须在完整当前对象与段形下fresh native prepare，不能重放冻结pair或把离线修复写成已接线。
+
 ## IFX-163 — belt-only cargo 守卫以范围比较误纳非带实体
 
 - 状态：`fixed`，限宽带当前精确成员集及其两处cargo检查循环；在Bridge前以0游戏调用拦截，未构成native失败或施工回滚。

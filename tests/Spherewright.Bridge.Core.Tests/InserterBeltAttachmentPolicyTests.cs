@@ -82,7 +82,7 @@ public sealed class InserterBeltAttachmentPolicyTests
     }
 
     [Theory]
-    [InlineData(0, true)] [InlineData(30, true)] [InlineData(45, false)] [InlineData(90, true)]
+    [InlineData(0, true)] [InlineData(30, true)] [InlineData(42.23, false)] [InlineData(45, false)] [InlineData(90, true)]
     public void TwoBeltsUseNativeFoldedSeedScreenButStillNeedFinalFacing(double angle, bool expected)
     {
         var radians = angle * Math.PI / 180;

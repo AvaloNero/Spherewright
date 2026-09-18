@@ -9,7 +9,9 @@
 
 最难接点先验的结果仍为负：真实第二NEW **4981→4949** 在fresh68233830的首次预检，exact16组合TooSkew、nativeChecks0；双带fallback为**no_admissible_seed / seeds16 / admitted0 / projections0 / candidateChecks0**，不同于旧直段的no_finite_projection。仅零写prepare，端点保持、token不保留，证明SHA-256 **776E697BEED686AD3FDBECD17A0B9F65283BE9F87B84FCB3F174A289848849EE**。四带施工/保存通过不等于分拣器可接；纸面8.18°也没有证明原生seed准入。保留全部成功40带，停止重试该未改变端点对，不铺part0的16带，交主会话核对真实姿态与原生准入分支。未接料，未证明持续紫糖或本片重启恢复。
 
-`c29c195`已推送，CI35288939474成功。root依据当前DLL的`CargoTraffic.GetBezierArc`先核固定局部转向：原直段对照无投影、北转近似42.02°不合格，南转第二NEW角段近似8.18°；该纸面计算使用双精度及归一化方向插值，**不是Unity四元数插值、真实分拣器许可或自动寻路**。四个NEW点对4978对象的Core占位检查通过后，仅对4965的明确南转source-cover做一次fresh native prepare：**68141404–68141480 / R1 / primary68021236**，完整`full_path_stage1 / native_grid / non_removing_belt_cover / whole_path_native_rotation_v1`通过，仅预算2001×4，token丢弃、0commit。预检证明SHA-256 **EEE6BB68A50469E4537FF235CF00411267F4CC0DA4B35BEC9169C36AA5120CB5**。
+本片已由`31553b3`推送、CI35291185810成功。随后Sol离线核真实姿态，root独立对照同SHA的DSP原生`DeterminePreviews`：当前seed折叠朝向约42.23°，对向偏差约26.76°，原生也要求二者最大值<40°后才投影；所以拒绝与原生一致，**是私有纸面模型漏了前置gate，不是应该放宽产品规则**。已把这条经验补入包内/MCP可读playbook，并增加42.23°负例及资源发现断言，定向Release **66 Core＋1 MCP通过**；没有修改产品准入或新增工具，运行安装仍c5f3542，新指南未冷部署。本次80回复中只有11次action轮询（build10、save1），27.7992秒不含规划和独立审计，不能和此前14带的长施工直接换算总提速。
+
+此前`c29c195`已推送，CI35288939474成功。root依据当前DLL的`CargoTraffic.GetBezierArc`先核固定局部转向：原直段对照无投影、北转近似42.02°不合格，南转第二NEW角段近似8.18°；该纸面计算使用双精度及归一化方向插值，**不是Unity四元数插值、真实分拣器许可或自动寻路**。四个NEW点对4978对象的Core占位检查通过后，仅对4965的明确南转source-cover做一次fresh native prepare：**68141404–68141480 / R1 / primary68021236**，完整`full_path_stage1 / native_grid / non_removing_belt_cover / whole_path_native_rotation_v1`通过，仅预算2001×4，token丢弃、0commit。预检证明SHA-256 **EEE6BB68A50469E4537FF235CF00411267F4CC0DA4B35BEC9169C36AA5120CB5**。
 
 已完成保存/恢复的两accepted在fresh **68151100**、原库存/日记/电网和独立恢复审计及绿CI证据下显式封存为0；封存SHA-256 **A86F30FF263BAE28C26F0987635C57BBECBC4A300E5B39E5B7F74F396E9A5A57**。只批准复用现有入口完成四NEW及正常保存，再用真实第二NEW角段检查到4949的附件；不重放原直段、不施工part0的16带。20条剩余带与9分拣器整批预算覆盖当前库存，net3条件容量1560000对满基础及九附件1549300余10700；total1570000还包含net4的10000，不能把总量当主网容量或持续燃料证明。
 

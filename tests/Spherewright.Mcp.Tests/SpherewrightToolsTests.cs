@@ -508,6 +508,9 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("not a promise that a given pair is connectable", guide);
         Assert.Contains("geometry requires fresh prepare", guide);
         Assert.Contains("does not prove its two sorter attachments", guide);
+        Assert.Contains("folded <40-degree seed screen before either curve projection", guide);
+        Assert.Contains("cannot rescue a seed that never enters that branch", guide);
+        Assert.Contains("smallest approved interface-checking piece", guide);
         Assert.Contains("Closed paths", guide);
     }
 

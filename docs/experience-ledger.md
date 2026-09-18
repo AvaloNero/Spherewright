@@ -1,6 +1,6 @@
 # Spherewright experience ledger
 
-更新时间：2026-09-18（Asia/Singapore）
+更新时间：2026-09-19（Asia/Singapore）
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
@@ -15,6 +15,8 @@
 - 证据只记录可复核的脱敏摘要、动作/实体 ID 或代码测试位置；不记录 token、存档内容或 runtime descriptor。
 
 ## 当前经验
+
+2026-09-19 / EXP-299、IFX-121十写续接与显示边界复验（`validated`限本次固定取料/保存及离线差量）：已成功的首笔取料之后若下一 commit 明确 `STALE_STATE` 且未 accepted，先以原 action terminal/会话边界核销，再用精确 proof、revision、已得物料净差和固定剩余索引续接；不得重放首笔或自动循环。save 的 accepted/terminal 是事实边界，最后 stdout 因整数键 Hashtable JSON 序列化失败不能反推保存失败；内部守恒仍用整数键，展示/proof 改用显式字符串键副本。见[本档十写续接](./gameplay-timeline.md#2026-09-19--高纯硅炉备料续接保存与十写离线核对完成)。本条不证明持续供给、新炉施工或恢复，现场/DTO/入口变化时重验。
 
 2026-09-18 / EXP-299 现行分工复验（`observed`，效果待下一批 2–3 个已批准成熟模板工序验证）：常规链改为 Terra 准备（参数化材料/功率、有限筛查/测试与一次取证）→ Luna 唯一写入 → Terra 差量证据/草稿 → root 核关键原回执、最终验收与提交；Sol 仅在新布局/连接、跨链取舍、模板不适用或两次同类失败时介入，三轮有证据仍失败转 root。该安排保留 fresh prepare、terminal、材料/连接读回、全厂阶段审计与十写冻结，尚未证明提速。基线窗口为本地 2026-09-18 03:21:31–23:21:31，四会话累计用量增量的未缓存输入＋输出共21,619,125，token 分布为 root 27.14%、Sol 44.41%、Terra 19.23%、Luna 9.22%，不是账单或工作价值；下一批目标为 root 约10–15%、Sol 约10–20%、合计尽量≤35%，raw/cached 并列，不能为凑比例拆造低层任务或减少核验。见[AGENTS 现行职责](../AGENTS.md)；未变的背景和共享测试结论复用，但必要指令阅读、fresh 现场检查和版本完整回归仍保留。最近复核同日，后续以同口径工序时间及用量复验。
 

@@ -22,6 +22,8 @@
 
 ## IFX-168 — 私有调用方猜测数值、字段与枚举形状导致误停
 
+- 硅送料续验：只读摘要误用movementMode而非movementState、离线入口把build catalog当成包含handcraft字段的recipe catalog，均在游戏写入前发现；保留已成功原回执，不追加重采。离线目录只核其真实声明的配方成本，实际制造仍fresh读取recipe catalog并要求handcraft；Core升级/输送70项、入口与8项纯检查后，五动作实机及完整独立审计通过，见[本档升级记录](./gameplay-timeline.md#2026-09-18--硅石送料分拣器原生升级并保存五动作独立审计通过)。仍只说明该有限调用方已修，不宣称所有辅助代码免疫。
+
 - 紫糖出口补料续验：私有入口补齐显式纯函数依赖，实际`pwsh -File`的额外参数检查先排除null，泛型List按ToArray序列化；零游戏调用的9项入口smoke与三坏入口拒绝通过，随后取料/制造/保存及独立审计通过。按动作即时源减/玩家增证明守恒，不把稍后源仓正常补货误判为失败。另一次离线分类把站点native一基storageIdx直接当StorageSlots零基Index，误报1793为空出口；依据读取器原样输出、执行器写入`requestedIndex+1`及真实站详情更正，未据错误结论提交配置。保留被替代证据，不声称选择器正确便已证明全链货流；见[补料与预检记录](./gameplay-timeline.md#2026-09-18--紫糖出口材料正常制造保存完整带路预检通过)。仍为mitigated，未新增通用工具或审计框架。
 
 - 共享硅仓修复续验：执行入口对PowerShell已装箱的Nullable整数取`.Value`会在严格模式报错，root在零游戏调用的审核中改为直接数值比较，补5项真实session形状正反例；原生修复三动作随后全部成功。阶段77读已完成后，摘要再次假定action-result具有gameTick，保留原exit1，仅从原回执使用startedAtGameTick/completedAtGameTick离线重建manifest；独立核验不重采。真实File模式拒绝3项、导入/config检查5项通过，仍为mitigated，不声称调用方错误已根治。
@@ -96,6 +98,8 @@
 - 复验：轮询、deadline、错误识别或transport变化时运行同入口；现有预建筑进展/游戏tick观察、十写与阶段审计不变。关联EXP-299/303及[本档记录](./gameplay-timeline.md#2026-09-18--共享观察退避离线验证与低干扰游戏时间采样)。
 
 ## IFX-160 — 私有执行入口把空自动参数误判为额外实参
+
+- 硅送料入口复发：新私有草稿再次把null计为1，随后严格模式函数导入又遇未定义args；恢复本条既有Get-Variable加非null过滤写法，真实File零调用smoke/坏模式拒绝、严格导入和原证据独立审计通过。修复前后均未因该错误提交游戏动作，不重放已完成五动作；见[本档记录](./gameplay-timeline.md#2026-09-18--硅石送料分拣器原生升级并保存五动作独立审计通过)。既有修复只覆盖已改入口，不应再复制旧错误守卫。
 
 - 状态：`fixed`，限当前PowerShell启动/函数导入边界；不是Plugin、MCP或游戏故障。
 - 根因：同一高级脚本在实际`-File`启动和dot-source测试中的自动`$args`形态不同。无额外参数时可能为null（`@($null).Count`为1），在StrictMode下导入的脚本又可能没有该变量。原入口据此错误拒绝或抛异常，两次都在Bridge调用前停止，不能记作原生候选失败。

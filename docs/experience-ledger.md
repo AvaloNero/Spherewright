@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+2026-09-18 / EXP-001、EXP-007、EXP-299、EXP-302、EXP-303冷部署复验（`validated`限同批安装、默认同档恢复和十写审计）：`200b4bc`在2028测试通过后按正常保存/退出、228文件匹配、单次Steam启动和exact-primary恢复部署，真实MCP64/1及指南83468字符一致。accepted8→9→10跨进程保留，不因恢复自动保存而另造一次客户端accepted。玩家恢复位置差1.22065556e-5 m，应复用既有恢复审计的1e-4 m舍入边界并记录实际差值，不对玩家浮点坐标做JSON全等；实体配置/位置/边、库存和Journal仍逐项严格比较，公共state hash与原生预检不放宽。Terra采集116次只读的固定整厂比对，主会话独立复核原始5000实体/9732边、十次动作及关键fresh对象，不重复整厂游戏读取或建全流模拟；[存档证据](./gameplay-timeline.md#2026-09-18--带头复用同批冷部署与原档恢复)。十写通过，推送及绿CI后封存计数窗；首次目标cover施工及后续供料另验，当前不是产线或最终包通过。最近复验同日，DLL/cohort、恢复来源或现场变化时重新核验。
+
 2026-09-18 / EXP-299、EXP-303目标带头复用产品化（`validated`限DLL/源码/离线，未冷部署）：非移除cover并不意味着旧路径不变，必须将空载、无外部输入、distinct open paths、完整成员/组件/边和材料预算作为一组绑定。刚创建只证明负prebuild互返边及旧路径/货物保持，全部无人机完成后才允许精确source＋NEW＋target路径重组和当前原生rotation；至少两NEW，cover不扣料、不移除、不作NEW占位豁免。双2001显式端点的geodesic需当前DLL的useOldPath分支和完整首尾/十格保留检查；不能用自由端纸面模型代替该原生调用。默认grid与3792的碰撞仍真实，纸面geodesic通过不构成许可。Release2028测试、完整DSP Release零警告/错误、源码MCP64/1及指南一致通过；安装c5f3542/最后实机68642650不变。下一次安装/DLL变化或首次施工须fresh预检、终态、材料/全路径和保存恢复复验，旧56带与4983/5000不重放。最近复验同日；[API与证据边界](./research/game-api-foundry.md#open-head-belt-destination-reuse-2026-09-18-research-only-not-implemented)。
 
 2026-09-18 / EXP-299、EXP-303目标带头能力边界（`observed`，限当前DLL调研）：有限布局重设计与正负控制收口后，优先核安装适配器是否覆盖原生业务路径，不继续扩散相似坐标。原生目标non-removing cover不拆目标、不重复扣目标材料，但可重组整条CargoPath，不能以endpoint hash代替路径/货物证据。首片限定空载、无外部输入、开放且不同的同级2001路径及空闲目标头部；实现与实机仍待，见[目标头部研究](./research/game-api-foundry.md#open-head-belt-destination-reuse-2026-09-18-research-only-not-implemented)。最近复验同日。

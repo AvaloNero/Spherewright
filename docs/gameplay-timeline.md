@@ -3,6 +3,12 @@
 更新时间：2026-09-19（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-19 — 西侧 D.1 14NEW下坡完成，后续合接与供料仍待
+
+C 十写经 root 明确封窗后，D.1 仅正常建成一条14NEW的 level3→ground 下坡：**R108 / save73155588 / J91 / accepted0→1**。native plannedPath 的实际实体顺序为 **5138→5140→5139→5141→5142→5143→5144→5145→5146→5147→5148→5149→5150→5151**，head5138、tail5151；玩家传送带 **17→3（−14）**，其余库存及 inc 净额为零，14个实体位置、空载与精确内部有向链均已核对。执行 complete 为 `action-ab73599c1ba948adb5d962a5cd14bb9a-0069-hps-west-stage-d-down-ramp-fourteen-complete.json`，SHA-256 **3727DC2051C8E93E472AD254698BF3FB3BA24DA90B94880837770E3FE2B3A05C**；Sol 独立核验 SHA-256 **8F4A71D7615F904F5F04AD9DEFAE2B8EC0CECB1777E73C57C63AA193B1CA0AF1**，末审 tick **73278775**。
+
+本段没有 normal save，也未执行D.2高位合接、两台风机、任一分拣器/附件或送料；不证明吞吐、持续功率/燃料、持续产率或恢复。accepted1继续保留，提交或绿CI不会自动清零。
+
 ### 2026-09-19 — 西侧 C 阶段炉体、输入与11NEW上坡保存完成；连续供给仍待
 
 在已备齐材料且 C 段授权范围内，5115 号 2302 炉仅正常建造一次，并随后仅配置 recipe59：**R97 / save72577830 / J91 / accepted5**。C.1 的原 terminal 为 SHA-256 **30111BEE0CEA16BF20EED7F23DA4BF31C04450490ED93D9BC491401E71DD6E87**；fresh closure 与 root 独立闭合分别为 **06909598468508AA3F35D8709894CB363BA3B20A9EA851EACB3468837607BDE1**、**0625052A5FC2DECD48E5ACC33BC7B3E946919291B834E9542BF03C0F27A36507**。C.2 的配置完成证明为 **D44932FA2BC8D828C5DCAA2AFC2B6341A9DCFEB532EBE39554809B8ED2BFAE90**：5115 保持既定姿态、net3 与无连接，recipe59 的 input1003/output1105 均为零 count/zero inc。本段尚未 normal save，未接料、未建带或分拣器，不证明吞吐、持续供电/燃料或恢复。

@@ -3,7 +3,7 @@
 更新时间：2026-09-19（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-### 2026-09-19 — 西侧 C.1/C.2/C.3/C.4 炉体、配方、输入段与 source-cover 完成，后续施工仍待
+### 2026-09-19 — 西侧 C.1–C.5 炉体、配方、输入段、source-cover 与输入附件完成，后续施工仍待
 
 在已备齐材料且 C 段授权范围内，5115 号 2302 炉仅正常建造一次，并随后仅配置 recipe59：**R97 / save72577830 / J91 / accepted5**。C.1 的原 terminal 为 SHA-256 **30111BEE0CEA16BF20EED7F23DA4BF31C04450490ED93D9BC491401E71DD6E87**；fresh closure 与 root 独立闭合分别为 **06909598468508AA3F35D8709894CB363BA3B20A9EA851EACB3468837607BDE1**、**0625052A5FC2DECD48E5ACC33BC7B3E946919291B834E9542BF03C0F27A36507**。C.2 的配置完成证明为 **D44932FA2BC8D828C5DCAA2AFC2B6341A9DCFEB532EBE39554809B8ED2BFAE90**：5115 保持既定姿态、net3 与无连接，recipe59 的 input1003/output1105 均为零 count/zero inc。本段尚未 normal save，未接料、未建带或分拣器，不证明吞吐、持续供电/燃料或恢复。
 
@@ -11,7 +11,9 @@
 
 C.3 随后只正常建成独立的六段 input：terminal `336fe5a6-210c-4aaa-9b49-307bef42fc46` 成功扣除传送带×6，唯一新 ID 为 **5116→5117→5118→5119→5120→5121**，accepted **5→6**。terminal SHA-256 **E846DB96D38BA4A3FCEFF754ADFC5D9B449409F59E32A08B0629F82BCF4DBF92**；其后有界 closure 为10次读取、0写入，确认 **R99 / save72577830 / J91**、玩家传送带32、无人机 idle、六带仅保留内部 slot0→slot1 有向链且5115仍为recipe59（SHA-256 **BADE092C8AAAD1E9DA8BD53A41356AF781D659D6244E00CE9FEEA9ABCFB5419C**）。Sol 独立末审为 `action-027345a519904ed0a7af6b2540be4c44-0001-hps-west-stage-c-input-six-sol-independent-review.json`，SHA-256 **5C0F8DD2B7F458059C9B67990EBA01496258B628D2C20C5422A148EB2EF7D9E0**，末审 tick **72872066**。终态后原 leaf 的三次短等待仍见working而停止，随后 closure 自然 idle；不重放建造。这仍不是 source-cover、附件、输出坡、保存、吞吐、持续电力/燃料或恢复证明。
 
-C.4 随后以 C.3 的实际尾端5121唯一正常建成4NEW non-removing source-cover：原 terminal SHA-256 **808F476A6F589C2573E40F28D9BFAF55375E56760081F2916076C4EB5205353D** 的路径映射为 **5121→5125→5124→5123→5122**，尾端5122，accepted **6→7**，玩家传送带仅−4。短 idle 等待在 native terminal 后超时并保全 stopped（SHA-256 **89352AD04E32FF3637600DADB40297988886196521E0B3D576A7D75125AF7CE2**），是调用方后置条件而非 native 失败，绝不重放。Terra 的9次读取、0写 closure 确认 **R101 / save72577830 / J91**、5121未移除且唯一接5125→5124→5123→5122（四NEW内部顺序不变，SHA-256 **136587993AB20DDD9C45732C8CEB48EF9CBA0EDC66F54F39853737BA5DBC74B9**）；Sol 独立验收为 SHA-256 **F621972A62C2FD59C72F7B267BA025F318CF937D9D3A60AE83280FA4C76EC425**，末审 tick **72948771**。这不覆盖 C.5 分拣器、C.6 11NEW上坡、output preview、normal save、吞吐、持续电力/燃料或恢复。
+C.4 随后以 C.3 的实际尾端5121唯一正常建成4NEW non-removing source-cover：原 terminal SHA-256 **808F476A6F589C2573E40F28D9BFAF55375E56760081F2916076C4EB5205353D** 的路径映射为 **5121→5125→5124→5123→5122**，尾端5122，accepted **6→7**，玩家传送带仅−4。短 idle 等待在 native terminal 后超时并保全 stopped（SHA-256 **89352AD04E32FF3637600DADB40297988886196521E0B3D576A7D75125AF7CE2**），是调用方后置条件而非 native 失败，绝不重放。Terra 的9次读取、0写 closure 确认 **R101 / save72577830 / J91**、5121未移除且唯一接5125→5124→5123→5122（四NEW内部顺序不变，SHA-256 **136587993AB20DDD9C45732C8CEB48EF9CBA0EDC66F54F39853737BA5DBC74B9**）；Sol 独立验收为 SHA-256 **F621972A62C2FD59C72F7B267BA025F318CF937D9D3A60AE83280FA4C76EC425**，末审 tick **72948771**。C.4本身不覆盖 C.5；后者见下一段。仍不覆盖 C.6 11NEW上坡、output preview、normal save、吞吐、持续电力/燃料或恢复。
+
+C.5 仅用 C.4 的实际尾端5122唯一建成2012输入分拣器5126：`5122→5126→5115.slot4/filter1003`，计划端为 exact_slots **−1→4**，三端互返、net3/ratio1以及5115 recipe59的两只零 count/zero inc缓冲均由完成回执保全；玩家2012 **4→3**，accepted **7→8**，末 **R103 / save72577830 / J91**，尚未 normal save。complete 为 `action-171479bf2cb24d33abe916009c712d16-0027-hps-west-stage-c-input-sorter-complete.json`，SHA-256 **95E69FC9253E0B968DA5C82E0C83E0654CCD1795DF49C1DDB6D9217F68698108**（terminal tick **73047813**）；Sol独立末审为 `action-3d84c9b96ec84218b1818eedafd88840-0001-hps-west-stage-c-input-sorter-sol-independent-review.json`，SHA-256 **0A9BADF769ECE31FCDF666264B77E185B7191DC83490543BE170BA598B024FD1**，末审 tick **73048547**。这只闭合输入附件，不证明 C.6 11NEW上坡、output preview、保存、吞吐、持续电力/燃料或恢复。
 
 ### 2026-09-19 — 西侧 B 段备料、正常保存与全静态核对完成
 

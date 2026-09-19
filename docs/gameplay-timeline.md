@@ -3,11 +3,17 @@
 更新时间：2026-09-19（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-19 — 西侧 D.2 2NEW高位非移除合接完成；风机与附件仍待
+
+D.2 仅将已封存 C 上坡尾端5127与 D.1 实际 head5138正常合接，唯一成功后为 **R110 / save73155588 / J91 / accepted1→2**。native plannedPath 映射的两条新带为 **5152→5153**，并由 fresh closure 核对完整端点顺序 **5128→5127→5152→5153→5138→5140**：两条旧路径保持、四端互返且空载。原始执行前缀为 `action-e855e311b97740e387db7b39f6f7e38b-`；terminal 后调用方仅因未导入本地距离 helper 而在映射处停止，这不是 native 拒绝或零调用，成功前缀没有重放。
+
+Terra 随后只补 session、player、5127、5138 与 Journal 五次读取，0写入，closure 为 `action-0827e5a1279040a8bbba16eb397d6e3f-0006-hps-west-stage-d-high-join-two-closure.json`，SHA-256 **6800E84EC1F162A171793AB94D7860FB000B4CE582F5A2EA7410D517FFA47E47**。它核对玩家仅传送带−2、其他库存/inc净额为零、J91完整且无 pending/error、healthy 与无人机已 idle；Sol 独立验收为 `action-03957210944f42c68a150f8be234e6db-0001-hps-west-stage-d-high-join-two-sol-independent-review.json`，SHA-256 **02ADC3326365D7002357903BFF90F8FBF643ED71B0F0C86EF64485AFDF579B90**，末审 tick **73353812**。此段未保存、未建两台风机或任一附件/供料，也不证明吞吐、持续电力/燃料、持续产率或恢复；accepted2继续保留，提交或绿CI不会自动清零。
+
 ### 2026-09-19 — 西侧 D.1 14NEW下坡完成，后续合接与供料仍待
 
 C 十写经 root 明确封窗后，D.1 仅正常建成一条14NEW的 level3→ground 下坡：**R108 / save73155588 / J91 / accepted0→1**。native plannedPath 的实际实体顺序为 **5138→5140→5139→5141→5142→5143→5144→5145→5146→5147→5148→5149→5150→5151**，head5138、tail5151；玩家传送带 **17→3（−14）**，其余库存及 inc 净额为零，14个实体位置、空载与精确内部有向链均已核对。执行 complete 为 `action-ab73599c1ba948adb5d962a5cd14bb9a-0069-hps-west-stage-d-down-ramp-fourteen-complete.json`，SHA-256 **3727DC2051C8E93E472AD254698BF3FB3BA24DA90B94880837770E3FE2B3A05C**；Sol 独立核验 SHA-256 **8F4A71D7615F904F5F04AD9DEFAE2B8EC0CECB1777E73C57C63AA193B1CA0AF1**，末审 tick **73278775**。
 
-本段没有 normal save，也未执行D.2高位合接、两台风机、任一分拣器/附件或送料；不证明吞吐、持续功率/燃料、持续产率或恢复。accepted1继续保留，提交或绿CI不会自动清零。
+D.1本身没有 normal save；当时尚未执行D.2高位合接、两台风机、任一分拣器/附件或送料，D.2事实见上一段。不证明吞吐、持续功率/燃料、持续产率或恢复；其后的accepted计数见当前D.2边界，提交或绿CI不会自动清零。
 
 ### 2026-09-19 — 西侧 C 阶段炉体、输入与11NEW上坡保存完成；连续供给仍待
 

@@ -3,9 +3,15 @@
 更新时间：2026-09-19（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-### 2026-09-19 — 西侧 D.3 首台固定风机建成并独立闭合；第二台仍待
+### 2026-09-19 — 西侧 D.4 第二台固定风机完成；附件与保存仍待
 
-D.3 仅在既定 site0 正常建成一台2203风机5154：原 commit action `57448f1a-e719-424c-9838-cf5678c1ad72` 的 terminal 于 tick **73415298** 成功，玩家2203 **2→1**，accepted **2→3**。fresh closure 确认 **R112 / save73155588 / J91**、healthy、无人机 idle、5154无连接；net3现场观察到总容量 **1601000**、generator **126**，相对本次前0004精确 **+5000/+1**。closure 为 `action-c1de31bcb738495790610ae3a92bcd63-0007-hps-west-stage-d-wind-one-closure.json`，SHA-256 **314DD5F36C9BC73337780696797E0CA329DB2D24FED50BE3EB93C9C27E053036**；Sol 独立验收为 `action-272ba517542d4330aab01ff696dc242a-0001-hps-west-stage-d-wind-one-sol-independent-review.json`，SHA-256 **FA25EA4D434E8D6B900221A4F198C3EBF41B10ED5F4568372C63F3D72DD700A6**，末审 tick **73448955**。
+D.4 仅在既定 site1 正常建成一台2203风机5155：action `8b4d05a2-c914-46dc-a9c2-546d42fd98a3` 的 terminal 于 tick **73527382** 成功，玩家2203仅 **−1**，accepted **3→4**，末为 **R114 / save73155588 / J91**。complete 为 `action-8b8022cb074d4059824b760379689dbc-0022-hps-west-stage-d-wind-two-after-one-complete.json`，SHA-256 **22D3316477766E922BB773FDD9A11CB5F3FA19D98F0272235EBAD7D964F1DF07**。net3现场观察到总容量 **1606000 J/t**、generator **127**，相对fresh前精确 **+5000 J/t/+1**。
+
+两台固定风机至此均已完成，纸面保守条件容量 **1570000 J/t** 的计划边界已具备；但1606000是含间歇氢热电的当刻总容量，不能替代持续燃料、持续供电、吞吐或产率证明。D.5/D.6及normal save均未执行；accepted4继续保留，提交或绿CI不会自动清零。Sol 独立验收为 `action-e89127a253384e1085b81b3db012aad3-0001-hps-west-stage-d-wind-two-after-one-sol-independent-review.json`，SHA-256 **BE19DE0B8BC7D164727B72E7ED3D7535C11F5C4FF68737D0132277E57C239F5A**，末审 tick **73527714**。
+
+### 2026-09-19 — 西侧 D.3 首台固定风机建成并独立闭合（此前边界）
+
+D.3 仅在既定 site0 正常建成一台2203风机5154：原 commit action `57448f1a-e719-424c-9838-cf5678c1ad72` 的 terminal 于 tick **73415298** 成功，玩家2203 **2→1**，accepted **2→3**。fresh closure 确认 **R112 / save73155588 / J91**、healthy、无人机 idle、5154无连接；net3现场观察到总容量 **1601000 J/t**、generator **126**，相对本次前0004精确 **+5000 J/t/+1**。closure 为 `action-c1de31bcb738495790610ae3a92bcd63-0007-hps-west-stage-d-wind-one-closure.json`，SHA-256 **314DD5F36C9BC73337780696797E0CA329DB2D24FED50BE3EB93C9C27E053036**；Sol 独立验收为 `action-272ba517542d4330aab01ff696dc242a-0001-hps-west-stage-d-wind-one-sol-independent-review.json`，SHA-256 **FA25EA4D434E8D6B900221A4F198C3EBF41B10ED5F4568372C63F3D72DD700A6**，末审 tick **73448955**。
 
 初始 stopped 的acceptedKnown2只是调用方摘要失真：调用方在accepted记账前读取了commit结果中不存在的sessionId字段而退出，原0008仍已保留accepted事实，非 native 失败，不得重放。真实回执离线回归后，6次只读查询核销原动作及现场，零新写入。现场1601000 J/t仅为含间歇氢热电的当刻总容量；紙面保守1570000 J/t只适用于两台均完成后的计划，当前尚未实现，也不证明持续燃料、吞吐、持续产率或恢复。第二台风机、附件及normal save均未执行；accepted3继续保留，提交或绿CI不会自动清零。
 

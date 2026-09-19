@@ -3,6 +3,12 @@
 更新时间：2026-09-19（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-19 — 用户暂停：正常保存并关闭游戏
+
+用户要求暂停游戏推进并关闭。D.5/D.6未派发；Luna先fresh核同一owned、healthy、无在途不明动作，唯一正常保存action `0ae9b0a1-8480-45a0-bbda-2163abf6b54c`终态成功，**accepted4→5 / R115 / save73573789 / J91**，晚于D.4终态73527382。保存后玩家除采样tick外不变，Journal entries/durable均91、无pending/error，公开`restartResumeAvailable=true`。保存证明`action-7196716d0b5e49cd843e14a5727ccfc4-0013-hps-d4-normal-save-before-close.json`，SHA-256 **B47BE56E7A7697FDC6F6EA49578597A69301DB9CBBCCD394E967640D6E6E2F2C**。
+
+随后对确认的原游戏进程正常关闭，退出证明`action-7196716d0b5e49cd843e14a5727ccfc4-0014-hps-d4-normal-save-and-graceful-close.json`，SHA-256 **811624A3B74731338868726AEB5EE92637D8CF9B7E96FCCEBBE0CD3F0578D4D8**；Sol复核原保存/退出记录，root另fresh确认原进程不存在。无强杀、无重启、无后续施工。未读取恢复token，未核票据内部minimumTick，未做实际protected resume；下次须等用户继续，再从主菜单fresh恢复并复读成功前缀，禁止旧计划或动作重放。accepted5保留，不因暂停、提交或退出清零。
+
 ### 2026-09-19 — 西侧 D.4 第二台固定风机完成；附件与保存仍待
 
 D.4 仅在既定 site1 正常建成一台2203风机5155：action `8b4d05a2-c914-46dc-a9c2-546d42fd98a3` 的 terminal 于 tick **73527382** 成功，玩家2203仅 **−1**，accepted **3→4**，末为 **R114 / save73155588 / J91**。complete 为 `action-8b8022cb074d4059824b760379689dbc-0022-hps-west-stage-d-wind-two-after-one-complete.json`，SHA-256 **22D3316477766E922BB773FDD9A11CB5F3FA19D98F0272235EBAD7D964F1DF07**。net3现场观察到总容量 **1606000 J/t**、generator **127**，相对fresh前精确 **+5000 J/t/+1**。

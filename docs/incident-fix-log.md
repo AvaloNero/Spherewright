@@ -1,6 +1,6 @@
 # Spherewright 首次问题与代码修复记录
 
-更新时间：2026-09-18（Asia/Singapore）
+更新时间：2026-09-22（Asia/Singapore）
 
 本文件专门记录项目第一次遇到的可复用工程问题：现场症状、根因、代码或协议
 修复、验证证据和仍有限制。它不是逐局流水账，也不是当前规则的唯一来源。
@@ -11,6 +11,13 @@
 状态取 `fixed | mitigated | open`。`fixed` 只表示写明范围内已有代码和验证证据，
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
+
+## IFX-170 — 受保护恢复票据在续接前过期，恢复按设计安全阻断
+
+- 状态：`open`，当前阻断是受保护恢复的 fail-closed 行为，不是存档损坏、安装漂移、原生拒绝或游戏失败。
+- 事实：2026-09-22 用户继续 0.4 时，既有 `2649aad` 部署 cohort 仍为 228/228 文件匹配。9 月 19 日的正常保存已到 `save73573789 / J91 / accepted5`，随后正常关闭；保存与关闭记录分别为 `action-7196716d0b5e49cd843e14a5727ccfc4-0013-hps-d4-normal-save-before-close.json`（SHA-256 **B47BE56E7A7697FDC6F6EA49578597A69301DB9CBBCCD394E967640D6E6E2F2C**）和 `...-0014-hps-d4-normal-save-and-graceful-close.json`（SHA-256 **811624A3B74731338868726AEB5EE92637D8CF9B7E96FCCEBBE0CD3F0578D4D8**）。
+- 原因与边界：两份受保护票据副本仍一致、未消费，最低 tick 为 73573789、最低 durable Journal 为 J91；源码 `OwnedWorldResumeTicketStore.Arm` 以 `issuedAt.AddHours(24)` 设定的 expiry 已在 9 月 20 日结束，源码结论是 `TryGetActiveTicket` 正确 fail-closed。安装/票据核验本身未读取任意玩家存档、prepare/commit/load、施工或写入；随后仅通过 Steam 启动到主菜单。没有实际发 prepare，不能把源码拒绝写成 live 负例；不输出或使用 token、真实存档名或个人路径。
+- 后续：不得复用旧 token、修改 expiry、任意 load，或导入其他存档冒充同档延续；现有手动 import 只会形成新副本和新 Journal。当前重新授权仍待用户确认和独立实现/签发/核验，尚未执行。
 
 ## IFX-169 — 共享仓只开放新物品预约，阻断仍需服务的旧输入
 

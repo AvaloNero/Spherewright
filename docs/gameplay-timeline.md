@@ -1,7 +1,13 @@
 # 存档日记 001：从落地到当前的决策、科技与首次产出
 
-更新时间：2026-09-19（Asia/Singapore）
+更新时间：2026-09-22（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
+
+### 2026-09-22 — 恢复准备被过期受保护票据安全阻断
+
+用户继续 0.4 时，安装/票据核验本身仅对既有安装映射、受保护恢复元数据和已封存关闭记录做了只读核验；随后仅通过 Steam 启动到主菜单，未 load、prepare、commit、施工或写入，也未读取任意玩家存档。菜单 fresh 状态为未加载、无 session、非 owned、禁止写入且 revision 0（状态 SHA-256 **8B282F780D1F36B3AB68936D329A3B250D5E7ADAFF8610E9BE3C9011F3A75306**；session SHA-256 **40D949B33D4C976319D7C9307197D466801A2F14F74D2D1AD032330F550D7BCB**）；同批 MCP 仅握手核到 **64 tools / 1 resource / 0 gameWrites**（SHA-256 **81053E2C63640D29D62A1E980AF9CCC4F236EBB5F664CD15513F685913D40104**），不构成加载或恢复。源码 `2649aad` 的部署 cohort 仍为 **228/228** 文件匹配；9 月 19 日的 normal save 已覆盖 **save73573789 / J91 / accepted5**，其后正常退出的保存与关闭证明分别为 `action-7196716d0b5e49cd843e14a5727ccfc4-0013-hps-d4-normal-save-before-close.json`（SHA-256 **B47BE56E7A7697FDC6F6EA49578597A69301DB9CBBCCD394E967640D6E6E2F2C**）和 `...-0014-hps-d4-normal-save-and-graceful-close.json`（SHA-256 **811624A3B74731338868726AEB5EE92637D8CF9B7E96FCCEBBE0CD3F0578D4D8**）。
+
+受保护票据仍未消费、最低 tick 为 **73573789**、最低 durable Journal 为 **J91**，但其 24 小时窗口已于 9 月 20 日过期；源码 `OwnedWorldResumeTicketStore.Arm` 以 `issuedAt.AddHours(24)` 设定该期限，`TryGetActiveTicket` 对过期票据按设计 fail-closed。9 月 19 日记录中的 `restartResumeAvailable=true` 只是关闭前会话字段，不能证明当前有效票据。未实际发出 prepare，故这不是 live 负例；也没有存档损坏或安装漂移的证据，更没有实现新的重新授权。不得复用旧 token、手改过期时间、任意 load，或导入其他存档冒充同档延续；现有手动 import 只会形成新副本和新 Journal，不能充作同档续接。后续恢复仍待用户明确确认及独立 fresh 签发/核验实现。
 
 ### 2026-09-19 — 用户暂停：正常保存并关闭游戏
 

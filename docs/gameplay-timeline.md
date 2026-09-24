@@ -9,6 +9,8 @@
 
 ### 2026-09-24 — 修正冷部署后，实际 native 版本门仍安全停止
 
+后续源码已补齐28529→29088独立精确pair，当前DLL完整Release零warning/error、2216离线测试及source MCP64/1通过；这是适配代码完成，尚未证明原档载入，保存边界仍73573789/J91/accepted5。
+
 `bde7fea` 与 CI `35995364465` 已绿；修正后的同批228文件以 manifest **A6467753688B201DBD8701393C81E65DEF2564424A6E546A69167ED9E380C57F** 完整安装，Plugin/MCP 的ProductVersion均绑定该提交。Luna 仅一次启动 Steam，并只读核到已安装 MCP **64 tools / 1 resource** 与指南 **87895**；没有先行 load、save 或施工。随后经批准只尝试一次 expired-primary prepare，返回 `SESSION_NOT_OWNED`（generic provenance），**没有 commit、load 或 save，accepted仍为5**。fresh bridge status 实测 native 已在启动时随 Steam 更新为 **0.10.35.29088**，不是本轮仅支持的29057；两份受保护票据副本仍一致、未消费、无attempt，保存边界仍为 **73573789 / J91 / old-version**。因此恢复只待29088 DLL研究与新的有限核销，不将部署、握手或这次拒绝外推为加载、迁移耐久性、施工、吞吐或持续供给通过。
 
 ### 2026-09-24 — 重新授权冷部署被原生版本边界阻断

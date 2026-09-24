@@ -48,3 +48,27 @@ The following are product requirements, not live-validated conclusions:
 ## Pending live limits
 
 No live prepare, native load, migration, adoption, Journal rewrite, automatic resave, refreshed ticket, or restart has been demonstrated on `0.10.35.29057`. Production/logistics state, sustained power, and later construction are outside this version-pair research. The exact save remains `73573789 / J91 / accepted5` until separately protected execution evidence proves otherwise.
+
+## 2026-09-24 follow-up: build 29088
+
+Steam installed a second `0.10.35` build after the `29057` analysis above. Read-only `Mono.Cecil` inspection compared the retained `0.10.35.29057` reference (`E75D3FE4B6A9CA822766189F826BA3A8348DFB7E301AA37FF6779DB29A83FD8D`, 8,019,456 bytes) with the newly installed `Assembly-CSharp.dll` (`C43A484F6ADF8A9E4B956156047070891B46860D5B5C707BA1377B6A2AF25732`, 8,020,480 bytes). `Updates/Versions.txt` records `0.10.35.29088,False,2026-09-24`; `GameConfig` still embeds `new Version(0, 10, 35)`. No installed assembly was executed or changed during this comparison.
+
+Every recovery-relevant method requested for this increment retained the same signature, code size and normalized IL instruction stream between `29057` and `29088`:
+
+| Method | Code size | Normalized IL SHA-256 in both builds |
+|---|---:|---|
+| `bool GameSave.SaveCurrentGame(string)` | 846 | `B5F01845554D596511BF9E05FE9285B54706CCE42269C181EB803056504E239E` |
+| `void GameSave.ReadHeader(string, bool, out GameSaveHeader)` | 604 | `1F82E3ADFD3842581D7EA6E9425BFFDB0B525A0B1C54F30FB5571477C1D21F8B` |
+| `string GameSave.SavePath(string)` | 42 | `0C3B15A2541BFDDD3D5807A25AC50C40F4A5155A74B8C9D33B652B6BF8498F45` |
+| `void DSPGame.StartGame(GameDesc)` | 87 | `12CF129C1FC7E13813A5B29ABE34D4B004DB8FFC5853D6E7EDC39484DECE3D68` |
+| `void DSPGame.StartGame(string)` | 86 | `79D5A7E6953D8F45A91FEC162B2715AF52C0EDBA11509C0B0292914A3076FB33` |
+| `void GameData.Import(BinaryReader)` | 2146 | `1768C530DDF8628EDB146327DBE6254109EFA0A23557BEE0CA8141C8E3E920BB` |
+| `void GameData.Export(BinaryWriter)` | 616 | `D4828ACC044295002A17E6888D7F56B03E3DCEBFE6E15C8394F24B52C6A41186` |
+| `void GameDesc.Import(BinaryReader)` | 560 | `B2FF5359B3676735518253A781A56977344172433A96D78F3F22F704845EE6FD` |
+| `void GameDesc.Export(BinaryWriter)` | 268 | `FAE9FB2191ECDBBC2776B23FF216BB2580981B3DFB2065782434EB2F006EDAB7` |
+| `void GalaxyData.ImportRuntimeData(BinaryReader)` | 224 | `0B26CA8780F42EBCA4E3EC00494B9147A0CB20CD5975A7A57DD2796DA3A5ACEE` |
+| `void GalaxyData.ExportRuntimeData(BinaryWriter)` | 284 | `494004A5328F48E3C3141EB138E4E1580BE0C76812F58E0D51B7B3562328A52C` |
+
+The target serialization tuple is also unchanged: native header `7`, `GameData 13 / patch 23`, `GameDesc 10`, and Galaxy runtime marker `1`. Consequently the bounded compatibility extension may add only the direct exact pair `0.10.34.28529 -> 0.10.35.29088`, alongside the separately researched `0.10.34.28529 -> 0.10.35.29057` pair. It must not infer a `29057 -> 29088` migration chain, accept a `0.10.35.*` wildcard, or weaken unknown-version rejection.
+
+This is offline native-format evidence only. No prepare against `29088`, native load, adoption, Journal transition, automatic resave, refreshed ticket or restart has yet been demonstrated; the protected world remains `73573789 / J91 / accepted5` until separate live evidence proves otherwise.

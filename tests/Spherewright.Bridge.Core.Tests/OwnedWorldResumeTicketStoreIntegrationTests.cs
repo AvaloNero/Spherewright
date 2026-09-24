@@ -14,6 +14,7 @@ public sealed class OwnedWorldResumeTicketStoreIntegrationTests
 {
     private const string GameVersion = "0.10.34.28529";
     private const string TargetGameVersion = "0.10.35.29057";
+    private const string TargetPatchGameVersion = "0.10.35.29088";
     private const string OwnedSaveName = "synthetic-protected-world-identity";
     private const string SessionId = "synthetic-session";
     private const int PlanetId = 104;
@@ -170,11 +171,14 @@ public sealed class OwnedWorldResumeTicketStoreIntegrationTests
         }
     }
 
-    [Fact]
-    public void OldExpiredTicketAndJournalCanOnlyPrepareReauthorizationOnTheNewRuntime()
+    [Theory]
+    [InlineData(TargetGameVersion)]
+    [InlineData(TargetPatchGameVersion)]
+    public void OldExpiredTicketAndJournalCanOnlyPrepareReauthorizationOnEachResearchedTargetRuntime(
+        string runtimeGameVersion)
     {
         using var scenario = VersionTransitionScenario.CreateExpired(
-            GameVersion, TargetGameVersion, GameVersion, Array.Empty<GameplayJournalVersionTransition>());
+            GameVersion, runtimeGameVersion, GameVersion, Array.Empty<GameplayJournalVersionTransition>());
 
         Assert.False(scenario.Store.TryGetActiveTicket(scenario.Token, out _, out _));
         Assert.True(scenario.Store.TryGetExpiredPrimaryProvenance(
@@ -187,6 +191,8 @@ public sealed class OwnedWorldResumeTicketStoreIntegrationTests
     [Theory]
     [InlineData("0.10.33.00000", "0.10.35.29057")]
     [InlineData("0.10.35.29057", "0.10.34.28529")]
+    [InlineData("0.10.35.29057", "0.10.35.29088")]
+    [InlineData("0.10.35.29088", "0.10.35.29057")]
     public void UnknownOrReverseRuntimeVersionCannotPrepareExpiredProvenance(
         string ticketVersion, string runtimeVersion)
     {
@@ -230,11 +236,14 @@ public sealed class OwnedWorldResumeTicketStoreIntegrationTests
         Assert.False(scenario.Store.TryGetActiveTicket(scenario.Token, out _, out _));
     }
 
-    [Fact]
-    public void RetainedSourceTicketReplicasCannotReviveAfterTargetRuntimeConsumption()
+    [Theory]
+    [InlineData(TargetGameVersion)]
+    [InlineData(TargetPatchGameVersion)]
+    public void RetainedSourceTicketReplicasCannotReviveAfterTargetRuntimeConsumption(
+        string runtimeGameVersion)
     {
         using var scenario = VersionTransitionScenario.CreateExpired(
-            GameVersion, TargetGameVersion, GameVersion, Array.Empty<GameplayJournalVersionTransition>());
+            GameVersion, runtimeGameVersion, GameVersion, Array.Empty<GameplayJournalVersionTransition>());
         var runtimeReplica = File.ReadAllText(scenario.RuntimeTicketPath);
         var handoffReplica = File.ReadAllText(scenario.HandoffTicketPath);
         Assert.True(scenario.Store.TryGetExpiredPrimaryProvenance(
@@ -279,23 +288,26 @@ public sealed class OwnedWorldResumeTicketStoreIntegrationTests
         Assert.False(scenario.Store.TryGetActiveTicket(scenario.Token, out _, out _));
     }
 
-    [Fact]
-    public void DurableVersionTransitionPermitsFutureNormalResumeOnTheTargetRuntime()
+    [Theory]
+    [InlineData(TargetGameVersion)]
+    [InlineData(TargetPatchGameVersion)]
+    public void DurableVersionTransitionPermitsFutureNormalResumeOnEitherResearchedTargetRuntime(
+        string runtimeGameVersion)
     {
         var transition = new GameplayJournalVersionTransition
         {
             FromGameVersion = GameVersion,
-            ToGameVersion = TargetGameVersion,
+            ToGameVersion = runtimeGameVersion,
             AdoptedAtGameTick = MinimumTick,
             DurableThroughSequence = 2,
             RecordedAtUtc = "2026-09-24T00:48:28.0000000+00:00",
         };
         using var scenario = VersionTransitionScenario.CreateActive(
-            TargetGameVersion, GameVersion, new[] { transition });
+            runtimeGameVersion, GameVersion, new[] { transition });
 
         Assert.True(scenario.Store.TryGetActiveTicket(scenario.Token, out var ticket, out var rejection));
         Assert.NotNull(ticket);
-        Assert.Equal(TargetGameVersion, ticket!.GameVersion);
+        Assert.Equal(runtimeGameVersion, ticket!.GameVersion);
         Assert.Equal(string.Empty, rejection);
     }
 

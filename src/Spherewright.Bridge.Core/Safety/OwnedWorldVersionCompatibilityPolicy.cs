@@ -7,9 +7,13 @@ public static class OwnedWorldVersionCompatibilityPolicy
 {
     public const string SourceVersion = "0.10.34.28529";
     public const string TargetVersion = "0.10.35.29057";
+    public const string TargetPatchVersion = "0.10.35.29088";
+
+    public static bool IsResearchedTarget(string version) =>
+        version == TargetVersion || version == TargetPatchVersion;
 
     public static bool IsSupportedMigration(string source, string target) =>
-        source == SourceVersion && target == TargetVersion;
+        source == SourceVersion && IsResearchedTarget(target);
 
     public static bool AllowsReauthorization(string source, string target) =>
         !string.IsNullOrWhiteSpace(source) && (source == target || IsSupportedMigration(source, target));

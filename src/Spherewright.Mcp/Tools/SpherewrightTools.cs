@@ -1392,7 +1392,7 @@ public static partial class SpherewrightTools
         IBridgeClient bridgeClient,
         string resumeToken,
         CancellationToken cancellationToken = default,
-        [Description("default, verified_newer_lastexit, or reauthorize_expired_primary. The last mode previews the exact expired primary and original Journal, discloses sourceGameVersion/targetGameVersion and requires conversation confirmation at commit. Only the researched 0.10.34.28529 to 0.10.35.29057 migration is supported; unknown pairs and downgrades reject. Journal origin/history remain intact with a durable transition. Never renew/edit an expired ticket.")] string recoveryMode = OwnedWorldResumeModes.Default,
+[Description("default, verified_newer_lastexit, or reauthorize_expired_primary. The last mode previews the exact expired primary and original Journal, discloses sourceGameVersion/targetGameVersion and requires conversation confirmation at commit. Only the researched direct migrations from 0.10.34.28529 to 0.10.35.29057 or 0.10.35.29088 are supported; migration between those two targets is not supported; unknown pairs and downgrades reject. Journal origin/history remain intact with a durable transition. Never renew/edit an expired ticket.")] string recoveryMode = OwnedWorldResumeModes.Default,
         [Description("Caller attests to actual explicit user confirmation in the conversation; never infer it.")] bool userConfirmedInConversation = false,
         [Description("Known latest progress that must not be rolled back; required only for verified recovery.")] long? minimumRecoveryGameTick = null,
         [Description("Exact user-approved newer fixed LastExit candidate tick; required only for verified recovery.")] long? expectedRecoveryGameTick = null)

@@ -29,7 +29,8 @@ public sealed class OwnedSavePrefixReaderTests
     [Theory]
     [InlineData(34, 28529, 22, 9, "0.10.34.28529")]
     [InlineData(35, 29057, 23, 10, "0.10.35.29057")]
-    public void ReadsOnlyTheTwoResearchedHeaderTuples(
+    [InlineData(35, 29088, 23, 10, "0.10.35.29088")]
+    public void ReadsOnlyTheResearchedHeaderTuples(
         int versionPatch, int versionBuild, int gameDataPatch, int gameDescVersion, string expectedVersion)
     {
         using var stream = Fixture(
@@ -97,6 +98,8 @@ public sealed class OwnedSavePrefixReaderTests
     [Theory]
     [InlineData(34, 28529, 13, 23, 10)]
     [InlineData(35, 29057, 13, 22, 9)]
+    [InlineData(35, 29088, 13, 22, 9)]
+    [InlineData(35, 29088, 13, 23, 9)]
     [InlineData(36, 30000, 13, 23, 10)]
     public void RejectsMixedOrUnknownKnownHeaderTuples(
         int versionPatch, int versionBuild, int dataVersion, int gameDataPatch, int gameDescVersion)

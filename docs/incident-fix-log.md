@@ -14,6 +14,8 @@
 
 ## IFX-171 — 冷部署的原生引用与已安装 DSP 版本漂移
 
+- 29088 后续适配（同日，实机恢复待验）：新DLL `C43A484F…AF25732` 的关键存取档方法与29057 normalized IL一致；新增28529→29088独立精确pair，保留原pair但不允许两个target之间迁移。当前引用完整Release编译0 warning/error，2216测试（59 Contracts/1975 Core/182 MCP）、source MCP 64工具/1资源/87939字符逐字匹配/退出0通过；未知版本和混合tuple仍拒绝。加载入口增加启动后真实gameVersion检查，发生再次漂移时在备份和prepare之前停止；不通过编辑来源票据或Journal解锁。
+
 - 后续冷部署与当前阻断（2026-09-24）：`bde7fea` / CI `35995364465` 绿后，修正 cohort 的228文件与 manifest **A6467753688B201DBD8701393C81E65DEF2564424A6E546A69167ED9E380C57F** 已核对，Plugin/MCP ProductVersion同为该提交；Luna仅一次启动到菜单并只读核到64 tools/1 resource、指南87895。唯一获准的 expired-primary prepare 随后被 `SESSION_NOT_OWNED`（generic provenance）拒绝，未产生 commit、load、save 或施工，accepted仍为5。fresh bridge status 显示 Steam 启动时实际 native 已变为 **0.10.35.29088**，而本轮实现只绑定 **0.10.34.28529 → 0.10.35.29057**；受保护票据副本仍一致、未消费且无attempt，**save73573789 / J91** 未动。这是版本边界的安全停止，不是存档损坏、原生加载失败或恢复成功；29088 DLL研究及新的受限核销仍待。
 
 - 冷部署（同日，原档尚未load）：`bde7fea`已push，CI`35995364465`绿。先生成的stage manifest `95BE972F…`虽与安装文件相符，但启动前额外读ProductVersion发现Plugin保留提交前SHA、MCP已是提交后SHA；该stage不能作为最终同批证据。完整postcommit重建后保留旧备份，仅替换四个Plugin文件，最终228/228匹配修正manifest **A6467753688B201DBD8701393C81E65DEF2564424A6E546A69167ED9E380C57F**；Plugin **2B01D623630D296495A45D8656522AF175E91687DAE847F983832B27C82350B3**、MCP **159AD44E1357CEC96B0B42E997D24FBDBDA1D3C6F80083718B6A0BDCADB759F6**，两者ProductVersion均为0.4.0+bde7fea完整SHA。修正前无启动/load，票据未变，accepted5。封存入口增加双方提交版本标识检查；冷部署不冒充恢复成功。

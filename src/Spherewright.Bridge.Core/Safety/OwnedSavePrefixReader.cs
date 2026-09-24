@@ -61,7 +61,7 @@ public static class OwnedSavePrefixReader
             var descriptorVersion = reader.ReadInt32();
             var gameVersion = string.Join(".", version.Select(value => value.ToString(CultureInfo.InvariantCulture)));
             if (!(gameVersion == OwnedWorldVersionCompatibilityPolicy.SourceVersion && patchVersion == 22 && descriptorVersion == 9)
-                && !(gameVersion == OwnedWorldVersionCompatibilityPolicy.TargetVersion && patchVersion == 23 && descriptorVersion == 10))
+                && !(OwnedWorldVersionCompatibilityPolicy.IsResearchedTarget(gameVersion) && patchVersion == 23 && descriptorVersion == 10))
                 throw new InvalidDataException("The native game/version/patch/descriptor tuple is unsupported.");
             return new OwnedSavePrefixEvidence(
                 fileLength, gameTick, new DateTimeOffset(savedAtTicks, TimeSpan.Zero),

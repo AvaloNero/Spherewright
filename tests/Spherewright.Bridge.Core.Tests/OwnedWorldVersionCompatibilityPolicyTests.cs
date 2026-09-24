@@ -11,18 +11,27 @@ public sealed class OwnedWorldVersionCompatibilityPolicyTests
     private const string RecordedAt = "2026-09-24T00:48:28.0000000+00:00";
 
     [Fact]
-    public void OnlyTheExactResearchedDirectionIsASupportedMigration()
+    public void OnlyTheResearchedSourceToEitherExactTargetIsASupportedMigration()
     {
         Assert.True(OwnedWorldVersionCompatibilityPolicy.IsSupportedMigration(Source, Target));
+        Assert.True(OwnedWorldVersionCompatibilityPolicy.IsSupportedMigration(Source, TargetPatch));
         Assert.False(OwnedWorldVersionCompatibilityPolicy.IsSupportedMigration(Target, Source));
+        Assert.False(OwnedWorldVersionCompatibilityPolicy.IsSupportedMigration(TargetPatch, Source));
+        Assert.False(OwnedWorldVersionCompatibilityPolicy.IsSupportedMigration(Target, TargetPatch));
+        Assert.False(OwnedWorldVersionCompatibilityPolicy.IsSupportedMigration(TargetPatch, Target));
         Assert.False(OwnedWorldVersionCompatibilityPolicy.IsSupportedMigration(Source, "0.10.35.29058"));
     }
 
     [Theory]
     [InlineData("0.10.34.28529", "0.10.34.28529", true)]
     [InlineData("0.10.35.29057", "0.10.35.29057", true)]
+    [InlineData("0.10.35.29088", "0.10.35.29088", true)]
     [InlineData("0.10.34.28529", "0.10.35.29057", true)]
+    [InlineData("0.10.34.28529", "0.10.35.29088", true)]
     [InlineData("0.10.35.29057", "0.10.34.28529", false)]
+    [InlineData("0.10.35.29088", "0.10.34.28529", false)]
+    [InlineData("0.10.35.29057", "0.10.35.29088", false)]
+    [InlineData("0.10.35.29088", "0.10.35.29057", false)]
     [InlineData("0.10.33.00000", "0.10.35.29057", false)]
     [InlineData("0.10.34.28529", "0.10.36.00000", false)]
     [InlineData("", "0.10.35.29057", false)]
@@ -51,6 +60,13 @@ public sealed class OwnedWorldVersionCompatibilityPolicyTests
             Source, new[] { ValidTransition() }, EntryCount, Target));
     }
 
+    [Fact]
+    public void ExactDurableTransitionAllowsFutureNormalResumeOnThePatchTarget()
+    {
+        Assert.True(OwnedWorldVersionCompatibilityPolicy.JournalMatches(
+            Source, new[] { ValidTransition(to: TargetPatch) }, EntryCount, TargetPatch));
+    }
+
     [Theory]
     [InlineData("null-transitions")]
     [InlineData("duplicate-transitions")]
@@ -60,6 +76,7 @@ public sealed class OwnedWorldVersionCompatibilityPolicyTests
     [InlineData("wrong-source")]
     [InlineData("wrong-target")]
     [InlineData("reverse")]
+    [InlineData("cross-researched-targets")]
     [InlineData("unexpected-expected-version")]
     public void InvalidOrNonDirectionalJournalTransitionsFailClosed(string change)
     {
@@ -76,6 +93,10 @@ public sealed class OwnedWorldVersionCompatibilityPolicyTests
             case "wrong-source": transitions = new[] { ValidTransition(from: "0.10.33.00000") }; break;
             case "wrong-target": transitions = new[] { ValidTransition(to: "0.10.35.29058") }; break;
             case "reverse": transitions = new[] { ValidTransition(from: Target, to: Source) }; break;
+            case "cross-researched-targets":
+                transitions = new[] { ValidTransition(from: Target, to: TargetPatch) };
+                expected = TargetPatch;
+                break;
             case "unexpected-expected-version": expected = Source; break;
         }
 
@@ -92,6 +113,7 @@ public sealed class OwnedWorldVersionCompatibilityPolicyTests
 
     private const string Source = OwnedWorldVersionCompatibilityPolicy.SourceVersion;
     private const string Target = OwnedWorldVersionCompatibilityPolicy.TargetVersion;
+    private const string TargetPatch = OwnedWorldVersionCompatibilityPolicy.TargetPatchVersion;
 
     private static GameplayJournalVersionTransition ValidTransition(
         string from = Source,

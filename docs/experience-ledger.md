@@ -18,6 +18,8 @@
 
 ### EXP-304 — 游戏升级需要同时验证原生格式与受保护来源版本
 
+- 最新范围（同日）：增加经当前DLL逐项证明的28529→29088独立直达pair；不是29057→29088链式许可。2216离线测试与当前引用完整Release通过；实机迁移仍须单独核销。私有恢复入口先fresh读取实际native版本再做backup/prepare，以尽早识别Steam启动期间的再次更新。
+
 - 冷部署后的负门（同日）：修正 cohort 的228文件、提交 `bde7fea` 与CI `35995364465`均已核对，仍不能替代启动后 native tuple 的fresh读取。Steam 启动时 native 实为 `0.10.35.29088`，而该轮只允许 `0.10.34.28529 → 0.10.35.29057`；唯一 expired-primary prepare 按 `SESSION_NOT_OWNED`（generic provenance）停止，0 commit/load/save、accepted5保持，票据双副本未消费且无attempt。版本门必须在真实运行时重新核销，不能把已部署的228文件、MCP握手或离线 backward-read分支写成迁移成功。
 
 - 冷部署补充（同日）：源树与manifest哈希一致仍不足以证明“同提交编译”；commit前build后复用Plugin、commit后publish MCP会产生不同InformationalVersion。启动前须核两侧ProductVersion与完整source SHA，再封存。已在零游戏写入时发现并postcommit重建修正；旧stage保留为被替代证据，不覆盖原manifest或原备份。

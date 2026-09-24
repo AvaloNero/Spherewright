@@ -31,6 +31,7 @@ internal sealed class GameSessionTracker : IDisposable
     private OwnedWorldResumeTicket? _expectedResumeTicket;
     private OwnedWorldResumeTicket? _pendingJournalResumeTicket;
     private OwnedSaveRecoveryLease? _resumeSourceLease;
+    private IDisposable? _reauthorizationJournalLease;
     private DateTimeOffset _resumeSourceLeaseAcquiredAtUtc;
     private string? _resumeAdoptionError;
     private FlightCheckpointTicket? _expectedFlightCheckpoint;
@@ -895,7 +896,8 @@ internal sealed class GameSessionTracker : IDisposable
         _logger.LogError("Spherewright quarantined writes for the current owned session");
     }
 
-    public void ExpectNextSessionToBeResumed(OwnedWorldResumeTicket ticket, OwnedSaveRecoveryLease? sourceLease = null)
+    public void ExpectNextSessionToBeResumed(OwnedWorldResumeTicket ticket, OwnedSaveRecoveryLease? sourceLease = null,
+        bool reauthorizingExpiredPrimary = false, IDisposable? journalLease = null)
     {
         if (ticket is null)
         {
@@ -912,14 +914,18 @@ internal sealed class GameSessionTracker : IDisposable
             throw new InvalidOperationException("An owned world can only be resumed from an idle main menu.");
         }
 
+        if (reauthorizingExpiredPrimary && (sourceLease is null || journalLease is null))
+            throw new InvalidOperationException("Expired-primary reauthorization requires a verified exact-primary lease.");
         if (sourceLease is not null && (ticket.GameplayJournalCheckpoint is null
             || !string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
             || !sourceLease.Prefix.MatchesExpectedIdentity
-            || sourceLease.Prefix.GameTick <= ticket.MinimumGameTick))
-            throw new InvalidOperationException("Verified recovery requires a newer bound candidate and a healthy Journal-bearing ticket.");
+            || !OwnedWorldReauthorizationPolicy.AllowsLeaseTick(sourceLease.Prefix.GameTick,
+                ticket.MinimumGameTick, reauthorizingExpiredPrimary)))
+            throw new InvalidOperationException("Verified recovery requires its mode-specific tick and a healthy Journal-bearing ticket.");
 
         _expectedResumeTicket = ticket;
         _resumeSourceLease = sourceLease;
+        _reauthorizationJournalLease = journalLease;
         _resumeSourceLeaseAcquiredAtUtc = DateTimeOffset.UtcNow;
         _ownedSaveState = OwnedSaveStates.WaitingForWorld;
         _ownedSaveError = null;
@@ -940,7 +946,12 @@ internal sealed class GameSessionTracker : IDisposable
     private void ReleaseResumeSourceLease()
     {
         try { _resumeSourceLease?.Dispose(); }
-        finally { _resumeSourceLease = null; }
+        finally
+        {
+            _resumeSourceLease = null;
+            try { _reauthorizationJournalLease?.Dispose(); }
+            finally { _reauthorizationJournalLease = null; }
+        }
     }
 
     public void Dispose() => ReleaseResumeSourceLease();

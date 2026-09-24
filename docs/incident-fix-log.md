@@ -1,6 +1,6 @@
 # Spherewright 首次问题与代码修复记录
 
-更新时间：2026-09-22（Asia/Singapore）
+更新时间：2026-09-24（Asia/Singapore）
 
 本文件专门记录项目第一次遇到的可复用工程问题：现场症状、根因、代码或协议
 修复、验证证据和仍有限制。它不是逐局流水账，也不是当前规则的唯一来源。
@@ -13,6 +13,9 @@
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
 ## IFX-170 — 受保护恢复票据在续接前过期，恢复按设计安全阻断
+
+- 2026-09-24 开发修复（冷部署/实机仍待）：现有 resume prepare/commit 新增 `reauthorize_expired_primary`，过期票据只作来源证明。双副本、原 Journal 完整内容、精确主档全文证据和菜单 revision 绑定短计划；prepare 披露后等待用户后续确认，commit 要求计划摘要回显，重验并持原档/Journal只读 lease 至采用。加载前持久化 attempt 证据与 consumed tombstone，不改旧 expiry、不创建新副本；中断只保留人工核销边界，不声称自动续试已实现。新增新模型 `gpt-6-luna/max` 只读核查时游戏已关闭，未执行恢复或施工。
+- 离线证据：锁文件 restore、完整当前引用 Release build（0 warning/error）、2159项测试（59 Contracts、1919 Core、181 MCP）通过；其中12项链接真实 ticket store 的临时目录测试覆盖两副本/Journal漂移、部分持久化故障、消费后重建和文件lease。测试I/O替身不证明Windows ACL或原生loader；源码MCP实进程元数据为64 tools/1 resource，内嵌指南逐字一致、退出0。独立审阅修正了reauth evidenceVersion误耦合LastExit常量；无确认误commit会消费短plan但不消费票据/加载，须重新prepare。冷部署、实际预检及原档恢复尚未证明。
 
 - 状态：`open`，当前阻断是受保护恢复的 fail-closed 行为，不是存档损坏、安装漂移、原生拒绝或游戏失败。
 - 事实：2026-09-22 用户继续 0.4 时，既有 `2649aad` 部署 cohort 仍为 228/228 文件匹配。9 月 19 日的正常保存已到 `save73573789 / J91 / accepted5`，随后正常关闭；保存与关闭记录分别为 `action-7196716d0b5e49cd843e14a5727ccfc4-0013-hps-d4-normal-save-before-close.json`（SHA-256 **B47BE56E7A7697FDC6F6EA49578597A69301DB9CBBCCD394E967640D6E6E2F2C**）和 `...-0014-hps-d4-normal-save-and-graceful-close.json`（SHA-256 **811624A3B74731338868726AEB5EE92637D8CF9B7E96FCCEBBE0CD3F0578D4D8**）。

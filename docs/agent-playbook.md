@@ -9,6 +9,14 @@ Read this playbook before the first gameplay action in a session, especially aft
 3. A world manually loaded by the player is restricted. The only adoption path is save-import prepare, showing its exact confirmation prompt, waiting for an explicit reply in a later user message, and then saving to an independent owned copy. Do not claim Journal history from before that boundary.
 4. If writes are disabled, the world is unowned, or write health is not healthy, remain read-only until the documented ownership or recovery flow succeeds.
 
+## Expired planned-restart credential
+
+`restartResumeAvailable` advertises stored provenance, not an unexpired loading capability. If a healthy planned-restart ticket expired, do not edit its expiry, renew it offline, select LastExit, or import a copy to pretend the original Journal continued. Use the existing resume prepare tool with `recoveryMode=reauthorize_expired_primary` and no confirmation/tick overrides. This narrowly previews the **exact ticket-bound primary at its saved tick**, with matching full embedded identity/version/peaceful state, full-file hash and the original Journal at exactly its durable checkpoint; a newer Journal or changed file rejects.
+
+Show the returned candidate tick and `confirmationPrompt`, then wait for a **subsequent explicit user reply**. This mode intentionally returns `commitAllowedNow=false` with `USER_CONFIRMATION_REQUIRED`; it is not an executable approval yet. Only after that reply may the Agent call the existing resume commit with `userConfirmedInConversation=true` and the exact `confirmationDigest` from that same fresh plan. The digest is a protocol echo, **not a code the user must type**. Other blockers still prohibit commit. If the short plan expires or evidence changes, prepare and disclose again; never transplant approval to changed evidence or another token.
+
+The Plugin rechecks provenance, original Journal, menu revision and the complete primary, holds read-only file leases through adoption, and persists an attempt record and consumed tombstone before native loading. Interrupted/failed attempts require manual reconciliation; no automatic retry or continuation of a pending attempt is implemented. After success, poll the unique action to terminal and verify same identity, saved/healthy status and Journal continuity. The action includes normal primary resave before success and a fresh restart ticket; preserve the accepted-write audit budget and never replay earlier construction. Offline tests are not live recovery evidence.
+
 ## Commit discipline
 
 1. Fresh-read the session and player before prepare. Use the current session, planet, revision, and player state hash.

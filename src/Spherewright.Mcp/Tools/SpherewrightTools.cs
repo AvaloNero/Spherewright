@@ -68,7 +68,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns a privacy-gated game-session snapshot. Before the first gameplay action in a session, read MCP resource spherewright://agent/playbooks/opening-movement-v1. At the main menu, gameLoaded=false is expected before protected resume. restartResumeAvailable advertises a ticket, not final native menu readiness: fresh prepare_resume_owned_game checks that readiness. Do not wait for a loaded world before calling prepare. Save, planet, and factory metadata are returned only for an owned world.")]
+    [Description("Returns a privacy-gated game-session snapshot. Before the first gameplay action in a session, read MCP resource spherewright://agent/playbooks/opening-movement-v1. At the main menu, gameLoaded=false is expected before protected resume. restartResumeAvailable advertises a stored ticket, not unexpired authority or final native menu readiness: fresh prepare_resume_owned_game checks both. For an expired healthy primary use only the documented reauthorize_expired_primary disclosure and subsequent confirmation flow, never edit expiry. Do not wait for a loaded world before calling prepare. Save, planet, and factory metadata are returned only for an owned world.")]
     public static async Task<CallToolResult> GetSessionStateAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Cancellation token supplied by the MCP host.")] CancellationToken cancellationToken)
@@ -1392,7 +1392,7 @@ public static partial class SpherewrightTools
         IBridgeClient bridgeClient,
         string resumeToken,
         CancellationToken cancellationToken = default,
-        [Description("default, or explicitly user-authorized verified_newer_lastexit; never choose it automatically.")] string recoveryMode = OwnedWorldResumeModes.Default,
+        [Description("default, verified_newer_lastexit, or reauthorize_expired_primary. The last mode only previews the exact expired primary and original Journal, then requires subsequent conversation confirmation at commit; never renew/edit an expired ticket.")] string recoveryMode = OwnedWorldResumeModes.Default,
         [Description("Caller attests to actual explicit user confirmation in the conversation; never infer it.")] bool userConfirmedInConversation = false,
         [Description("Known latest progress that must not be rolled back; required only for verified recovery.")] long? minimumRecoveryGameTick = null,
         [Description("Exact user-approved newer fixed LastExit candidate tick; required only for verified recovery.")] long? expectedRecoveryGameTick = null)
@@ -1416,6 +1416,12 @@ public static partial class SpherewrightTools
                 BridgeErrorCodes.BridgeNotReady,
                 "The Plugin did not confirm the exact verified recovery mode, identity and candidate tick; no token is exposed.",
                 false, "Install a matching Plugin/MCP cohort and prepare again; never commit an old Plugin's default-primary plan."));
+        if (recoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredPrimary && result.Success
+            && (result.Value is null || !OwnedWorldReauthorizationPolicy.HasMatchingEcho(result.Value)))
+            result = BridgeCallResult<PreparedOwnedWorldResumePlan>.Failed(BridgeError.Create(
+                BridgeErrorCodes.BridgeNotReady,
+                "The Plugin did not echo the exact expired-primary disclosure and confirmation binding; no token is exposed.",
+                false, "Use a matching cohort. Do not commit another mode or fabricate confirmation."));
         return ToToolResult(result, "One-time exact owned-world resume plan prepared; no save was loaded or enumerated.");
     }
 
@@ -1431,13 +1437,17 @@ public static partial class SpherewrightTools
         IBridgeClient bridgeClient,
         string planToken,
         string idempotencyKey,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        [Description("Only for reauthorize_expired_primary: true after the user explicitly confirms this prepared disclosure in conversation, never inferred from a prior request to develop recovery.")] bool userConfirmedInConversation = false,
+        [Description("Echo this exact plan's confirmationDigest after subsequent consent. This is an Agent protocol echo, not a code the user must type. Empty for other modes.")] string confirmationDigest = "")
     {
         var result = await bridgeClient.CommitOwnedWorldResumeAsync(
             new CommitOwnedWorldResumeRequest
             {
                 PlanToken = planToken,
                 IdempotencyKey = idempotencyKey,
+                UserConfirmedInConversation = userConfirmedInConversation,
+                ConfirmationDigest = confirmationDigest,
             },
             cancellationToken).ConfigureAwait(false);
         return ToToolResult(result, "DSP accepted the exact protected owned-world resume; poll actionId for provenance validation and high-entropy resave.");

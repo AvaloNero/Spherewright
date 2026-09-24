@@ -10,6 +10,11 @@ public static class OwnedWorldRecoveryPolicy
 
     public static string? ValidateRequest(PrepareOwnedWorldResumeRequest request)
     {
+        if (request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredPrimary)
+            return request.UserConfirmedInConversation || request.MinimumRecoveryGameTick.HasValue
+                || request.ExpectedRecoveryGameTick.HasValue
+                ? "Expired-primary prepare is read-only disclosure; confirmation belongs to a subsequent commit, not prepare."
+                : null;
         if (request.RecoveryMode == OwnedWorldResumeModes.Default)
             return request.UserConfirmedInConversation || request.MinimumRecoveryGameTick.HasValue
                 || request.ExpectedRecoveryGameTick.HasValue

@@ -4,6 +4,7 @@ public static class OwnedWorldResumeModes
 {
     public const string Default = "default";
     public const string VerifiedNewerLastExit = "verified_newer_lastexit";
+    public const string ReauthorizeExpiredPrimary = "reauthorize_expired_primary";
 }
 
 public sealed class PrepareOwnedWorldResumeRequest
@@ -24,6 +25,10 @@ public sealed class CommitOwnedWorldResumeRequest
     public string PlanToken { get; set; } = string.Empty;
 
     public string IdempotencyKey { get; set; } = string.Empty;
+
+    public bool UserConfirmedInConversation { get; set; }
+
+    public string ConfirmationDigest { get; set; } = string.Empty;
 }
 
 public sealed class PreparedOwnedWorldResumePlan
@@ -45,6 +50,12 @@ public sealed class PreparedOwnedWorldResumePlan
     public long? CandidateGameTick { get; set; }
 
     public bool ExactEmbeddedIdentityVerified { get; set; }
+
+    public bool UserConfirmationRequired { get; set; }
+
+    public string ConfirmationPrompt { get; set; } = string.Empty;
+
+    public string ConfirmationDigest { get; set; } = string.Empty;
 
     public bool CommitAllowedNow { get; set; }
 

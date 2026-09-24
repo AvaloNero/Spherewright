@@ -284,6 +284,52 @@ public sealed class SpherewrightToolsTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExpiredPrimaryRequiresNewPluginDisclosureBeforeExposingPlan(bool validEcho)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            ResumePlan = validEcho ? new PreparedOwnedWorldResumePlan
+            {
+                Prepared = true, PlanToken = "fresh-plan", RecoveryMode = OwnedWorldResumeModes.ReauthorizeExpiredPrimary,
+                RecoveryEvidenceVersion = 1, CandidateGameTick = 12345, MinimumGameTick = 12345,
+                ExactEmbeddedIdentityVerified = true, UserConfirmationRequired = true, CommitAllowedNow = false,
+                ConfirmationPrompt = Spherewright.Bridge.Core.Safety.OwnedWorldReauthorizationPolicy.ConfirmationPrompt,
+                ConfirmationDigest = "synthetic-disclosure-digest",
+            } : null,
+        };
+        var result = await SpherewrightTools.PrepareOwnedWorldResumeAsync(bridge, "expired-provenance",
+            recoveryMode: OwnedWorldResumeModes.ReauthorizeExpiredPrimary);
+        Assert.Equal(!validEcho, result.IsError);
+        Assert.False(bridge.LastResumePrepareRequest!.UserConfirmedInConversation);
+        if (!validEcho) Assert.DoesNotContain("planToken", result.StructuredContent!.Value.GetRawText());
+    }
+
+    [Fact]
+    public async Task ExpiredPrimaryCannotClaimConfirmationDuringPrepare()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareOwnedWorldResumeAsync(bridge, "expired-provenance",
+            recoveryMode: OwnedWorldResumeModes.ReauthorizeExpiredPrimary, userConfirmedInConversation: true);
+        Assert.True(result.IsError);
+        Assert.Null(bridge.LastResumePrepareRequest);
+    }
+
+    [Fact]
+    public async Task CommitCarriesSubsequentConsentAndExactDisclosureDigestWithoutChangingDefault()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+        await SpherewrightTools.CommitOwnedWorldResumeAsync(bridge, "fresh-plan", "idempotency",
+            userConfirmedInConversation: true, confirmationDigest: "synthetic-disclosure-digest");
+        Assert.True(bridge.LastResumeCommitRequest!.UserConfirmedInConversation);
+        Assert.Equal("synthetic-disclosure-digest", bridge.LastResumeCommitRequest.ConfirmationDigest);
+        await SpherewrightTools.CommitOwnedWorldResumeAsync(bridge, "default-plan", "default-idempotency");
+        Assert.False(bridge.LastResumeCommitRequest!.UserConfirmedInConversation);
+        Assert.Empty(bridge.LastResumeCommitRequest.ConfirmationDigest);
+    }
+
+    [Theory]
     [InlineData(null, true)]
     [InlineData(BeltPathModes.NativeGrid, true)]
     [InlineData(BeltPathModes.NativeGeodesic, false)]
@@ -2282,6 +2328,7 @@ public sealed class SpherewrightToolsTests
         public SessionState? SessionSnapshot { get; set; }
         public PrepareOwnedWorldResumeRequest? LastResumePrepareRequest { get; private set; }
         public PreparedOwnedWorldResumePlan? ResumePlan { get; set; }
+        public CommitOwnedWorldResumeRequest? LastResumeCommitRequest { get; private set; }
 
         public string? LastSessionId { get; private set; }
 
@@ -2898,6 +2945,7 @@ public sealed class SpherewrightToolsTests
             CommitOwnedWorldResumeRequest request,
             CancellationToken cancellationToken)
         {
+            LastResumeCommitRequest = request;
             return Task.FromResult(BridgeCallResult<OwnedWorldResumeResult>.Succeeded(new OwnedWorldResumeResult
             {
                 ActionId = "resume-action",

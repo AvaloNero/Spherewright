@@ -26,12 +26,18 @@ internal sealed class OwnedWorldResumeTicketStore
         string bridgeInstanceId,
         string gameVersion,
         ManualLogSource logger)
+        : this(RuntimeDescriptorPublisher.ResolveRuntimeDirectory(configuredRuntimeDirectory),
+            Path.Combine(Path.GetDirectoryName(typeof(OwnedWorldResumeTicketStore).Assembly.Location)
+                ?? throw new InvalidOperationException("The Spherewright Plugin directory is unavailable."), "runtime-handoff"),
+            bridgeInstanceId, gameVersion, logger)
     {
-        _runtimeDirectory = RuntimeDescriptorPublisher.ResolveRuntimeDirectory(configuredRuntimeDirectory);
+    }
+
+    internal OwnedWorldResumeTicketStore(string runtimeDirectory, string handoffDirectory,
+        string bridgeInstanceId, string gameVersion, ManualLogSource logger)
+    {
+        _runtimeDirectory = runtimeDirectory;
         _ticketPath = Path.Combine(_runtimeDirectory, "owned-world-resume.json");
-        var pluginDirectory = Path.GetDirectoryName(typeof(OwnedWorldResumeTicketStore).Assembly.Location)
-            ?? throw new InvalidOperationException("The Spherewright Plugin directory is unavailable.");
-        var handoffDirectory = Path.Combine(pluginDirectory, "runtime-handoff");
         WindowsCurrentUserSecurity.EnsureSecureDirectory(handoffDirectory);
         _handoffTicketPath = Path.Combine(handoffDirectory, "owned-world-resume.json");
         _bridgeInstanceId = bridgeInstanceId;
@@ -184,8 +190,15 @@ internal sealed class OwnedWorldResumeTicketStore
 
     private bool TryValidateGameplayJournalContinuity(
         OwnedWorldResumeTicket ticket,
+        out string rejection) => TryValidateGameplayJournalContinuity(ticket, false, out _, out rejection);
+
+    private bool TryValidateGameplayJournalContinuity(
+        OwnedWorldResumeTicket ticket,
+        bool requireExactCheckpoint,
+        out string journalFingerprint,
         out string rejection)
     {
+        journalFingerprint = string.Empty;
         rejection = string.Empty;
         var checkpoint = ticket.GameplayJournalCheckpoint;
         if (checkpoint is null)
@@ -193,7 +206,7 @@ internal sealed class OwnedWorldResumeTicketStore
             // Version-1 tickets issued before the continuity checkpoint was
             // introduced remain compatible. Every newly armed ticket carries
             // the checkpoint and therefore takes the strict path below.
-            return true;
+            return !requireExactCheckpoint;
         }
 
         try
@@ -213,7 +226,15 @@ internal sealed class OwnedWorldResumeTicketStore
                 return false;
             }
 
-            var document = PluginJson.Deserialize<GameplayJournalDocument>(File.ReadAllText(path));
+            string json;
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var reader = new StreamReader(stream, Encoding.UTF8, true))
+            {
+                if (requireExactCheckpoint && stream.Length > 16L * 1024 * 1024)
+                    throw new IOException("Journal exceeds the bounded reauthorization limit.");
+                json = reader.ReadToEnd();
+            }
+            var document = PluginJson.Deserialize<GameplayJournalDocument>(json);
             if (document is null
                 || document.Version != 1
                 || !string.Equals(document.OwnedSaveIdentityHash, identityHash, StringComparison.Ordinal)
@@ -236,6 +257,12 @@ internal sealed class OwnedWorldResumeTicketStore
                 return false;
             }
 
+            if (requireExactCheckpoint && document.Entries.Count != checkpoint.MinimumDurableThroughSequence)
+            {
+                rejection = "Journal progress differs from the saved checkpoint; reauthorization must not roll back later history.";
+                return false;
+            }
+            journalFingerprint = HashToken(json);
             return true;
         }
         catch (Exception exception) when (
@@ -267,6 +294,105 @@ internal sealed class OwnedWorldResumeTicketStore
         _currentTicketPath = null;
         DeleteTicketReplicaIfMatching(_ticketPath, resumeToken);
         DeleteTicketReplicaIfMatching(_handoffTicketPath, resumeToken);
+    }
+
+    // Unlike TryGetActiveTicket this grants no loading capability. It only authenticates
+    // provenance for a fresh short-lived plan, whose commit requires subsequent consent.
+    public bool TryGetExpiredPrimaryProvenance(string resumeToken,
+        out OwnedWorldResumeTicket? ticket, out string fingerprint, out string rejection)
+    {
+        ticket = null;
+        fingerprint = string.Empty;
+        rejection = "Expired-primary provenance is missing, changed, consumed, or incomplete.";
+        try
+        {
+            if (string.IsNullOrWhiteSpace(resumeToken)) return false;
+            // A malformed tombstone is still a refusal here; never resurrect consumed provenance.
+            var hash = HashToken(resumeToken);
+            if (File.Exists(GetTombstonePath(_runtimeDirectory, hash))
+                || File.Exists(GetTombstonePath(Path.GetDirectoryName(_handoffTicketPath)!, hash))) return false;
+            if (File.Exists(GetReauthorizationAttemptPath(_runtimeDirectory, hash))
+                || File.Exists(GetReauthorizationAttemptPath(Path.GetDirectoryName(_handoffTicketPath)!, hash)))
+            {
+                rejection = "A previous reauthorization attempt needs manual reconciliation; automatic replay is forbidden.";
+                return false;
+            }
+            foreach (var path in new[] { _ticketPath, _handoffTicketPath })
+                if (!File.Exists(path) || new FileInfo(path).Length > 65536) return false;
+            var runtime = ReadFromPath(_ticketPath);
+            var handoff = ReadFromPath(_handoffTicketPath);
+            if (runtime is null || handoff is null
+                || !string.Equals(PluginJson.Serialize(runtime), PluginJson.Serialize(handoff), StringComparison.Ordinal)
+                || (_currentTicket is not null && !string.Equals(PluginJson.Serialize(_currentTicket),
+                    PluginJson.Serialize(runtime), StringComparison.Ordinal))
+                || runtime.Version != TicketVersion || !FixedTimeEquals(runtime.ResumeToken, resumeToken)
+                || !string.Equals(runtime.GameVersion, _gameVersion, StringComparison.Ordinal)
+                || string.IsNullOrWhiteSpace(runtime.OwnedSaveName)
+                || runtime.OwnedSaveName == "." || runtime.OwnedSaveName == ".."
+                || Path.GetFileName(runtime.OwnedSaveName) != runtime.OwnedSaveName
+                || runtime.OwnedSaveName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+                || string.IsNullOrWhiteSpace(runtime.SourceSessionId)
+                || runtime.SourceProcessId <= 0 || string.IsNullOrWhiteSpace(runtime.SourceBridgeInstanceId)
+                || runtime.ExpectedPlanetId <= 0 || runtime.MinimumGameTick < 0
+                || !OwnedWorldReauthorizationPolicy.AllowsExpiredProvenance(
+                    string.IsNullOrWhiteSpace(runtime.QuarantineActionId), runtime.GameplayJournalCheckpoint is not null,
+                    IsConsumed(resumeToken), runtime.IssuedAtUtc, runtime.ExpiresAtUtc, DateTimeOffset.UtcNow)) return false;
+            if (!TryValidateGameplayJournalContinuity(runtime, true, out var journalHash, out rejection)) return false;
+            ticket = runtime;
+            fingerprint = CanonicalStateHash.Combine("expired-primary-provenance-v1", PluginJson.Serialize(runtime), journalHash);
+            rejection = string.Empty;
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException
+            || exception is ArgumentException || exception is System.Security.SecurityException)
+        {
+            rejection = "Expired-primary provenance could not be read safely; no load is allowed.";
+            return false;
+        }
+    }
+
+    public bool TryConsumeReauthorization(string resumeToken, string expectedFingerprint,
+        string actionId, string confirmationDigest)
+    {
+        if (!Guid.TryParse(actionId, out _) || string.IsNullOrWhiteSpace(confirmationDigest)
+            || !TryGetExpiredPrimaryProvenance(resumeToken, out var ticket, out var currentFingerprint, out _)
+            || !FixedTimeEquals(currentFingerprint, expectedFingerprint)) return false;
+        var tokenHash = HashToken(resumeToken);
+        var handoffDirectory = Path.GetDirectoryName(_handoffTicketPath)!;
+        var attempt = new OwnedWorldReauthorizationAttempt
+        {
+            Ticket = ticket!, ActionId = actionId, ConfirmationDigest = confirmationDigest,
+            ProvenanceFingerprint = expectedFingerprint, RecordedAtUtc = DateTimeOffset.UtcNow,
+        };
+        // Retain the original proof for human reconciliation even if the process dies
+        // after write-ahead consumption and before native load/adoption/normal save.
+        var runtimeRecorded = TryPersistAtPath(GetReauthorizationAttemptPath(_runtimeDirectory, tokenHash),
+            _runtimeDirectory, attempt, "reauthorization attempt");
+        var handoffRecorded = TryPersistAtPath(GetReauthorizationAttemptPath(handoffDirectory, tokenHash),
+            handoffDirectory, attempt, "handoff reauthorization attempt");
+        if (!runtimeRecorded || !handoffRecorded) return false;
+        // Write-ahead consumption precedes the native loader. A crash cannot revive this approval.
+        if (!PersistConsumptionTombstone(resumeToken)) return false;
+        _currentTicket = null;
+        _currentTicketPath = null;
+        DeleteTicketReplicaIfMatching(_ticketPath, resumeToken);
+        DeleteTicketReplicaIfMatching(_handoffTicketPath, resumeToken);
+        return true;
+    }
+
+    public FileStream OpenReauthorizationJournalLease(OwnedWorldResumeTicket ticket, string provenance)
+    {
+        var identity = GameplayJournalIdentity.HashOwnedSaveIdentity(ticket.OwnedSaveName);
+        var stream = new FileStream(Path.Combine(_runtimeDirectory, "journals", $"gameplay-{identity}.json"),
+            FileMode.Open, FileAccess.Read, FileShare.Read);
+        try
+        {
+            if (!TryGetExpiredPrimaryProvenance(ticket.ResumeToken, out _, out var fresh, out _)
+                || !FixedTimeEquals(provenance, fresh))
+                throw new IOException("The exact journal changed before its protected load lease.");
+            return stream;
+        }
+        catch { stream.Dispose(); throw; }
     }
 
     private IReadOnlyList<string> CaptureReplicaTokens()
@@ -560,6 +686,9 @@ internal sealed class OwnedWorldResumeTicketStore
     private static string GetTombstonePath(string directory, string tokenHash) =>
         Path.Combine(directory, $"owned-world-resume-consumed-{tokenHash}.json");
 
+    private static string GetReauthorizationAttemptPath(string directory, string tokenHash) =>
+        Path.Combine(directory, $"owned-world-reauthorization-attempt-{tokenHash}.json");
+
     private static string HashToken(string token)
     {
         using (var sha256 = SHA256.Create())
@@ -627,6 +756,17 @@ internal sealed class OwnedWorldResumeTicket
     public DateTimeOffset IssuedAtUtc { get; set; }
 
     public DateTimeOffset ExpiresAtUtc { get; set; }
+}
+
+internal sealed class OwnedWorldReauthorizationAttempt
+{
+    public int Version { get; set; } = 1;
+    public string State { get; set; } = "load_may_have_started_reconciliation_required";
+    public OwnedWorldResumeTicket Ticket { get; set; } = null!;
+    public string ActionId { get; set; } = string.Empty;
+    public string ConfirmationDigest { get; set; } = string.Empty;
+    public string ProvenanceFingerprint { get; set; } = string.Empty;
+    public DateTimeOffset RecordedAtUtc { get; set; }
 }
 
 internal sealed class OwnedWorldGameplayJournalCheckpoint

@@ -51,7 +51,7 @@ internal sealed class OwnedWorldResumeCoordinator
             return GameCallResult<PreparedOwnedWorldResumePlan>.Failed(readinessError);
         }
 
-        if (!_tickets.TryGetActiveTicket(request.ResumeToken, out var ticket, out var ticketRejection)
+        if (!TryGetTicket(request, request.ResumeToken, out var ticket, out var provenance, out var ticketRejection)
             || ticket is null)
         {
             return GameCallResult<PreparedOwnedWorldResumePlan>.Failed(BridgeError.Create(
@@ -61,7 +61,7 @@ internal sealed class OwnedWorldResumeCoordinator
                 "Use only the one-time restartResumeToken issued for the exact quarantined Spherewright-owned session."));
         }
 
-        if (!TryResolvePayload(ticket, request, out var payload, out var lease, out var rejection))
+        if (!TryResolvePayload(ticket, request, provenance, out var payload, out var lease, out var rejection))
         {
             return GameCallResult<PreparedOwnedWorldResumePlan>.Failed(BridgeError.Create(
                 BridgeErrorCodes.StaleState,
@@ -86,6 +86,12 @@ internal sealed class OwnedWorldResumeCoordinator
         }
 
         var blockers = new List<WriteBlocker>();
+        if (payload!.Reauthorizing)
+            blockers.Add(new WriteBlocker
+            {
+                Code = BridgeErrorCodes.UserConfirmationRequired,
+                Message = "Display this plan's disclosure and wait for subsequent explicit conversation confirmation before commit.",
+            });
         if (!_writesConfigured)
         {
             blockers.Add(new WriteBlocker
@@ -103,12 +109,18 @@ internal sealed class OwnedWorldResumeCoordinator
             ExpectedPlanetId = ticket.ExpectedPlanetId,
             MinimumGameTick = payload!.MinimumGameTick,
             RecoveryMode = payload.Request.RecoveryMode,
-            RecoveryEvidenceVersion = payload.VerifiedRecovery ? OwnedWorldRecoveryPolicy.EvidenceVersion : 0,
-            CandidateGameTick = payload.VerifiedRecovery ? payload.MinimumGameTick : (long?)null,
-            ExactEmbeddedIdentityVerified = payload.VerifiedRecovery,
+            RecoveryEvidenceVersion = payload.Reauthorizing ? OwnedWorldReauthorizationPolicy.EvidenceVersion
+                : payload.VerifiedRecovery ? OwnedWorldRecoveryPolicy.EvidenceVersion : 0,
+            CandidateGameTick = payload.VerifiedRecovery || payload.Reauthorizing ? payload.MinimumGameTick : (long?)null,
+            ExactEmbeddedIdentityVerified = payload.VerifiedRecovery || payload.Reauthorizing,
+            UserConfirmationRequired = payload.Reauthorizing,
+            ConfirmationPrompt = payload.Reauthorizing ? OwnedWorldReauthorizationPolicy.ConfirmationPrompt : string.Empty,
+            ConfirmationDigest = payload.Reauthorizing ? payload.Fingerprint : string.Empty,
             CommitAllowedNow = blockers.Count == 0,
             CommitBlockers = blockers,
-            CompletionCondition = payload.VerifiedRecovery
+            CompletionCondition = payload.Reauthorizing
+                ? "Only the exact primary and original Journal at this checkpoint may continue after subsequent explicit consent. Commit revalidates all evidence, consumes expired provenance before loading, and normal save alone issues a fresh credential. No fallback or import."
+                : payload.VerifiedRecovery
                 ? "Only the explicitly approved fixed LastExit may load: exact embedded identity, current version, peaceful mode, durable Journal, full-file evidence and the candidate tick are bound and rechecked; no fallback. Adoption must cover the candidate tick before normal primary resave."
                 : string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
                 ? "A healthy planned restart loads only the exact primary owned save named inside the protected ticket after its header proves the minimum game tick and its protected per-save journal proves the ticket's durable checkpoint; adoption still requires the embedded high-entropy owned name, planet, and peaceful mode. Sandbox state and resource multiplier are preserved and reported but do not gate adoption."
@@ -127,7 +139,8 @@ internal sealed class OwnedWorldResumeCoordinator
                 "Generate one UUID and reuse it for retries of this exact resume commit."));
         }
 
-        var fingerprint = "commit-resume-owned-world|" + request.PlanToken;
+        var fingerprint = CanonicalStateHash.Combine("commit-resume-owned-world", request.PlanToken,
+            request.UserConfirmedInConversation, request.ConfirmationDigest);
         if (_idempotency.TryGet(
             IdempotencyScope,
             request.IdempotencyKey,
@@ -176,12 +189,20 @@ internal sealed class OwnedWorldResumeCoordinator
 
         var readinessError = TestWorldCoordinator.ValidateMainMenuReady();
         var payload = plan.Payload;
+        if (payload.Reauthorizing
+            ? !OwnedWorldReauthorizationPolicy.MatchesConfirmation(request.UserConfirmedInConversation,
+                payload.Fingerprint, request.ConfirmationDigest)
+            : request.UserConfirmedInConversation || !string.IsNullOrEmpty(request.ConfirmationDigest))
+            return GameCallResult<OwnedWorldResumeResult>.Failed(BridgeError.Create(
+                BridgeErrorCodes.UserConfirmationRequired,
+                "Expired-primary reauthorization requires subsequent explicit confirmation; other resume modes do not accept this flag.",
+                false, "Prepare a fresh disclosure and ask the user; do not infer confirmation from an earlier development request."));
         var rejection = "The one-time resume ticket changed after prepare.";
         OwnedSaveRecoveryLease? sourceLease = null;
         if (readinessError is not null
-            || !_tickets.TryGetActiveTicket(payload.Ticket.ResumeToken, out var currentTicket, out _)
+            || !TryGetTicket(payload.Request, payload.Ticket.ResumeToken, out var currentTicket, out var provenance, out _)
             || currentTicket is null
-            || !TryResolvePayload(currentTicket, payload.Request, out var currentPayload, out sourceLease, out rejection)
+            || !TryResolvePayload(currentTicket, payload.Request, provenance, out var currentPayload, out sourceLease, out rejection)
             || !string.Equals(currentPayload!.Fingerprint, payload.Fingerprint, StringComparison.Ordinal))
         {
             sourceLease?.Dispose();
@@ -200,10 +221,20 @@ internal sealed class OwnedWorldResumeCoordinator
             ResumeSource = payload.ResumeSource,
             MinimumGameTick = payload.MinimumGameTick,
         };
+        FileStream? journalLease = null;
         try
         {
-            _sessions.ExpectNextSessionToBeResumed(currentTicket, sourceLease);
+            if (payload.Reauthorizing)
+                journalLease = _tickets.OpenReauthorizationJournalLease(currentTicket, payload.Provenance);
+            if (payload.Reauthorizing && !_tickets.TryConsumeReauthorization(currentTicket.ResumeToken,
+                payload.Provenance, action.ActionId, payload.Fingerprint))
+                return GameCallResult<OwnedWorldResumeResult>.Failed(BridgeError.Create(
+                    BridgeErrorCodes.StaleState,
+                    "The exact provenance changed or durable consumption failed; no load was started.",
+                    false, "Keep the current main menu and investigate; do not replay with another save."));
+            _sessions.ExpectNextSessionToBeResumed(currentTicket, sourceLease, payload.Reauthorizing, journalLease);
             sourceLease = null; // Tracker owns the lease through adoption/Journal confirmation.
+            journalLease = null;
             DSPGame.StartGame(
                 payload.ResumeSource == OwnedWorldResumeSourceKind.LastExit
                     ? GameSave.LastExit
@@ -221,6 +252,7 @@ internal sealed class OwnedWorldResumeCoordinator
         finally
         {
             sourceLease?.Dispose();
+            journalLease?.Dispose();
         }
 
         var result = new OwnedWorldResumeResult
@@ -300,7 +332,16 @@ internal sealed class OwnedWorldResumeCoordinator
         return true;
     }
 
-    private static bool TryResolvePayload(OwnedWorldResumeTicket ticket, PrepareOwnedWorldResumeRequest request,
+    private bool TryGetTicket(PrepareOwnedWorldResumeRequest request, string token,
+        out OwnedWorldResumeTicket? ticket, out string provenance, out string rejection)
+    {
+        provenance = string.Empty;
+        return request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredPrimary
+            ? _tickets.TryGetExpiredPrimaryProvenance(token, out ticket, out provenance, out rejection)
+            : _tickets.TryGetActiveTicket(token, out ticket, out rejection);
+    }
+
+    private bool TryResolvePayload(OwnedWorldResumeTicket ticket, PrepareOwnedWorldResumeRequest request, string provenance,
         out OwnedWorldResumePlanPayload? payload, out OwnedSaveRecoveryLease? lease, out string rejection)
     {
         payload = null;
@@ -309,7 +350,7 @@ internal sealed class OwnedWorldResumeCoordinator
         if (request.RecoveryMode == OwnedWorldResumeModes.Default)
         {
             if (!TryResolveResumeSource(ticket, out var source, out rejection)) return false;
-            payload = new OwnedWorldResumePlanPayload(ticket, source, request, null);
+            payload = new OwnedWorldResumePlanPayload(ticket, source, request, null, provenance, _sessions.Revision);
             return true;
         }
         if (IsLiveDspProcess(ticket.SourceProcessId))
@@ -325,6 +366,21 @@ internal sealed class OwnedWorldResumeCoordinator
         try
         {
             // No caller-supplied path or autosave enumeration. Ticket/Journal already validated by the store.
+            if (request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredPrimary)
+            {
+                lease = OwnedSaveRecoveryLease.Open(GameSave.SavePath(ticket.OwnedSaveName), ticket.OwnedSaveName);
+                rejection = OwnedWorldReauthorizationPolicy.ValidateCandidate(ticket.MinimumGameTick, ticket.GameVersion, lease.Prefix)
+                    ?? string.Empty;
+                if (rejection.Length == 0)
+                {
+                    payload = new OwnedWorldResumePlanPayload(ticket, OwnedWorldResumeSourceKind.OwnedPrimary,
+                        request, lease, provenance, _sessions.Revision);
+                    return true;
+                }
+                lease.Dispose();
+                lease = null;
+                return false;
+            }
             lease = OwnedSaveRecoveryLease.Open(GameSave.SavePath(GameSave.LastExit), ticket.OwnedSaveName);
             TryReadSaveEvidence(ticket.OwnedSaveName, out _, out var primaryTick);
             rejection = OwnedWorldRecoveryPolicy.ValidateCandidate(request,
@@ -333,7 +389,7 @@ internal sealed class OwnedWorldResumeCoordinator
                 lease.Prefix, lease.WrittenAtUtc, primaryTick) ?? string.Empty;
             if (rejection.Length == 0)
             {
-                payload = new OwnedWorldResumePlanPayload(ticket, OwnedWorldResumeSourceKind.LastExit, request, lease);
+                payload = new OwnedWorldResumePlanPayload(ticket, OwnedWorldResumeSourceKind.LastExit, request, lease, provenance, _sessions.Revision);
                 return true;
             }
         }
@@ -342,7 +398,7 @@ internal sealed class OwnedWorldResumeCoordinator
             || exception is NotSupportedException || exception is System.Security.SecurityException
             || exception is System.Security.Cryptography.CryptographicException)
         {
-            rejection = $"The fixed LastExit could not prove bounded protected recovery evidence ({exception.GetType().Name}).";
+            rejection = $"The exact recovery source could not prove bounded protected evidence ({exception.GetType().Name}).";
         }
         lease?.Dispose();
         lease = null;
@@ -453,9 +509,12 @@ internal sealed class OwnedWorldResumeCoordinator
             OwnedWorldResumeTicket ticket,
             OwnedWorldResumeSourceKind resumeSource,
             PrepareOwnedWorldResumeRequest request,
-            OwnedSaveRecoveryLease? lease)
+            OwnedSaveRecoveryLease? lease,
+            string provenance,
+            long revision)
         {
             Ticket = ticket;
+            Provenance = provenance;
             ResumeSource = resumeSource;
             Request = new PrepareOwnedWorldResumeRequest
             {
@@ -467,6 +526,8 @@ internal sealed class OwnedWorldResumeCoordinator
             MinimumGameTick = lease?.Prefix.GameTick ?? ticket.MinimumGameTick;
             Fingerprint = CanonicalStateHash.Combine(
                 "resume-owned-world",
+                provenance,
+                revision,
                 ticket.ResumeToken,
                 ticket.OwnedSaveName,
                 ticket.SourceSessionId,
@@ -499,6 +560,10 @@ internal sealed class OwnedWorldResumeCoordinator
         public PrepareOwnedWorldResumeRequest Request { get; }
 
         public bool VerifiedRecovery => Request.RecoveryMode == OwnedWorldResumeModes.VerifiedNewerLastExit;
+
+        public bool Reauthorizing => Request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredPrimary;
+
+        public string Provenance { get; }
 
         public long MinimumGameTick { get; }
 

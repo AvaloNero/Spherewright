@@ -14,6 +14,10 @@
 
 ## IFX-171 — 冷部署的原生引用与已安装 DSP 版本漂移
 
+- 最终离线验证（2026-09-24）：locked restore通过；使用新版完整引用Release build 0 warning/error；2201测试（59 Contracts、1960 Core、182 MCP）通过，其中21项链接真实ticket store。source MCP实进程64 tools/1 resource，87895字符指南逐字匹配，退出0/额外stdout0。测试用I/O替身不证明真实ACL，离线结果不代替后续load、迁移耐久性、保存/恢复验收。
+
+- 2026-09-24 用户选择适配新版后的实现切片（冷部署/实机待验）：限定旧版→新版精确pair，恢复证据v2披露并绑定source/target。Journal保留原始GameVersion与全部事件，采用后先耐久写独立transition，再允许正常保存；保存后复读当前native tuple/身份/tick，reauth成功还要求新票据实际可用。消费标记跨版本不可逆，落盘source版字段供旧Plugin识别，新读者对attempt及损坏tombstone均拒绝，防止删除副本失败后凭据复活。完整新版引用build及Core/Contracts/MCP测试与source MCP检查通过，最终数量随提交记录；这不是live验收。
+
 - 状态：`open`。`ad36f919653cb9be7177c32c227c1515690328d6` 与 CI `35987113158` 已通过，但这只证明源码/CI，不证明可安全安装到当前 DSP。
 - 事实：冷部署预检在 native hash 门停止，未写 install-intent、未创建 backup、未复制或移动 Plugin/MCP，且未启动、load 或施工。安装 `Assembly-CSharp.dll` 是 **E75D3FE4B6A9CA822766189F826BA3A8348DFB7E301AA37FF6779DB29A83FD8D / 8019456 bytes**，已验证 reference 是 **AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85 / 7830016 bytes**；BepInEx 保持 5.4.17.0。只读 `Updates/Versions.txt` 最新记录为 **0.10.35.29057 / True / 2026-09-23**，旧安装/证据为 0.10.34.28529。
 - 边界：已封存的 228 文件 stage seal（789AC…）可保留但不得误装；原 **save73573789 / J91 / accepted5**、票据与 Journal 均未变。用户已授权直接 load，但该授权不允许篡改 ticket/Journal `GameVersion`、忽略 native hash 或把源码推断说成新版本兼容。Sol 的离线 DLL 核对只确认 `SaveCurrentGame`、`ReadHeader`、`StartGame` 的签名与 IL 未变，以及 `GameData` patch 22→23、`GameDesc` 9→10 的 backward-read 分支；这不是 live 验证，产品的精确版本绑定仍会拒绝，重新编译本身不足以放行。不得把存档损坏、原生拒绝或游戏失败归因为本次阻断。

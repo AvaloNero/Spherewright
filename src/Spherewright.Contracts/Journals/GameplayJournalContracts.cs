@@ -16,6 +16,12 @@ public static class GameplayJournalTrackingModes
 
 public sealed class GameplayJournalSnapshot
 {
+    public string OriginGameVersion { get; set; } = string.Empty;
+
+    public string CurrentGameVersion { get; set; } = string.Empty;
+
+    public List<GameplayJournalVersionTransition> VersionTransitions { get; set; } = new List<GameplayJournalVersionTransition>();
+
     public string SessionId { get; set; } = string.Empty;
 
     public string JournalId { get; set; } = string.Empty;
@@ -62,4 +68,13 @@ public sealed class GameplayJournalEntry
     public string GameTime { get; set; } = string.Empty;
 
     public string Source { get; set; } = string.Empty;
+}
+
+public sealed class GameplayJournalVersionTransition
+{
+    public string FromGameVersion { get; set; } = string.Empty;
+    public string ToGameVersion { get; set; } = string.Empty;
+    public long AdoptedAtGameTick { get; set; }
+    public long DurableThroughSequence { get; set; }
+    public string RecordedAtUtc { get; set; } = string.Empty;
 }

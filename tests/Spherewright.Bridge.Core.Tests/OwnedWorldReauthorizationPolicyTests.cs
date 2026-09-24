@@ -96,6 +96,8 @@ public sealed class OwnedWorldReauthorizationPolicyTests
     [InlineData("confirmation-missing")]
     [InlineData("digest-missing")]
     [InlineData("commit-allowed")]
+    [InlineData("wrong-source-version")]
+    [InlineData("wrong-target-version")]
     public void ShortPreparedPlanMustEchoTheExactReauthorizationContract(string changed)
     {
         var plan = MatchingPlan();
@@ -108,6 +110,8 @@ public sealed class OwnedWorldReauthorizationPolicyTests
             case "confirmation-missing": plan.UserConfirmationRequired = false; break;
             case "digest-missing": plan.ConfirmationDigest = string.Empty; break;
             case "commit-allowed": plan.CommitAllowedNow = true; break;
+            case "wrong-source-version": plan.SourceGameVersion = "0.10.33.00000"; break;
+            case "wrong-target-version": plan.TargetGameVersion = "0.10.36.00000"; break;
         }
 
         Assert.False(OwnedWorldReauthorizationPolicy.HasMatchingEcho(plan));
@@ -134,6 +138,20 @@ public sealed class OwnedWorldReauthorizationPolicyTests
         long candidate, bool reauthorizing, bool allowed) =>
         Assert.Equal(allowed, OwnedWorldReauthorizationPolicy.AllowsLeaseTick(candidate, 12345, reauthorizing));
 
+    [Fact]
+    public void ReauthorizationEchoCannotBeUsedAsAVerifiedLastExitEcho()
+    {
+        var request = new PrepareOwnedWorldResumeRequest
+        {
+            RecoveryMode = OwnedWorldResumeModes.VerifiedNewerLastExit,
+            UserConfirmedInConversation = true,
+            MinimumRecoveryGameTick = 12344,
+            ExpectedRecoveryGameTick = 12345,
+        };
+
+        Assert.False(OwnedWorldRecoveryPolicy.HasMatchingEcho(request, MatchingPlan()));
+    }
+
     private static PrepareOwnedWorldResumeRequest ReauthorizationRequest() => new()
     {
         RecoveryMode = OwnedWorldResumeModes.ReauthorizeExpiredPrimary,
@@ -150,6 +168,8 @@ public sealed class OwnedWorldReauthorizationPolicyTests
         UserConfirmationRequired = true,
         ConfirmationPrompt = OwnedWorldReauthorizationPolicy.ConfirmationPrompt,
         ConfirmationDigest = ConfirmationDigest,
+        SourceGameVersion = OwnedWorldVersionCompatibilityPolicy.SourceVersion,
+        TargetGameVersion = OwnedWorldVersionCompatibilityPolicy.TargetVersion,
         CommitAllowedNow = false,
     };
 

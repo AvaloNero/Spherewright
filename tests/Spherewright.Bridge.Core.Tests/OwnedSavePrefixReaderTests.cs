@@ -27,6 +27,24 @@ public sealed class OwnedSavePrefixReaderTests
     }
 
     [Theory]
+    [InlineData(34, 28529, 22, 9, "0.10.34.28529")]
+    [InlineData(35, 29057, 23, 10, "0.10.35.29057")]
+    public void ReadsOnlyTheTwoResearchedHeaderTuples(
+        int versionPatch, int versionBuild, int gameDataPatch, int gameDescVersion, string expectedVersion)
+    {
+        using var stream = Fixture(
+            versionPatch: versionPatch,
+            versionBuild: versionBuild,
+            patch: gameDataPatch,
+            gameDescVersion: gameDescVersion);
+
+        var evidence = OwnedSavePrefixReader.Read(stream, Identity);
+
+        Assert.Equal(expectedVersion, evidence.GameVersion);
+        Assert.True(evidence.MatchesExpectedIdentity);
+    }
+
+    [Theory]
     [InlineData("different-world")]
     [InlineData("synthetic-protected-world-IDENTITY")]
     [InlineData("synthetic-protected-world-identity-extra")]
@@ -60,12 +78,36 @@ public sealed class OwnedSavePrefixReaderTests
     }
 
     [Theory]
-    [InlineData(1, 13, 22)]
-    [InlineData(0, 12, 22)]
-    [InlineData(0, 13, 21)]
-    public void RejectsUnresearchedLayouts(int accountVersion, int dataVersion, int patch)
+    [InlineData(1, 13, 22, 9)]
+    [InlineData(0, 12, 22, 9)]
+    [InlineData(0, 13, 21, 9)]
+    [InlineData(0, 13, 23, 9)]
+    [InlineData(0, 13, 22, 10)]
+    [InlineData(0, 13, 24, 10)]
+    public void RejectsUnresearchedOrMixedLayouts(int accountVersion, int dataVersion, int patch, int gameDescVersion)
     {
-        using var stream = Fixture(accountVersion: accountVersion, dataVersion: dataVersion, patch: patch);
+        using var stream = Fixture(
+            accountVersion: accountVersion,
+            dataVersion: dataVersion,
+            patch: patch,
+            gameDescVersion: gameDescVersion);
+        Assert.Throws<InvalidDataException>(() => OwnedSavePrefixReader.Read(stream, Identity));
+    }
+
+    [Theory]
+    [InlineData(34, 28529, 13, 23, 10)]
+    [InlineData(35, 29057, 13, 22, 9)]
+    [InlineData(36, 30000, 13, 23, 10)]
+    public void RejectsMixedOrUnknownKnownHeaderTuples(
+        int versionPatch, int versionBuild, int dataVersion, int gameDataPatch, int gameDescVersion)
+    {
+        using var stream = Fixture(
+            versionPatch: versionPatch,
+            versionBuild: versionBuild,
+            dataVersion: dataVersion,
+            patch: gameDataPatch,
+            gameDescVersion: gameDescVersion);
+
         Assert.Throws<InvalidDataException>(() => OwnedSavePrefixReader.Read(stream, Identity));
     }
 
@@ -141,14 +183,15 @@ public sealed class OwnedSavePrefixReaderTests
     }
 
     internal static MemoryStream Fixture(string identity = Identity, bool sandbox = false,
-        int accountVersion = 0, int dataVersion = 13, int patch = 22, string accountName = "not-exposed")
+        int accountVersion = 0, int dataVersion = 13, int patch = 22, string accountName = "not-exposed",
+        int versionPatch = 34, int versionBuild = 28529, int gameDescVersion = 9)
     {
         var stream = new MemoryStream();
         using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
         {
             writer.Write(Encoding.ASCII.GetBytes("VFSAVE"));
             writer.Write(0L); writer.Write(7); writer.Write(sandbox); writer.Write(true);
-            foreach (var value in new[] { 0, 10, 34, 28529 }) writer.Write(value);
+            foreach (var value in new[] { 0, 10, versionPatch, versionBuild }) writer.Write(value);
             writer.Write(12345L); writer.Write(new DateTime(2026, 9, 17, 0, 0, 0, DateTimeKind.Utc).Ticks);
             writer.Write(3); writer.Write(new byte[] { 1, 2, 3 });
             Account(writer, accountVersion, accountName);
@@ -156,7 +199,7 @@ public sealed class OwnedSavePrefixReaderTests
             writer.Write(dataVersion); writer.Write(patch);
             Account(writer, accountVersion, accountName);
             writer.Write(identity);
-            writer.Write(9); // Current researched GameDesc version, without importing its content.
+            writer.Write(gameDescVersion); // Researched GameDesc version, without importing its content.
             writer.Write(99);
             stream.Position = 6; writer.Write(stream.Length);
         }

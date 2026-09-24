@@ -13,6 +13,7 @@ namespace Spherewright.Bridge.Core.Tests;
 public sealed class OwnedWorldResumeTicketStoreIntegrationTests
 {
     private const string GameVersion = "0.10.34.28529";
+    private const string TargetGameVersion = "0.10.35.29057";
     private const string OwnedSaveName = "synthetic-protected-world-identity";
     private const string SessionId = "synthetic-session";
     private const int PlanetId = 104;
@@ -169,6 +170,135 @@ public sealed class OwnedWorldResumeTicketStoreIntegrationTests
         }
     }
 
+    [Fact]
+    public void OldExpiredTicketAndJournalCanOnlyPrepareReauthorizationOnTheNewRuntime()
+    {
+        using var scenario = VersionTransitionScenario.CreateExpired(
+            GameVersion, TargetGameVersion, GameVersion, Array.Empty<GameplayJournalVersionTransition>());
+
+        Assert.False(scenario.Store.TryGetActiveTicket(scenario.Token, out _, out _));
+        Assert.True(scenario.Store.TryGetExpiredPrimaryProvenance(
+            scenario.Token, out var ticket, out _, out var rejection));
+        Assert.NotNull(ticket);
+        Assert.Equal(GameVersion, ticket!.GameVersion);
+        Assert.Equal(string.Empty, rejection);
+    }
+
+    [Theory]
+    [InlineData("0.10.33.00000", "0.10.35.29057")]
+    [InlineData("0.10.35.29057", "0.10.34.28529")]
+    public void UnknownOrReverseRuntimeVersionCannotPrepareExpiredProvenance(
+        string ticketVersion, string runtimeVersion)
+    {
+        using var scenario = VersionTransitionScenario.CreateExpired(
+            ticketVersion, runtimeVersion, ticketVersion, Array.Empty<GameplayJournalVersionTransition>());
+
+        Assert.False(scenario.Store.TryGetExpiredPrimaryProvenance(scenario.Token, out _, out _, out _));
+    }
+
+    [Fact]
+    public void ReauthorizationFingerprintIsBoundToTheTargetRuntimeVersion()
+    {
+        using var scenario = VersionTransitionScenario.CreateExpired(
+            GameVersion, TargetGameVersion, GameVersion, Array.Empty<GameplayJournalVersionTransition>());
+
+        Assert.True(scenario.Store.TryGetExpiredPrimaryProvenance(
+            scenario.Token, out _, out var targetFingerprint, out _));
+        var sourceRuntimeStore = scenario.OpenStore(GameVersion);
+        Assert.True(sourceRuntimeStore.TryGetExpiredPrimaryProvenance(
+            scenario.Token, out _, out var sourceFingerprint, out _));
+
+        Assert.NotEqual(sourceFingerprint, targetFingerprint);
+    }
+
+    [Fact]
+    public void TargetRuntimeConsumptionWritesSourceVersionTombstoneAndRemainsConsumedOnSourceRuntime()
+    {
+        using var scenario = VersionTransitionScenario.CreateExpired(
+            GameVersion, TargetGameVersion, GameVersion, Array.Empty<GameplayJournalVersionTransition>());
+        Assert.True(scenario.Store.TryGetExpiredPrimaryProvenance(
+            scenario.Token, out _, out var fingerprint, out _));
+
+        Assert.True(scenario.Store.TryConsumeReauthorization(
+            scenario.Token, fingerprint, Guid.NewGuid().ToString(), ConfirmationDigest));
+        var tombstone = Assert.IsType<OwnedWorldResumeConsumptionTombstone>(
+            PluginJson.Deserialize<OwnedWorldResumeConsumptionTombstone>(
+                File.ReadAllText(scenario.RuntimeTombstonePath)));
+        Assert.Equal(GameVersion, tombstone.GameVersion);
+
+        scenario.Reopen(GameVersion);
+        Assert.False(scenario.Store.TryGetActiveTicket(scenario.Token, out _, out _));
+    }
+
+    [Fact]
+    public void RetainedSourceTicketReplicasCannotReviveAfterTargetRuntimeConsumption()
+    {
+        using var scenario = VersionTransitionScenario.CreateExpired(
+            GameVersion, TargetGameVersion, GameVersion, Array.Empty<GameplayJournalVersionTransition>());
+        var runtimeReplica = File.ReadAllText(scenario.RuntimeTicketPath);
+        var handoffReplica = File.ReadAllText(scenario.HandoffTicketPath);
+        Assert.True(scenario.Store.TryGetExpiredPrimaryProvenance(
+            scenario.Token, out _, out var fingerprint, out _));
+        Assert.True(scenario.Store.TryConsumeReauthorization(
+            scenario.Token, fingerprint, Guid.NewGuid().ToString(), ConfirmationDigest));
+
+        File.WriteAllText(scenario.RuntimeTicketPath, runtimeReplica, Encoding.UTF8);
+        File.WriteAllText(scenario.HandoffTicketPath, handoffReplica, Encoding.UTF8);
+        scenario.Reopen(GameVersion);
+
+        Assert.False(scenario.Store.TryGetActiveTicket(scenario.Token, out _, out _));
+        Assert.False(scenario.Store.TryGetExpiredPrimaryProvenance(scenario.Token, out _, out _, out _));
+    }
+
+    [Fact]
+    public void LegacySourceVersionTombstoneFencesAProtectedTokenOnTheTargetRuntime()
+    {
+        using var scenario = VersionTransitionScenario.CreateActive(
+            TargetGameVersion, TargetGameVersion, Array.Empty<GameplayJournalVersionTransition>());
+        File.WriteAllText(scenario.RuntimeTombstonePath, PluginJson.Serialize(
+            new OwnedWorldResumeConsumptionTombstone
+            {
+                Version = 1,
+                ResumeTokenHash = scenario.TokenHash,
+                GameVersion = GameVersion,
+                ConsumedAtUtc = DateTimeOffset.UtcNow,
+            }), Encoding.UTF8);
+        scenario.Reopen(TargetGameVersion);
+
+        Assert.False(scenario.Store.TryGetActiveTicket(scenario.Token, out _, out _));
+    }
+
+    [Fact]
+    public void AttemptEvidenceAloneFencesDefaultResume()
+    {
+        using var scenario = VersionTransitionScenario.CreateActive(
+            TargetGameVersion, TargetGameVersion, Array.Empty<GameplayJournalVersionTransition>());
+        File.WriteAllText(scenario.RuntimeAttemptPath, "{}", Encoding.UTF8);
+        scenario.Reopen(TargetGameVersion);
+
+        Assert.False(scenario.Store.TryGetActiveTicket(scenario.Token, out _, out _));
+    }
+
+    [Fact]
+    public void DurableVersionTransitionPermitsFutureNormalResumeOnTheTargetRuntime()
+    {
+        var transition = new GameplayJournalVersionTransition
+        {
+            FromGameVersion = GameVersion,
+            ToGameVersion = TargetGameVersion,
+            AdoptedAtGameTick = MinimumTick,
+            DurableThroughSequence = 2,
+            RecordedAtUtc = "2026-09-24T00:48:28.0000000+00:00",
+        };
+        using var scenario = VersionTransitionScenario.CreateActive(
+            TargetGameVersion, GameVersion, new[] { transition });
+
+        Assert.True(scenario.Store.TryGetActiveTicket(scenario.Token, out var ticket, out var rejection));
+        Assert.NotNull(ticket);
+        Assert.Equal(TargetGameVersion, ticket!.GameVersion);
+        Assert.Equal(string.Empty, rejection);
+    }
+
     private sealed class ExpiredScenario : IDisposable
     {
         private readonly string _root;
@@ -293,6 +423,143 @@ public sealed class OwnedWorldResumeTicketStoreIntegrationTests
         {
             using var sha256 = SHA256.Create();
             return Convert.ToHexString(sha256.ComputeHash(Encoding.UTF8.GetBytes(token))).ToLowerInvariant();
+        }
+    }
+
+    private sealed class VersionTransitionScenario : IDisposable
+    {
+        private readonly string _root;
+        private readonly string _runtimeDirectory;
+        private readonly string _handoffDirectory;
+
+        private VersionTransitionScenario(string ticketGameVersion)
+        {
+            _root = Path.Combine(Path.GetTempPath(), "Spherewright", "owned-ticket-version-tests", Guid.NewGuid().ToString("N"));
+            _runtimeDirectory = Path.Combine(_root, "runtime");
+            _handoffDirectory = Path.Combine(_root, "handoff");
+            Directory.CreateDirectory(_runtimeDirectory);
+            Directory.CreateDirectory(_handoffDirectory);
+            Store = NewStore(ticketGameVersion);
+        }
+
+        public OwnedWorldResumeTicketStore Store { get; private set; }
+        public string Token { get; private set; } = string.Empty;
+
+        public static VersionTransitionScenario CreateExpired(
+            string ticketGameVersion,
+            string runtimeGameVersion,
+            string journalOriginVersion,
+            IReadOnlyList<GameplayJournalVersionTransition> transitions)
+        {
+            var scenario = CreateArmed(ticketGameVersion, journalOriginVersion, transitions);
+            var issued = DateTimeOffset.UtcNow.AddDays(-2);
+            var expires = issued.AddDays(1);
+            scenario.MutateBoth(ticket =>
+            {
+                ticket.IssuedAtUtc = issued;
+                ticket.ExpiresAtUtc = expires;
+            });
+            scenario.Reopen(runtimeGameVersion);
+            return scenario;
+        }
+
+        public static VersionTransitionScenario CreateActive(
+            string ticketGameVersion,
+            string journalOriginVersion,
+            IReadOnlyList<GameplayJournalVersionTransition> transitions)
+        {
+            var scenario = CreateArmed(ticketGameVersion, journalOriginVersion, transitions);
+            scenario.Reopen(ticketGameVersion);
+            return scenario;
+        }
+
+        public OwnedWorldResumeTicketStore OpenStore(string runtimeGameVersion) => NewStore(runtimeGameVersion);
+
+        public void Dispose()
+        {
+            try { Directory.Delete(_root, recursive: true); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+
+        private static VersionTransitionScenario CreateArmed(
+            string ticketGameVersion,
+            string journalOriginVersion,
+            IReadOnlyList<GameplayJournalVersionTransition> transitions)
+        {
+            var scenario = new VersionTransitionScenario(ticketGameVersion);
+            var checkpoint = new OwnedWorldGameplayJournalCheckpoint
+            {
+                Version = OwnedWorldGameplayJournalCheckpoint.CurrentVersion,
+                JournalId = scenario.JournalIdentity,
+                TrackingMode = GameplayJournalTrackingModes.AttachedExistingSave,
+                HistoricalCoverageComplete = true,
+                TrackingStartedAtGameTick = MinimumTick,
+                MinimumDurableThroughSequence = 2,
+            };
+            scenario.Store.ArmFromHealthySavedOwnedSession(
+                OwnedSaveName, SessionId, PlanetId, MinimumTick, checkpoint);
+            scenario.Token = Assert.IsType<string>(scenario.Store.CurrentResumeToken);
+            scenario.WriteJournal(journalOriginVersion, transitions);
+            return scenario;
+        }
+
+        private string JournalIdentity => GameplayJournalIdentity.HashOwnedSaveIdentity(OwnedSaveName);
+        public string RuntimeTicketPath => Path.Combine(_runtimeDirectory, "owned-world-resume.json");
+        public string HandoffTicketPath => Path.Combine(_handoffDirectory, "owned-world-resume.json");
+        public string RuntimeTombstonePath => Path.Combine(
+            _runtimeDirectory, $"owned-world-resume-consumed-{TokenHash}.json");
+        public string RuntimeAttemptPath => Path.Combine(
+            _runtimeDirectory, $"owned-world-reauthorization-attempt-{TokenHash}.json");
+        public string TokenHash
+        {
+            get
+            {
+                using var sha256 = SHA256.Create();
+                return Convert.ToHexString(sha256.ComputeHash(Encoding.UTF8.GetBytes(Token))).ToLowerInvariant();
+            }
+        }
+
+        public void Reopen(string runtimeGameVersion) => Store = NewStore(runtimeGameVersion);
+
+        private OwnedWorldResumeTicketStore NewStore(string gameVersion) => new(
+            _runtimeDirectory, _handoffDirectory, "version-transition-test-bridge", gameVersion, new ManualLogSource());
+
+        private void MutateBoth(Action<OwnedWorldResumeTicket> mutate)
+        {
+            Mutate(RuntimeTicketPath, mutate);
+            Mutate(HandoffTicketPath, mutate);
+        }
+
+        private static void Mutate(string path, Action<OwnedWorldResumeTicket> mutate)
+        {
+            var ticket = Assert.IsType<OwnedWorldResumeTicket>(PluginJson.Deserialize<OwnedWorldResumeTicket>(File.ReadAllText(path)));
+            mutate(ticket);
+            File.WriteAllText(path, PluginJson.Serialize(ticket), Encoding.UTF8);
+        }
+
+        private void WriteJournal(string originGameVersion, IReadOnlyList<GameplayJournalVersionTransition> transitions)
+        {
+            var directory = Path.Combine(_runtimeDirectory, "journals");
+            Directory.CreateDirectory(directory);
+            var document = new GameplayJournalDocument
+            {
+                Version = 1,
+                JournalId = JournalIdentity,
+                OwnedSaveIdentityHash = JournalIdentity,
+                GameVersion = originGameVersion,
+                VersionTransitions = transitions.ToList(),
+                TrackingMode = GameplayJournalTrackingModes.AttachedExistingSave,
+                HistoricalCoverageComplete = true,
+                CreatedAtActualTime = "synthetic-version-transition",
+                TrackingStartedAtGameTick = MinimumTick,
+                Entries = new List<GameplayJournalEntry>
+                {
+                    new() { Sequence = 1 },
+                    new() { Sequence = 2 },
+                },
+            };
+            File.WriteAllText(Path.Combine(directory, $"gameplay-{JournalIdentity}.json"), PluginJson.Serialize(document), Encoding.UTF8);
         }
     }
 }

@@ -53,6 +53,10 @@ public sealed class PreparedOwnedWorldResumePlan
 
     public bool UserConfirmationRequired { get; set; }
 
+    public string SourceGameVersion { get; set; } = string.Empty;
+
+    public string TargetGameVersion { get; set; } = string.Empty;
+
     public string ConfirmationPrompt { get; set; } = string.Empty;
 
     public string ConfirmationDigest { get; set; } = string.Empty;

@@ -67,6 +67,7 @@ namespace Spherewright.Plugin.Game
         public string JournalId { get; set; } = string.Empty;
         public string OwnedSaveIdentityHash { get; set; } = string.Empty;
         public string GameVersion { get; set; } = string.Empty;
+        public List<GameplayJournalVersionTransition> VersionTransitions { get; set; } = new();
         public string TrackingMode { get; set; } = string.Empty;
         public bool HistoricalCoverageComplete { get; set; }
         public string CreatedAtActualTime { get; set; } = string.Empty;

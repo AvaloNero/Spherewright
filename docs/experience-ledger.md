@@ -1,6 +1,6 @@
 # Spherewright experience ledger
 
-更新时间：2026-09-19（Asia/Singapore）
+更新时间：2026-09-24（Asia/Singapore）
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
@@ -15,6 +15,13 @@
 - 证据只记录可复核的脱敏摘要、动作/实体 ID 或代码测试位置；不记录 token、存档内容或 runtime descriptor。
 
 ## 当前经验
+
+### EXP-304 — 游戏升级需要同时验证原生格式与受保护来源版本
+
+- 日期/最近复验：2026-09-24；状态：`observed`，离线 DLL 与实现证据，尚非实机通过。
+- 适用范围：仅 `0.10.34.28529 → 0.10.35.29057`；关联 IFX-171 与 [API研究](research/game-api-version-0.10.35.md)。
+- 结论：load/save入口签名未变不代表整个存档格式未变；新的GameData patch23/GameDesc10要作为完整tuple校验。重编译不能替代原档票据、文件与Journal的来源一致性。Journal保留原始版本和所有事件，以单独耐久版本迁移记录连接新runtime；不能伪改旧票据或把升级当导入新档。
+- 边界/复验触发：每次DSP更新、DLL哈希变化、冷部署/恢复时重验。当前源码添加窄迁移与保存后prefix复读，不构成生产、持续产量或0.4最终门通过；失败消费后不自动重放。
 
 2026-09-19 / EXP-299 用户暂停时保存退出的证据边界复验（`validated`，仅本次正常保存和退出）：停止未提交后缀后，只按用户关闭请求执行一次正常save；本次D.5/D.6未派发，D.1–D.4已验前缀由save73573789/R115/J91覆盖，accepted4→5不清零。保存终态、Journal durable91/无pending/error、公开restartResumeAvailable及正常进程退出分别由保存/退出proof SHA-256 `B47BE56E7A7697FDC6F6EA49578597A69301DB9CBBCCD394E967640D6E6E2F2C` / `811624A3B74731338868726AEB5EE92637D8CF9B7E96FCCEBBE0CD3F0578D4D8`支持，Sol复核原记录、root独立确认进程已退出。公开恢复可用状态不等于票据内部minimumTick已被读取或重启恢复已实测；后两项不冒称通过，下次用户继续时须fresh protected resume及前缀读回。游戏保持关闭，不由持续目标自动恢复施工。最近复核同日；会话/保存/恢复状态改变时重验。
 

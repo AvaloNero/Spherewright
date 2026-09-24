@@ -161,6 +161,14 @@ internal sealed class GameplayJournalManager : IDisposable
 
         return GameCallResult<GameplayJournalSnapshot>.Succeeded(new GameplayJournalSnapshot
         {
+            OriginGameVersion = _document.GameVersion,
+            CurrentGameVersion = _gameVersion,
+            VersionTransitions = _document.VersionTransitions.Select(change => new GameplayJournalVersionTransition
+            {
+                FromGameVersion = change.FromGameVersion, ToGameVersion = change.ToGameVersion,
+                AdoptedAtGameTick = change.AdoptedAtGameTick, DurableThroughSequence = change.DurableThroughSequence,
+                RecordedAtUtc = change.RecordedAtUtc,
+            }).ToList(),
             SessionId = _sessions.SessionId!,
             JournalId = _document.JournalId,
             TrackingMode = _document.TrackingMode,
@@ -228,6 +236,8 @@ internal sealed class GameplayJournalManager : IDisposable
         var journalId = identityHash;
         var path = Path.Combine(_journalDirectory, $"gameplay-{journalId}.json");
         var expectedResumeCheckpoint = _sessions.PendingResumeGameplayJournalCheckpoint;
+        var sourceGameVersion = _sessions.PendingResumeSourceGameVersion ?? _gameVersion;
+        var migrating = sourceGameVersion != _gameVersion;
         try
         {
             WindowsCurrentUserSecurity.EnsureSecureDirectory(_journalDirectory);
@@ -239,7 +249,8 @@ internal sealed class GameplayJournalManager : IDisposable
                     || document.Version != DocumentVersion
                     || !string.Equals(document.JournalId, journalId, StringComparison.Ordinal)
                     || !string.Equals(document.OwnedSaveIdentityHash, identityHash, StringComparison.Ordinal)
-                    || !string.Equals(document.GameVersion, _gameVersion, StringComparison.Ordinal)
+                    || !OwnedWorldVersionCompatibilityPolicy.JournalMatches(document.GameVersion,
+                        document.VersionTransitions, document.Entries?.Count ?? -1, sourceGameVersion)
                     || document.Entries is null
                     || document.Entries.Any(entry => entry is null)
                     || !GameplayJournalContinuityPolicy.HasContinuousSequence(
@@ -271,6 +282,21 @@ internal sealed class GameplayJournalManager : IDisposable
                 document = CreateDocument(journalId, identityHash);
             }
 
+            if (migrating)
+            {
+                if (expectedResumeCheckpoint is null || !_sessions.CanMigratePendingResumeJournal(sourceGameVersion)
+                    || document.VersionTransitions.Count != 0
+                    || document.Entries.Count != expectedResumeCheckpoint.MinimumDurableThroughSequence)
+                    throw new InvalidDataException("The exact journal cannot prove the authorized version transition.");
+                document.VersionTransitions.Add(new GameplayJournalVersionTransition
+                {
+                    FromGameVersion = sourceGameVersion, ToGameVersion = _gameVersion,
+                    AdoptedAtGameTick = GameMain.gameTick,
+                    DurableThroughSequence = expectedResumeCheckpoint.MinimumDurableThroughSequence,
+                    RecordedAtUtc = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture),
+                });
+            }
+
             _activeSessionId = sessionId;
             _activePath = path;
             _document = document;
@@ -280,10 +306,13 @@ internal sealed class GameplayJournalManager : IDisposable
             _durableThroughSequence = existedOnDisk
                 ? document.Entries.Select(entry => entry.Sequence).DefaultIfEmpty(0L).Max()
                 : 0L;
-            _pendingPersist = !existedOnDisk;
+            _pendingPersist = !existedOnDisk || migrating;
             _persistenceError = null;
+            if (migrating)
+                _sessions.ReleaseJournalLeaseForVersionMigration(expectedResumeCheckpoint!, sourceGameVersion);
             if (_pendingPersist && !TryPersist())
             {
+                if (migrating) throw new IOException("The version transition could not be persisted; primary saving remains forbidden.");
                 return;
             }
 
@@ -690,6 +719,8 @@ internal sealed class GameplayJournalDocument
     public string OwnedSaveIdentityHash { get; set; } = string.Empty;
 
     public string GameVersion { get; set; } = string.Empty;
+
+    public List<GameplayJournalVersionTransition> VersionTransitions { get; set; } = new List<GameplayJournalVersionTransition>();
 
     public string TrackingMode { get; set; } = string.Empty;
 

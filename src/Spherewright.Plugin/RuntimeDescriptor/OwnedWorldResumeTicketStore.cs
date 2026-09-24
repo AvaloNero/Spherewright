@@ -11,6 +11,7 @@ namespace Spherewright.Plugin.RuntimeDescriptor;
 
 internal sealed class OwnedWorldResumeTicketStore
 {
+    public string CurrentGameVersion => _gameVersion;
     private const int TicketVersion = 1;
     private readonly string _ticketPath;
     private readonly string _handoffTicketPath;
@@ -238,7 +239,8 @@ internal sealed class OwnedWorldResumeTicketStore
             if (document is null
                 || document.Version != 1
                 || !string.Equals(document.OwnedSaveIdentityHash, identityHash, StringComparison.Ordinal)
-                || !string.Equals(document.GameVersion, _gameVersion, StringComparison.Ordinal)
+                || !OwnedWorldVersionCompatibilityPolicy.JournalMatches(document.GameVersion,
+                    document.VersionTransitions, document.Entries?.Count ?? -1, ticket.GameVersion)
                 || document.Entries is null
                 || document.Entries.Any(entry => entry is null)
                 || !GameplayJournalContinuityPolicy.MatchesCheckpoint(
@@ -284,7 +286,7 @@ internal sealed class OwnedWorldResumeTicketStore
             return;
         }
 
-        if (!PersistConsumptionTombstone(resumeToken))
+        if (!PersistConsumptionTombstone(resumeToken, current.GameVersion))
         {
             _logger.LogError("Spherewright did not consume the owned-world resume ticket because no durable tombstone could be written");
             return;
@@ -326,7 +328,7 @@ internal sealed class OwnedWorldResumeTicketStore
                 || (_currentTicket is not null && !string.Equals(PluginJson.Serialize(_currentTicket),
                     PluginJson.Serialize(runtime), StringComparison.Ordinal))
                 || runtime.Version != TicketVersion || !FixedTimeEquals(runtime.ResumeToken, resumeToken)
-                || !string.Equals(runtime.GameVersion, _gameVersion, StringComparison.Ordinal)
+                || !OwnedWorldVersionCompatibilityPolicy.AllowsReauthorization(runtime.GameVersion, _gameVersion)
                 || string.IsNullOrWhiteSpace(runtime.OwnedSaveName)
                 || runtime.OwnedSaveName == "." || runtime.OwnedSaveName == ".."
                 || Path.GetFileName(runtime.OwnedSaveName) != runtime.OwnedSaveName
@@ -339,7 +341,7 @@ internal sealed class OwnedWorldResumeTicketStore
                     IsConsumed(resumeToken), runtime.IssuedAtUtc, runtime.ExpiresAtUtc, DateTimeOffset.UtcNow)) return false;
             if (!TryValidateGameplayJournalContinuity(runtime, true, out var journalHash, out rejection)) return false;
             ticket = runtime;
-            fingerprint = CanonicalStateHash.Combine("expired-primary-provenance-v1", PluginJson.Serialize(runtime), journalHash);
+            fingerprint = CanonicalStateHash.Combine("expired-primary-provenance-v2", PluginJson.Serialize(runtime), journalHash, _gameVersion);
             rejection = string.Empty;
             return true;
         }
@@ -372,7 +374,7 @@ internal sealed class OwnedWorldResumeTicketStore
             handoffDirectory, attempt, "handoff reauthorization attempt");
         if (!runtimeRecorded || !handoffRecorded) return false;
         // Write-ahead consumption precedes the native loader. A crash cannot revive this approval.
-        if (!PersistConsumptionTombstone(resumeToken)) return false;
+        if (!PersistConsumptionTombstone(resumeToken, ticket!.GameVersion)) return false;
         _currentTicket = null;
         _currentTicketPath = null;
         DeleteTicketReplicaIfMatching(_ticketPath, resumeToken);
@@ -429,7 +431,7 @@ internal sealed class OwnedWorldResumeTicketStore
         }
     }
 
-    private bool PersistConsumptionTombstone(string resumeToken)
+    private bool PersistConsumptionTombstone(string resumeToken, string? sourceGameVersion = null)
     {
         if (string.IsNullOrWhiteSpace(resumeToken))
         {
@@ -441,7 +443,9 @@ internal sealed class OwnedWorldResumeTicketStore
         {
             Version = 1,
             ResumeTokenHash = tokenHash,
-            GameVersion = _gameVersion,
+            // Preserve source compatibility even if an older Plugin is later restarted.
+            // New readers treat consumption as irreversible across all runtime versions.
+            GameVersion = sourceGameVersion ?? _gameVersion,
             ConsumedAtUtc = DateTimeOffset.UtcNow,
         };
         var handoffDirectory = Path.GetDirectoryName(_handoffTicketPath)
@@ -530,7 +534,10 @@ internal sealed class OwnedWorldResumeTicketStore
 
         var tokenHash = HashToken(resumeToken);
         var handoffDirectory = Path.GetDirectoryName(_handoffTicketPath);
-        return TombstoneMatches(GetTombstonePath(_runtimeDirectory, tokenHash), tokenHash)
+        return File.Exists(GetReauthorizationAttemptPath(_runtimeDirectory, tokenHash))
+            || (!string.IsNullOrWhiteSpace(handoffDirectory)
+                && File.Exists(GetReauthorizationAttemptPath(handoffDirectory!, tokenHash)))
+            || TombstoneMatches(GetTombstonePath(_runtimeDirectory, tokenHash), tokenHash)
             || (!string.IsNullOrWhiteSpace(handoffDirectory)
                 && TombstoneMatches(GetTombstonePath(handoffDirectory!, tokenHash), tokenHash));
     }
@@ -545,10 +552,9 @@ internal sealed class OwnedWorldResumeTicketStore
             }
 
             var tombstone = PluginJson.Deserialize<OwnedWorldResumeConsumptionTombstone>(File.ReadAllText(path));
-            return tombstone is not null
-                && tombstone.Version == 1
-                && string.Equals(tombstone.GameVersion, _gameVersion, StringComparison.Ordinal)
-                && FixedTimeEquals(tombstone.ResumeTokenHash, tokenHash);
+            if (tombstone is null || tombstone.Version != 1 || !FixedTimeEquals(tombstone.ResumeTokenHash, tokenHash))
+                _logger.LogWarning("Spherewright rejected malformed consumption evidence; the token remains fenced");
+            return true; // Protected hash-addressed file presence is fail-closed, independent of runtime version.
         }
         catch (Exception exception) when (
             exception is IOException
@@ -557,7 +563,7 @@ internal sealed class OwnedWorldResumeTicketStore
             || exception is ArgumentException)
         {
             _logger.LogWarning($"Spherewright could not read an owned-world resume consumption tombstone ({exception.GetType().Name})");
-            return false;
+            return true;
         }
     }
 

@@ -114,6 +114,8 @@ internal sealed class OwnedWorldResumeCoordinator
             CandidateGameTick = payload.VerifiedRecovery || payload.Reauthorizing ? payload.MinimumGameTick : (long?)null,
             ExactEmbeddedIdentityVerified = payload.VerifiedRecovery || payload.Reauthorizing,
             UserConfirmationRequired = payload.Reauthorizing,
+            SourceGameVersion = ticket.GameVersion,
+            TargetGameVersion = _tickets.CurrentGameVersion,
             ConfirmationPrompt = payload.Reauthorizing ? OwnedWorldReauthorizationPolicy.ConfirmationPrompt : string.Empty,
             ConfirmationDigest = payload.Reauthorizing ? payload.Fingerprint : string.Empty,
             CommitAllowedNow = blockers.Count == 0,
@@ -216,6 +218,7 @@ internal sealed class OwnedWorldResumeCoordinator
 
         var action = new OwnedWorldResumeAction
         {
+            Reauthorizing = payload.Reauthorizing,
             ActionId = Guid.NewGuid().ToString("D"),
             Ticket = currentTicket,
             ResumeSource = payload.ResumeSource,
@@ -304,6 +307,20 @@ internal sealed class OwnedWorldResumeCoordinator
             if (string.Equals(session.OwnedSaveState, OwnedSaveStates.Saved, StringComparison.Ordinal)
                 && session.LastOwnedSaveGameTick >= action.MinimumGameTick)
             {
+                if (action.Reauthorizing
+                    && (string.IsNullOrWhiteSpace(_tickets.CurrentResumeToken)
+                        || !_tickets.TryGetActiveTicket(_tickets.CurrentResumeToken!, out var renewed, out _)
+                        || renewed is null || renewed.ResumeToken == action.Ticket.ResumeToken
+                        || renewed.OwnedSaveName != action.Ticket.OwnedSaveName
+                        || renewed.SourceSessionId != session.SessionId
+                        || renewed.MinimumGameTick != session.LastOwnedSaveGameTick
+                        || renewed.GameVersion != _tickets.CurrentGameVersion))
+                {
+                    result.State = NormalActionStates.ActionFailed;
+                    result.Terminal = true;
+                    result.Message = "The owned world was normally saved, but no matching fresh restart credential was proven. Reconcile this saved state; never replay the consumed resume.";
+                    return true;
+                }
                 result.State = NormalActionStates.Completed;
                 result.Terminal = true;
                 result.Succeeded = true;
@@ -572,6 +589,8 @@ internal sealed class OwnedWorldResumeCoordinator
 
     private sealed class OwnedWorldResumeAction
     {
+        public bool Reauthorizing { get; set; }
+
         public string ActionId { get; set; } = string.Empty;
 
         public OwnedWorldResumeTicket Ticket { get; set; } = null!;

@@ -293,10 +293,11 @@ public sealed class SpherewrightToolsTests
             ResumePlan = validEcho ? new PreparedOwnedWorldResumePlan
             {
                 Prepared = true, PlanToken = "fresh-plan", RecoveryMode = OwnedWorldResumeModes.ReauthorizeExpiredPrimary,
-                RecoveryEvidenceVersion = 1, CandidateGameTick = 12345, MinimumGameTick = 12345,
+                RecoveryEvidenceVersion = 2, CandidateGameTick = 12345, MinimumGameTick = 12345,
                 ExactEmbeddedIdentityVerified = true, UserConfirmationRequired = true, CommitAllowedNow = false,
                 ConfirmationPrompt = Spherewright.Bridge.Core.Safety.OwnedWorldReauthorizationPolicy.ConfirmationPrompt,
                 ConfirmationDigest = "synthetic-disclosure-digest",
+                SourceGameVersion = "0.10.34.28529", TargetGameVersion = "0.10.35.29057",
             } : null,
         };
         var result = await SpherewrightTools.PrepareOwnedWorldResumeAsync(bridge, "expired-provenance",
@@ -304,6 +305,26 @@ public sealed class SpherewrightToolsTests
         Assert.Equal(!validEcho, result.IsError);
         Assert.False(bridge.LastResumePrepareRequest!.UserConfirmedInConversation);
         if (!validEcho) Assert.DoesNotContain("planToken", result.StructuredContent!.Value.GetRawText());
+    }
+
+    [Fact]
+    public async Task ExpiredPrimaryDoesNotAcceptAVerifiedLastExitEcho()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            ResumePlan = new PreparedOwnedWorldResumePlan
+            {
+                Prepared = true, PlanToken = "last-exit-plan", RecoveryMode = OwnedWorldResumeModes.VerifiedNewerLastExit,
+                RecoveryEvidenceVersion = 1, CandidateGameTick = 12345, MinimumGameTick = 12345,
+                ExactEmbeddedIdentityVerified = true,
+            },
+        };
+
+        var result = await SpherewrightTools.PrepareOwnedWorldResumeAsync(bridge, "expired-provenance",
+            recoveryMode: OwnedWorldResumeModes.ReauthorizeExpiredPrimary);
+
+        Assert.True(result.IsError);
+        Assert.DoesNotContain("planToken", result.StructuredContent!.Value.GetRawText());
     }
 
     [Fact]

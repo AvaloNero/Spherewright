@@ -49,18 +49,23 @@ public static class OwnedSavePrefixReader
             Skip(reader, screenshotBytes);
             SkipAccount(reader);
             Skip(reader, sizeof(ulong)); // Cluster generation, not ownership evidence.
-            if (reader.ReadInt32() != 13 || reader.ReadInt32() != 22)
+            var dataVersion = reader.ReadInt32();
+            var patchVersion = reader.ReadInt32();
+            if (dataVersion != 13)
                 throw new InvalidDataException("The GameData prefix version is unsupported.");
             SkipAccount(reader);
             var identityBytes = ReadStringByteLength(reader, MaximumIdentityBytes);
             var bytes = reader.ReadBytes(identityBytes);
             if (bytes.Length != identityBytes) throw new EndOfStreamException();
             var identity = new UTF8Encoding(false, true).GetString(bytes);
-            if (reader.ReadInt32() != 9)
-                throw new InvalidDataException("The GameDesc prefix version is unsupported.");
+            var descriptorVersion = reader.ReadInt32();
+            var gameVersion = string.Join(".", version.Select(value => value.ToString(CultureInfo.InvariantCulture)));
+            if (!(gameVersion == OwnedWorldVersionCompatibilityPolicy.SourceVersion && patchVersion == 22 && descriptorVersion == 9)
+                && !(gameVersion == OwnedWorldVersionCompatibilityPolicy.TargetVersion && patchVersion == 23 && descriptorVersion == 10))
+                throw new InvalidDataException("The native game/version/patch/descriptor tuple is unsupported.");
             return new OwnedSavePrefixEvidence(
                 fileLength, gameTick, new DateTimeOffset(savedAtTicks, TimeSpan.Zero),
-                string.Join(".", version.Select(value => value.ToString(CultureInfo.InvariantCulture))),
+                gameVersion,
                 peaceful, sandbox, string.Equals(identity, expectedOwnedIdentity, StringComparison.Ordinal),
                 stream.Position);
         }

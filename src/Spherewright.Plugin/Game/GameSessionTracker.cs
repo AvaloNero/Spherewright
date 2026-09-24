@@ -91,6 +91,25 @@ internal sealed class GameSessionTracker : IDisposable
     public OwnedWorldGameplayJournalCheckpoint? PendingResumeGameplayJournalCheckpoint =>
         _pendingJournalResumeTicket?.GameplayJournalCheckpoint;
 
+    public string? PendingResumeSourceGameVersion => _pendingJournalResumeTicket?.GameVersion;
+
+    public bool CanMigratePendingResumeJournal(string sourceVersion) =>
+        _pendingJournalResumeTicket is not null && _reauthorizationJournalLease is not null
+        && _resumeSourceLease is not null && IsCurrentSessionOwned
+        && _pendingJournalResumeTicket.GameVersion == sourceVersion
+        && OwnedWorldVersionCompatibilityPolicy.IsSupportedMigration(sourceVersion, _gameVersion);
+
+    public void ReleaseJournalLeaseForVersionMigration(OwnedWorldGameplayJournalCheckpoint checkpoint, string sourceVersion)
+    {
+        if (!CanMigratePendingResumeJournal(sourceVersion)
+            || !ReferenceEquals(checkpoint, _pendingJournalResumeTicket!.GameplayJournalCheckpoint))
+            throw new InvalidOperationException("No exact adopted reauthorization journal is available for migration.");
+        // Keep the primary lease and pending checkpoint: saving and ordinary writes
+        // remain blocked until the new transition is durable and continuity is confirmed.
+        _reauthorizationJournalLease!.Dispose();
+        _reauthorizationJournalLease = null;
+    }
+
     private Func<OwnedWorldGameplayJournalCheckpoint>? _gameplayJournalCheckpointProvider;
 
     public void SetGameplayJournalCheckpointProvider(
@@ -817,6 +836,16 @@ internal sealed class GameSessionTracker : IDisposable
                 return false;
             }
 
+            // A successful native return alone cannot issue a new-version capability.
+            // Re-read the newly written exact identity and researched format tuple first.
+            using (var savedStream = new FileStream(GameSave.SavePath(_ownedSaveName), FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                var savedPrefix = OwnedSavePrefixReader.Read(savedStream, _ownedSaveName!);
+                if (!savedPrefix.MatchesExpectedIdentity || savedPrefix.GameVersion != _gameVersion
+                    || !savedPrefix.Peaceful || savedPrefix.GameTick != GameMain.gameTick)
+                    throw new InvalidDataException("The normal owned save did not read back its exact identity, current format and tick.");
+            }
+
             _ownedSaveState = OwnedSaveStates.Saved;
             _ownedSaveError = null;
             _lastOwnedSaveGameTick = GameMain.gameTick;
@@ -916,6 +945,10 @@ internal sealed class GameSessionTracker : IDisposable
 
         if (reauthorizingExpiredPrimary && (sourceLease is null || journalLease is null))
             throw new InvalidOperationException("Expired-primary reauthorization requires a verified exact-primary lease.");
+        if (reauthorizingExpiredPrimary
+            ? !OwnedWorldVersionCompatibilityPolicy.AllowsReauthorization(ticket.GameVersion, _gameVersion)
+            : ticket.GameVersion != _gameVersion)
+            throw new InvalidOperationException("The source game version is not permitted for this resume mode.");
         if (sourceLease is not null && (ticket.GameplayJournalCheckpoint is null
             || !string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
             || !sourceLease.Prefix.MatchesExpectedIdentity

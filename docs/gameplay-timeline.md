@@ -3,6 +3,10 @@
 更新时间：2026-09-24（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-24 — 重新授权冷部署被原生版本边界阻断
+
+`ad36f919653cb9be7177c32c227c1515690328d6` 已推送，CI `35987113158` 为绿；冷部署预检在 native reference hash 门停止，尚未写入 install-intent、创建 backup、复制或移动任何文件，也未启动、加载或施工。安装中的 `Assembly-CSharp.dll` 为 **E75D3FE4B6A9CA822766189F826BA3A8348DFB7E301AA37FF6779DB29A83FD8D / 8019456 bytes**，而已验证引用仍为 **AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85 / 7830016 bytes**；BepInEx 仍为 5.4.17.0。只读 `Updates/Versions.txt` 显示最新 **0.10.35.29057 / True / 2026-09-23**，旧证据对应 0.10.34.28529。228 文件 stage seal（789AC…）可保留，不能绕过此门误装。原档仍为 **save73573789 / J91 / accepted5**，票据和 Journal 未改。用户本次已授权直接 load，但版本边界尚未核销；不得篡改 ticket/Journal 的 GameVersion、忽略 native hash 或宣称新版本已支持。Sol 的离线 DLL 核对只确认 `SaveCurrentGame`、`ReadHeader`、`StartGame` 的签名与 IL 未变，并观察到 `GameData` patch 22→23、`GameDesc` 9→10 的 backward-read 分支；这不是 live 验证，产品精确版本绑定仍会拒绝，重新编译本身不足以放行。
+
 ### 2026-09-24 — 继续开发原档重新授权；执行角色升级
 
 用户授权继续，并将游戏执行替换为 `gpt-6-luna / max`；新实例只读确认游戏进程与活动 descriptor 均不存在，没有启动、载入或游戏写入。最后已经证明的保存仍为 **73573789 / J91 / accepted5**，D.1–D.4成功前缀不重做。主会话处理IFX-170安全接口，Terra做定向离线测试，Sol独立审核；实际恢复须先同批冷部署、fresh预检展示disclosure，再取得用户后续明确确认。实现或单元测试不能算原档已恢复，持续紫糖/原厂供给和0.4总验收门不因本次修复核销。

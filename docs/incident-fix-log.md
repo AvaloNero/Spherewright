@@ -12,6 +12,12 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-171 — 冷部署的原生引用与已安装 DSP 版本漂移
+
+- 状态：`open`。`ad36f919653cb9be7177c32c227c1515690328d6` 与 CI `35987113158` 已通过，但这只证明源码/CI，不证明可安全安装到当前 DSP。
+- 事实：冷部署预检在 native hash 门停止，未写 install-intent、未创建 backup、未复制或移动 Plugin/MCP，且未启动、load 或施工。安装 `Assembly-CSharp.dll` 是 **E75D3FE4B6A9CA822766189F826BA3A8348DFB7E301AA37FF6779DB29A83FD8D / 8019456 bytes**，已验证 reference 是 **AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85 / 7830016 bytes**；BepInEx 保持 5.4.17.0。只读 `Updates/Versions.txt` 最新记录为 **0.10.35.29057 / True / 2026-09-23**，旧安装/证据为 0.10.34.28529。
+- 边界：已封存的 228 文件 stage seal（789AC…）可保留但不得误装；原 **save73573789 / J91 / accepted5**、票据与 Journal 均未变。用户已授权直接 load，但该授权不允许篡改 ticket/Journal `GameVersion`、忽略 native hash 或把源码推断说成新版本兼容。Sol 的离线 DLL 核对只确认 `SaveCurrentGame`、`ReadHeader`、`StartGame` 的签名与 IL 未变，以及 `GameData` patch 22→23、`GameDesc` 9→10 的 backward-read 分支；这不是 live 验证，产品的精确版本绑定仍会拒绝，重新编译本身不足以放行。不得把存档损坏、原生拒绝或游戏失败归因为本次阻断。
+
 ## IFX-170 — 受保护恢复票据在续接前过期，恢复按设计安全阻断
 
 - 2026-09-24 开发修复（冷部署/实机仍待）：现有 resume prepare/commit 新增 `reauthorize_expired_primary`，过期票据只作来源证明。双副本、原 Journal 完整内容、精确主档全文证据和菜单 revision 绑定短计划；prepare 披露后等待用户后续确认，commit 要求计划摘要回显，重验并持原档/Journal只读 lease 至采用。加载前持久化 attempt 证据与 consumed tombstone，不改旧 expiry、不创建新副本；中断只保留人工核销边界，不声称自动续试已实现。新增新模型 `gpt-6-luna/max` 只读核查时游戏已关闭，未执行恢复或施工。

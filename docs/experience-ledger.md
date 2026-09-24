@@ -18,14 +18,16 @@
 
 ### EXP-304 — 游戏升级需要同时验证原生格式与受保护来源版本
 
-- 最新范围（同日）：增加经当前DLL逐项证明的28529→29088独立直达pair；不是29057→29088链式许可。2216离线测试与当前引用完整Release通过；实机迁移仍须单独核销。私有恢复入口先fresh读取实际native版本再做backup/prepare，以尽早识别Steam启动期间的再次更新。
+- 窄 live 复核（2026-09-24）：`f4fc8e5` / CI `35999471374` 的最终228/228 cohort（manifest **C012AC0986EC9414F1E375E24ED2978B07E04085DE3AFE45A2ABE5AD0BBD6E3F**）在实际29088上完成一次受保护 `28529→29088` migration：原73573789经正常保存至73573821，current73573913/R1、accepted5→6；J91和原前91项保留，仅有一条版本transition，owned healthy，无额外save/施工/重放。Sol 独立验收 `action-a539c15b3aa444b3ab603bd24dfe5193-0001-expired-primary-reauthorization-sol-independent-acceptance.json`（SHA-256 **00C4589DB019500BB56D87FA6354AE47E722812C1CEA3761FD3C0D4675907F25**）核同一边界。经验只支持“运行时实际版本、protected来源与Journal transition必须一起核”；不推广到29057↔29088、第二次恢复、任意版本或生产/吞吐/持续燃料。
+
+- live前范围（同日）：增加经当前DLL逐项证明的28529→29088独立直达pair；不是29057→29088链式许可。2216离线测试与当前引用完整Release通过；当时实机迁移仍须单独核销。私有恢复入口先fresh读取实际native版本再做backup/prepare，以尽早识别Steam启动期间的再次更新。
 
 - 冷部署后的负门（同日）：修正 cohort 的228文件、提交 `bde7fea` 与CI `35995364465`均已核对，仍不能替代启动后 native tuple 的fresh读取。Steam 启动时 native 实为 `0.10.35.29088`，而该轮只允许 `0.10.34.28529 → 0.10.35.29057`；唯一 expired-primary prepare 按 `SESSION_NOT_OWNED`（generic provenance）停止，0 commit/load/save、accepted5保持，票据双副本未消费且无attempt。版本门必须在真实运行时重新核销，不能把已部署的228文件、MCP握手或离线 backward-read分支写成迁移成功。
 
 - 冷部署补充（同日）：源树与manifest哈希一致仍不足以证明“同提交编译”；commit前build后复用Plugin、commit后publish MCP会产生不同InformationalVersion。启动前须核两侧ProductVersion与完整source SHA，再封存。已在零游戏写入时发现并postcommit重建修正；旧stage保留为被替代证据，不覆盖原manifest或原备份。
 
-- 日期/最近复验：2026-09-24；状态：`observed`，离线 DLL 与实现证据，尚非实机通过。
-- 适用范围：仅 `0.10.34.28529 → 0.10.35.29057`；关联 IFX-171 与 [API研究](research/game-api-version-0.10.35.md)。
+- 日期/最近复验：2026-09-24；状态：`validated`，仅下述精确范围：29057仍只有离线证据，29088有本档单次迁移与正常保存实机证据。
+- 适用范围：`0.10.34.28529 → 0.10.35.29057 / 29088` 两个独立直达pair；关联 IFX-171 与 [API研究](research/game-api-version-0.10.35.md)。
 - 结论：load/save入口签名未变不代表整个存档格式未变；新的GameData patch23/GameDesc10要作为完整tuple校验。重编译不能替代原档票据、文件与Journal的来源一致性。Journal保留原始版本和所有事件，以单独耐久版本迁移记录连接新runtime；不能伪改旧票据或把升级当导入新档。
 - 边界/复验触发：每次DSP更新、DLL哈希变化、冷部署/恢复时重验。当前源码添加窄迁移与保存后prefix复读，不构成生产、持续产量或0.4最终门通过；失败消费后不自动重放。
 

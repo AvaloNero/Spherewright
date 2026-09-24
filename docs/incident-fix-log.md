@@ -14,9 +14,11 @@
 
 ## IFX-171 — 冷部署的原生引用与已安装 DSP 版本漂移
 
-- 29088 后续适配（同日，实机恢复待验）：新DLL `C43A484F…AF25732` 的关键存取档方法与29057 normalized IL一致；新增28529→29088独立精确pair，保留原pair但不允许两个target之间迁移。当前引用完整Release编译0 warning/error，2216测试（59 Contracts/1975 Core/182 MCP）、source MCP 64工具/1资源/87939字符逐字匹配/退出0通过；未知版本和混合tuple仍拒绝。加载入口增加启动后真实gameVersion检查，发生再次漂移时在备份和prepare之前停止；不通过编辑来源票据或Journal解锁。
+- 状态：`local_live`，仅限一条受保护的 `0.10.34.28529 → 0.10.35.29088` owned-primary 迁移、Journal transition 与正常保存；Sol 独立验收为 `action-a539c15b3aa444b3ab603bd24dfe5193-0001-expired-primary-reauthorization-sol-independent-acceptance.json`，SHA-256 **00C4589DB019500BB56D87FA6354AE47E722812C1CEA3761FD3C0D4675907F25**。它不是通用版本兼容、第二次恢复、全厂审计、施工、吞吐或持续燃料/供电结论。
 
-- 后续冷部署与当前阻断（2026-09-24）：`bde7fea` / CI `35995364465` 绿后，修正 cohort 的228文件与 manifest **A6467753688B201DBD8701393C81E65DEF2564424A6E546A69167ED9E380C57F** 已核对，Plugin/MCP ProductVersion同为该提交；Luna仅一次启动到菜单并只读核到64 tools/1 resource、指南87895。唯一获准的 expired-primary prepare 随后被 `SESSION_NOT_OWNED`（generic provenance）拒绝，未产生 commit、load、save 或施工，accepted仍为5。fresh bridge status 显示 Steam 启动时实际 native 已变为 **0.10.35.29088**，而本轮实现只绑定 **0.10.34.28529 → 0.10.35.29057**；受保护票据副本仍一致、未消费且无attempt，**save73573789 / J91** 未动。这是版本边界的安全停止，不是存档损坏、原生加载失败或恢复成功；29088 DLL研究及新的受限核销仍待。
+- 29088 适配与本次窄 live 结果（同日）：新DLL `C43A484F…AF25732` 的关键存取档方法与29057 normalized IL一致；新增28529→29088独立精确pair，保留原pair但不允许两个target之间迁移。`f4fc8e5` / CI `35999471374` 绿后，最终 cohort 以 manifest **C012AC0986EC9414F1E375E24ED2978B07E04085DE3AFE45A2ABE5AD0BBD6E3F** 安装228/228；MCP前缀 `action-26a1f901e84c45458a92f4654bf9063f-` 核到64 tools/1 resource、指南87939。恢复前缀 `action-52082732b8fa47d59c76e19e0851d203-` 的 action `4fd8050e-ada6-4cdd-a4bc-d4f25b5105b9` terminal 成功，原73573789正常保存为73573821，current73573913/R1，accepted5→6；J91和原前91项保留，只增加28529→29088 transition，owned healthy，无额外save/施工/重放。未知版本和混合tuple仍拒绝；不通过编辑来源票据或Journal解锁。
+
+- 历史冷部署与版本门停步（2026-09-24，29088 pair接入前）：`bde7fea` / CI `35995364465` 绿后，修正 cohort 的228文件与 manifest **A6467753688B201DBD8701393C81E65DEF2564424A6E546A69167ED9E380C57F** 已核对，Plugin/MCP ProductVersion同为该提交；Luna仅一次启动到菜单并只读核到64 tools/1 resource、指南87895。唯一获准的 expired-primary prepare 随后被 `SESSION_NOT_OWNED`（generic provenance）拒绝，未产生 commit、load、save 或施工，accepted仍为5。fresh bridge status 显示 Steam 启动时实际 native 已变为 **0.10.35.29088**，而当时实现只绑定 **0.10.34.28529 → 0.10.35.29057**；受保护票据副本仍一致、未消费且无attempt，**save73573789 / J91** 未动。这是当时版本边界的安全停止，不是存档损坏或原生加载失败；后续29088受限核销见本条首段。
 
 - 冷部署（同日，原档尚未load）：`bde7fea`已push，CI`35995364465`绿。先生成的stage manifest `95BE972F…`虽与安装文件相符，但启动前额外读ProductVersion发现Plugin保留提交前SHA、MCP已是提交后SHA；该stage不能作为最终同批证据。完整postcommit重建后保留旧备份，仅替换四个Plugin文件，最终228/228匹配修正manifest **A6467753688B201DBD8701393C81E65DEF2564424A6E546A69167ED9E380C57F**；Plugin **2B01D623630D296495A45D8656522AF175E91687DAE847F983832B27C82350B3**、MCP **159AD44E1357CEC96B0B42E997D24FBDBDA1D3C6F80083718B6A0BDCADB759F6**，两者ProductVersion均为0.4.0+bde7fea完整SHA。修正前无启动/load，票据未变，accepted5。封存入口增加双方提交版本标识检查；冷部署不冒充恢复成功。
 
@@ -24,19 +26,21 @@
 
 - 2026-09-24 用户选择适配新版后的实现切片（冷部署/实机待验）：限定旧版→新版精确pair，恢复证据v2披露并绑定source/target。Journal保留原始GameVersion与全部事件，采用后先耐久写独立transition，再允许正常保存；保存后复读当前native tuple/身份/tick，reauth成功还要求新票据实际可用。消费标记跨版本不可逆，落盘source版字段供旧Plugin识别，新读者对attempt及损坏tombstone均拒绝，防止删除副本失败后凭据复活。完整新版引用build及Core/Contracts/MCP测试与source MCP检查通过，最终数量随提交记录；这不是live验收。
 
-- 状态：`open`。`ad36f919653cb9be7177c32c227c1515690328d6` 与 CI `35987113158` 已通过，但这只证明源码/CI，不证明可安全安装到当前 DSP。
+- 历史状态（29088适配前）：`ad36f919653cb9be7177c32c227c1515690328d6` 与 CI `35987113158` 已通过，但当时这只证明源码/CI，不证明可安全安装到当前 DSP；当前窄 live 结果见本条首段。
 - 事实：冷部署预检在 native hash 门停止，未写 install-intent、未创建 backup、未复制或移动 Plugin/MCP，且未启动、load 或施工。安装 `Assembly-CSharp.dll` 是 **E75D3FE4B6A9CA822766189F826BA3A8348DFB7E301AA37FF6779DB29A83FD8D / 8019456 bytes**，已验证 reference 是 **AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85 / 7830016 bytes**；BepInEx 保持 5.4.17.0。只读 `Updates/Versions.txt` 最新记录为 **0.10.35.29057 / True / 2026-09-23**，旧安装/证据为 0.10.34.28529。
 - 边界：已封存的 228 文件 stage seal（789AC…）可保留但不得误装；原 **save73573789 / J91 / accepted5**、票据与 Journal 均未变。用户已授权直接 load，但该授权不允许篡改 ticket/Journal `GameVersion`、忽略 native hash 或把源码推断说成新版本兼容。Sol 的离线 DLL 核对只确认 `SaveCurrentGame`、`ReadHeader`、`StartGame` 的签名与 IL 未变，以及 `GameData` patch 22→23、`GameDesc` 9→10 的 backward-read 分支；这不是 live 验证，产品的精确版本绑定仍会拒绝，重新编译本身不足以放行。不得把存档损坏、原生拒绝或游戏失败归因为本次阻断。
 
 ## IFX-170 — 受保护恢复票据在续接前过期，恢复按设计安全阻断
 
-- 2026-09-24 开发修复（冷部署/实机仍待）：现有 resume prepare/commit 新增 `reauthorize_expired_primary`，过期票据只作来源证明。双副本、原 Journal 完整内容、精确主档全文证据和菜单 revision 绑定短计划；prepare 披露后等待用户后续确认，commit 要求计划摘要回显，重验并持原档/Journal只读 lease 至采用。加载前持久化 attempt 证据与 consumed tombstone，不改旧 expiry、不创建新副本；中断只保留人工核销边界，不声称自动续试已实现。新增新模型 `gpt-6-luna/max` 只读核查时游戏已关闭，未执行恢复或施工。
+- 状态：`local_live`，只核销本次 expired-primary 重新授权后的精确 `28529→29088` migration、正常保存和J91连续性；IFX-171保留版本/安装证据。过期票据原阻断、来源与人工边界仍为历史事实，下一恢复、fresh工厂审计及0.4生产门未核销。
+
+- 2026-09-24 开发修复（live前历史截面）：现有 resume prepare/commit 新增 `reauthorize_expired_primary`，过期票据只作来源证明。双副本、原 Journal 完整内容、精确主档全文证据和菜单 revision 绑定短计划；prepare 披露后等待用户后续确认，commit 要求计划摘要回显，重验并持原档/Journal只读 lease 至采用。加载前持久化 attempt 证据与 consumed tombstone，不改旧 expiry、不创建新副本；中断只保留人工核销边界，不声称自动续试已实现。新增新模型 `gpt-6-luna/max` 只读核查时游戏已关闭，未执行恢复或施工。
 - 离线证据：锁文件 restore、完整当前引用 Release build（0 warning/error）、2159项测试（59 Contracts、1919 Core、181 MCP）通过；其中12项链接真实 ticket store 的临时目录测试覆盖两副本/Journal漂移、部分持久化故障、消费后重建和文件lease。测试I/O替身不证明Windows ACL或原生loader；源码MCP实进程元数据为64 tools/1 resource，内嵌指南逐字一致、退出0。独立审阅修正了reauth evidenceVersion误耦合LastExit常量；无确认误commit会消费短plan但不消费票据/加载，须重新prepare。冷部署、实际预检及原档恢复尚未证明。
 
-- 状态：`open`，当前阻断是受保护恢复的 fail-closed 行为，不是存档损坏、安装漂移、原生拒绝或游戏失败。
+- 历史状态（live前）：`open`，当时阻断是受保护恢复的 fail-closed 行为，不是存档损坏、安装漂移、原生拒绝或游戏失败。
 - 事实：2026-09-22 用户继续 0.4 时，既有 `2649aad` 部署 cohort 仍为 228/228 文件匹配。9 月 19 日的正常保存已到 `save73573789 / J91 / accepted5`，随后正常关闭；保存与关闭记录分别为 `action-7196716d0b5e49cd843e14a5727ccfc4-0013-hps-d4-normal-save-before-close.json`（SHA-256 **B47BE56E7A7697FDC6F6EA49578597A69301DB9CBBCCD394E967640D6E6E2F2C**）和 `...-0014-hps-d4-normal-save-and-graceful-close.json`（SHA-256 **811624A3B74731338868726AEB5EE92637D8CF9B7E96FCCEBBE0CD3F0578D4D8**）。
 - 原因与边界：两份受保护票据副本仍一致、未消费，最低 tick 为 73573789、最低 durable Journal 为 J91；源码 `OwnedWorldResumeTicketStore.Arm` 以 `issuedAt.AddHours(24)` 设定的 expiry 已在 9 月 20 日结束，源码结论是 `TryGetActiveTicket` 正确 fail-closed。安装/票据核验本身未读取任意玩家存档、prepare/commit/load、施工或写入；随后仅通过 Steam 启动到主菜单。没有实际发 prepare，不能把源码拒绝写成 live 负例；不输出或使用 token、真实存档名或个人路径。
-- 后续：不得复用旧 token、修改 expiry、任意 load，或导入其他存档冒充同档延续；现有手动 import 只会形成新副本和新 Journal。当前重新授权仍待用户确认和独立实现/签发/核验，尚未执行。
+- 后续（live前）：不得复用旧 token、修改 expiry、任意 load，或导入其他存档冒充同档延续；现有手动 import 只会形成新副本和新 Journal。当时重新授权仍待用户确认和独立实现/签发/核验，尚未执行；本次窄 live 结果见本条首段。
 
 ## IFX-169 — 共享仓只开放新物品预约，阻断仍需服务的旧输入
 

@@ -1,6 +1,6 @@
 # Spherewright
 
-DSP version adaptation in development: the exact `0.10.34.28529 → 0.10.35.29057` or `0.10.34.28529 → 0.10.35.29088` owned-primary migration preserves Journal origin/history and records a separate durable transition. It is not arbitrary cross-version save loading. See [native evidence and validation limits](docs/research/game-api-version-0.10.35.md); offline builds, cold deployment and live recovery are reported separately.
+DSP version adaptation is narrow: exact `0.10.34.28529 → 0.10.35.29057` or `0.10.34.28529 → 0.10.35.29088` owned-primary migration preserves Journal origin/history and records a separate durable transition. One local live `28529 → 29088` recovery has completed; it is not arbitrary cross-version save loading or proof of a later restart, factory state, or production continuity. See the [native evidence and live boundary](docs/research/game-api-version-0.10.35.md).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D4)](#requirements)

@@ -3,13 +3,21 @@
 更新时间：2026-09-24（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-### 2026-09-24 — 获准适配新版，原档迁移实现待实机
+### 2026-09-24 — 28529→29088 原档迁移与正常保存首次完成（窄范围）
+
+`f4fc8e5` / CI `35999471374` 绿后，最终同批 **228/228** 文件以 manifest **C012AC0986EC9414F1E375E24ED2978B07E04085DE3AFE45A2ABE5AD0BBD6E3F** 安装；当前 native 为 `0.10.35.29088`。Luna 一次启动后的 MCP 握手前缀为 `action-26a1f901e84c45458a92f4654bf9063f-`，核到 **64 tools / 1 resource** 和指南 **87939**。随后受保护恢复 action `4fd8050e-ada6-4cdd-a4bc-d4f25b5105b9` 在 `action-52082732b8fa47d59c76e19e0851d203-` 内 terminal 成功：原档 **73573789** 经正常保存到 **73573821**，current 为 **73573913 / R1**，accepted **5→6**。Journal 保持 **J91**、原有前91项完整保留，仅新增一条 `0.10.34.28529 → 0.10.35.29088` transition，owned 状态健康；没有额外 save、施工或重放。Sol 独立验收 proof 为 `action-a539c15b3aa444b3ab603bd24dfe5193-0001-expired-primary-reauthorization-sol-independent-acceptance.json`，SHA-256 **00C4589DB019500BB56D87FA6354AE47E722812C1CEA3761FD3C0D4675907F25**。
+
+独立复核还确认新票据的 runtime/handoff 双副本一致：版本29088、最低tick73573821/J91、同一owned和Journal身份、token已更新且quarantine为空；持久Journal前91条规范哈希与加载前备份一致。
+
+这只核销该精确版本对的一次同档迁移、正常保存与 Journal 连续性；不证明任意版本兼容、第二次重启/恢复、fresh 工厂审计、施工、吞吐、持续电力或燃料，更不代表0.4完成。
+
+### 2026-09-24 — 获准适配新版，原档迁移实现待实机（历史截面）
 
 用户选择适配 `0.10.35.29057`，并沿用本轮原档直接加载确认。实现仅开放 `0.10.34.28529 → 0.10.35.29057` 原owned primary恢复；不改旧票据、来源版本或J1–J91历史，迁移记录独立于首次事件。正常保存需读回新版格式后才能签新票据；旧凭据消费跨版本保持不可逆。新版DLL完整编译0 warnings/errors，离线与source MCP测试通过；此条不声称已部署、载入或推进游戏，仍为save73573789/J91/accepted5。详见IFX-171、EXP-304及版本API研究。
 
-### 2026-09-24 — 修正冷部署后，实际 native 版本门仍安全停止
+### 2026-09-24 — 修正冷部署后，实际 native 版本门仍安全停止（29088适配前历史截面）
 
-后续源码已补齐28529→29088独立精确pair，当前DLL完整Release零warning/error、2216离线测试及source MCP64/1通过；这是适配代码完成，尚未证明原档载入，保存边界仍73573789/J91/accepted5。
+后续源码已补齐28529→29088独立精确pair，当前DLL完整Release零warning/error、2216离线测试及source MCP64/1通过；当时这只是适配代码完成，尚未证明原档载入，保存边界仍73573789/J91/accepted5。
 
 `bde7fea` 与 CI `35995364465` 已绿；修正后的同批228文件以 manifest **A6467753688B201DBD8701393C81E65DEF2564424A6E546A69167ED9E380C57F** 完整安装，Plugin/MCP 的ProductVersion均绑定该提交。Luna 仅一次启动 Steam，并只读核到已安装 MCP **64 tools / 1 resource** 与指南 **87895**；没有先行 load、save 或施工。随后经批准只尝试一次 expired-primary prepare，返回 `SESSION_NOT_OWNED`（generic provenance），**没有 commit、load 或 save，accepted仍为5**。fresh bridge status 实测 native 已在启动时随 Steam 更新为 **0.10.35.29088**，不是本轮仅支持的29057；两份受保护票据副本仍一致、未消费、无attempt，保存边界仍为 **73573789 / J91 / old-version**。因此恢复只待29088 DLL研究与新的有限核销，不将部署、握手或这次拒绝外推为加载、迁移耐久性、施工、吞吐或持续供给通过。
 
@@ -17,7 +25,7 @@
 
 `ad36f919653cb9be7177c32c227c1515690328d6` 已推送，CI `35987113158` 为绿；冷部署预检在 native reference hash 门停止，尚未写入 install-intent、创建 backup、复制或移动任何文件，也未启动、加载或施工。安装中的 `Assembly-CSharp.dll` 为 **E75D3FE4B6A9CA822766189F826BA3A8348DFB7E301AA37FF6779DB29A83FD8D / 8019456 bytes**，而已验证引用仍为 **AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85 / 7830016 bytes**；BepInEx 仍为 5.4.17.0。只读 `Updates/Versions.txt` 显示最新 **0.10.35.29057 / True / 2026-09-23**，旧证据对应 0.10.34.28529。228 文件 stage seal（789AC…）可保留，不能绕过此门误装。原档仍为 **save73573789 / J91 / accepted5**，票据和 Journal 未改。用户本次已授权直接 load，但版本边界尚未核销；不得篡改 ticket/Journal 的 GameVersion、忽略 native hash 或宣称新版本已支持。Sol 的离线 DLL 核对只确认 `SaveCurrentGame`、`ReadHeader`、`StartGame` 的签名与 IL 未变，并观察到 `GameData` patch 22→23、`GameDesc` 9→10 的 backward-read 分支；这不是 live 验证，产品精确版本绑定仍会拒绝，重新编译本身不足以放行。
 
-### 2026-09-24 — 继续开发原档重新授权；执行角色升级
+### 2026-09-24 — 继续开发原档重新授权；执行角色升级（历史截面）
 
 用户授权继续，并将游戏执行替换为 `gpt-6-luna / max`；新实例只读确认游戏进程与活动 descriptor 均不存在，没有启动、载入或游戏写入。最后已经证明的保存仍为 **73573789 / J91 / accepted5**，D.1–D.4成功前缀不重做。主会话处理IFX-170安全接口，Terra做定向离线测试，Sol独立审核；实际恢复须先同批冷部署、fresh预检展示disclosure，再取得用户后续明确确认。实现或单元测试不能算原档已恢复，持续紫糖/原厂供给和0.4总验收门不因本次修复核销。
 

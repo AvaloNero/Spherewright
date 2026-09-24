@@ -14,6 +14,10 @@
 
 ## IFX-171 — 冷部署的原生引用与已安装 DSP 版本漂移
 
+- 后续冷部署与当前阻断（2026-09-24）：`bde7fea` / CI `35995364465` 绿后，修正 cohort 的228文件与 manifest **A6467753688B201DBD8701393C81E65DEF2564424A6E546A69167ED9E380C57F** 已核对，Plugin/MCP ProductVersion同为该提交；Luna仅一次启动到菜单并只读核到64 tools/1 resource、指南87895。唯一获准的 expired-primary prepare 随后被 `SESSION_NOT_OWNED`（generic provenance）拒绝，未产生 commit、load、save 或施工，accepted仍为5。fresh bridge status 显示 Steam 启动时实际 native 已变为 **0.10.35.29088**，而本轮实现只绑定 **0.10.34.28529 → 0.10.35.29057**；受保护票据副本仍一致、未消费且无attempt，**save73573789 / J91** 未动。这是版本边界的安全停止，不是存档损坏、原生加载失败或恢复成功；29088 DLL研究及新的受限核销仍待。
+
+- 冷部署（同日，原档尚未load）：`bde7fea`已push，CI`35995364465`绿。先生成的stage manifest `95BE972F…`虽与安装文件相符，但启动前额外读ProductVersion发现Plugin保留提交前SHA、MCP已是提交后SHA；该stage不能作为最终同批证据。完整postcommit重建后保留旧备份，仅替换四个Plugin文件，最终228/228匹配修正manifest **A6467753688B201DBD8701393C81E65DEF2564424A6E546A69167ED9E380C57F**；Plugin **2B01D623630D296495A45D8656522AF175E91687DAE847F983832B27C82350B3**、MCP **159AD44E1357CEC96B0B42E997D24FBDBDA1D3C6F80083718B6A0BDCADB759F6**，两者ProductVersion均为0.4.0+bde7fea完整SHA。修正前无启动/load，票据未变，accepted5。封存入口增加双方提交版本标识检查；冷部署不冒充恢复成功。
+
 - 最终离线验证（2026-09-24）：locked restore通过；使用新版完整引用Release build 0 warning/error；2201测试（59 Contracts、1960 Core、182 MCP）通过，其中21项链接真实ticket store。source MCP实进程64 tools/1 resource，87895字符指南逐字匹配，退出0/额外stdout0。测试用I/O替身不证明真实ACL，离线结果不代替后续load、迁移耐久性、保存/恢复验收。
 
 - 2026-09-24 用户选择适配新版后的实现切片（冷部署/实机待验）：限定旧版→新版精确pair，恢复证据v2披露并绑定source/target。Journal保留原始GameVersion与全部事件，采用后先耐久写独立transition，再允许正常保存；保存后复读当前native tuple/身份/tick，reauth成功还要求新票据实际可用。消费标记跨版本不可逆，落盘source版字段供旧Plugin识别，新读者对attempt及损坏tombstone均拒绝，防止删除副本失败后凭据复活。完整新版引用build及Core/Contracts/MCP测试与source MCP检查通过，最终数量随提交记录；这不是live验收。

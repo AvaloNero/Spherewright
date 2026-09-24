@@ -18,6 +18,10 @@
 
 ### EXP-304 — 游戏升级需要同时验证原生格式与受保护来源版本
 
+- 冷部署后的负门（同日）：修正 cohort 的228文件、提交 `bde7fea` 与CI `35995364465`均已核对，仍不能替代启动后 native tuple 的fresh读取。Steam 启动时 native 实为 `0.10.35.29088`，而该轮只允许 `0.10.34.28529 → 0.10.35.29057`；唯一 expired-primary prepare 按 `SESSION_NOT_OWNED`（generic provenance）停止，0 commit/load/save、accepted5保持，票据双副本未消费且无attempt。版本门必须在真实运行时重新核销，不能把已部署的228文件、MCP握手或离线 backward-read分支写成迁移成功。
+
+- 冷部署补充（同日）：源树与manifest哈希一致仍不足以证明“同提交编译”；commit前build后复用Plugin、commit后publish MCP会产生不同InformationalVersion。启动前须核两侧ProductVersion与完整source SHA，再封存。已在零游戏写入时发现并postcommit重建修正；旧stage保留为被替代证据，不覆盖原manifest或原备份。
+
 - 日期/最近复验：2026-09-24；状态：`observed`，离线 DLL 与实现证据，尚非实机通过。
 - 适用范围：仅 `0.10.34.28529 → 0.10.35.29057`；关联 IFX-171 与 [API研究](research/game-api-version-0.10.35.md)。
 - 结论：load/save入口签名未变不代表整个存档格式未变；新的GameData patch23/GameDesc10要作为完整tuple校验。重编译不能替代原档票据、文件与Journal的来源一致性。Journal保留原始版本和所有事件，以单独耐久版本迁移记录连接新runtime；不能伪改旧票据或把升级当导入新档。

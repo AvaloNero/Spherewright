@@ -7,6 +7,10 @@
 
 用户选择适配 `0.10.35.29057`，并沿用本轮原档直接加载确认。实现仅开放 `0.10.34.28529 → 0.10.35.29057` 原owned primary恢复；不改旧票据、来源版本或J1–J91历史，迁移记录独立于首次事件。正常保存需读回新版格式后才能签新票据；旧凭据消费跨版本保持不可逆。新版DLL完整编译0 warnings/errors，离线与source MCP测试通过；此条不声称已部署、载入或推进游戏，仍为save73573789/J91/accepted5。详见IFX-171、EXP-304及版本API研究。
 
+### 2026-09-24 — 修正冷部署后，实际 native 版本门仍安全停止
+
+`bde7fea` 与 CI `35995364465` 已绿；修正后的同批228文件以 manifest **A6467753688B201DBD8701393C81E65DEF2564424A6E546A69167ED9E380C57F** 完整安装，Plugin/MCP 的ProductVersion均绑定该提交。Luna 仅一次启动 Steam，并只读核到已安装 MCP **64 tools / 1 resource** 与指南 **87895**；没有先行 load、save 或施工。随后经批准只尝试一次 expired-primary prepare，返回 `SESSION_NOT_OWNED`（generic provenance），**没有 commit、load 或 save，accepted仍为5**。fresh bridge status 实测 native 已在启动时随 Steam 更新为 **0.10.35.29088**，不是本轮仅支持的29057；两份受保护票据副本仍一致、未消费、无attempt，保存边界仍为 **73573789 / J91 / old-version**。因此恢复只待29088 DLL研究与新的有限核销，不将部署、握手或这次拒绝外推为加载、迁移耐久性、施工、吞吐或持续供给通过。
+
 ### 2026-09-24 — 重新授权冷部署被原生版本边界阻断
 
 `ad36f919653cb9be7177c32c227c1515690328d6` 已推送，CI `35987113158` 为绿；冷部署预检在 native reference hash 门停止，尚未写入 install-intent、创建 backup、复制或移动任何文件，也未启动、加载或施工。安装中的 `Assembly-CSharp.dll` 为 **E75D3FE4B6A9CA822766189F826BA3A8348DFB7E301AA37FF6779DB29A83FD8D / 8019456 bytes**，而已验证引用仍为 **AE0BA95F75BD879A62AA4CE253B2AB78EAA4FB3C7C595F5E1FEE75EBE0E0EF85 / 7830016 bytes**；BepInEx 仍为 5.4.17.0。只读 `Updates/Versions.txt` 显示最新 **0.10.35.29057 / True / 2026-09-23**，旧证据对应 0.10.34.28529。228 文件 stage seal（789AC…）可保留，不能绕过此门误装。原档仍为 **save73573789 / J91 / accepted5**，票据和 Journal 未改。用户本次已授权直接 load，但版本边界尚未核销；不得篡改 ticket/Journal 的 GameVersion、忽略 native hash 或宣称新版本已支持。Sol 的离线 DLL 核对只确认 `SaveCurrentGame`、`ReadHeader`、`StartGame` 的签名与 IL 未变，并观察到 `GameData` patch 22→23、`GameDesc` 9→10 的 backward-read 分支；这不是 live 验证，产品精确版本绑定仍会拒绝，重新编译本身不足以放行。

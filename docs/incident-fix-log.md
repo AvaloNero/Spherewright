@@ -12,6 +12,10 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-178 — Windows PowerShell 测试包装器将未知退出码误转为成功
+
+- 2026-09-27，`fixed_offline`。安装包测试的重定向`Start-Process`子进程在Windows PowerShell返回null `ExitCode`，旧`[int]`转换会得到`0`，因此首次无`-Force`阶段结果不能解释为产品安装器误放行。现于启动后立即绑定仅测试自建子进程的Handle，保留null拒绝，并维持输出/超时上限；两种shell的自建0/7退出码及最终真实包四阶段均通过。关联EXP-311及[实际包CLI范围](evidence/2026-09-27/install-package-cli.md)。不证明Unity、DSP原生版本、真实用户安装或发布。
+
 ## IFX-177 — 双包版本元数据仍将旧原生版本带入当前预览
 
 - 2026-09-27，`mitigated`（源码/dirty 本地归档）。两个包 source manifest 的`supportedDspVersion`及 Thunderstore README 当前支持范围仍硬编码`0.10.34.28529`，会把已验证的29088包目标误写成旧版本。现改为`0.10.35.29088`，实际手动/Thunderstore归档均回读该值；手动包既有metadata握手与 Thunderstore 静态校验通过，恢复入口、依赖脚本和`RECOVERY.md`均存在且与 manifest 哈希一致。关联EXP-310；[归档证据与限制](evidence/2026-09-27/package-native-version.md)。手动`INSTALL.md`仍是旧声明，故本次只为 preview，不能混用为 owned迁移来源/授权，亦不证明真实安装、Unity运行、Thunderstore runtime black-box 或发布就绪。

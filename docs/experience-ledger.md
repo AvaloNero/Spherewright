@@ -4,6 +4,10 @@
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
+## EXP-311 — 测试子进程的 null ExitCode 不能转换为成功
+
+- 2026-09-27，`validated`，最近复验同日；仅适用于 Windows PowerShell/pwsh 的本地安装测试执行器。重定向的`Start-Process`子进程若未先绑定Handle，Windows PowerShell可暴露null `ExitCode`；`[int]$null`会伪造成功`0`。测试须先取得自建子进程Handle、保留并拒绝null原值，再读取退出码；两种shell的自建`exit 0/7`均回读真实Int32，随后真实包四阶段均通过。进程包装、重定向或shell变化时复验；关联IFX-178及[包CLI证据](evidence/2026-09-27/install-package-cli.md)。这是测试执行器修正，不是产品安装器忽略`-Force`或真实安装结论。
+
 ## EXP-310 — 双包目标版本须以实际归档为准，不能混用 owned 迁移来源
 
 - 2026-09-27，`validated`，最近复验同日；仅限 dirty 本地双包预览。手动包与 Thunderstore 的实际归档 manifest 都必须回读同一 `supportedDspVersion`，并与当前 Thunderstore 中英文支持范围一致；本次均为 `0.10.35.29088`，现有静态校验与手动 MCP metadata handshake 通过。包目标版本只是分发兼容声明，不能代替或混入 owned 存档的精确来源/目标版本、授权或迁移证据。归档字段、README、安装说明、DSP 版本或发布流程变化时复验；关联IFX-177及[预览证据和边界](evidence/2026-09-27/package-native-version.md)。dirty preview、旧`INSTALL.md`声明、真实安装/Unity、Thunderstore runtime black-box 与发布仍未核销。

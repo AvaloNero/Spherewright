@@ -1,6 +1,6 @@
 # Spherewright 首次问题与代码修复记录
 
-更新时间：2026-09-24（Asia/Singapore）
+更新时间：2026-09-27（Asia/Singapore）
 
 本文件专门记录项目第一次遇到的可复用工程问题：现场症状、根因、代码或协议
 修复、验证证据和仍有限制。它不是逐局流水账，也不是当前规则的唯一来源。
@@ -11,6 +11,10 @@
 状态取 `fixed | mitigated | open`。`fixed` 只表示写明范围内已有代码和验证证据，
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
+
+## IFX-172 — 已建分拣器的槽位预览缺失被误判为施工连接失败
+
+- 2026-09-27，`mitigated`。调用方混淆`sorterEndpoints`（可接新分拣器的槽位几何）与现有`connections`；5158已成功terminal且双端互返，未发生产品连接丢失的证据。指南与资源回归补充既有pick/insert和互返连接的核验方式，不放宽native预检或真实连接门。原回执及独立源码核验见[阶段证据](evidence/2026-09-27/hps-first-infeed-reconciliation.md)，对应EXP-305。另有游戏已退出且该施工未证明保存的真实恢复阻塞，仍未解除；本条不证明误判导致游戏退出。
 
 ## IFX-171 — 冷部署的原生引用与已安装 DSP 版本漂移
 

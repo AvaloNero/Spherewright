@@ -4,6 +4,8 @@
 
 ## Verified snapshot
 
+**Latest re-entry (2026-09-27):** one subsequent HPS infeed build was successfully accepted, but its persistence is not proved. DSP is now closed; primary save73728691 predates sorter5158 at75194266. The current audit window is accepted1 after an explicit prior seal. Do not load the old primary or replay the build. Fixed LastExit inspection awaits user authorization; see [reconciliation and observation correction](evidence/2026-09-27/hps-first-infeed-reconciliation.md).
+
 - Documentation/evidence baseline: `346087b6b07c1b65b2e5567f5d24c141f4c9b739` (`2026-09-24T20:46:31+08:00`).
 - Last recorded installed cohort: `f4fc8e5`; its native DSP version was `0.10.35.29088`.
 - The owned-primary migration normally saved at tick `73573821`, retained Journal `J91`, and moved the accepted-action counter from `5` to `6`.
@@ -21,7 +23,7 @@ The [fresh read-only factory snapshot](evidence/2026-09-26/factory-reentry-audit
 
 - Do not replay the old reauthorization token, normal save, or the already accepted `5 → 6` action. A later expired-ticket recovery is a new protected plan with its own disclosure and confirmation, not a replay.
 - The original six-object blueprint module completed construction, partial cancellation, restart reconciliation, external connections and sustained output (approximately `29.989` graphite/min). Governor's separate predeclared `31 → 62/min` experiment passed `37128` effective ticks within its ±10% band. These historical bounded gates stay closed; they do not prove today's factory health or whole-version readiness. See the September 10 acceptance entries in the [diary](gameplay-timeline.md).
-- Do not replay the completed west-side D.1–D.6 bounded construction stages or the normal save. The accepted counter is frozen at `10`; a later explicit root seal is required before any reset.
+- Do not replay the completed west-side D.1–D.6 stages or their normal save. Their historical accepted10 window was subsequently explicitly sealed; the new window contains one successful, not-yet-proven-persisted build, as recorded above. This does not reset any game state.
 - Do not restart the historical `b849587` baseline plan, including its 48-belt / 8-attachment construction idea, merely because it appears in an old attachment or diary section.
 
 ## Still pending

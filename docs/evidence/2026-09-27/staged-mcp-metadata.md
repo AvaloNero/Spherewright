@@ -13,6 +13,10 @@ The child receives a private, nonexistent descriptor path with no fallback to th
 - The latter suite also ran the current source-built Release MCP executable: **64 tools, 1 resource, 89544 playbook characters**, exact playbook match and normal exit. This is source-built metadata evidence, not a packaged ZIP, installed Plugin, cold deployment, cross-computer or live-game result.
 - Independent Sol review found no blocking issue; temporary fixture cleanup requires both the resolved temporary-parent prefix and the exact task-specific directory-name pattern.
 
-## Remaining work
+## Follow-up: cross-shell value-shape regression
+
+After the initial Windows PowerShell checks, PowerShell 7.6.5 rejected the valid initialize reply with `initialize serverInfo is missing 'version'`. A minimal reproduction showed `Write-Output -NoEnumerate` wrapping a scalar PSCustomObject in `List<object>`. The getter now returns a unary-comma value, preserving object identity as well as scalar, null, empty-array, singleton-array and multi-item-array shape. Six direct regressions were added. The complete probe suite now passes **19 checks independently under Windows PowerShell and PowerShell 7.6.5**, including the source-built MCP metadata checks above. This shell compatibility fix does not change MCP requests or installation authority.
+
+## Remaining work (unchanged)
 
 This extends the [stage-only slice](../2026-09-26/install-release-stage-only.md), not the live installer transaction. Default installation still uses direct replacement and reports no transactional guarantee. Original-payload backup, coordinated promotion, verified rollback, interrupted-operation recovery and final same-commit package validation remain open. No game load/save/write, real-target installation, tag or release occurred in this slice.

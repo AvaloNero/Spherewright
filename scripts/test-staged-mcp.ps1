@@ -12,6 +12,24 @@ $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('spherewright-staged-mcp-tests
 [void][IO.Directory]::CreateDirectory($testRoot)
 $testCases = 0
 
+foreach ($shape in @(
+    @{ value = [pscustomobject]@{ version = '1.2.3' }; type = [pscustomobject] },
+    @{ value = 'text'; type = [string] },
+    @{ value = @(); type = [object[]] },
+    @{ value = @('one'); type = [object[]] },
+    @{ value = @('one', 'two'); type = [object[]] },
+    @{ value = $null; type = $null }
+)) {
+    $container = [pscustomobject]@{ value = $shape.value }
+    $actual = Get-SpherewrightStagedMcpProperty -Object $container -Name 'value' -Context 'shape regression'
+    if ($null -eq $shape.type) {
+        if ($null -ne $actual) { throw 'Null property shape was changed.' }
+    } elseif ($actual -isnot $shape.type -or -not [object]::ReferenceEquals($actual, $shape.value)) {
+        throw 'MCP property getter changed the original value shape or identity.'
+    }
+    $testCases++
+}
+
 function New-SpherewrightStagedMcpFixtureExecutable {
     param([Parameter(Mandatory)][string]$Destination)
 

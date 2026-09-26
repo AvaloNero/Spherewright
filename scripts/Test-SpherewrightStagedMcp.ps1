@@ -182,7 +182,9 @@ function Get-SpherewrightStagedMcpProperty {
 
     $property = $Object.PSObject.Properties[$Name]
     if ($null -eq $property) { throw "$Context is missing '$Name'." }
-    Write-Output -NoEnumerate $property.Value
+    # Preserve scalar/object/array shape on both Windows PowerShell and pwsh.
+    # Write-Output -NoEnumerate can wrap a scalar PSCustomObject in List<object>.
+    return ,($property.Value)
 }
 
 function Get-SpherewrightExpectedProductVersionCore {

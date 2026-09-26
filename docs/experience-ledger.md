@@ -4,6 +4,10 @@
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
+## EXP-306 — PowerShell 跨版本读取 JSON 字段须保留值形状
+
+- 2026-09-27，`validated`，最近复验同日；适用于安装器 MCP 探针。PowerShell 7.6.5 中 `Write-Output -NoEnumerate` 可将标量 PSCustomObject 包成 List，不能据此误报服务端缺字段；使用一元逗号保留原对象及数组/空值形状。两种 shell 各19项离线检查通过；shell或字段读取实现变化时复验。关联IFX-173，完整边界见[探针证据](evidence/2026-09-27/staged-mcp-metadata.md)。不是最终ZIP或游戏验收。
+
 ## EXP-305 — 可接新分拣器的槽位预览不等于已建分拣器的连接证明
 
 - 2026-09-27，`validated`，最近复验同日；适用于当前factory inspect语义。`sorterEndpoints`来自待连接对象的native槽位/带虚拟姿态；已建inserter自身返回unavailable不能据此否定成功terminal或重放。用pick/insert ID和两端`connections`互返核现有连接，功率与持续货流另验。原生预检拒绝、实际连接缺失仍停止；字段语义/适配器改变时复验。根因、四份原回执哈希及独立核验见[阶段证据](evidence/2026-09-27/hps-first-infeed-reconciliation.md)，关联IFX-172。本次施工在退出后尚未证明保存，不能把连接核销外推为可直接恢复旧主档。

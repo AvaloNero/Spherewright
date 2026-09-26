@@ -362,12 +362,16 @@ $mcpSource = Join-Path $packageRoot 'mcp'
 if (-not (Test-Path -LiteralPath (Join-Path $mcpSource 'Spherewright.Mcp.exe') -PathType Leaf)) {
     throw 'The packaged self-contained MCP executable is missing.'
 }
+# Import only function definitions after package integrity checks. Even preview
+# must refuse an unresolved installation marker; it must never clear that marker.
+. (Join-Path $packageRoot 'SpherewrightInstallTransaction.ps1')
+$pendingMarker = Get-SpherewrightInstallPendingMarkerPath -PluginStageParent (Join-Path $gameRoot 'BepInEx')
+Assert-SpherewrightInstallNoPendingMarker -MarkerPath $pendingMarker
 if ($PreflightOnly) {
     [pscustomobject]@{ version=$version; integrityVerified=$true; exactFileSet=$true; preflightOnly=$true; installed=$false; transactionalUpgrade=$false } | ConvertTo-Json
     return
 }
 
-. (Join-Path $packageRoot 'SpherewrightInstallTransaction.ps1')
 & {
     # This staging phase remains outside the Plugin scan tree and both live
     # targets. Only after it passes may the default branch invoke the transaction;

@@ -277,6 +277,134 @@ function Read-SpherewrightInstallBoundedProgressRecord {
     }
 }
 
+function Get-SpherewrightInstallPendingMarkerPath {
+    param([Parameter(Mandatory)][string]$PluginStageParent)
+
+    $parent = ConvertTo-SpherewrightInstallCanonicalPath $PluginStageParent
+    $item = Get-Item -LiteralPath $parent -Force -ErrorAction Stop
+    if (-not $item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw "Pending marker parent must be a non-reparse directory: $parent"
+    }
+    return Join-Path $item.FullName '.spherewright-install-pending.json'
+}
+
+function Assert-SpherewrightInstallNoPendingMarker {
+    param([Parameter(Mandatory)][string]$MarkerPath)
+
+    $marker = ConvertTo-SpherewrightInstallCanonicalPath $MarkerPath
+    $parent = Split-Path -Parent $marker
+    $parentItem = Get-Item -LiteralPath $parent -Force -ErrorAction Stop
+    if (-not $parentItem.PSIsContainer -or ($parentItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw "Pending marker parent must be a non-reparse directory: $parent"
+    }
+    try {
+        $item = Get-Item -LiteralPath $marker -Force -ErrorAction Stop
+    } catch [System.Management.Automation.ItemNotFoundException] {
+        return
+    } catch {
+        throw "Pending startup marker cannot be inspected: $marker. $($_.Exception.Message)"
+    }
+    if ($null -ne $item) {
+        throw "A prior Spherewright pending startup marker requires inspection: $marker"
+    }
+}
+
+function Read-SpherewrightInstallPendingMarker {
+    param([Parameter(Mandatory)][string]$MarkerPath)
+
+    $marker = ConvertTo-SpherewrightInstallCanonicalPath $MarkerPath
+    $item = Get-Item -LiteralPath $marker -Force -ErrorAction Stop
+    if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw "Pending startup marker must be a non-reparse file: $marker"
+    }
+    $maximumBytes = 64KB
+    $stream = [IO.File]::Open($item.FullName, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
+    try {
+        if ($stream.Length -le 0 -or $stream.Length -gt $maximumBytes) {
+            throw "Pending startup marker is empty or exceeds the 64 KiB bound: $marker"
+        }
+        $length = [int]$stream.Length
+        $bytes = New-Object byte[] $length
+        $offset = 0
+        while ($offset -lt $length) {
+            $read = $stream.Read($bytes, $offset, $length - $offset)
+            if ($read -le 0) { throw "Pending startup marker changed while it was read: $marker" }
+            $offset += $read
+        }
+    } finally {
+        $stream.Dispose()
+    }
+    try {
+        return ([Text.UTF8Encoding]::new($false, $true).GetString($bytes) | ConvertFrom-Json -ErrorAction Stop)
+    } catch {
+        throw "Pending startup marker is not valid UTF-8 JSON: $marker"
+    }
+}
+
+function Assert-SpherewrightInstallPendingMarkerIdentity {
+    param(
+        [Parameter(Mandatory)][string]$MarkerPath,
+        [Parameter(Mandatory)][hashtable]$ExpectedIdentity
+    )
+
+    $marker = Read-SpherewrightInstallPendingMarker -MarkerPath $MarkerPath
+    $schema = $marker.PSObject.Properties['schemaVersion']
+    $operation = $marker.PSObject.Properties['operationId']
+    if ($null -eq $schema -or [int]$schema.Value -ne 1 -or $null -eq $operation -or
+        [string]$operation.Value -cne [string]$ExpectedIdentity.operationId) {
+        throw "Pending startup marker identity does not match this operation: $MarkerPath"
+    }
+    foreach ($field in @('pluginDestination', 'mcpDestination', 'pluginStageRoot', 'mcpStageRoot', 'pluginArchive', 'mcpArchive')) {
+        $property = $marker.PSObject.Properties[$field]
+        if ($null -eq $property -or [string]::IsNullOrWhiteSpace([string]$property.Value)) {
+            throw "Pending startup marker lacks ${field}: $MarkerPath"
+        }
+        $actual = ConvertTo-SpherewrightInstallCanonicalPath ([string]$property.Value)
+        $expected = ConvertTo-SpherewrightInstallCanonicalPath ([string]$ExpectedIdentity[$field])
+        if (-not [string]::Equals($actual, $expected, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Pending startup marker identity does not match ${field}: $MarkerPath"
+        }
+    }
+}
+
+function Write-SpherewrightInstallPendingMarker {
+    param([Parameter(Mandatory)][hashtable]$State)
+
+    Invoke-SpherewrightInstallFaultHook -BeforeMutation $State.beforeMutation -Step 'write-pending-marker'
+    $json = $State.pendingMarkerIdentity | ConvertTo-Json -Depth 4
+    $encoding = [Text.UTF8Encoding]::new($false)
+    $stream = [IO.File]::Open($State.pendingMarkerPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+    try {
+        $writer = [IO.StreamWriter]::new($stream, $encoding, 4096, $true)
+        try {
+            $writer.Write($json)
+            $writer.Flush()
+            $stream.Flush($true)
+        } finally {
+            $writer.Dispose()
+        }
+    } finally {
+        $stream.Dispose()
+    }
+    Assert-SpherewrightInstallPendingMarkerIdentity -MarkerPath $State.pendingMarkerPath -ExpectedIdentity $State.pendingMarkerIdentity
+    $State.pendingMarkerCreated = $true
+}
+
+function Remove-SpherewrightInstallPendingMarker {
+    param([Parameter(Mandatory)][hashtable]$State)
+
+    Assert-SpherewrightInstallPendingMarkerIdentity -MarkerPath $State.pendingMarkerPath -ExpectedIdentity $State.pendingMarkerIdentity
+    Invoke-SpherewrightInstallFaultHook -BeforeMutation $State.beforeMutation -Step 'delete-pending-marker'
+    # Re-read after the test hook and immediately before deletion, so an
+    # external replacement cannot be silently removed as our own marker.
+    Assert-SpherewrightInstallPendingMarkerIdentity -MarkerPath $State.pendingMarkerPath -ExpectedIdentity $State.pendingMarkerIdentity
+    [IO.File]::Delete($State.pendingMarkerPath)
+    if (Test-Path -LiteralPath $State.pendingMarkerPath) {
+        throw "Pending startup marker could not be removed: $($State.pendingMarkerPath)"
+    }
+    $State.pendingMarkerCreated = $false
+}
+
 function Get-SpherewrightInstallProgressRecordString {
     param(
         [Parameter(Mandatory)][object]$Record,
@@ -396,12 +524,23 @@ function Enter-SpherewrightInstallTargetLocks {
     try {
         foreach ($target in @($Targets | Sort-Object -Unique)) {
             $mutex = [Threading.Mutex]::new($false, (Get-SpherewrightInstallMutexName $target))
+            $ownsMutex = $false
             try {
-                if (-not $mutex.WaitOne(0)) { throw "Another installer transaction holds the target lock: $target" }
-            } catch [Threading.AbandonedMutexException] {
-                throw "An abandoned installer transaction lock requires inspection; no automatic recovery: $target"
+                try {
+                    $ownsMutex = $mutex.WaitOne(0)
+                } catch [Threading.AbandonedMutexException] {
+                    # WaitOne grants ownership when it reports an abandoned
+                    # mutex. Refuse automatic recovery after releasing it.
+                    $ownsMutex = $true
+                    throw "An abandoned installer transaction lock requires inspection; no automatic recovery: $target"
+                }
+                if (-not $ownsMutex) { throw "Another installer transaction holds the target lock: $target" }
+                $locks.Add($mutex)
+            } catch {
+                if ($ownsMutex) { try { $mutex.ReleaseMutex() } catch { } }
+                $mutex.Dispose()
+                throw
             }
-            $locks.Add($mutex)
         }
         return @($locks)
     } catch {
@@ -653,6 +792,34 @@ function Quiesce-SpherewrightInstallPluginMainForRollback {
     Move-SpherewrightInstallLiveFileToFailure -State $State -Role 'plugin' -LiveRoot $State.pluginDestination -FailureRoot $State.pluginFailureRoot -Relative $main
 }
 
+function Quiesce-SpherewrightInstallAnyLiveMainForUnresolvedFailure {
+    param([Parameter(Mandatory)][hashtable]$State)
+
+    $main = $script:SpherewrightInstallTransactionMainPluginFile
+    $live = Join-Path $State.pluginDestination $main
+    if (-not (Test-Path -LiteralPath $live -PathType Leaf)) { return }
+    # An unresolved record must not leave either a new or restored old main
+    # DLL discoverable. Dependencies, backups, and prior-live evidence stay
+    # intact for manual inspection; this only moves the live scan entrypoint.
+    $previousRollbackMode = [bool]$State.rollbackMode
+    try {
+        $State.rollbackMode = $true
+        if (-not (Test-Path -LiteralPath $State.pluginFailureRoot -PathType Container)) {
+            Invoke-SpherewrightInstallMutation -State $State -Step 'create-plugin-unresolved-evidence-root' -Action {
+                [void][IO.Directory]::CreateDirectory($State.pluginFailureRoot)
+            }
+        }
+        $destination = Join-Path $State.pluginFailureRoot 'unresolved-live-main.dll'
+        if (Test-Path -LiteralPath $destination) { throw "Unresolved main evidence path already exists: $destination" }
+        Invoke-SpherewrightInstallMutation -State $State -Step 'rollback-move-plugin-unresolved-main' -Action {
+            [IO.File]::Move($live, $destination)
+        }
+        $State.unresolvedMainQuiesced = $true
+    } finally {
+        $State.rollbackMode = $previousRollbackMode
+    }
+}
+
 function Restore-SpherewrightInstallMcpPayload {
     param(
         [Parameter(Mandatory)][hashtable]$State,
@@ -792,6 +959,61 @@ function Complete-SpherewrightInstallTerminalArchive {
     }
 }
 
+function Assert-SpherewrightInstallOperationTerminalArchives {
+    param(
+        [Parameter(Mandatory)][hashtable]$State,
+        [Parameter(Mandatory)][ValidateSet('committed','rolled_back')][string]$Outcome
+    )
+
+    $pluginItem = Get-Item -LiteralPath $State.pluginArchive -Force -ErrorAction Stop
+    $mcpItem = Get-Item -LiteralPath $State.mcpArchive -Force -ErrorAction Stop
+    $pluginInfo = Get-SpherewrightInstallArchiveProgressInfo -ArchiveItem $pluginItem
+    $mcpInfo = Get-SpherewrightInstallArchiveProgressInfo -ArchiveItem $mcpItem
+    if ($pluginInfo.role -cne 'plugin' -or $mcpInfo.role -cne 'mcp' -or
+        $pluginInfo.operationId -cne $State.operationId -or $mcpInfo.operationId -cne $State.operationId -or
+        -not [string]::Equals($pluginInfo.archive, $State.pluginArchive, [StringComparison]::OrdinalIgnoreCase) -or
+        -not [string]::Equals($mcpInfo.archive, $State.mcpArchive, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'This operation does not have the expected paired terminal archives.'
+    }
+    $pluginStatus = Get-SpherewrightInstallProgressRecordString -Record $pluginInfo.record -Name 'status' -RecordPath $pluginInfo.recordPath
+    $mcpStatus = Get-SpherewrightInstallProgressRecordString -Record $mcpInfo.record -Name 'status' -RecordPath $mcpInfo.recordPath
+    if ($pluginStatus -cne $Outcome -or $mcpStatus -cne $Outcome) {
+        throw "This operation's paired archives are not terminal $Outcome records."
+    }
+    Assert-SpherewrightInstallNoPendingArchives -Parent $State.pluginStageParent
+    Assert-SpherewrightInstallNoPendingArchives -Parent $State.mcpStageParent
+}
+
+function Complete-SpherewrightInstallPendingMarker {
+    param(
+        [Parameter(Mandatory)][hashtable]$State,
+        [Parameter(Mandatory)][ValidateSet('committed','rolled_back')][string]$Outcome,
+        [Parameter(Mandatory)][Collections.Generic.Dictionary[string,string]]$PluginExpectedFiles,
+        [Parameter(Mandatory)][Collections.Generic.Dictionary[string,string]]$McpExpectedFiles,
+        [Parameter(Mandatory)][object]$PluginOriginal,
+        [Parameter(Mandatory)][object]$McpOriginal,
+        [Parameter(Mandatory)][string]$HandoffFingerprint
+    )
+
+    if (-not $State.pendingMarkerCreated) { throw 'Pending startup marker was not created for this transaction.' }
+    if ($Outcome -ceq 'committed') {
+        $null = Assert-SpherewrightInstallSnapshotComplete -Root $State.pluginDestination -ExpectedFiles $PluginExpectedFiles -PreservedDirectories @('runtime-handoff')
+        $null = Assert-SpherewrightInstallSnapshotComplete -Root $State.mcpDestination -ExpectedFiles $McpExpectedFiles
+    } else {
+        if (-not (Test-SpherewrightInstallSnapshotMatches -ExpectedSnapshot $PluginOriginal -Root $State.pluginDestination -ExpectedFiles $PluginExpectedFiles -PreservedDirectories @('runtime-handoff'))) {
+            throw 'Verified rollback no longer has the exact original Plugin payload state.'
+        }
+        if (-not (Test-SpherewrightInstallSnapshotMatches -ExpectedSnapshot $McpOriginal -Root $State.mcpDestination -ExpectedFiles $McpExpectedFiles)) {
+            throw 'Verified rollback no longer has the exact original MCP payload state.'
+        }
+    }
+    if (-not [string]::Equals((Get-SpherewrightInstallTreeFingerprint (Join-Path $State.pluginDestination 'runtime-handoff')), $HandoffFingerprint, [StringComparison]::Ordinal)) {
+        throw 'Pending marker completion detected a changed runtime-handoff tree.'
+    }
+    Assert-SpherewrightInstallOperationTerminalArchives -State $State -Outcome $Outcome
+    Remove-SpherewrightInstallPendingMarker -State $State
+}
+
 function Get-SpherewrightInstallParentCreationPlan {
     param(
         [Parameter(Mandatory)][string]$McpDestination,
@@ -892,6 +1114,7 @@ function Invoke-SpherewrightInstallTransaction {
     $pluginStageInfo = Get-SpherewrightInstallStageInfo -Payload $PluginStagePayload -Role plugin
     $mcpStageInfo = Get-SpherewrightInstallStageInfo -Payload $McpStagePayload -Role mcp
     if ($pluginStageInfo.operationId -cne $mcpStageInfo.operationId) { throw 'Plugin and MCP stage operation IDs must match.' }
+    $pendingMarkerPath = Get-SpherewrightInstallPendingMarkerPath -PluginStageParent $pluginStageInfo.parent
     $pluginDestinationFull = ConvertTo-SpherewrightInstallCanonicalPath $PluginDestination
     $mcpDestinationFull = ConvertTo-SpherewrightInstallCanonicalPath $McpDestination
     foreach ($transactionPath in @($pluginStageInfo.payload, $mcpStageInfo.payload, $pluginDestinationFull, $mcpDestinationFull)) {
@@ -929,8 +1152,12 @@ function Invoke-SpherewrightInstallTransaction {
     $state = $null
     $liveMutationStarted = $false
     $recordCreated = $false
+    $markerUnresolvedFailure = $false
     try {
         $locks = Enter-SpherewrightInstallTargetLocks -Targets @($pluginDestinationFull, $mcpDestinationFull)
+        # This is deliberately before transaction-root creation, progress
+        # records, backups, planned parent creation, or payload promotion.
+        Assert-SpherewrightInstallNoPendingMarker -MarkerPath $pendingMarkerPath
         Assert-SpherewrightInstallNoPendingTransactionResidue -PluginDestination $pluginDestinationFull -McpDestination $mcpDestinationFull -AllowedStageRoots @($pluginStageInfo.root, $mcpStageInfo.root)
         $pluginStaged = Assert-SpherewrightInstallSnapshotComplete -Root $pluginStageInfo.payload -ExpectedFiles $pluginExpected
         $mcpStaged = Assert-SpherewrightInstallSnapshotComplete -Root $mcpStageInfo.payload -ExpectedFiles $mcpExpected
@@ -943,6 +1170,8 @@ function Invoke-SpherewrightInstallTransaction {
             beforeMutation = $BeforeMutation
             pluginStageRoot = $pluginStageInfo.root
             mcpStageRoot = $mcpStageInfo.root
+            pluginStageParent = $pluginStageInfo.parent
+            mcpStageParent = $mcpStageInfo.parent
             pluginDataRoot = $pluginStageInfo.root
             mcpDataRoot = $mcpStageInfo.root
             pluginDestination = $pluginDestinationFull
@@ -951,6 +1180,9 @@ function Invoke-SpherewrightInstallTransaction {
             mcpArchive = $mcpArchive
             pluginTransactionRoot = Join-Path $pluginStageInfo.root 'transaction'
             mcpTransactionRoot = Join-Path $mcpStageInfo.root 'transaction'
+            pendingMarkerPath = $pendingMarkerPath
+            pendingMarkerCreated = $false
+            unresolvedMainQuiesced = $false
             rollbackMode = $false
             rollbackJournalErrors = [Collections.Generic.List[string]]::new()
         }
@@ -960,6 +1192,16 @@ function Invoke-SpherewrightInstallTransaction {
         $state.mcpPriorLiveRoot = Join-Path $state.mcpTransactionRoot 'prior-live'
         $state.pluginFailureRoot = Join-Path $state.pluginTransactionRoot 'failed-new'
         $state.mcpFailureRoot = Join-Path $state.mcpTransactionRoot 'failed-new-live'
+        $state.pendingMarkerIdentity = @{
+            schemaVersion = 1
+            operationId = $state.operationId
+            pluginDestination = ConvertTo-SpherewrightInstallCanonicalPath $pluginDestinationFull
+            mcpDestination = ConvertTo-SpherewrightInstallCanonicalPath $mcpDestinationFull
+            pluginStageRoot = ConvertTo-SpherewrightInstallCanonicalPath $pluginStageInfo.root
+            mcpStageRoot = ConvertTo-SpherewrightInstallCanonicalPath $mcpStageInfo.root
+            pluginArchive = ConvertTo-SpherewrightInstallCanonicalPath $pluginArchive
+            mcpArchive = ConvertTo-SpherewrightInstallCanonicalPath $mcpArchive
+        }
         Set-SpherewrightInstallJournalPaths -State $state
 
         Invoke-SpherewrightInstallFaultHook -BeforeMutation $BeforeMutation -Step 'create-plugin-transaction-root'
@@ -978,6 +1220,8 @@ function Invoke-SpherewrightInstallTransaction {
             mcpDestination = $mcpDestinationFull
             pluginArchive = $pluginArchive
             mcpArchive = $mcpArchive
+            pendingMarkerPath = $pendingMarkerPath
+            pendingMarkerCreated = $false
             plannedParentDirectories = @($parentCreationPlan)
             createdParentDirectories = @()
             pluginOriginal = $pluginOriginal
@@ -990,6 +1234,9 @@ function Invoke-SpherewrightInstallTransaction {
         }
         Write-SpherewrightInstallProgress -State $state -Phase 'pending'
         $recordCreated = $true
+        Write-SpherewrightInstallPendingMarker -State $state
+        $state.record['pendingMarkerCreated'] = $true
+        Write-SpherewrightInstallProgress -State $state -Phase 'pending-marker-created'
 
         Copy-SpherewrightInstallSnapshotToBackup -State $state -Role plugin -SourceRoot $pluginDestinationFull -BackupRoot $state.pluginBackupRoot -Snapshot $pluginOriginal -ExpectedFiles $pluginExpected
         Copy-SpherewrightInstallSnapshotToBackup -State $state -Role mcp -SourceRoot $mcpDestinationFull -BackupRoot $state.mcpBackupRoot -Snapshot $mcpOriginal -ExpectedFiles $mcpExpected
@@ -1092,6 +1339,24 @@ function Invoke-SpherewrightInstallTransaction {
         Complete-SpherewrightInstallTerminalArchive -State $state
         $state.record['status'] = 'committed'
         Write-SpherewrightInstallProgress -State $state -Phase 'committed'
+        try {
+            Complete-SpherewrightInstallPendingMarker -State $state -Outcome committed -PluginExpectedFiles $pluginExpected -McpExpectedFiles $mcpExpected -PluginOriginal $pluginOriginal -McpOriginal $mcpOriginal -HandoffFingerprint $handoffFingerprint
+        } catch {
+            $markerUnresolvedFailure = $true
+            $markerFailure = $_
+            $state.record['status'] = 'needs_recovery'
+            $recordFailure = $null
+            try { Write-SpherewrightInstallProgress -State $state -Phase 'needs-recovery-marker-delete' } catch { $recordFailure = $_.Exception.Message }
+            $quiesceFailure = $null
+            try { Quiesce-SpherewrightInstallAnyLiveMainForUnresolvedFailure -State $state } catch { $quiesceFailure = $_.Exception.Message }
+            $detailParts = [Collections.Generic.List[string]]::new()
+            foreach ($detail in @($recordFailure, $quiesceFailure)) {
+                if (-not [string]::IsNullOrWhiteSpace([string]$detail)) { $detailParts.Add([string]$detail) }
+            }
+            $details = @($detailParts) -join ' | '
+            $suffix = if ([string]::IsNullOrWhiteSpace($details)) { '' } else { " Follow-up failure: $details" }
+            throw [InvalidOperationException]::new("Transaction reached a terminal commit but the pending startup marker remains unresolved: $($markerFailure.Exception.Message)$suffix", $markerFailure.Exception)
+        }
         return [pscustomobject][ordered]@{
             installed = $true
             status = 'committed'
@@ -1105,6 +1370,11 @@ function Invoke-SpherewrightInstallTransaction {
         }
     } catch {
         $forwardFailure = $_
+        if ($markerUnresolvedFailure) {
+            # The marker remains authoritative.  Do not turn a post-terminal
+            # marker deletion failure into another automatic promotion cycle.
+            throw $forwardFailure
+        }
         if (-not $liveMutationStarted -or $null -eq $state) {
             if ($recordCreated) {
                 try {
@@ -1136,6 +1406,7 @@ function Invoke-SpherewrightInstallTransaction {
             if (-not (Write-SpherewrightInstallRollbackProgressBestEffort -State $state -Phase 'rolled-back')) {
                 throw [IO.IOException]::new('Rollback terminal state could not be durably recorded.')
             }
+            Complete-SpherewrightInstallPendingMarker -State $state -Outcome rolled_back -PluginExpectedFiles $pluginExpected -McpExpectedFiles $mcpExpected -PluginOriginal $pluginOriginal -McpOriginal $mcpOriginal -HandoffFingerprint $handoffFingerprint
         } catch {
             $rollbackFailure = $_
         }
@@ -1153,9 +1424,18 @@ function Invoke-SpherewrightInstallTransaction {
         } finally {
             $state.rollbackMode = $false
         }
+        $quiesceFailure = $null
+        try {
+            Quiesce-SpherewrightInstallAnyLiveMainForUnresolvedFailure -State $state
+        } catch {
+            $quiesceFailure = $_.Exception.Message
+        }
         $journalMessages = @($state.rollbackJournalErrors | Select-Object -Unique)
         if ($journalMessages.Count -gt 0) {
             $journalFailure = (($journalFailure, ($journalMessages -join ' | ') | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join ' | ')
+        }
+        if (-not [string]::IsNullOrWhiteSpace($quiesceFailure)) {
+            $journalFailure = (($journalFailure, ('Live main DLL could not be quiesced: ' + $quiesceFailure) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join ' | ')
         }
         $suffix = if ($journalFailure) { " Durable recovery record update also failed: $journalFailure" } else { '' }
         throw [InvalidOperationException]::new("Transaction promotion failed and rollback failed; needs_recovery. Forward: $($forwardFailure.Exception.Message) Rollback: $($rollbackFailure.Exception.Message)$suffix", $rollbackFailure.Exception)

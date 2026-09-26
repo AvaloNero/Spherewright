@@ -15,6 +15,7 @@ public sealed class SpherewrightPlugin : BaseUnityPlugin
     public const string PluginVersion = SpherewrightProduct.CurrentVersion;
 
     private SpherewrightBridgeHost? _host;
+    private InstallationStartupGuard? _installationGuard;
 
     private void Awake()
     {
@@ -24,6 +25,10 @@ public sealed class SpherewrightPlugin : BaseUnityPlugin
 
         try
         {
+            _installationGuard = InstallationStartupGuard.Acquire(
+                Path.GetDirectoryName(typeof(SpherewrightPlugin).Assembly.Location)
+                    ?? throw new InvalidOperationException("Spherewright assembly directory is unavailable."),
+                Paths.BepInExRootPath);
             var configuration = SpherewrightConfiguration.Load(Config);
             _host = SpherewrightBridgeHost.Create(configuration, Logger, PluginVersion);
             Logger.LogInfo($"Spherewright writes configured: {(configuration.AllowWrites ? "enabled" : "disabled")}");
@@ -32,8 +37,7 @@ public sealed class SpherewrightPlugin : BaseUnityPlugin
             if (!configuration.Enabled)
             {
                 Logger.LogWarning("Spherewright bridge is disabled by configuration");
-                _host.Dispose();
-                _host = null;
+                StopHost();
                 return;
             }
 
@@ -42,8 +46,7 @@ public sealed class SpherewrightPlugin : BaseUnityPlugin
         }
         catch (Exception exception)
         {
-            _host?.Dispose();
-            _host = null;
+            StopHost();
             Logger.LogError($"Spherewright bridge startup failed: {FormatExceptionChain(exception)}");
             Logger.LogError(exception.ToString());
         }
@@ -56,8 +59,16 @@ public sealed class SpherewrightPlugin : BaseUnityPlugin
 
     private void OnDestroy()
     {
+        StopHost();
+    }
+
+    private void StopHost()
+    {
+        // Do not release the installer lease until the pipe/descriptor host is gone.
         _host?.Dispose();
         _host = null;
+        _installationGuard?.Dispose();
+        _installationGuard = null;
     }
 
     private static string FormatExceptionChain(Exception exception)

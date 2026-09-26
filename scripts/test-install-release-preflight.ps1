@@ -371,6 +371,30 @@ try {
     finally { $global:SpherewrightSyntheticProbeMode='success' }
     if (Test-Path -LiteralPath $rejectedParent) { throw 'Failed staged probe created the live parent.' }
 
+    # A fixed pending marker blocks preview, staging and installation before any
+    # new stage or target is created. Contents cannot self-declare completion.
+    foreach ($markerKind in @('empty', 'malformed', 'terminal-looking', 'directory')) {
+        $fixture=New-Fixture; $null=Write-Manifest $fixture
+        $marker=Join-Path $fixture.game 'BepInEx/.spherewright-install-pending.json'
+        switch ($markerKind) {
+            'empty' { [IO.File]::WriteAllText($marker, '') }
+            'malformed' { [IO.File]::WriteAllText($marker, 'not-json') }
+            'terminal-looking' { [IO.File]::WriteAllText($marker, '{"status":"committed"}') }
+            'directory' { [void][IO.Directory]::CreateDirectory($marker) }
+        }
+        $before=Get-TreeSnapshot $fixture.root
+        foreach ($mode in @('preflight', 'stage', 'install')) {
+            $arguments=@{DspDir=$fixture.game;McpDestination=$fixture.mcp;Force=$true}
+            if ($mode -eq 'preflight') { $arguments.PreflightOnly=$true }
+            if ($mode -eq 'stage') { $arguments.StageOnly=$true }
+            $rejected=$false
+            try { & "$($fixture.package)/install.ps1" @arguments | Out-Null }
+            catch { if (-not $_.Exception.Message.Contains('pending startup marker')) { throw }; $rejected=$true }
+            if (-not $rejected -or (Get-TreeSnapshot $fixture.root) -cne $before) { throw 'Pending marker refusal was not zero-write.' }
+            $testCases++
+        }
+    }
+
     # Keep one terminal mirror intact and alter only the other synthetic record.
     # Looking only at the local archive must not authorize a replacement pair.
     $fixture=New-Fixture; $null=Write-Manifest $fixture

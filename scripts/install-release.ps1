@@ -289,7 +289,7 @@ while ($directories.Count -gt 0) {
     }
 }
 $requiredPluginNames = @('Spherewright.Plugin.dll', 'Spherewright.Contracts.dll', 'Spherewright.Bridge.Core.dll', 'Newtonsoft.Json.dll')
-foreach ($required in @('install.ps1', 'locate-dsp.ps1', 'mcp/Spherewright.Mcp.exe') + @($requiredPluginNames | ForEach-Object { "BepInEx/plugins/Spherewright/$_" })) {
+foreach ($required in @('install.ps1', 'locate-dsp.ps1', 'Test-SpherewrightStagedMcp.ps1', 'AGENT-PLAYBOOK.md', 'mcp/Spherewright.Mcp.exe') + @($requiredPluginNames | ForEach-Object { "BepInEx/plugins/Spherewright/$_" })) {
     if (-not $declaredFiles.Contains($required)) { throw "Required release file is missing from the manifest: $required" }
 }
 $pluginEntries = @($manifest.files | Where-Object { ([string]$_.path).StartsWith('BepInEx/plugins/Spherewright/', [StringComparison]::OrdinalIgnoreCase) })
@@ -381,6 +381,14 @@ if ($StageOnly) {
     if (Test-InstallPathOverlap -First $pluginStage.root -Second $mcpStage.root) { throw 'Plugin and MCP staging roots must be separate.' }
     Copy-VerifiedPayloadToStage -SourceRoot $pluginSource -Stage $pluginStage -ExpectedFiles $pluginExpectedFiles
     Copy-VerifiedPayloadToStage -SourceRoot $mcpSource -Stage $mcpStage -ExpectedFiles $mcpExpectedFiles
+    . (Join-Path $packageRoot 'Test-SpherewrightStagedMcp.ps1')
+    $metadata = Invoke-SpherewrightStagedMcpProbe -ExecutablePath (Join-Path $mcpStage.payload 'Spherewright.Mcp.exe') `
+        -ExpectedVersion $version -ExpectedPlaybookPath (Join-Path $packageRoot 'AGENT-PLAYBOOK.md') `
+        -IsolationDirectory (Join-Path $mcpStage.root 'metadata-probe')
+    # A process has now run from the staged payload. Prove its files still match
+    # the manifest instead of assuming the pre-launch hashes remain current.
+    Assert-ApprovedDestinationTree -Root $pluginStage.payload -ExpectedFiles $pluginExpectedFiles -RequireComplete
+    Assert-ApprovedDestinationTree -Root $mcpStage.payload -ExpectedFiles $mcpExpectedFiles -RequireComplete
     [pscustomobject]@{
         version = $version
         operationId = $operationId
@@ -391,6 +399,8 @@ if ($StageOnly) {
         installed = $false
         staged = $true
         liveTargetsUntouched = $true
+        mcpHandshakeVerified = $true
+        mcpMetadata = $metadata
         transactionalUpgrade = $false
     } | ConvertTo-Json -Depth 3
     return

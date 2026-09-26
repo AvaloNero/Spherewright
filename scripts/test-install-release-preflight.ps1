@@ -10,6 +10,7 @@ $testCases = 0
 function Get-Process { [CmdletBinding()] param([string]$Name) if ($Name -cne 'DSPGAME') { throw 'Unexpected process query' } }
 $global:SpherewrightSyntheticCopyFaultAfter = 0
 $global:SpherewrightSyntheticCopyFaultCount = 0
+$global:SpherewrightSyntheticProbeMode = 'success'
 function Copy-Item {
     [CmdletBinding()]
     param(
@@ -38,6 +39,18 @@ function New-Fixture {
     foreach ($dir in @($package, "$package/BepInEx/plugins/Spherewright", "$package/mcp", "$game/BepInEx/core", "$game/BepInEx/plugins/Spherewright", $mcp, $runtime, $handoff)) { [void][IO.Directory]::CreateDirectory($dir) }
     Copy-Item -LiteralPath $installer -Destination "$package/install.ps1"
     [IO.File]::WriteAllText("$package/locate-dsp.ps1", 'param([string]$DspDir,[switch]$AsJson) @{path=$DspDir;source="synthetic"} | ConvertTo-Json')
+    [IO.File]::WriteAllText("$package/AGENT-PLAYBOOK.md", 'synthetic-playbook')
+    [IO.File]::WriteAllText("$package/Test-SpherewrightStagedMcp.ps1", @'
+function Invoke-SpherewrightStagedMcpProbe {
+    param($ExecutablePath, $ExpectedVersion, $ExpectedPlaybookPath, $IsolationDirectory)
+    $payloadRoot=Split-Path -Parent $ExecutablePath
+    $stageRoot=Split-Path -Parent $payloadRoot
+    if ((Split-Path -Leaf $payloadRoot) -cne 'payload' -or (Split-Path -Leaf $stageRoot) -notmatch '^\.spherewright-stage-[0-9a-f]{32}-mcp$' -or $IsolationDirectory -cne (Join-Path $stageRoot 'metadata-probe')) { throw 'Metadata probe did not receive the isolated staged executable.' }
+    if ($global:SpherewrightSyntheticProbeMode -eq 'fail') { throw 'Synthetic MCP metadata failure.' }
+    if ($global:SpherewrightSyntheticProbeMode -eq 'tamper') { [IO.File]::WriteAllText($ExecutablePath, 'changed-after-probe') }
+    [pscustomobject]@{ version=$ExpectedVersion; tools=64; resources=1; playbookMatches=$true; gameCalls=0; synthetic=$true }
+}
+'@)
     foreach ($name in @('Spherewright.Plugin.dll','Spherewright.Contracts.dll','Spherewright.Bridge.Core.dll','Newtonsoft.Json.dll')) { [IO.File]::WriteAllText("$package/BepInEx/plugins/Spherewright/$name", "new-$name") }
     [IO.File]::WriteAllText("$package/mcp/Spherewright.Mcp.exe", 'synthetic-not-executable')
     [IO.File]::WriteAllText("$game/BepInEx/core/BepInEx.dll", 'synthetic')
@@ -182,7 +195,7 @@ try {
     $pluginStageBefore=Get-StageSnapshot "$($fixture.game)/BepInEx"
     $mcpStageBefore=Get-StageSnapshot ([IO.Path]::GetDirectoryName($fixture.mcp))
     $stageResult=& "$($fixture.package)/install.ps1" -DspDir $fixture.game -McpDestination $fixture.mcp -Force -StageOnly | ConvertFrom-Json
-    if ($stageResult.installed -or -not $stageResult.staged -or -not $stageResult.integrityVerified -or -not $stageResult.exactFileSet -or $stageResult.transactionalUpgrade) { throw 'Invalid stage-only result.' }
+    if ($stageResult.installed -or -not $stageResult.staged -or -not $stageResult.integrityVerified -or -not $stageResult.exactFileSet -or -not $stageResult.mcpHandshakeVerified -or $stageResult.transactionalUpgrade) { throw 'Invalid stage-only result.' }
     if ([IO.Path]::GetFullPath([string]$stageResult.pluginStagedTo).StartsWith(([IO.Path]::GetFullPath("$($fixture.game)/BepInEx/plugins").TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar),[StringComparison]::OrdinalIgnoreCase)) { throw 'Plugin staging entered the BepInEx/plugins scan range.' }
     Assert-ExactStagedSet $fixture $manifest $stageResult
     $pluginChanged = (Get-TreeSnapshot "$($fixture.game)/BepInEx/plugins/Spherewright") -cne $pluginBefore
@@ -194,6 +207,24 @@ try {
     $mcpStageMissing = [string]::Equals($currentMcpStage,$mcpStageBefore,[StringComparison]::Ordinal)
     if ($pluginChanged -or $mcpChanged -or $runtimeChanged -or $handoffChanged -or $pluginStageMissing -or $mcpStageMissing) { throw "Stage-only invariant failed plugin=$pluginChanged mcp=$mcpChanged runtime=$runtimeChanged handoff=$handoffChanged pluginStageMissing=$pluginStageMissing mcpStageMissing=$mcpStageMissing" }
     $testCases++
+
+    foreach ($probeFault in @('fail', 'tamper')) {
+        $fixture=New-Fixture; $manifest=Write-Manifest $fixture
+        $pluginBefore=Get-TreeSnapshot "$($fixture.game)/BepInEx/plugins/Spherewright"
+        $mcpBefore=Get-TreeSnapshot $fixture.mcp
+        $runtimeBefore=Get-TreeSnapshot $fixture.runtime
+        $handoffBefore=Get-TreeSnapshot $fixture.handoff
+        $global:SpherewrightSyntheticProbeMode=$probeFault
+        $probeRejected=$false
+        try { & "$($fixture.package)/install.ps1" -DspDir $fixture.game -McpDestination $fixture.mcp -Force -StageOnly | Out-Null }
+        catch {
+            $expected=if ($probeFault -eq 'fail') { 'Synthetic MCP metadata failure.' } else { 'Installed file integrity verification failed' }
+            if (-not $_.Exception.Message.Contains($expected)) { throw }
+            $probeRejected=$true
+        } finally { $global:SpherewrightSyntheticProbeMode='success' }
+        if (-not $probeRejected -or (Get-TreeSnapshot "$($fixture.game)/BepInEx/plugins/Spherewright") -cne $pluginBefore -or (Get-TreeSnapshot $fixture.mcp) -cne $mcpBefore -or (Get-TreeSnapshot $fixture.runtime) -cne $runtimeBefore -or (Get-TreeSnapshot $fixture.handoff) -cne $handoffBefore) { throw 'Failed staged metadata validation modified live or protected state.' }
+        $testCases++
+    }
 
     $fixture=New-Fixture; $manifest=Write-Manifest $fixture
     Reject-Stage $fixture 'mutually exclusive' $fixture.mcp $fixture.game -AlsoPreflight
@@ -241,10 +272,12 @@ try {
     $reparseParent=Join-Path $fixture.root 'stage-destination-reparse-parent'; New-TestJunction $reparseParent $reparseTarget
     Reject-Stage $fixture 'Reparse-point installation destinations are forbidden' (Join-Path $reparseParent 'mcp')
 
-    foreach ($bad in @('missing-mcp','unlisted','duplicate','traversal','size','hash','source-extra-plugin','source-reparse')) {
+    foreach ($bad in @('missing-mcp','missing-probe','missing-playbook','unlisted','duplicate','traversal','size','hash','source-extra-plugin','source-reparse')) {
         $fixture=New-Fixture; $manifest=Write-Manifest $fixture
         switch ($bad) {
             'missing-mcp' { Remove-Item -LiteralPath "$($fixture.package)/mcp/Spherewright.Mcp.exe"; $manifest=Write-Manifest $fixture; $expected='Required release file is missing' }
+            'missing-probe' { Remove-Item -LiteralPath "$($fixture.package)/Test-SpherewrightStagedMcp.ps1"; $manifest=Write-Manifest $fixture; $expected='Required release file is missing' }
+            'missing-playbook' { Remove-Item -LiteralPath "$($fixture.package)/AGENT-PLAYBOOK.md"; $manifest=Write-Manifest $fixture; $expected='Required release file is missing' }
             'unlisted' { [IO.File]::WriteAllText("$($fixture.package)/mcp/extra.dll", 'unlisted'); $expected='Unlisted release file' }
             'duplicate' { $manifest.files += $manifest.files[0]; $expected='unsafe file path' }
             'traversal' { $manifest.files[0].path='../outside'; $expected='unsafe file path' }

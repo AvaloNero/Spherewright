@@ -518,7 +518,7 @@ function Get-SpherewrightInstallMutexName {
 }
 
 function Enter-SpherewrightInstallTargetLocks {
-    param([Parameter(Mandatory)][string[]]$Targets)
+    param([Parameter(Mandatory)][string[]]$Targets, [switch]$AllowAbandonedForExplicitRecovery)
 
     $locks = [Collections.Generic.List[object]]::new()
     try {
@@ -532,7 +532,9 @@ function Enter-SpherewrightInstallTargetLocks {
                     # WaitOne grants ownership when it reports an abandoned
                     # mutex. Refuse automatic recovery after releasing it.
                     $ownsMutex = $true
-                    throw "An abandoned installer transaction lock requires inspection; no automatic recovery: $target"
+                    if (-not $AllowAbandonedForExplicitRecovery) {
+                        throw "An abandoned installer transaction lock requires inspection; no automatic recovery: $target"
+                    }
                 }
                 if (-not $ownsMutex) { throw "Another installer transaction holds the target lock: $target" }
                 $locks.Add($mutex)
@@ -880,11 +882,17 @@ function Restore-SpherewrightInstallPluginMainFile {
     }
     if ($original[0].exists -and -not $alreadyOriginal) {
         if (Test-Path -LiteralPath $State.pluginPriorMain) {
+            if ((Get-FileHash -LiteralPath $State.pluginPriorMain -Algorithm SHA256 -ErrorAction Stop).Hash -ine [string]$original[0].sha256) {
+                throw 'Prior main DLL changed before restoration.'
+            }
             Invoke-SpherewrightInstallMutation -State $State -Step 'rollback-move-plugin-prior-main' -Action {
                 [IO.File]::Move($State.pluginPriorMain, $live)
             }
         } else {
             $backup = Join-Path $State.pluginBackupRoot $main
+            if ((Get-FileHash -LiteralPath $backup -Algorithm SHA256 -ErrorAction Stop).Hash -ine [string]$original[0].sha256) {
+                throw 'Backup main DLL changed before restoration.'
+            }
             Invoke-SpherewrightInstallMutation -State $State -Step 'rollback-copy-plugin-old-main' -Action {
                 Copy-Item -LiteralPath $backup -Destination $live -Force -ErrorAction Stop
             }
@@ -905,6 +913,22 @@ function Restore-SpherewrightInstallOriginalPayloads {
     Quiesce-SpherewrightInstallPluginMainForRollback -State $State -OriginalSnapshot $PluginOriginal
     Restore-SpherewrightInstallPluginOtherFiles -State $State -OriginalSnapshot $PluginOriginal -ExpectedFiles $PluginExpectedFiles
     Restore-SpherewrightInstallMcpPayload -State $State -OriginalSnapshot $McpOriginal -ExpectedFiles $McpExpectedFiles
+    # Check both dependency sides before making even an older, guard-unaware
+    # main DLL discoverable again. Final whole-payload checks still follow.
+    $restoredPlugin = Get-SpherewrightInstallPayloadSnapshot -Root $State.pluginDestination -ExpectedFiles $PluginExpectedFiles -PreservedDirectories @('runtime-handoff')
+    foreach ($original in @($PluginOriginal.files | Where-Object { $_.relative -cne $script:SpherewrightInstallTransactionMainPluginFile })) {
+        $actual = @($restoredPlugin.files | Where-Object { $_.relative -ceq $original.relative })
+        if ($actual.Count -ne 1 -or [bool]$actual[0].exists -ne [bool]$original.exists -or
+            ($original.exists -and -not [string]::Equals([string]$actual[0].sha256, [string]$original.sha256, [StringComparison]::OrdinalIgnoreCase))) {
+            throw 'Rollback Plugin dependencies failed verification before main restoration.'
+        }
+    }
+    if (-not (Test-SpherewrightInstallSnapshotMatches -ExpectedSnapshot $McpOriginal -Root $State.mcpDestination -ExpectedFiles $McpExpectedFiles)) {
+        throw 'Rollback MCP failed verification before main restoration.'
+    }
+    if ((Get-SpherewrightInstallTreeFingerprint (Join-Path $State.pluginDestination 'runtime-handoff')) -cne $HandoffFingerprint) {
+        throw 'Protected runtime-handoff changed before main restoration.'
+    }
     Restore-SpherewrightInstallPluginMainFile -State $State -OriginalSnapshot $PluginOriginal
     if (-not $PluginOriginal.rootExisted -and (Test-Path -LiteralPath $State.pluginDestination -PathType Container)) {
         $children = @(Get-ChildItem -LiteralPath $State.pluginDestination -Force -ErrorAction Stop)

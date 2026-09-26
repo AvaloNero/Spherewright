@@ -4,6 +4,10 @@
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
+## EXP-309 — 显式安装恢复必须绑定同一未决证据与预览哈希
+
+- 2026-09-27，`validated`，最近复验同日；仅限离线合成安装树。恢复不能扫描或猜测旧事务：调用方必须给出精确Plugin/MCP目标和operation ID，先取得只读preview，再用同一evidence hash请求恢复；写前重读marker、双端记录、备份、已知old/new载荷和受保护handoff。两个自建子进程中断（升级的新main已live、首装双方根缺失）在两种shell各3组测试中均恢复到精确原状态并移除marker；五类证据漂移拒绝均为零写。恢复末尾失败则保留`needs_recovery`和marker并再次扣留main。路径、记录模式、hash输入、恢复顺序或shell变化时复验；关联IFX-176及[合成证据与限制](evidence/2026-09-27/install-explicit-recovery.md)。不外推为断电/任意进程中断、真实ZIP/部署、Unity启动或旧Plugin竞态关闭。
+
 ## EXP-308 — 未完成安装标记必须与插件全生命周期互斥配套
 
 - 2026-09-27，`validated`，最近复验同日；仅源码与Windows离线范围。仅启动时查一次标记不能排除随后安装竞态；新版Plugin在创建host前取得与安装器相同的目标锁，持有到host关闭，标记存在或无法证明不存在均拒绝。`WaitOne`抛abandoned仍已授予所有权，拒绝时也须释放。旧Plugin不认识门禁，未决捕获失败尽力扣留main DLL但不能宣称所有legacy竞态已闭合。API/锁/标记/安装路径变化时复验；关联IFX-175及[验证与限制](evidence/2026-09-27/install-pending-startup-gate.md)。Unity Mono、真实冷部署及显式崩溃恢复待验。

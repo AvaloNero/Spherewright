@@ -12,6 +12,10 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-176 — 安装中断后缺少可核验证据绑定的人工原件恢复
+
+- 2026-09-27，`mitigated`（源码/离线合成）。旧事务会在进程中断后保留未决marker、stage/archive和备份，却没有面向操作者的精确恢复入口。现有入口只接受手工Plugin/MCP目标与operation ID，从同一marker解析唯一证据根；preview无写并返回evidence hash，restore必须回显该hash且写前复核。两种shell各3组合成测试以自建child的真实中断覆盖升级新main已live和首装双方根缺失，核精确原载荷/handoff、marker清除及成对`rolled_back`；五种备份/live/镜像/handoff漂移均零写拒绝。恢复自身末尾失败会保留marker/`needs_recovery`并扣留main。关联EXP-309；[证据与未验边界](evidence/2026-09-27/install-explicit-recovery.md)。不证明断电、任意杀进程、真实包/部署、Unity启动或legacy startup race安全，完整安装P1仍未核销。
+
 ## IFX-175 — 安装未决时插件仍可能开放 Bridge
 
 - 2026-09-27，`mitigated`（源码/离线）。原安装进度记录没有进入Plugin启动判断，仅安装前检查游戏进程也不能排除并发启动。新Plugin在host创建前持目标锁并检查固定pending marker；安装器在live改动前独占创建并flush标记，只在双端终态与实际载荷核验后清除。未决回滚/标记清理尽力扣留主DLL，不能吞掉扣留失败或把旧依赖恢复称作完整回滚。关联EXP-308；[证据](evidence/2026-09-27/install-pending-startup-gate.md)。旧二进制不认识门禁，进程中断后的显式恢复及Unity实机仍待，不核销完整安装P1。

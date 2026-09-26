@@ -1212,7 +1212,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Returns the current or terminal state of an action accepted by this Plugin process. It does not repeat the action. Retain the terminal result before formatting later observations. Transfer beforeTargetAmount/afterTargetAmount and itemDeltas describe the synchronous completedAtGameTick boundary, not a later warehouse inventory after normal logistics. A host reporting error does not authorize replaying an accepted action.")]
+    [Description("Returns the current or terminal state of an action accepted by this Plugin process. It does not repeat the action. Retain terminal results promptly: ordinary normal-action receipts may expire after their configured completion-retention window; active, uncertain/recovery and checkpoint-bound flight evidence is retained, with new normal commits refused at capacity. Missing old evidence never proves non-execution or authorizes replay. Transfer beforeTargetAmount/afterTargetAmount and itemDeltas describe the synchronous completedAtGameTick boundary, not a later warehouse inventory after normal logistics. A host reporting error does not authorize replaying an accepted action.")]
     public static async Task<CallToolResult> GetActionResultAsync(
         [Description("Injected authenticated bridge client.")] IBridgeClient bridgeClient,
         [Description("Action ID returned by a Spherewright commit.")] string actionId,

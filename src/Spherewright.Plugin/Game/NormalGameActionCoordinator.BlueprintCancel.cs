@@ -41,7 +41,7 @@ internal sealed partial class NormalGameActionCoordinator
     private void CancelBlueprintBuildOnMainThread(ActionRecord cancellation)
     {
         var build = cancellation.Plan.BlueprintState!;
-        var active = _actions.Values.SingleOrDefault(a => !a.Terminal && a.ActionKind == NormalActionKinds.BlueprintBuild
+        var active = _actions.ActiveValues.SingleOrDefault(a => !a.Terminal && a.ActionKind == NormalActionKinds.BlueprintBuild
             && a.BlueprintBuild?.BuildId == build.BuildId && a.ActionId == build.ActionId);
         if (active is not null) build = active.BlueprintBuild!;
         build.Stop("cancelled");

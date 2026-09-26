@@ -21,8 +21,7 @@ internal sealed partial class NormalGameActionCoordinator
     private readonly BlueprintBuildStore _blueprints;
     private readonly PreparedPlanStore<NormalActionPlanPayload> _plans;
     private readonly IdempotencyCache<NormalActionCommitResult> _idempotency;
-    private readonly Dictionary<string, ActionRecord> _actions =
-        new Dictionary<string, ActionRecord>(StringComparer.Ordinal);
+    private readonly BoundedActionHistory<ActionRecord> _actions;
 
     public NormalGameActionCoordinator(
         int planLifetimeSeconds,
@@ -37,6 +36,13 @@ internal sealed partial class NormalGameActionCoordinator
         _reader = reader;
         _flightCheckpoints = flightCheckpoints;
         _blueprints = blueprints;
+        _actions = new BoundedActionHistory<ActionRecord>(idempotencyCapacity,
+            TimeSpan.FromMinutes(idempotencyRetentionMinutes), action => action.Terminal,
+            action => action.State == NormalActionStates.OutcomeUnknown || action.RecoveryRequired
+                || !string.IsNullOrEmpty(action.OriginalOutcomeMessage)
+                || !string.IsNullOrEmpty(action.FlightCheckpointId)
+                || (!action.Succeeded && (action.ActionKind == NormalActionKinds.Build
+                    || action.ActionKind == NormalActionKinds.BlueprintBuild)));
         _plans = new PreparedPlanStore<NormalActionPlanPayload>(
             TimeSpan.FromSeconds(planLifetimeSeconds),
             128);
@@ -509,7 +515,7 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         if (plan.ActionKind != NormalActionKinds.CancelBlueprintBuild
-            && _actions.Values.Any(a => !a.Terminal && a.ActionKind == NormalActionKinds.BlueprintBuild))
+            && _actions.ActiveValues.Any(a => !a.Terminal && a.ActionKind == NormalActionKinds.BlueprintBuild))
             return GameCallResult<NormalActionCommitResult>.Failed(BridgeError.Create(BridgeErrorCodes.ServerBusy,
                 "A finite blueprint action owns construction; wait or explicitly prepare/commit cancellation first.",
                 false, "Poll the active action and its per-object progress. Do not issue competing actions."));
@@ -520,7 +526,7 @@ internal sealed partial class NormalGameActionCoordinator
             return GameCallResult<NormalActionCommitResult>.Failed(staleError);
         }
 
-        var activePlayerOrder = _actions.Values.FirstOrDefault(action =>
+        var activePlayerOrder = _actions.ActiveValues.FirstOrDefault(action =>
             !action.Terminal && IsPlayerOrderAction(action.ActionKind));
         if (IsPlayerOrderAction(plan.ActionKind) && activePlayerOrder is not null)
         {
@@ -529,6 +535,15 @@ internal sealed partial class NormalGameActionCoordinator
                 $"Player movement action {activePlayerOrder.ActionId} is still active; a second move, harvest, or flight would replace or race DSP's single player controller.",
                 true,
                 "Wait for the active player-order action to become terminal, then inspect and prepare again."));
+        }
+
+        if (!_actions.HasCapacity())
+        {
+            return GameCallResult<NormalActionCommitResult>.Failed(BridgeError.Create(
+                BridgeErrorCodes.ServerBusy,
+                "Retained action evidence is at capacity; no action was accepted or evicted.",
+                true,
+                "Wait for completed-result retention to expire or reconcile protected outcomes. Do not replay uncertain actions; inspect and prepare again before a later commit."));
         }
 
         var action = new ActionRecord
@@ -604,10 +619,11 @@ internal sealed partial class NormalGameActionCoordinator
 
     public void UpdateOnMainThread()
     {
-        foreach (var action in _actions.Values.Where(action => !action.Terminal).ToArray())
+        foreach (var action in _actions.ActiveValues.ToArray())
         {
             UpdateActionOnMainThread(action);
         }
+        _actions.RefreshTerminals();
     }
 
     public bool TryGetActionResultOnMainThread(string actionId, out ActionResultSnapshot? result)
@@ -624,7 +640,7 @@ internal sealed partial class NormalGameActionCoordinator
 
     public bool CanReloadFlightCheckpointOnMainThread(FlightCheckpointTicket ticket, out string rejection)
     {
-        var active = _actions.Values.Where(action => !action.Terminal).ToArray();
+        var active = _actions.ActiveValues.ToArray();
         if (active.Length == 0)
         {
             rejection = string.Empty;
@@ -653,7 +669,7 @@ internal sealed partial class NormalGameActionCoordinator
 
     public void NotifyFlightCheckpointReloadStartingOnMainThread(FlightCheckpointTicket ticket)
     {
-        foreach (var action in _actions.Values.Where(action =>
+        foreach (var action in _actions.ActiveValues.Where(action =>
                      !action.Terminal
                      && action.ActionKind == NormalActionKinds.InterplanetaryFlight
                      && string.Equals(action.FlightCheckpointId, ticket.CheckpointId, StringComparison.Ordinal)))

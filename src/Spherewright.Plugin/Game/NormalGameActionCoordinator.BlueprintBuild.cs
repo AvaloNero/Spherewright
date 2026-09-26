@@ -23,7 +23,7 @@ internal sealed partial class NormalGameActionCoordinator
         foreach (var stored in builds.Where(b => b.Site.PlanetId == request.PlanetId
                      && (request.BuildId is null || b.BuildId == request.BuildId)))
         {
-            var build = _actions.Values.FirstOrDefault(a => !a.Terminal && a.ActionId == stored.ActionId)?.BlueprintBuild ?? stored;
+            var build = _actions.ActiveValues.FirstOrDefault(a => !a.Terminal && a.ActionId == stored.ActionId)?.BlueprintBuild ?? stored;
             if (request.BuildId is null)
             {
                 var summary = BlueprintSnapshot(build, common.Session!, new List<string> { "summary_only:read_exact_buildId_for_fresh_world_proof" });
@@ -52,7 +52,7 @@ internal sealed partial class NormalGameActionCoordinator
             || string.IsNullOrEmpty(request.ExpectedPlayerStateHash)) return InvalidPlan("A bounded submission count and fresh site/progress/player hashes are required.");
         if ((request.FoundryIntent is null) != (request.ExpectedFoundryPlanHash is null))
             return InvalidPlan("Foundry intent and expectedFoundryPlanHash must be supplied together for a new finite construction.");
-        if (_actions.Values.Any(a => !a.Terminal)) return GameCallResult<PreparedNormalAction>.Failed(BlueprintError("another_action_active"));
+        if (_actions.ActiveValues.Any(a => !a.Terminal)) return GameCallResult<PreparedNormalAction>.Failed(BlueprintError("another_action_active"));
         var player = _reader.GetPlayerStateOnMainThread(sessionId, new LocalPlanetRequest { PlanetId = request.PlanetId });
         if (!player.Success) return GameCallResult<PreparedNormalAction>.Failed(player.Error!);
         if (player.Value!.StateHash != request.ExpectedPlayerStateHash) return StalePlan("Player state changed before blueprint preparation.");
@@ -132,7 +132,7 @@ internal sealed partial class NormalGameActionCoordinator
 
     private BridgeError? RevalidateBlueprintBuildOnMainThread(NormalActionPlanPayload plan)
     {
-        if (_actions.Values.Any(a => !a.Terminal) || _sessions.CaptureOnMainThread().Revision != plan.BlueprintRevision)
+        if (_actions.ActiveValues.Any(a => !a.Terminal) || _sessions.CaptureOnMainThread().Revision != plan.BlueprintRevision)
             return Stale("Session revision or active action changed after finite-plan preparation.");
         var player = _reader.GetPlayerStateOnMainThread(plan.SessionId, new LocalPlanetRequest { PlanetId = plan.PlanetId });
         if (!player.Success || player.Value is null) return player.Error;
@@ -341,11 +341,11 @@ internal sealed partial class NormalGameActionCoordinator
         BuildId = build.BuildId, BlueprintHash = build.Site.BlueprintHash, PlanHash = build.PlanHash,
         SessionId = session.SessionId!, PlanetId = build.Site.PlanetId, Revision = session.Revision,
         CapturedAtGameTick = GameMain.gameTick, StateHash = build.ProgressHash(session.SessionId!, session.Revision),
-        Phase = build.Phase == "running" && !_actions.Values.Any(a => !a.Terminal && a.ActionId == build.ActionId)
+        Phase = build.Phase == "running" && !_actions.ActiveValues.Any(a => !a.Terminal && a.ActionId == build.ActionId)
             ? "interrupted_requires_fresh_prepare" : build.Phase,
         ActionId = build.ActionId, PersistenceHealthy = true,
         FreshWorldReconciled = true,
-        RequiresFreshPrepare = !_actions.Values.Any(a => !a.Terminal && a.ActionId == build.ActionId),
+        RequiresFreshPrepare = !_actions.ActiveValues.Any(a => !a.Terminal && a.ActionId == build.ActionId),
         SubmittedCount = build.Objects.Count(o => o.PrebuildId.HasValue),
         CompletedCount = build.Objects.Count(o => o.State == BlueprintObjectStates.Completed),
         Objects = CloneBlueprintObjects(build.Objects), Blockers = blockers,

@@ -16,7 +16,7 @@ internal sealed partial class NormalGameActionCoordinator
     {
         var common = ValidatePrepareCommon(sessionId, request.PlanetId, request.StateHashVersion);
         if (common.Error is not null) return GameCallResult<PreparedNormalAction>.Failed(common.Error);
-        if (_actions.Values.Any(a => !a.Terminal))
+        if (_actions.ActiveValues.Any(a => !a.Terminal))
             return GameCallResult<PreparedNormalAction>.Failed(UpgradeError(BridgeErrorCodes.PlayerBusy, "Wait for all accepted actions to reach terminal before upgrading."));
         if (request.ObjectId <= 0 || request.ExpectedRecipeId < 0 || request.ExpectedFilterItemId < 0
             || string.IsNullOrWhiteSpace(request.ExpectedEndpointStateHash)
@@ -52,7 +52,7 @@ internal sealed partial class NormalGameActionCoordinator
 
     private BridgeError? RevalidateUpgradeOnMainThread(NormalActionPlanPayload plan)
     {
-        if (_actions.Values.Any(a => !a.Terminal))
+        if (_actions.ActiveValues.Any(a => !a.Terminal))
             return UpgradeError(BridgeErrorCodes.PlayerBusy, "An accepted action is still active; prepare again after it is terminal.");
         if (_sessions.CaptureOnMainThread().Revision != plan.UpgradeRevision)
             return Stale("Revision changed after upgrade prepare; inspect and prepare again.");

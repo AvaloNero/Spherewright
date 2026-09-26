@@ -38,15 +38,19 @@ function New-Fixture {
     $handoff = "$game/BepInEx/plugins/Spherewright/runtime-handoff"
     foreach ($dir in @($package, "$package/BepInEx/plugins/Spherewright", "$package/mcp", "$game/BepInEx/core", "$game/BepInEx/plugins/Spherewright", $mcp, $runtime, $handoff)) { [void][IO.Directory]::CreateDirectory($dir) }
     Copy-Item -LiteralPath $installer -Destination "$package/install.ps1"
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'SpherewrightInstallTransaction.ps1') -Destination "$package/SpherewrightInstallTransaction.ps1"
     [IO.File]::WriteAllText("$package/locate-dsp.ps1", 'param([string]$DspDir,[switch]$AsJson) @{path=$DspDir;source="synthetic"} | ConvertTo-Json')
     [IO.File]::WriteAllText("$package/AGENT-PLAYBOOK.md", 'synthetic-playbook')
     [IO.File]::WriteAllText("$package/Test-SpherewrightStagedMcp.ps1", @'
 function Invoke-SpherewrightStagedMcpProbe {
     param($ExecutablePath, $ExpectedVersion, $ExpectedPlaybookPath, $IsolationDirectory)
     $payloadRoot=Split-Path -Parent $ExecutablePath
-    $stageRoot=Split-Path -Parent $payloadRoot
-    if ((Split-Path -Leaf $payloadRoot) -cne 'payload' -or (Split-Path -Leaf $stageRoot) -notmatch '^\.spherewright-stage-[0-9a-f]{32}-mcp$' -or $IsolationDirectory -cne (Join-Path $stageRoot 'metadata-probe')) { throw 'Metadata probe did not receive the isolated staged executable.' }
+    $stageRoot=Split-Path -Parent $IsolationDirectory
+    $probeName=Split-Path -Leaf $IsolationDirectory
+    if ((Split-Path -Leaf $stageRoot) -notmatch '^\.spherewright-stage-[0-9a-f]{32}-mcp$' -or $probeName -notin @('metadata-probe','final-metadata-probe')) { throw 'Metadata probe did not receive isolated metadata state.' }
+    if ($probeName -eq 'metadata-probe' -and $payloadRoot -cne (Join-Path $stageRoot 'payload')) { throw 'Initial metadata probe did not receive the staged executable.' }
     if ($global:SpherewrightSyntheticProbeMode -eq 'fail') { throw 'Synthetic MCP metadata failure.' }
+    if ($global:SpherewrightSyntheticProbeMode -eq 'final-fail' -and $probeName -eq 'final-metadata-probe') { throw 'Synthetic final metadata failure.' }
     if ($global:SpherewrightSyntheticProbeMode -eq 'tamper') { [IO.File]::WriteAllText($ExecutablePath, 'changed-after-probe') }
     [pscustomobject]@{ version=$ExpectedVersion; tools=64; resources=1; playbookMatches=$true; gameCalls=0; synthetic=$true }
 }
@@ -272,11 +276,12 @@ try {
     $reparseParent=Join-Path $fixture.root 'stage-destination-reparse-parent'; New-TestJunction $reparseParent $reparseTarget
     Reject-Stage $fixture 'Reparse-point installation destinations are forbidden' (Join-Path $reparseParent 'mcp')
 
-    foreach ($bad in @('missing-mcp','missing-probe','missing-playbook','unlisted','duplicate','traversal','size','hash','source-extra-plugin','source-reparse')) {
+    foreach ($bad in @('missing-mcp','missing-probe','missing-transaction','missing-playbook','unlisted','duplicate','traversal','size','hash','source-extra-plugin','source-reparse')) {
         $fixture=New-Fixture; $manifest=Write-Manifest $fixture
         switch ($bad) {
             'missing-mcp' { Remove-Item -LiteralPath "$($fixture.package)/mcp/Spherewright.Mcp.exe"; $manifest=Write-Manifest $fixture; $expected='Required release file is missing' }
             'missing-probe' { Remove-Item -LiteralPath "$($fixture.package)/Test-SpherewrightStagedMcp.ps1"; $manifest=Write-Manifest $fixture; $expected='Required release file is missing' }
+            'missing-transaction' { Remove-Item -LiteralPath "$($fixture.package)/SpherewrightInstallTransaction.ps1"; $manifest=Write-Manifest $fixture; $expected='Required release file is missing' }
             'missing-playbook' { Remove-Item -LiteralPath "$($fixture.package)/AGENT-PLAYBOOK.md"; $manifest=Write-Manifest $fixture; $expected='Required release file is missing' }
             'unlisted' { [IO.File]::WriteAllText("$($fixture.package)/mcp/extra.dll", 'unlisted'); $expected='Unlisted release file' }
             'duplicate' { $manifest.files += $manifest.files[0]; $expected='unsafe file path' }
@@ -327,9 +332,67 @@ try {
     $result=& "$($fixture.package)/install.ps1" -DspDir $fixture.game -McpDestination $fixture.mcp -Force | ConvertFrom-Json
     if (-not $result.integrityVerified -or -not $result.exactTargetFileSet -or [IO.File]::ReadAllText("$($fixture.mcp)/Spherewright.Mcp.exe") -cne 'synthetic-not-executable') { throw 'Synthetic install failed' }
     Assert-ExactInstalledSet $fixture $manifest
+    if (-not $result.installed -or $result.status -cne 'committed' -or -not $result.caughtFailureRollbackSupported -or $result.crashRecoverySupported -or $result.transactionalUpgrade) { throw 'Incorrect installation transaction evidence flags.' }
     if ((Get-TreeSnapshot $fixture.runtime) -cne $runtimeBefore -or (Get-TreeSnapshot $fixture.handoff) -cne $handoffBefore) { throw 'Install modified protected runtime or handoff state.' }
     $testCases++
-    [pscustomobject]@{passed=$testCases;gameCalls=0;scope='synthetic preflight and copy only; not transactional/crash/real-package validation'} | ConvertTo-Json
+    # Terminal archives must not prevent a subsequent fresh reinstall.
+    $again=& "$($fixture.package)/install.ps1" -DspDir $fixture.game -McpDestination $fixture.mcp -Force | ConvertFrom-Json
+    if (-not $again.installed -or $again.operationId -eq $result.operationId) { throw 'Fresh reinstall after a committed transaction failed.' }
+    Assert-ExactInstalledSet $fixture $manifest
+    $testCases++
+
+    $fixture=New-Fixture; $manifest=Write-Manifest $fixture
+    $fixture.mcp=Join-Path $fixture.root 'new-parent/another-parent/mcp'
+    $result=& "$($fixture.package)/install.ps1" -DspDir $fixture.game -McpDestination $fixture.mcp -Force | ConvertFrom-Json
+    if (-not $result.installed) { throw 'First install with missing MCP parents failed.' }
+    Assert-ExactInstalledSet $fixture $manifest
+    $record=Get-Content -LiteralPath $result.recordPath -Raw | ConvertFrom-Json
+    if (@($record.createdParentDirectories).Count -ne 2) { throw 'New MCP parent directories were not recorded.' }
+    $testCases++
+
+    foreach ($probeFailure in @('fail', 'final-fail')) {
+        $fixture=New-Fixture; $null=Write-Manifest $fixture
+        $global:SpherewrightSyntheticProbeMode=$probeFailure
+        try {
+            $message=if ($probeFailure -eq 'fail') { 'Synthetic MCP metadata failure.' } else { 'Synthetic final metadata failure.' }
+            Reject-Install $fixture $message
+        } finally { $global:SpherewrightSyntheticProbeMode='success' }
+    }
+
+    $fixture=New-Fixture; $null=Write-Manifest $fixture
+    $rejectedParent=Join-Path $fixture.game 'BepInEx/plugins/new-parent'
+    Reject-Install $fixture 'recursive scan range' (Join-Path $rejectedParent 'mcp')
+    if (Test-Path -LiteralPath $rejectedParent) { throw 'Rejected scan-range destination created its parent.' }
+
+    $fixture=New-Fixture; $null=Write-Manifest $fixture
+    $rejectedParent=Join-Path $fixture.root 'probe-failure-parent'
+    $global:SpherewrightSyntheticProbeMode='fail'
+    try { Reject-Install $fixture 'Synthetic MCP metadata failure.' (Join-Path $rejectedParent 'mcp') }
+    finally { $global:SpherewrightSyntheticProbeMode='success' }
+    if (Test-Path -LiteralPath $rejectedParent) { throw 'Failed staged probe created the live parent.' }
+
+    # Keep one terminal mirror intact and alter only the other synthetic record.
+    # Looking only at the local archive must not authorize a replacement pair.
+    $fixture=New-Fixture; $null=Write-Manifest $fixture
+    $result=& "$($fixture.package)/install.ps1" -DspDir $fixture.game -McpDestination $fixture.mcp -Force | ConvertFrom-Json
+    $pluginRecord=Get-Content -LiteralPath $result.recordPath -Raw | ConvertFrom-Json
+    $mcpRecordPath=Join-Path $pluginRecord.mcpArchive 'transaction/progress.json'
+    $mcpRecord=Get-Content -LiteralPath $mcpRecordPath -Raw | ConvertFrom-Json
+    if ($pluginRecord.status -cne 'committed' -or $mcpRecord.status -cne 'committed') { throw 'Counterpart fixture is not initially terminal.' }
+    $mcpRecord.status='needs_recovery'
+    [IO.File]::WriteAllText($mcpRecordPath, ($mcpRecord | ConvertTo-Json -Depth 16))
+    $sharedPluginNewMcp=Join-Path (Join-Path $testRoot ([guid]::NewGuid().ToString('N'))) 'mcp'
+    Reject-Install $fixture 'counterpart' $sharedPluginNewMcp
+    if (Test-Path -LiteralPath (Split-Path -Parent $sharedPluginNewMcp)) { throw 'Rejected counterpart mismatch created a new target parent.' }
+
+    $fixture=New-Fixture; $null=Write-Manifest $fixture
+    $result=& "$($fixture.package)/install.ps1" -DspDir $fixture.game -McpDestination $fixture.mcp -Force | ConvertFrom-Json
+    $pluginRecord=Get-Content -LiteralPath $result.recordPath -Raw | ConvertFrom-Json
+    $pluginRecord.status='needs_recovery'
+    [IO.File]::WriteAllText($result.recordPath, ($pluginRecord | ConvertTo-Json -Depth 16))
+    $otherFixture=New-Fixture
+    Reject-Install $fixture 'counterpart' $fixture.mcp $otherFixture.game
+    [pscustomobject]@{passed=$testCases;gameCalls=0;scope='synthetic preflight, staging and installation integration; stub metadata; not crash/real-package validation'} | ConvertTo-Json
 } finally {
     $resolved=[IO.Path]::GetFullPath($testRoot)
     $allowed=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar

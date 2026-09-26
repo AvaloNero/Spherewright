@@ -4,6 +4,10 @@
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
+## EXP-307 — 安装回滚必须同时核对两端载荷和两份终态记录
+
+- 2026-09-27，`validated`，最近复验同日；仅离线合成安装范围。暂存/握手通过后仍须双端原载荷备份、写前复核和主Plugin最后换入；捕获异常时先隔离新main再恢复旧载荷，记录I/O失败不能阻止恢复尝试。单侧终态不代表事务结束，另一端缺失/非终态/不一致仍须拒绝后续安装。两种PowerShell各43集成检查、7场景组含76故障注入通过；存储/替换/记录路径或shell变化时复验。关联IFX-174；[证据](evidence/2026-09-27/install-caught-failure-rollback.md)。不推广为断电恢复、原子升级或真实安装验收。
+
 ## EXP-306 — PowerShell 跨版本读取 JSON 字段须保留值形状
 
 - 2026-09-27，`validated`，最近复验同日；适用于安装器 MCP 探针。PowerShell 7.6.5 中 `Write-Output -NoEnumerate` 可将标量 PSCustomObject 包成 List，不能据此误报服务端缺字段；使用一元逗号保留原对象及数组/空值形状。两种 shell 各19项离线检查通过；shell或字段读取实现变化时复验。关联IFX-173，完整边界见[探针证据](evidence/2026-09-27/staged-mcp-metadata.md)。不是最终ZIP或游戏验收。

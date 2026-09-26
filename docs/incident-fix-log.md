@@ -12,6 +12,10 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-174 — 顺序覆盖 Plugin/MCP 缺少协调失败恢复
+
+- 2026-09-27，`mitigated`（源码及合成故障测试）。旧默认安装器逐文件覆盖，暂存预检本身不能保证失败后仍为同一批载荷。现改为双暂存/握手、原件备份、持久进度、受控换入、失败还原及双归档终态互核；记录失败时尽力还原但保留未解决状态，不虚报成功。两种shell各43集成检查、7场景组含76故障注入通过。关联EXP-307；[验证边界](evidence/2026-09-27/install-caught-failure-rollback.md)。断电/进程中断恢复、启动门及真实包安装仍待，完整P1未核销。
+
 ## IFX-173 — PowerShell 7 的标量包装使正确握手被误判缺字段
 
 - 2026-09-27，`fixed_offline`。安装探针用 `Write-Output -NoEnumerate` 读取 JSON 标量对象，在 PowerShell 7.6.5 得到 List 包装而非原 PSCustomObject，报 `initialize serverInfo is missing 'version'`。改用一元逗号并补六类值形状回归；Windows PowerShell 与 PowerShell 7 各19项探针检查通过。关联EXP-306；[证据及未验边界](evidence/2026-09-27/staged-mcp-metadata.md)。未改变安装目录或连接游戏。

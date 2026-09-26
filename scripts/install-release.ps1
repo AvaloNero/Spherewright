@@ -145,6 +145,7 @@ function Assert-NoStageResidue {
             throw 'A prior Spherewright staging residue must be inspected before another staging attempt.'
         }
     }
+    Assert-SpherewrightInstallNoPendingArchives -Parent $item.FullName
 }
 
 function New-StagePayloadPlan {
@@ -289,7 +290,7 @@ while ($directories.Count -gt 0) {
     }
 }
 $requiredPluginNames = @('Spherewright.Plugin.dll', 'Spherewright.Contracts.dll', 'Spherewright.Bridge.Core.dll', 'Newtonsoft.Json.dll')
-foreach ($required in @('install.ps1', 'locate-dsp.ps1', 'Test-SpherewrightStagedMcp.ps1', 'AGENT-PLAYBOOK.md', 'mcp/Spherewright.Mcp.exe') + @($requiredPluginNames | ForEach-Object { "BepInEx/plugins/Spherewright/$_" })) {
+foreach ($required in @('install.ps1', 'locate-dsp.ps1', 'Test-SpherewrightStagedMcp.ps1', 'SpherewrightInstallTransaction.ps1', 'AGENT-PLAYBOOK.md', 'mcp/Spherewright.Mcp.exe') + @($requiredPluginNames | ForEach-Object { "BepInEx/plugins/Spherewright/$_" })) {
     if (-not $declaredFiles.Contains($required)) { throw "Required release file is missing from the manifest: $required" }
 }
 $pluginEntries = @($manifest.files | Where-Object { ([string]$_.path).StartsWith('BepInEx/plugins/Spherewright/', [StringComparison]::OrdinalIgnoreCase) })
@@ -366,15 +367,43 @@ if ($PreflightOnly) {
     return
 }
 
-if ($StageOnly) {
-    # Stage payloads only.  These roots are deliberately outside the Plugin scan
-    # tree and outside both live targets; no live file, runtime descriptor, or
-    # runtime-handoff entry is copied, moved, removed, or renamed here.
+. (Join-Path $packageRoot 'SpherewrightInstallTransaction.ps1')
+& {
+    # This staging phase remains outside the Plugin scan tree and both live
+    # targets. Only after it passes may the default branch invoke the transaction;
+    # StageOnly returns without replacing any live payload or protected state.
     $operationId = [guid]::NewGuid().ToString('N')
     $pluginScanRoot = Join-Path $gameRoot 'BepInEx\plugins'
     $pluginStageParent = Join-Path $gameRoot 'BepInEx'
     $mcpStageParent = [IO.Path]::GetDirectoryName($resolvedMcpDestination)
     if ([string]::IsNullOrWhiteSpace($mcpStageParent)) { throw 'MCP staging requires a concrete existing parent directory.' }
+    $parentDirectoriesToCreate = [Collections.Generic.List[string]]::new()
+    if (-not $StageOnly -and -not (Test-Path -LiteralPath $mcpStageParent)) {
+        # Stage beneath an existing same-volume ancestor. Missing live parents
+        # are only planned here; the transaction must record them before creation.
+        Assert-InstallDestinationAncestors -Destination $mcpStageParent
+        $missingParents = [Collections.Generic.Stack[string]]::new()
+        $ancestor = $mcpStageParent
+        while (-not (Test-Path -LiteralPath $ancestor)) {
+            $missingParents.Push($ancestor)
+            $ancestor = [IO.Path]::GetDirectoryName($ancestor)
+            if ([string]::IsNullOrWhiteSpace($ancestor)) { throw 'MCP installation has no existing parent.' }
+        }
+        if (-not (Test-Path -LiteralPath $ancestor -PathType Container)) { throw 'MCP parent ancestor must be a directory.' }
+        while ($missingParents.Count -gt 0) {
+            $parentDirectoriesToCreate.Add($missingParents.Pop())
+        }
+        $mcpStageParent = $ancestor
+    }
+    # A prior first install may have staged at a higher ancestor before creating
+    # today's MCP parent. Do not lose its pending operation when the parent moves.
+    $residueAncestor = $mcpStageParent
+    while (-not [string]::IsNullOrWhiteSpace($residueAncestor)) {
+        Assert-NoStageResidue -Parent $residueAncestor
+        $residueParent = [IO.Path]::GetDirectoryName($residueAncestor)
+        if ([string]::Equals($residueParent, $residueAncestor, [StringComparison]::OrdinalIgnoreCase)) { break }
+        $residueAncestor = $residueParent
+    }
     $protectedPaths = @($packageRoot, $pluginDestination, $resolvedMcpDestination)
     $pluginStage = New-StagePayloadPlan -Target $pluginDestination -StageParent $pluginStageParent -Role 'plugin' -OperationId $operationId -ForbiddenScanRoot $pluginScanRoot -ProtectedPaths $protectedPaths
     $mcpStage = New-StagePayloadPlan -Target $resolvedMcpDestination -StageParent $mcpStageParent -Role 'mcp' -OperationId $operationId -ForbiddenScanRoot $pluginScanRoot -ProtectedPaths ($protectedPaths + @($pluginStage.root))
@@ -389,7 +418,7 @@ if ($StageOnly) {
     # the manifest instead of assuming the pre-launch hashes remain current.
     Assert-ApprovedDestinationTree -Root $pluginStage.payload -ExpectedFiles $pluginExpectedFiles -RequireComplete
     Assert-ApprovedDestinationTree -Root $mcpStage.payload -ExpectedFiles $mcpExpectedFiles -RequireComplete
-    [pscustomobject]@{
+    if ($StageOnly) { [pscustomobject]@{
         version = $version
         operationId = $operationId
         pluginStagedTo = $pluginStage.payload
@@ -404,32 +433,32 @@ if ($StageOnly) {
         transactionalUpgrade = $false
     } | ConvertTo-Json -Depth 3
     return
+    }
+    $verifyInstalled = {
+        param($liveMcpDirectory)
+        Invoke-SpherewrightStagedMcpProbe -ExecutablePath (Join-Path $liveMcpDirectory 'Spherewright.Mcp.exe') `
+            -ExpectedVersion $version -ExpectedPlaybookPath (Join-Path $packageRoot 'AGENT-PLAYBOOK.md') `
+            -IsolationDirectory (Join-Path $mcpStage.root 'final-metadata-probe') | Out-Null
+    }
+    $transaction = Invoke-SpherewrightInstallTransaction -PluginStagePayload $pluginStage.payload `
+        -PluginDestination $pluginDestination -PluginExpectedFiles $pluginExpectedFiles `
+        -McpStagePayload $mcpStage.payload -McpDestination $resolvedMcpDestination -McpExpectedFiles $mcpExpectedFiles `
+        -VerifyInstalled $verifyInstalled -ParentDirectoriesToCreate $parentDirectoriesToCreate.ToArray()
+    [pscustomobject]@{
+        version = $version
+        pluginInstalledTo = $pluginDestination
+        mcpInstalledTo = $resolvedMcpDestination
+        mcpExecutable = Join-Path $resolvedMcpDestination 'Spherewright.Mcp.exe'
+        dspSource = [string]$location.source
+        installed = $transaction.installed
+        status = $transaction.status
+        operationId = $transaction.operationId
+        recordPath = $transaction.recordPath
+        integrityVerified = $true
+        exactTargetFileSet = $true
+        mcpHandshakeVerified = $true
+        caughtFailureRollbackSupported = $true
+        crashRecoverySupported = $false
+        transactionalUpgrade = $false
+    } | ConvertTo-Json -Depth 3
 }
-
-New-Item -ItemType Directory -Path $pluginDestination -Force | Out-Null
-foreach ($name in $requiredPluginNames) {
-    Copy-Item -LiteralPath (Join-Path $pluginSource $name) -Destination (Join-Path $pluginDestination $name) -Force
-}
-
-New-Item -ItemType Directory -Path $resolvedMcpDestination -Force | Out-Null
-foreach ($relative in @($mcpExpectedFiles.Keys | Sort-Object)) {
-    $source = Join-Path $mcpSource ($relative -replace '/', [IO.Path]::DirectorySeparatorChar)
-    $destination = Join-Path $resolvedMcpDestination ($relative -replace '/', [IO.Path]::DirectorySeparatorChar)
-    New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($destination)) -Force | Out-Null
-    Copy-Item -LiteralPath $source -Destination $destination -Force
-}
-
-Assert-ApprovedDestinationTree -Root $pluginDestination -ExpectedFiles $pluginExpectedFiles -PreservedDirectories @('runtime-handoff') -RequireComplete
-Assert-ApprovedDestinationTree -Root $resolvedMcpDestination -ExpectedFiles $mcpExpectedFiles -RequireComplete
-
-$mcpExecutable = Join-Path $resolvedMcpDestination 'Spherewright.Mcp.exe'
-[pscustomobject]@{
-    version = $version
-    pluginInstalledTo = $pluginDestination
-    mcpInstalledTo = $resolvedMcpDestination
-    mcpExecutable = $mcpExecutable
-    dspSource = [string]$location.source
-    integrityVerified = $true
-    exactTargetFileSet = $true
-    transactionalUpgrade = $false
-} | ConvertTo-Json -Depth 3

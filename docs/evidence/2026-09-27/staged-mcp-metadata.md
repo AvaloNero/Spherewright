@@ -19,4 +19,6 @@ After the initial Windows PowerShell checks, PowerShell 7.6.5 rejected the valid
 
 ## Remaining work (unchanged)
 
+Subsequent follow-through: [caught-failure rollback](install-caught-failure-rollback.md) replaces the default direct-copy path. The paragraph below preserves the boundary at this metadata slice; process interruption recovery and final-package validation remain open after that follow-through as well.
+
 This extends the [stage-only slice](../2026-09-26/install-release-stage-only.md), not the live installer transaction. Default installation still uses direct replacement and reports no transactional guarantee. Original-payload backup, coordinated promotion, verified rollback, interrupted-operation recovery and final same-commit package validation remain open. No game load/save/write, real-target installation, tag or release occurred in this slice.

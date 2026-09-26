@@ -15,7 +15,7 @@ The game was closed at re-entry. The protected ticket still names the same saved
 
 After subsequent explicit user confirmation, one fresh same-primary recovery completed normally: save `73573852`, observed tick `73573875`, revision `1`, accepted `7`, owned/healthy and a newly issued restart credential. Independent verification proved matching runtime/handoff tickets and preservation of all first 91 Journal entries and the single historical version transition. See the [recovery acceptance](evidence/2026-09-26/same-primary-recovery.md).
 
-The next gate is a **fresh, read-only factory audit** before proposing construction. Do not infer current entities, materials, power, transport or production from either save snapshot.
+The [fresh read-only factory snapshot](evidence/2026-09-26/factory-reentry-audit.md) is complete: 5155 entities over 52 pages, zero prebuilds, 21 selected detailed reads, healthy/J91, two fully served networks and accepted `7`. It is not an all-entity configuration comparison or sustained-output proof. Next: the two unsubmitted HPS output sorters, each through fresh complete native preflight; only after both succeed and settle, one normal save and the accepted-10 audit freeze. No feed/parallel expansion is included in that batch.
 
 ## Completed work not to repeat
 
@@ -26,7 +26,7 @@ The next gate is a **fresh, read-only factory audit** before proposing construct
 
 ## Still pending
 
-- The fresh factory audit above. The September 26 exact-primary recovery is complete, not a construction or production result.
+- The two HPS output attachments and their saved/audited closure. Recovery and the bounded read-only snapshot are complete, not a construction or production result.
 - Any separately authorized D.5/D.6 work, a later restart/resume check, and all construction, throughput, sustained-power/fuel, production, and final v0.4 acceptance gates not directly covered by the last verified evidence.
 - Formal release work remains distinct from the installed cohort and this local evidence snapshot.
 - This status consolidation does not independently close the narrower declaration-restore/original-hash proof, 2012 sorter removal, nonzero-inc cargo preservation, post-repair resume or full composed transport-budget gates. Check the dated per-feature evidence before marking them complete; the blueprint/Governor throughput examples alone cannot substitute for those proofs.
@@ -44,3 +44,9 @@ The next gate is a **fresh, read-only factory audit** before proposing construct
 ## Re-entry rule
 
 Start from the current recovery gate and fresh audit, not from a historical construction plan. Any later game action needs its own current authorization, fresh state, and bounded evidence; this page grants none.
+
+## Engineering review follow-through
+
+- [Ordinary belt input proof](evidence/2026-09-26/belt-input-proof.md): code and offline tests complete, not cold-deployed.
+- [Installer integrity preflight](evidence/2026-09-26/install-preflight.md): 20 local synthetic cases pass; transactional replacement/rollback and final-package validation remain open.
+- Harvest approach watchdog work is separate and still under review. Unbounded action-history retention/per-frame scans remain an identified, unfixed issue. Neither blocks the already approved sorter-only batch; no game capability is expanded to work around them.

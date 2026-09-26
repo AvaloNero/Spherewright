@@ -25,7 +25,7 @@ main 已增加只读 `spherewright_get_foundry_plan`：从目标产量计算多�
 ### 支持范围
 
 - Windows x64
-- 《戴森球计划》`0.10.34.28529`
+- 《戴森球计划》未发布 0.4 包目标 `0.10.35.29088`；已发布 0.3.x 的历史本机验证为 `0.10.34.28529`
 - BepInEx `5.4.17`
 - 单人、和平模式（关闭黑雾/战斗）
 - 任意沙盒设置和资源倍率；它们只作为运行证据，不会扩展可调用能力
@@ -181,7 +181,7 @@ See [current status](./docs/current-status.md), [ROADMAP.md](./ROADMAP.md), [doc
 The currently supported runtime scope is deliberately narrow:
 
 - Windows x64
-- Dyson Sphere Program (the currently validated build is `0.10.34.28529`)
+- Dyson Sphere Program (unreleased 0.4 package target: `0.10.35.29088`; released v0.3.x historical local validation: `0.10.34.28529`)
 - BepInEx `5.4.17.0`
 - single-player
 - peaceful mode

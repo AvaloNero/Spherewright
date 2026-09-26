@@ -4,6 +4,10 @@
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
+## EXP-310 — 双包目标版本须以实际归档为准，不能混用 owned 迁移来源
+
+- 2026-09-27，`validated`，最近复验同日；仅限 dirty 本地双包预览。手动包与 Thunderstore 的实际归档 manifest 都必须回读同一 `supportedDspVersion`，并与当前 Thunderstore 中英文支持范围一致；本次均为 `0.10.35.29088`，现有静态校验与手动 MCP metadata handshake 通过。包目标版本只是分发兼容声明，不能代替或混入 owned 存档的精确来源/目标版本、授权或迁移证据。归档字段、README、安装说明、DSP 版本或发布流程变化时复验；关联IFX-177及[预览证据和边界](evidence/2026-09-27/package-native-version.md)。dirty preview、旧`INSTALL.md`声明、真实安装/Unity、Thunderstore runtime black-box 与发布仍未核销。
+
 ## EXP-309 — 显式安装恢复必须绑定同一未决证据与预览哈希
 
 - 2026-09-27，`validated`，最近复验同日；仅限离线合成安装树。恢复不能扫描或猜测旧事务：调用方必须给出精确Plugin/MCP目标和operation ID，先取得只读preview，再用同一evidence hash请求恢复；写前重读marker、双端记录、备份、已知old/new载荷和受保护handoff。两个自建子进程中断（升级的新main已live、首装双方根缺失）在两种shell各3组测试中均恢复到精确原状态并移除marker；五类证据漂移拒绝均为零写。恢复末尾失败则保留`needs_recovery`和marker并再次扣留main。路径、记录模式、hash输入、恢复顺序或shell变化时复验；关联IFX-176及[合成证据与限制](evidence/2026-09-27/install-explicit-recovery.md)。不外推为断电/任意进程中断、真实ZIP/部署、Unity启动或旧Plugin竞态关闭。

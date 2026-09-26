@@ -12,6 +12,10 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-177 — 双包版本元数据仍将旧原生版本带入当前预览
+
+- 2026-09-27，`mitigated`（源码/dirty 本地归档）。两个包 source manifest 的`supportedDspVersion`及 Thunderstore README 当前支持范围仍硬编码`0.10.34.28529`，会把已验证的29088包目标误写成旧版本。现改为`0.10.35.29088`，实际手动/Thunderstore归档均回读该值；手动包既有metadata握手与 Thunderstore 静态校验通过，恢复入口、依赖脚本和`RECOVERY.md`均存在且与 manifest 哈希一致。关联EXP-310；[归档证据与限制](evidence/2026-09-27/package-native-version.md)。手动`INSTALL.md`仍是旧声明，故本次只为 preview，不能混用为 owned迁移来源/授权，亦不证明真实安装、Unity运行、Thunderstore runtime black-box 或发布就绪。
+
 ## IFX-176 — 安装中断后缺少可核验证据绑定的人工原件恢复
 
 - 2026-09-27，`mitigated`（源码/离线合成）。旧事务会在进程中断后保留未决marker、stage/archive和备份，却没有面向操作者的精确恢复入口。现有入口只接受手工Plugin/MCP目标与operation ID，从同一marker解析唯一证据根；preview无写并返回evidence hash，restore必须回显该hash且写前复核。两种shell各3组合成测试以自建child的真实中断覆盖升级新main已live和首装双方根缺失，核精确原载荷/handoff、marker清除及成对`rolled_back`；五种备份/live/镜像/handoff漂移均零写拒绝。恢复自身末尾失败会保留marker/`needs_recovery`并扣留main。关联EXP-309；[证据与未验边界](evidence/2026-09-27/install-explicit-recovery.md)。不证明断电、任意杀进程、真实包/部署、Unity启动或legacy startup race安全，完整安装P1仍未核销。

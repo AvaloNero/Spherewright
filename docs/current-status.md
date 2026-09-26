@@ -13,7 +13,9 @@
 
 The game was closed at re-entry. The protected ticket still names the same saved checkpoint (`73573821 / J91`, accepted `6`) but has expired. The installed Plugin remains `f4fc8e5` and the native DLL remains `29088`. One Steam launch reached the main menu. A new preview-only expired-primary reauthorization passed exact identity/version/tick checks, with only `USER_CONFIRMATION_REQUIRED` remaining. The disclosure has been presented; no new load, save or construction occurred. See the [re-entry record](evidence/2026-09-26/reentry-preview.md).
 
-The user has now explicitly confirmed the disclosed exact checkpoint; protected recovery is pending execution. Run a **fresh, read-only factory audit** after recovery and before proposing construction. Do not infer current entities, materials, power, transport or production from the September 24 snapshot.
+After subsequent explicit user confirmation, one fresh same-primary recovery completed normally: save `73573852`, observed tick `73573875`, revision `1`, accepted `7`, owned/healthy and a newly issued restart credential. Independent verification proved matching runtime/handoff tickets and preservation of all first 91 Journal entries and the single historical version transition. See the [recovery acceptance](evidence/2026-09-26/same-primary-recovery.md).
+
+The next gate is a **fresh, read-only factory audit** before proposing construction. Do not infer current entities, materials, power, transport or production from either save snapshot.
 
 ## Completed work not to repeat
 
@@ -24,7 +26,7 @@ The user has now explicitly confirmed the disclosed exact checkpoint; protected 
 
 ## Still pending
 
-- The exact-primary recovery and fresh factory audit above.
+- The fresh factory audit above. The September 26 exact-primary recovery is complete, not a construction or production result.
 - Any separately authorized D.5/D.6 work, a later restart/resume check, and all construction, throughput, sustained-power/fuel, production, and final v0.4 acceptance gates not directly covered by the last verified evidence.
 - Formal release work remains distinct from the installed cohort and this local evidence snapshot.
 - This status consolidation does not independently close the narrower declaration-restore/original-hash proof, 2012 sorter removal, nonzero-inc cargo preservation, post-repair resume or full composed transport-budget gates. Check the dated per-feature evidence before marking them complete; the blueprint/Governor throughput examples alone cannot substitute for those proofs.

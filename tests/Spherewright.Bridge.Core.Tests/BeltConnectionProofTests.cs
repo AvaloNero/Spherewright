@@ -5,6 +5,21 @@ namespace Spherewright.Bridge.Core.Tests;
 
 public sealed class BeltConnectionProofTests
 {
+    [Theory]
+    [InlineData(42, false, 42, true)]
+    [InlineData(42, true, 42, false)]
+    [InlineData(42, false, 41, false)]
+    [InlineData(42, false, 0, false)]
+    [InlineData(0, false, 0, true)]
+    [InlineData(0, true, 0, true)]
+    [InlineData(0, false, 99, false)]
+    [InlineData(0, true, 99, false)]
+    [InlineData(0, false, -99, false)]
+    public void InputMatches_ProvesDirectedSourceOrEmptyInput(int expected, bool isOutput, int actual, bool matches)
+    {
+        Assert.Equal(matches, BeltConnectionProof.InputMatches(expected, isOutput, actual));
+    }
+
     [Fact]
     public void OutputMatches_RequiresTheExpectedDirectedNeighbor()
     {

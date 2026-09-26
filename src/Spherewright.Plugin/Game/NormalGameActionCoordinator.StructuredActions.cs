@@ -1807,12 +1807,15 @@ internal sealed partial class NormalGameActionCoordinator
                 }
             }
 
-            if (plan.SourceObjectId > 0)
+            // Native belt slots 1..3 are inputs. An unplanned side input or a
+            // non-free start is not completion of this exact prepared path.
+            for (var inputSlot = 1; inputSlot <= 3; inputSlot++)
             {
-                factory.ReadObjectConn(entityIds[0], 1, out var isOutput, out var otherObjectId, out _);
-                if (isOutput || otherObjectId != plan.SourceObjectId)
+                var expectedInput = inputSlot == 1 ? plan.SourceObjectId : 0;
+                factory.ReadObjectConn(entityIds[0], inputSlot, out var isOutput, out var otherObjectId, out _);
+                if (!BeltConnectionProof.InputMatches(expectedInput, isOutput, otherObjectId))
                 {
-                    rejection = "The first belt segment is not connected to the prepared source port.";
+                    rejection = $"The first belt segment input slot {inputSlot} does not match the prepared source or free-end proof.";
                     return false;
                 }
             }

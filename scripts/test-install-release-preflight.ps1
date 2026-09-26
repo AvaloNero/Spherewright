@@ -8,6 +8,26 @@ $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('spherewright-install-tests-' 
 $installer = Join-Path $PSScriptRoot 'install-release.ps1'
 $testCases = 0
 function Get-Process { [CmdletBinding()] param([string]$Name) if ($Name -cne 'DSPGAME') { throw 'Unexpected process query' } }
+$global:SpherewrightSyntheticCopyFaultAfter = 0
+$global:SpherewrightSyntheticCopyFaultCount = 0
+function Copy-Item {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string[]]$LiteralPath,
+        [Parameter(Mandatory)][string]$Destination,
+        [switch]$Force,
+        [switch]$Recurse,
+        [switch]$PassThru,
+        [switch]$Container
+    )
+    if ($global:SpherewrightSyntheticCopyFaultAfter -gt 0) {
+        $global:SpherewrightSyntheticCopyFaultCount++
+        if ($global:SpherewrightSyntheticCopyFaultCount -ge $global:SpherewrightSyntheticCopyFaultAfter) {
+            throw 'Synthetic staging copy failure.'
+        }
+    }
+    Microsoft.PowerShell.Management\Copy-Item @PSBoundParameters
+}
 function New-Fixture {
     $root = Join-Path $testRoot ([guid]::NewGuid().ToString('N'))
     $package = Join-Path $root 'package'
@@ -54,6 +74,14 @@ function Get-TreeSnapshot([string]$root) {
     }
     return (@($entries | Sort-Object) -join "`n")
 }
+function Get-StageSnapshot([string]$parent) {
+    $item=Get-Item -LiteralPath $parent -Force -ErrorAction SilentlyContinue
+    if ($null -eq $item) { return '<missing-parent>' }
+    $entries=@(Get-ChildItem -LiteralPath $item.FullName -Force | Where-Object { $_.Name -like '.spherewright-stage-*' } | ForEach-Object {
+        "{0}|{1}" -f $_.FullName,(Get-TreeSnapshot $_.FullName)
+    } | Sort-Object)
+    return ($entries -join "`n---`n")
+}
 function Assert-ExactInstalledSet($fixture,$manifest) {
     $pluginRoot="$($fixture.game)/BepInEx/plugins/Spherewright"
     $pluginExpected=@('Spherewright.Plugin.dll','Spherewright.Contracts.dll','Spherewright.Bridge.Core.dll','Newtonsoft.Json.dll')
@@ -69,6 +97,24 @@ function Assert-ExactInstalledSet($fixture,$manifest) {
     foreach ($relative in $mcpExpected) {
         $entry=@($manifest.files | Where-Object { $_.path -ceq "mcp/$relative" })
         if ($entry.Count -ne 1 -or (Get-FileHash -LiteralPath "$($fixture.mcp)/$relative" -Algorithm SHA256).Hash -cne [string]$entry[0].sha256) { throw 'MCP target hash mismatch.' }
+    }
+}
+function Assert-ExactStagedSet($fixture,$manifest,$stageResult) {
+    $pluginRoot=[string]$stageResult.pluginStagedTo
+    $mcpRoot=[string]$stageResult.mcpStagedTo
+    $pluginExpected=@('Spherewright.Plugin.dll','Spherewright.Contracts.dll','Spherewright.Bridge.Core.dll','Newtonsoft.Json.dll') | Sort-Object
+    $pluginActual=@(Get-ChildItem -LiteralPath $pluginRoot -File -Recurse -Force | ForEach-Object { $_.FullName.Substring($pluginRoot.Length+1).Replace('\','/') } | Sort-Object)
+    if ((ConvertTo-Json @($pluginActual)) -cne (ConvertTo-Json @($pluginExpected))) { throw 'Plugin staging does not contain the exact approved file set.' }
+    foreach ($name in $pluginExpected) {
+        $entry=@($manifest.files | Where-Object { $_.path -ceq "BepInEx/plugins/Spherewright/$name" })
+        if ($entry.Count -ne 1 -or (Get-FileHash -LiteralPath "$pluginRoot/$name" -Algorithm SHA256).Hash -cne [string]$entry[0].sha256) { throw 'Plugin staging hash mismatch.' }
+    }
+    $mcpExpected=@($manifest.files | Where-Object { ([string]$_.path).StartsWith('mcp/', [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { ([string]$_.path).Substring(4) } | Sort-Object)
+    $mcpActual=@(Get-ChildItem -LiteralPath $mcpRoot -File -Recurse -Force | ForEach-Object { $_.FullName.Substring($mcpRoot.Length+1).Replace('\','/') } | Sort-Object)
+    if ((ConvertTo-Json @($mcpActual)) -cne (ConvertTo-Json @($mcpExpected))) { throw 'MCP staging does not contain the exact approved file set.' }
+    foreach ($relative in $mcpExpected) {
+        $entry=@($manifest.files | Where-Object { $_.path -ceq "mcp/$relative" })
+        if ($entry.Count -ne 1 -or (Get-FileHash -LiteralPath (Join-Path $mcpRoot $relative) -Algorithm SHA256).Hash -cne [string]$entry[0].sha256) { throw 'MCP staging hash mismatch.' }
     }
 }
 function New-TestJunction([string]$path,[string]$target) {
@@ -96,16 +142,104 @@ function Reject-Install($fixture,[string]$message,[string]$destination=$fixture.
     if ((Get-TreeSnapshot "$game/BepInEx/plugins/Spherewright") -cne $pluginBefore -or (Get-TreeSnapshot $destination) -cne $mcpBefore -or (Get-TreeSnapshot $fixture.runtime) -cne $runtimeBefore -or (Get-TreeSnapshot $fixture.handoff) -cne $handoffBefore) { throw 'Rejected/preflight install modified a destination or protected state.' }
     $script:testCases++
 }
+function Reject-Stage($fixture,[string]$message,[string]$destination=$fixture.mcp,[string]$game=$fixture.game,[switch]$AlsoPreflight) {
+    $pluginBefore=Get-TreeSnapshot "$game/BepInEx/plugins/Spherewright"
+    $mcpBefore=Get-TreeSnapshot $destination
+    $runtimeBefore=Get-TreeSnapshot $fixture.runtime
+    $handoffBefore=Get-TreeSnapshot $fixture.handoff
+    $pluginStageBefore=Get-StageSnapshot "$game/BepInEx"
+    $mcpParent=[IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($destination))
+    $mcpStageBefore=Get-StageSnapshot $mcpParent
+    $rejected=$false
+    try {
+        $stageArgs=@{DspDir=$game;McpDestination=$destination;Force=$true;StageOnly=$true}
+        if ($AlsoPreflight) { $stageArgs.PreflightOnly=$true }
+        & "$($fixture.package)/install.ps1" @stageArgs | Out-Null
+    } catch { if (-not $_.Exception.Message.Contains($message)) { throw }; $rejected=$true }
+    if (-not $rejected) { throw "Expected stage rejection: $message" }
+    if ((Get-TreeSnapshot "$game/BepInEx/plugins/Spherewright") -cne $pluginBefore -or (Get-TreeSnapshot $destination) -cne $mcpBefore -or (Get-TreeSnapshot $fixture.runtime) -cne $runtimeBefore -or (Get-TreeSnapshot $fixture.handoff) -cne $handoffBefore -or (Get-StageSnapshot "$game/BepInEx") -cne $pluginStageBefore -or (Get-StageSnapshot $mcpParent) -cne $mcpStageBefore) { throw 'Rejected stage operation modified live, protected, or staging state.' }
+    $script:testCases++
+}
 try {
     $fixture=New-Fixture; $manifest=Write-Manifest $fixture
     $pluginBefore=Get-TreeSnapshot "$($fixture.game)/BepInEx/plugins/Spherewright"
     $mcpBefore=Get-TreeSnapshot $fixture.mcp
     $runtimeBefore=Get-TreeSnapshot $fixture.runtime
     $handoffBefore=Get-TreeSnapshot $fixture.handoff
+    $pluginStageBefore=Get-StageSnapshot "$($fixture.game)/BepInEx"
+    $mcpStageBefore=Get-StageSnapshot ([IO.Path]::GetDirectoryName($fixture.mcp))
     $result=& "$($fixture.package)/install.ps1" -DspDir $fixture.game -McpDestination $fixture.mcp -Force -PreflightOnly | ConvertFrom-Json
     if (-not $result.preflightOnly -or $result.installed -or -not $result.exactFileSet) { throw 'Invalid preview result' }
     if ((Get-TreeSnapshot "$($fixture.game)/BepInEx/plugins/Spherewright") -cne $pluginBefore -or (Get-TreeSnapshot $fixture.mcp) -cne $mcpBefore -or (Get-TreeSnapshot $fixture.runtime) -cne $runtimeBefore -or (Get-TreeSnapshot $fixture.handoff) -cne $handoffBefore) { throw 'Preflight install modified a destination or protected state.' }
+    if ((Get-StageSnapshot "$($fixture.game)/BepInEx") -cne $pluginStageBefore -or (Get-StageSnapshot ([IO.Path]::GetDirectoryName($fixture.mcp))) -cne $mcpStageBefore) { throw 'Preflight-only created staging state.' }
     $testCases++
+
+    $fixture=New-Fixture; $manifest=Write-Manifest $fixture
+    $pluginBefore=Get-TreeSnapshot "$($fixture.game)/BepInEx/plugins/Spherewright"
+    $mcpBefore=Get-TreeSnapshot $fixture.mcp
+    $runtimeBefore=Get-TreeSnapshot $fixture.runtime
+    $handoffBefore=Get-TreeSnapshot $fixture.handoff
+    $pluginStageBefore=Get-StageSnapshot "$($fixture.game)/BepInEx"
+    $mcpStageBefore=Get-StageSnapshot ([IO.Path]::GetDirectoryName($fixture.mcp))
+    $stageResult=& "$($fixture.package)/install.ps1" -DspDir $fixture.game -McpDestination $fixture.mcp -Force -StageOnly | ConvertFrom-Json
+    if ($stageResult.installed -or -not $stageResult.staged -or -not $stageResult.integrityVerified -or -not $stageResult.exactFileSet -or $stageResult.transactionalUpgrade) { throw 'Invalid stage-only result.' }
+    if ([IO.Path]::GetFullPath([string]$stageResult.pluginStagedTo).StartsWith(([IO.Path]::GetFullPath("$($fixture.game)/BepInEx/plugins").TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar),[StringComparison]::OrdinalIgnoreCase)) { throw 'Plugin staging entered the BepInEx/plugins scan range.' }
+    Assert-ExactStagedSet $fixture $manifest $stageResult
+    $pluginChanged = (Get-TreeSnapshot "$($fixture.game)/BepInEx/plugins/Spherewright") -cne $pluginBefore
+    $mcpChanged = (Get-TreeSnapshot $fixture.mcp) -cne $mcpBefore
+    $runtimeChanged = (Get-TreeSnapshot $fixture.runtime) -cne $runtimeBefore
+    $handoffChanged = (Get-TreeSnapshot $fixture.handoff) -cne $handoffBefore
+    $pluginStageMissing = [string]::Equals((Get-StageSnapshot "$($fixture.game)/BepInEx"),$pluginStageBefore,[StringComparison]::Ordinal)
+    $currentMcpStage = Get-StageSnapshot ([IO.Path]::GetDirectoryName($fixture.mcp))
+    $mcpStageMissing = [string]::Equals($currentMcpStage,$mcpStageBefore,[StringComparison]::Ordinal)
+    if ($pluginChanged -or $mcpChanged -or $runtimeChanged -or $handoffChanged -or $pluginStageMissing -or $mcpStageMissing) { throw "Stage-only invariant failed plugin=$pluginChanged mcp=$mcpChanged runtime=$runtimeChanged handoff=$handoffChanged pluginStageMissing=$pluginStageMissing mcpStageMissing=$mcpStageMissing" }
+    $testCases++
+
+    $fixture=New-Fixture; $manifest=Write-Manifest $fixture
+    Reject-Stage $fixture 'mutually exclusive' $fixture.mcp $fixture.game -AlsoPreflight
+
+    $fixture=New-Fixture; $manifest=Write-Manifest $fixture
+    Reject-Stage $fixture 'Staging parent must already exist' (Join-Path $fixture.root 'missing-parent/mcp')
+
+    $fixture=New-Fixture; $manifest=Write-Manifest $fixture
+    $stageMcp=Join-Path "$($fixture.game)/BepInEx/plugins" 'synthetic-mcp'
+    [void][IO.Directory]::CreateDirectory($stageMcp)
+    Reject-Stage $fixture 'Plugin staging must remain outside' $stageMcp
+
+    $fixture=New-Fixture; $manifest=Write-Manifest $fixture
+    [void][IO.Directory]::CreateDirectory("$($fixture.game)/BepInEx/.spherewright-stage-residue-plugin")
+    Reject-Stage $fixture 'prior Spherewright staging residue' $fixture.mcp
+
+    foreach ($faultAfter in @(3, 5)) {
+        # Fail inside Plugin staging, then separately on the first MCP copy
+        # after all four Plugin assemblies have already staged successfully.
+        $fixture=New-Fixture; $manifest=Write-Manifest $fixture
+        $global:SpherewrightSyntheticCopyFaultCount=0
+        $global:SpherewrightSyntheticCopyFaultAfter=$faultAfter
+        $pluginBefore=Get-TreeSnapshot "$($fixture.game)/BepInEx/plugins/Spherewright"
+        $mcpBefore=Get-TreeSnapshot $fixture.mcp
+        $runtimeBefore=Get-TreeSnapshot $fixture.runtime
+        $handoffBefore=Get-TreeSnapshot $fixture.handoff
+        $faulted=$false
+        try { & "$($fixture.package)/install.ps1" -DspDir $fixture.game -McpDestination $fixture.mcp -Force -StageOnly | Out-Null } catch { if ($_.Exception.Message -notlike '*Synthetic staging copy failure*') { throw }; $faulted=$true }
+        $global:SpherewrightSyntheticCopyFaultAfter=0
+        $expectedMcpResidues=if ($faultAfter -eq 5) { 1 } else { 0 }
+        if (-not $faulted -or (Get-TreeSnapshot "$($fixture.game)/BepInEx/plugins/Spherewright") -cne $pluginBefore -or (Get-TreeSnapshot $fixture.mcp) -cne $mcpBefore -or (Get-TreeSnapshot $fixture.runtime) -cne $runtimeBefore -or (Get-TreeSnapshot $fixture.handoff) -cne $handoffBefore -or @(Get-ChildItem -LiteralPath "$($fixture.game)/BepInEx" -Force -Filter '.spherewright-stage-*').Count -ne 1 -or @(Get-ChildItem -LiteralPath $fixture.root -Force -Filter '.spherewright-stage-*-mcp').Count -ne $expectedMcpResidues) { throw 'Stage-copy failure did not preserve live/protected state and inspectable staging residues.' }
+        $testCases++
+    }
+
+    $fixture=New-Fixture; $manifest=Write-Manifest $fixture
+    Reject-Stage $fixture 'must not overlap' $fixture.package
+
+    $fixture=New-Fixture; $manifest=Write-Manifest $fixture
+    $sourceTarget=Join-Path $fixture.root 'stage-source-reparse-target'; [void][IO.Directory]::CreateDirectory($sourceTarget)
+    New-TestJunction "$($fixture.package)/mcp/reparse" $sourceTarget
+    Reject-Stage $fixture 'Reparse points are forbidden' $fixture.mcp
+
+    $fixture=New-Fixture; $manifest=Write-Manifest $fixture
+    $reparseTarget=Join-Path $fixture.root 'stage-destination-reparse-target'; [void][IO.Directory]::CreateDirectory($reparseTarget)
+    $reparseParent=Join-Path $fixture.root 'stage-destination-reparse-parent'; New-TestJunction $reparseParent $reparseTarget
+    Reject-Stage $fixture 'Reparse-point installation destinations are forbidden' (Join-Path $reparseParent 'mcp')
 
     foreach ($bad in @('missing-mcp','unlisted','duplicate','traversal','size','hash','source-extra-plugin','source-reparse')) {
         $fixture=New-Fixture; $manifest=Write-Manifest $fixture

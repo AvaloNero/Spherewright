@@ -48,5 +48,6 @@ Start from the current recovery gate and fresh audit, not from a historical cons
 
 - [Ordinary belt input proof](evidence/2026-09-26/belt-input-proof.md): code and offline tests complete, not cold-deployed.
 - [Installer integrity preflight](evidence/2026-09-26/install-preflight.md): 20 local synthetic cases pass; transactional replacement/rollback and final-package validation remain open.
+- [Installer stage-only isolation](evidence/2026-09-26/install-release-stage-only.md): 30 local synthetic cases pass, including separate Plugin/MCP copy failures without live-target or recovery-state changes. Staging is not installation; promotion, rollback and crash recovery remain open.
 - [Harvest approach watchdog](evidence/2026-09-26/harvest-approach.md): implementation, review and 2234 offline Release tests pass; not cold-deployed or live-validated.
 - [Bounded normal-action history](evidence/2026-09-26/bounded-action-history.md): capacity/retention and active-only frame traversal implemented and independently reviewed; 2241 offline Release tests pass. Uncertain, recovery, failed-construction and checkpoint-flight evidence stays protected. Not cold-deployed or live performance-tested. Neither code change blocks the already approved sorter-only batch; no game capability is expanded to work around them.

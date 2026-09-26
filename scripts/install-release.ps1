@@ -3,11 +3,16 @@ param(
     [string]$DspDir,
     [string]$McpDestination,
     [switch]$Force,
-    [switch]$PreflightOnly
+    [switch]$PreflightOnly,
+    [switch]$StageOnly
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+if ($PreflightOnly -and $StageOnly) {
+    throw '-PreflightOnly and -StageOnly are mutually exclusive.'
+}
 
 function Test-InstallPathOverlap {
     param(
@@ -125,6 +130,88 @@ function Assert-ApprovedDestinationTree {
             if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) { throw "Installed file is missing: $relative" }
         }
     }
+}
+
+function Assert-NoStageResidue {
+    param([Parameter(Mandatory)][string]$Parent)
+
+    $item = Get-Item -LiteralPath $Parent -Force -ErrorAction SilentlyContinue
+    if ($null -eq $item) { return }
+    if (-not $item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw 'Staging parent must be a non-reparse directory.'
+    }
+    foreach ($child in @(Get-ChildItem -LiteralPath $item.FullName -Force)) {
+        if ($child.Name -like '.spherewright-stage-*') {
+            throw 'A prior Spherewright staging residue must be inspected before another staging attempt.'
+        }
+    }
+}
+
+function New-StagePayloadPlan {
+    param(
+        [Parameter(Mandatory)][string]$Target,
+        [Parameter(Mandatory)][string]$StageParent,
+        [Parameter(Mandatory)][string]$Role,
+        [Parameter(Mandatory)][string]$OperationId,
+        [string]$ForbiddenScanRoot,
+        [string[]]$ProtectedPaths = @()
+    )
+
+    $targetFull = [IO.Path]::GetFullPath($Target)
+    $parentFull = [IO.Path]::GetFullPath($StageParent)
+    $stageRoot = Join-Path $parentFull ('.spherewright-stage-' + $OperationId + '-' + $Role)
+    $payload = Join-Path $stageRoot 'payload'
+    $parentItem = Get-Item -LiteralPath $parentFull -Force -ErrorAction SilentlyContinue
+    if ($null -eq $parentItem -or -not $parentItem.PSIsContainer) {
+        throw 'Staging parent must already exist as a directory.'
+    }
+    if (-not [string]::Equals([IO.Path]::GetPathRoot($targetFull), [IO.Path]::GetPathRoot($stageRoot), [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Staging must be created on the same volume as its live target.'
+    }
+    if ($stageRoot.TrimEnd('\', '/') -eq [IO.Path]::GetPathRoot($stageRoot).TrimEnd('\', '/')) {
+        throw 'A staging directory cannot be a filesystem root.'
+    }
+    if (Test-Path -LiteralPath $stageRoot) { throw 'A unique staging directory already exists and must not be overwritten.' }
+    Assert-InstallDestinationAncestors -Destination $stageRoot
+    Assert-NoStageResidue -Parent $parentFull
+    foreach ($protected in $ProtectedPaths) {
+        if (Test-InstallPathOverlap -First $stageRoot -Second $protected) { throw 'Staging, package, and live target trees must not overlap.' }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($ForbiddenScanRoot) -and (Test-InstallPathOverlap -First $stageRoot -Second $ForbiddenScanRoot)) {
+        throw 'Plugin staging must remain outside the BepInEx/plugins recursive scan range.'
+    }
+    return [pscustomobject]@{ role=$Role; root=$stageRoot; payload=$payload; target=$targetFull }
+}
+
+function Copy-VerifiedPayloadToStage {
+    param(
+        [Parameter(Mandatory)][string]$SourceRoot,
+        [Parameter(Mandatory)][object]$Stage,
+        [Parameter(Mandatory)][Collections.Generic.Dictionary[string,string]]$ExpectedFiles
+    )
+
+    [void][IO.Directory]::CreateDirectory($Stage.payload)
+    $stageRootItem = Get-Item -LiteralPath $Stage.root -Force
+    if (($stageRootItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -or -not $stageRootItem.PSIsContainer) {
+        throw 'Staging root must remain a non-reparse directory.'
+    }
+    foreach ($relative in @($ExpectedFiles.Keys | Sort-Object)) {
+        $source = Join-Path $SourceRoot ($relative -replace '/', [IO.Path]::DirectorySeparatorChar)
+        $destination = Join-Path $Stage.payload ($relative -replace '/', [IO.Path]::DirectorySeparatorChar)
+        $destinationParent = [IO.Path]::GetDirectoryName($destination)
+        [void][IO.Directory]::CreateDirectory($destinationParent)
+        $parentItem = Get-Item -LiteralPath $destinationParent -Force
+        if (($parentItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -or -not $parentItem.PSIsContainer) {
+            throw 'Staging payload parent must remain a non-reparse directory.'
+        }
+        Copy-Item -LiteralPath $source -Destination $destination -Force -ErrorAction Stop
+    }
+    Assert-NoReparsePointBelow -Root $Stage.root
+    $children = @(Get-ChildItem -LiteralPath $Stage.root -Force)
+    if ($children.Count -ne 1 -or -not $children[0].PSIsContainer -or $children[0].Name -cne 'payload') {
+        throw 'Staging root contains an unapproved residual entry.'
+    }
+    Assert-ApprovedDestinationTree -Root $Stage.payload -ExpectedFiles $ExpectedFiles -RequireComplete
 }
 
 if (Get-Process -Name 'DSPGAME' -ErrorAction SilentlyContinue) {
@@ -276,6 +363,36 @@ if (-not (Test-Path -LiteralPath (Join-Path $mcpSource 'Spherewright.Mcp.exe') -
 }
 if ($PreflightOnly) {
     [pscustomobject]@{ version=$version; integrityVerified=$true; exactFileSet=$true; preflightOnly=$true; installed=$false; transactionalUpgrade=$false } | ConvertTo-Json
+    return
+}
+
+if ($StageOnly) {
+    # Stage payloads only.  These roots are deliberately outside the Plugin scan
+    # tree and outside both live targets; no live file, runtime descriptor, or
+    # runtime-handoff entry is copied, moved, removed, or renamed here.
+    $operationId = [guid]::NewGuid().ToString('N')
+    $pluginScanRoot = Join-Path $gameRoot 'BepInEx\plugins'
+    $pluginStageParent = Join-Path $gameRoot 'BepInEx'
+    $mcpStageParent = [IO.Path]::GetDirectoryName($resolvedMcpDestination)
+    if ([string]::IsNullOrWhiteSpace($mcpStageParent)) { throw 'MCP staging requires a concrete existing parent directory.' }
+    $protectedPaths = @($packageRoot, $pluginDestination, $resolvedMcpDestination)
+    $pluginStage = New-StagePayloadPlan -Target $pluginDestination -StageParent $pluginStageParent -Role 'plugin' -OperationId $operationId -ForbiddenScanRoot $pluginScanRoot -ProtectedPaths $protectedPaths
+    $mcpStage = New-StagePayloadPlan -Target $resolvedMcpDestination -StageParent $mcpStageParent -Role 'mcp' -OperationId $operationId -ForbiddenScanRoot $pluginScanRoot -ProtectedPaths ($protectedPaths + @($pluginStage.root))
+    if (Test-InstallPathOverlap -First $pluginStage.root -Second $mcpStage.root) { throw 'Plugin and MCP staging roots must be separate.' }
+    Copy-VerifiedPayloadToStage -SourceRoot $pluginSource -Stage $pluginStage -ExpectedFiles $pluginExpectedFiles
+    Copy-VerifiedPayloadToStage -SourceRoot $mcpSource -Stage $mcpStage -ExpectedFiles $mcpExpectedFiles
+    [pscustomobject]@{
+        version = $version
+        operationId = $operationId
+        pluginStagedTo = $pluginStage.payload
+        mcpStagedTo = $mcpStage.payload
+        integrityVerified = $true
+        exactFileSet = $true
+        installed = $false
+        staged = $true
+        liveTargetsUntouched = $true
+        transactionalUpgrade = $false
+    } | ConvertTo-Json -Depth 3
     return
 }
 

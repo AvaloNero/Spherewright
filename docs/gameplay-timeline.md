@@ -7,6 +7,10 @@
 
 用户在精确预检披露后确认恢复同一原档。一次正常恢复保存到 `73573852 / J91 / R1`，accepted `6→7`，原91条日记与唯一版本迁移记录保持；随后零写读取5155实体/52页、0预建筑及21个指定实体。两项未提交HPS输出附件仍须fresh完整预检，尚未把快照写成施工或持续产出。主证据仅记一份：[恢复核销](evidence/2026-09-26/same-primary-recovery.md)、[工厂快照与下一有限工序](evidence/2026-09-26/factory-reentry-audit.md)。
 
+### 2026-09-26 — 西侧 D.5/D.6 输出分拣器、normal save 与十写审计闭合
+
+在既验 `accepted7 / R1 / save73573852 / J91` 后，两个既定2011输出分拣器和一次 normal save 唯一完成，末 **R6 / save73728691 / J91 / accepted10**；本后缀玩家仅2011 **−2**，没有重放。Terra 的一次收集与 `accepted7→10` 静态比较、以及引用前七项独立proof的Sol累计`0→10`验收，均见 [阶段证据](evidence/2026-09-26/hps-output-save-audit.md)。accepted10继续冻结；不证明持续吞吐、燃料/电力、产率、重启或恢复。
+
 ### 2026-09-24 — 28529→29088 原档迁移与正常保存首次完成（窄范围）
 
 `f4fc8e5` / CI `35999471374` 绿后，最终同批 **228/228** 文件以 manifest **C012AC0986EC9414F1E375E24ED2978B07E04085DE3AFE45A2ABE5AD0BBD6E3F** 安装；当前 native 为 `0.10.35.29088`。Luna 一次启动后的 MCP 握手前缀为 `action-26a1f901e84c45458a92f4654bf9063f-`，核到 **64 tools / 1 resource** 和指南 **87939**。随后受保护恢复 action `4fd8050e-ada6-4cdd-a4bc-d4f25b5105b9` 在 `action-52082732b8fa47d59c76e19e0851d203-` 内 terminal 成功：原档 **73573789** 经正常保存到 **73573821**，current 为 **73573913 / R1**，accepted **5→6**。Journal 保持 **J91**、原有前91项完整保留，仅新增一条 `0.10.34.28529 → 0.10.35.29088` transition，owned 状态健康；没有额外 save、施工或重放。Sol 独立验收 proof 为 `action-a539c15b3aa444b3ab603bd24dfe5193-0001-expired-primary-reauthorization-sol-independent-acceptance.json`，SHA-256 **00C4589DB019500BB56D87FA6354AE47E722812C1CEA3761FD3C0D4675907F25**。

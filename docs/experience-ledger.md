@@ -16,6 +16,8 @@
 
 ## 当前经验
 
+- 2026-09-26：`descriptor.pluginVersion`只表示产品版本`0.4.0`，不能证明同一部署cohort；入口应将固定Plugin DLL hash/ProductVersion与bridge identity一并绑定。一次本地前置拒绝因此在任何bridge调用前发生，0游戏调用/0写，非native施工失败；实例见[输出分拣器审计](evidence/2026-09-26/hps-output-save-audit.md)。
+
 ### EXP-304 — 游戏升级需要同时验证原生格式与受保护来源版本
 
 - 窄 live 复核（2026-09-24）：`f4fc8e5` / CI `35999471374` 的最终228/228 cohort（manifest **C012AC0986EC9414F1E375E24ED2978B07E04085DE3AFE45A2ABE5AD0BBD6E3F**）在实际29088上完成一次受保护 `28529→29088` migration：原73573789经正常保存至73573821，current73573913/R1、accepted5→6；J91和原前91项保留，仅有一条版本transition，owned healthy，无额外save/施工/重放。Sol 独立验收 `action-a539c15b3aa444b3ab603bd24dfe5193-0001-expired-primary-reauthorization-sol-independent-acceptance.json`（SHA-256 **00C4589DB019500BB56D87FA6354AE47E722812C1CEA3761FD3C0D4675907F25**）核同一边界。经验只支持“运行时实际版本、protected来源与Journal transition必须一起核”；不推广到29057↔29088、第二次恢复、任意版本或生产/吞吐/持续燃料。

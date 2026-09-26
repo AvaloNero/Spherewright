@@ -49,4 +49,4 @@ Start from the current recovery gate and fresh audit, not from a historical cons
 
 - [Ordinary belt input proof](evidence/2026-09-26/belt-input-proof.md): code and offline tests complete, not cold-deployed.
 - [Installer integrity preflight](evidence/2026-09-26/install-preflight.md): 20 local synthetic cases pass; transactional replacement/rollback and final-package validation remain open.
-- Harvest approach watchdog work is separate and still under review. Unbounded action-history retention/per-frame scans remain an identified, unfixed issue. Neither blocks the already approved sorter-only batch; no game capability is expanded to work around them.
+- [Harvest approach watchdog](evidence/2026-09-26/harvest-approach.md): implementation, review and 2234 offline Release tests pass; not cold-deployed or live-validated. Unbounded action-history retention/per-frame scans remain an identified, unfixed issue. Neither blocks the already approved sorter-only batch; no game capability is expanded to work around them.

@@ -688,6 +688,15 @@ internal sealed partial class NormalGameActionCoordinator
                     ? EObjectType.Vein
                     : EObjectType.Vegetable;
                 var approach = CalculateMiningApproach(player.position, plan.TargetPosition);
+                action.HarvestApproach = approach;
+                action.HarvestApproachProgress = new HarvestApproachProgressWatchdog(
+                    GameMain.gameTick,
+                    player.position.x,
+                    player.position.y,
+                    player.position.z,
+                    approach.x,
+                    approach.y,
+                    approach.z);
                 action.PlayerOrder = OrderNode.MineTarget(
                     approach,
                     objectType,
@@ -960,8 +969,9 @@ internal sealed partial class NormalGameActionCoordinator
                 Kind = plan.ResourceKind,
                 NodeId = plan.ResourceNodeId,
             });
+        var nodeObserved = inspect.Success && inspect.Value is not null;
         var nodeRemoved = !inspect.Success && inspect.Error?.Code == BridgeErrorCodes.InvalidEntity;
-        var remaining = inspect.Success && inspect.Value is not null ? inspect.Value.RemainingAmount : 0;
+        var remaining = nodeObserved ? inspect.Value!.RemainingAmount : 0;
         var targetReduced = plan.ResourceRemaining - remaining;
         var completed = plan.ResourceKind == ResourceNodeKinds.Vegetation
             ? nodeRemoved
@@ -975,6 +985,7 @@ internal sealed partial class NormalGameActionCoordinator
             return;
         }
 
+        var wasPowerStarved = action.PowerStarvedAtGameTick.HasValue;
         if (FailPowerStarvedPlayerOrder(action, "mining"))
         {
             return;
@@ -984,7 +995,63 @@ internal sealed partial class NormalGameActionCoordinator
         {
             AbortPlayerOrderIfOwned(action);
             Fail(action, "The normal mining order did not produce the requested observed yield within the bounded game-tick window.");
+            return;
         }
+
+        if (action.PowerStarvedAtGameTick.HasValue)
+        {
+            return;
+        }
+
+        if (!action.HarvestApproach.HasValue)
+        {
+            AbortPlayerOrderIfOwned(action);
+            Fail(action, "The committed normal mining action did not retain its exact native approach point.");
+            return;
+        }
+
+        var player = GameMain.mainPlayer;
+        var approach = action.HarvestApproach.Value;
+        action.HarvestApproachProgress ??= new HarvestApproachProgressWatchdog(
+            action.StartedAtGameTick,
+            player.position.x,
+            player.position.y,
+            player.position.z,
+            approach.x,
+            approach.y,
+            approach.z);
+        if (wasPowerStarved)
+        {
+            action.HarvestApproachProgress.ResetWindow(
+                GameMain.gameTick,
+                player.position.x,
+                player.position.y,
+                player.position.z);
+        }
+
+        var progress = action.HarvestApproachProgress.Observe(
+            GameMain.gameTick,
+            player.position.x,
+            player.position.y,
+            player.position.z,
+            action.PlayerOrder?.targetReached ?? false,
+            yielded > 0,
+            nodeObserved && targetReduced > 0);
+        if (!action.HarvestApproachProgress.IsApproachMonitoringComplete
+            && progress.Status != MovementProgressStatus.Progressing)
+        {
+            AbortPlayerOrderIfOwned(action);
+            action.Stalled = true;
+            ApplyMovementFailureAdvice(action, MovementFailureRecoveryAdvisor.ForStall(progress));
+            var condition = progress.Status == MovementProgressStatus.PositionStalled
+                ? $"made less than {MovementProgressWatchdog.DefaultMinimumDisplacement:F2} metres of physical progress"
+                : $"did not reduce its best remaining distance by {MovementProgressWatchdog.DefaultMinimumTargetProgress:F2} metres";
+            Fail(action,
+                $"The normal mining approach order {condition} for {progress.StalledGameTicks} game ticks "
+                + $"while {progress.RemainingDistance:F2} metres remained; Spherewright stopped only its exact owned order before the global timeout or energy exhaustion.");
+            return;
+        }
+
     }
 
     private bool FailPowerStarvedPlayerOrder(ActionRecord action, string orderKind)
@@ -2187,6 +2254,8 @@ internal sealed partial class NormalGameActionCoordinator
         public OrderNode? PlayerOrder { get; set; }
         public long? PowerStarvedAtGameTick { get; set; }
         public MovementProgressWatchdog? MovementProgress { get; set; }
+        public Vector3? HarvestApproach { get; set; }
+        public HarvestApproachProgressWatchdog? HarvestApproachProgress { get; set; }
         public long FlightLastControlGameTick { get; set; }
         public double FlightBestDistance { get; set; }
         public long FlightBestDistanceAtGameTick { get; set; }

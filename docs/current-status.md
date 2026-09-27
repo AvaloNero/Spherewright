@@ -4,6 +4,8 @@
 
 ## Verified snapshot
 
+**Latest post-repair supply observations (2026-09-28):** four separate600tick windows show source silicon132/132/54/42 per minute; mother silicon consumption0/0/120/96, with HPS/microcrystal/processors genuinely producing in the last two. Station44 orders and stock progress, but these gapped windows do not prove continuous supply. Purple still lacks broadband in the final window; next is local2255/4743 diagnosis, not further source rebuilding. See [four-window evidence](evidence/2026-09-28/silicon-post-repair-supply-windows.md).
+
 **Latest saved silicon repair (2026-09-28):** parallel outlet181 completed at76285100; normal save76289117/R56 covers both upgrades174/179 and both additions180/181. One stage audit matches181 entities/328 reciprocal edges/zero prebuilds and original durableJ91; external accepted5 remains. This closes physical repair and normal save, not restart or sustained delivery. Next: actual silicon shipment and HPS/processor/purple supply windows. See [outlet/save audit](evidence/2026-09-28/silicon-parallel-outlet-save-audit.md).
 
 **Latest silicon outlet upgrade (2026-09-28):** existing179 normally upgraded2011→2012 at76274437 with immediate held cargo, filter1003 and both reciprocal endpoints preserved. Fast1→0/basic0→1; R53/accepted3/healthy, primary76164422 still predates all three repair actions. Next: parallel148→176, normal save, then actual supply windows. See [outlet upgrade evidence](evidence/2026-09-28/silicon-sorter179-native-upgrade.md).

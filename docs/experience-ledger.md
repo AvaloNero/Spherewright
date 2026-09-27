@@ -2,6 +2,8 @@
 
 更新时间：2026-09-28（Asia/Singapore）
 
+2026-09-28 / EXP-299调用方与交接复验（`validated`，本次私有入口）：PowerShell OrderedDictionary 的整数索引可能按位置而非物品键取值；材料表改为普通Hashtable，并离线核所有键/净量和真实File前置拒绝，再执行游戏动作。作者实际交付及零调用检查已明确、独立审核通过、root授权已直接到达执行者时，不再重复等待同内容交接；这不替代fresh prepare、唯一commit、同action终态和材料核对。有界只读准备无进展时先确认0调用/无在途任务，再复用既有审计客户端接手，不新造框架。见[本阶段证据](evidence/2026-09-28/silicon-upgrade-materials-save-audit.md)；入口数据结构、DTO或授权范围变化时重验。
+
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
 2026-09-28 / EXP-299输出与取证复验（`validated`，私有调用方）：Bridge保护回执脱敏不代表另外的stdout自动脱敏；整个flight action DTO仍可能含reload token，显示前必须复用既有redactor（IFX-181）。首个采集回执应在解释DTO前核实已落盘；摘要字段不得猜测，没有原回执的旧采集不作证据。本次一次有界只读重采成立，未重复飞行/保存；起飞可用能量不能替代落地fresh读回，实际核心15.53MJ。精确checkpoint在75920947持久退役已另核，未外推返航燃料或远端修复；[证据](evidence/2026-09-28/silicon-source-flight-arrival.md)。后续入口、DTO、脱敏字段或星球状态改变时重验。

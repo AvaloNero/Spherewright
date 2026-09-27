@@ -58,6 +58,8 @@
 
 ## 当前经验
 
+- 2026-09-27：EXP-001/307/308/313 的安装部分复验通过；`034300e` 完整构建、同批双预览包、真实目标预检和事务冷部署完成，228/228安装哈希一致，原票据/Journal/handoff未变。旧开发部署的三个PDB被正式包白名单正确拒绝后，仅将精确三文件按前后SHA匹配移入可恢复备份，再正常预检安装；不放宽白名单、不删除未知文件、不混入DLL或恢复数据。[部署证据](evidence/2026-09-27/fixed-autosave-cold-deployment.md)不证明Unity启动、实际恢复或实体持久性；EXP-002须待真实启动单独核销。
+
 - 2026-09-26：`descriptor.pluginVersion`只表示产品版本`0.4.0`，不能证明同一部署cohort；入口应将固定Plugin DLL hash/ProductVersion与bridge identity一并绑定。一次本地前置拒绝因此在任何bridge调用前发生，0游戏调用/0写，非native施工失败；实例见[输出分拣器审计](evidence/2026-09-26/hps-output-save-audit.md)。
 
 ### EXP-304 — 游戏升级需要同时验证原生格式与受保护来源版本

@@ -4,7 +4,9 @@
 
 ## Verified snapshot
 
-**Latest source slice (2026-09-27):** fixed AutoSave0 protected recovery is implemented, with original-primary overwrite-target proof, dedicated subsequent confirmation, durable consumption and no fallback. Full Release build and 2313 offline tests pass; MCP remains 64 tools/1 resource. Cold deployment, actual loading, entity5158 reconciliation and normal resave are not yet proved. See [source evidence](evidence/2026-09-27/fixed-autosave-recovery-source.md).
+**Latest installation (2026-09-27):** local dirty-preview cohort `034300e` is cold-deployed through the package installer; 228/228 installed payload hashes match. Protected credential/Journal/handoff hashes are unchanged. Three legacy PDBs were recoverably backed up, not deleted. No world load/resave or entity5158 persistence is proved by installation; see [deployment evidence](evidence/2026-09-27/fixed-autosave-cold-deployment.md).
+
+**Source checkpoint (2026-09-27):** fixed AutoSave0 protected recovery is implemented, with original-primary overwrite-target proof, dedicated subsequent confirmation, durable consumption and no fallback. Full Release build and 2313 offline tests pass; MCP remains 64 tools/1 resource. Its source-only tests do not prove loading, entity5158 reconciliation or normal resave; subsequent cold deployment is recorded above. See [source evidence](evidence/2026-09-27/fixed-autosave-recovery-source.md).
 
 **Latest re-entry (2026-09-27):** the subsequently authorized fixed-autosave inspection found AutoSave0 at tick75214675, with the same protected identity, native29088, stable double-read fingerprint and matching continuous Journal91. It covers the last observed75203871; entity5158 persistence is not yet proved. Primary73728691 and LastExit74238107 remain too old. DSP stays closed, the existing ticket is now expired, and no load or replay occurred. The next boundary is a supported explicit recovery of this fixed candidate, not more inspection permission; see [autosave evidence](evidence/2026-09-27/fixed-autosave-inspection.md) and [earlier reconciliation](evidence/2026-09-27/hps-first-infeed-reconciliation.md).
 

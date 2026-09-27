@@ -12,6 +12,12 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-181 — 私有飞行调用方把整个终态 DTO 写到未脱敏输出
+
+- 2026-09-28，`fixed_offline`（未来私有输出路径）：root编写、Sol审核的有限飞行入口直接序列化整个action result；该DTO含`flightCheckpointReloadToken`。保护Bridge回执已脱敏，但并不覆盖另一路stdout。没有把凭据写入本仓文档，旧原证据不改写。
+- 飞行/保存本身成功；独立精确记录证明检查点在75920947已retired，而非凭输出修正猜测安全。修正仅把私有结果显示接入既有`ConvertTo-EvidenceSafeValue`；合成敏感字段案例和无Execute导入前拒绝通过，零游戏调用。修正版未再执行航行，不能覆盖原执行版本或冒充新的live验证。
+- 复验触发：私有调用入口、DTO或敏感字段变化；审核须同时检查原始证据路径和展示路径。记录与剩余边界见[同次到达证据](evidence/2026-09-28/silicon-source-flight-arrival.md)。
+
 ## IFX-180 — 足够新的固定自动档缺少受保护恢复入口
 
 - 2026-09-27 实机补充，`fixed`（同版本29088固定AutoSave0窄范围）：披露后用户明确确认，唯一fresh恢复action成功并正常保存75214706；旧施工5158及双端连接、原J91/91和背包2012数量保留。没有切换其他档、重放施工或改旧凭据到期日。独立核验与未完成边界见[实机证据](evidence/2026-09-27/fixed-autosave-recovery-live.md)。不推广为任意自动档、版本迁移、跨电脑或后续恢复全部通过；下方离线阶段保留历史语义。

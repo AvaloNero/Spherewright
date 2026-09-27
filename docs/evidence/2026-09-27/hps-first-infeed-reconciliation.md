@@ -30,3 +30,15 @@ The latest recorded post-build session is `R8`, owned/healthy, with Journal91 du
 Do not load that older primary or replay sorter5158. Root has requested explicit authorization to inspect only the fixed LastExit candidate for the same owned identity and sufficient progress; no candidate has been read or approved here. The reason the game exited is not established. Recovery, persistence of5158, remaining attachments, normal save, full-stage audit and sustained HPS output remain open.
 
 Root reconciliation record: `action-dabf99f21259493bb5e44755a7c84605-0001-root-hps-first-infeed-unsaved-reconciliation.json`, SHA-256 `353CC7EE6283355302EE79DD4885EC0200642B4DCA63D5E016E093BBF67C96B6`.
+
+## Authorized fixed LastExit inspection
+
+On September27 the user explicitly allowed the fixed-slot read-only check and asked not to repeat this permission barrier for equivalent checks. This supersedes the pending-inspection boundary above, not the load/overwrite rules. AGENTS now records bounded inspection of protected metadata and fixed recovery candidates without arbitrary save enumeration.
+
+The offline inspection reused the existing `OwnedSaveRecoveryLease.Open`: bounded identity-prefix parsing, identity comparison before full-file hashing, 64MiB/2s limits and read-only file sharing. Two opens returned the same fingerprint. The candidate is the same protected identity, peaceful and native `0.10.35.29088`, at tick **74238107**. The ticket was unexpired at inspection. Its exact protected Journal matches identity/tracking/history/start tick, contains contiguous sequences1..91, and satisfies the ticket minimum91.
+
+This candidate is newer than primary73728691 but **956159 ticks before the accepted construction** (about4h25m36s of game time at60ticks/s), and also below the last observed75203871. Therefore neither known save covers the successful prefix. Journal continuity alone does not prove world persistence. No native load, save, Bridge call, ticket change, alternate-save scan or construction replay occurred. DSP remains closed; accepted1 stays recorded.
+
+The initial reflection invocation failed before opening the candidate because PowerShell wrapped a string as `PSObject`; direct typed invocation completed within the original read-only authorization. This is a local caller error, not a failed native recovery or reason for another permission prompt. The existing Release prefix/lease/recovery-policy regression run passed **74 tests**; that is offline evidence, not a successful game restore. A newer recovery point or an explicit informed rollback decision is still required before gameplay resumes.
+
+Protected inspection record: `action-2fa42d47bd6e4ed4ab558b1550c8da7c-0001-fixed-lastexit-readonly-20260927.json`, SHA-256 `D9860D7072255BBF93822A5B23D13FF7FA05515789512819CC9C31B9B0558B56`. Root independently read that receipt and verified its hash and tick/coverage conclusions. The stable lease fingerprint is a composite evidence hash, not a claim about entity contents or a substitute for post-load entity reconciliation.

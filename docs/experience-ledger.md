@@ -4,6 +4,10 @@
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
+## EXP-312 — 同档和连续 Journal 不代表保存覆盖最后施工
+
+- 2026-09-27，`validated`，最近复验同日；仅限固定恢复候选的离线只读核验。LastExit内嵌身份、当前版本及J91均匹配，文件证据稳定且比primary新，仍早于已成功accepted施工，必须按已知进度下界拒绝恢复；外部Journal不能替代世界保存证明。用户已授权的同类固定候选只读检查直接做，不重复索取检查许可；不扩展为其他存档扫描或载入确认。候选、身份、进度下界或票据变化时复验；关联EXP-305/IFX-172及[阶段补充证据](evidence/2026-09-27/hps-first-infeed-reconciliation.md#authorized-fixed-lastexit-inspection)。未加载，不声称实体已落盘。
+
 ## EXP-311 — 测试子进程的 null ExitCode 不能转换为成功
 
 - 2026-09-27，`validated`，最近复验同日；仅适用于 Windows PowerShell/pwsh 的本地安装测试执行器。重定向的`Start-Process`子进程若未先绑定Handle，Windows PowerShell可暴露null `ExitCode`；`[int]$null`会伪造成功`0`。测试须先取得自建子进程Handle、保留并拒绝null原值，再读取退出码；两种shell的自建`exit 0/7`均回读真实Int32，随后真实包四阶段均通过。进程包装、重定向或shell变化时复验；关联IFX-178及[包CLI证据](evidence/2026-09-27/install-package-cli.md)。这是测试执行器修正，不是产品安装器忽略`-Force`或真实安装结论。

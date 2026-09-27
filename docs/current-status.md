@@ -4,7 +4,7 @@
 
 ## Verified snapshot
 
-**Latest re-entry (2026-09-27):** one subsequent HPS infeed build was successfully accepted, but its persistence is not proved. DSP is now closed; primary save73728691 predates sorter5158 at75194266. The current audit window is accepted1 after an explicit prior seal. Do not load the old primary or replay the build. Fixed LastExit inspection awaits user authorization; see [reconciliation and observation correction](evidence/2026-09-27/hps-first-infeed-reconciliation.md).
+**Latest re-entry (2026-09-27):** the user-authorized fixed LastExit inspection proves the same protected identity at tick74238107, current native version and matching continuous Journal91, but this predates successful sorter5158 at75194266. DSP remains closed; primary73728691 is older still. Neither known candidate covers the accepted1 construction. Do not load either or replay the build. The blocker is now insufficient saved progress, not permission to inspect LastExit; see [reconciliation and recovery evidence](evidence/2026-09-27/hps-first-infeed-reconciliation.md).
 
 - Documentation/evidence baseline: `346087b6b07c1b65b2e5567f5d24c141f4c9b739` (`2026-09-24T20:46:31+08:00`).
 - Last recorded installed cohort: `f4fc8e5`; its native DSP version was `0.10.35.29088`.

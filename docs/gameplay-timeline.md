@@ -3,6 +3,10 @@
 更新时间：2026-09-27（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-27 — 固定 LastExit 只读检查完成，保存点不足
+
+用户明确允许检查，并要求后续同类只读恢复核验不重复询问。LastExit身份/版本和J91匹配，但tick74238107早于5158成功施工；没有加载、覆盖或重放，accepted1不变。阻塞已从检查许可转为缺少覆盖已成功进度的保存点，详见[同一阶段证据补充](evidence/2026-09-27/hps-first-infeed-reconciliation.md#authorized-fixed-lastexit-inspection)。
+
 ### 2026-09-27 — 首个硅矿送料接口核销，退出后的持久化待证
 
 原回执证明5158正常建成、双端互返，2012仅减1；新审计窗accepted1。误把已建分拣器的槽位预览缺失当连接失败已纠正。游戏目前关闭，最后主档73728691早于本次成功施工75194266；不加载旧点、不重放，已请求仅检查固定LastExit的明确授权。另两接口、保存和持续产量未完成。详见[唯一阶段证据](evidence/2026-09-27/hps-first-infeed-reconciliation.md)。

@@ -4,6 +4,10 @@
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
+## EXP-314 — 恢复须同时证明加载源和后续正常保存目标
+
+- 2026-09-27，`validated`（源码/离线合成），最近复验同日。固定自动档的同身份/较新 tick 只证明加载候选，不能把 unreadable/null 主档当作可覆盖目标。新增 AutoSave0 模式另核原主档完整 identity/version/和平、精确 ticket tick 和文件指纹；prepare/commit 绑定两者，双租约保留至采用及 Journal 确认，之后才普通保存。缺失、损坏、拒读、异身份或 prepare 后漂移均零加载/零消费拒绝；linked 实际 coordinator/store 的测试加载入口同时证明主档不可写。真实 Unity、锁释放到正常保存间的跨进程原子性及最终实体持久性不在合成证明内。恢复源/目标、租约生命周期、版本或正常保存实现变化时复验。关联 IFX-180 和[证据](evidence/2026-09-27/fixed-autosave-recovery-source.md)。
+
 ## EXP-313 — 恢复目录的长度也属于安装安全预算
 
 - 2026-09-27 补充，`validated`（源码/离线），最近复验同日：共享路径预算现于预检、事务及恢复首次状态写前拒绝超限；两 shell 各通过 transaction 13 组/82 faults、recovery 3 组/2 child interruptions、preflight 56 cases/0 game calls，并核超限拒绝未改变 fixture/main/marker。覆盖整套未来证据路径，不靠缩短 fixture 代替产品保护。[验证范围](evidence/2026-09-27/install-path-budget.md)仅限源脚本及合成树；既有 ZIP 不变，新包与实机仍待。下列原始失败推断及证据限制保留。

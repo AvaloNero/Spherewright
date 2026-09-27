@@ -12,6 +12,10 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-180 — 足够新的固定自动档缺少受保护恢复入口
+
+- 2026-09-27，`fixed_offline_live_pending`。原 primary/LastExit 均早于最后施工，固定 AutoSave0 只读证据却覆盖该进度；原三个恢复模式不能安全选择它，且旧票据已经过期。用户授权后新增同版本、固定 AutoSave0 的专用过期凭据重新授权模式，不开放任意选档。审核中补齐原主档覆盖目标的 identity/tick/完整文件证据与读取租约，未知或变化主档不得在恢复后被正常保存覆盖。[源码与测试边界](evidence/2026-09-27/fixed-autosave-recovery-source.md)。实际加载、实体持久性和正常保存恢复仍待；关联 EXP-314。
+
 ## IFX-179 — 安装成功路径未提前覆盖深层恢复证据路径限制
 
 - 2026-09-27 补充，`fixed_offline`：共享纯路径预算覆盖 live、stage/archive、原件备份、失败载荷、逐次 recovery 和 metadata isolation；文件 259/目录 247 UTF-16 code units 的保守兼容上限在预检、事务和恢复首次状态写前核验。两种 PowerShell 各通过 transaction 13 组/82 faults、recovery 3 组/2 次测试子进程中断、preflight 56 cases/0 game calls；超限场景核验 fixture/main/marker 不变，Sol 独立审核无 blocker。见[源码验证](evidence/2026-09-27/install-path-budget.md)。不追认旧 ZIP 含修复，不证明新包或真实安装/Unity；下列原始发现保留。

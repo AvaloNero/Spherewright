@@ -31,6 +31,7 @@ internal sealed class GameSessionTracker : IDisposable
     private OwnedWorldResumeTicket? _expectedResumeTicket;
     private OwnedWorldResumeTicket? _pendingJournalResumeTicket;
     private OwnedSaveRecoveryLease? _resumeSourceLease;
+    private OwnedSaveRecoveryLease? _resumePrimaryLease;
     private IDisposable? _reauthorizationJournalLease;
     private DateTimeOffset _resumeSourceLeaseAcquiredAtUtc;
     private string? _resumeAdoptionError;
@@ -926,7 +927,8 @@ internal sealed class GameSessionTracker : IDisposable
     }
 
     public void ExpectNextSessionToBeResumed(OwnedWorldResumeTicket ticket, OwnedSaveRecoveryLease? sourceLease = null,
-        bool reauthorizingExpiredPrimary = false, IDisposable? journalLease = null)
+        bool reauthorizingExpiredPrimary = false, IDisposable? journalLease = null,
+        bool reauthorizingFixedAutosave0 = false, OwnedSaveRecoveryLease? primaryLease = null)
     {
         if (ticket is null)
         {
@@ -943,8 +945,17 @@ internal sealed class GameSessionTracker : IDisposable
             throw new InvalidOperationException("An owned world can only be resumed from an idle main menu.");
         }
 
+        if (reauthorizingFixedAutosave0 && (!reauthorizingExpiredPrimary || primaryLease is null))
+            throw new InvalidOperationException("Fixed AutoSave0 recovery requires expired provenance and subsequent confirmation.");
+        if (!reauthorizingFixedAutosave0 && primaryLease is not null)
+            throw new InvalidOperationException("A primary overwrite-target lease belongs only to fixed AutoSave0 recovery.");
         if (reauthorizingExpiredPrimary && (sourceLease is null || journalLease is null))
-            throw new InvalidOperationException("Expired-primary reauthorization requires a verified exact-primary lease.");
+            throw new InvalidOperationException("Expired-provenance reauthorization requires verified source and original-Journal leases.");
+        if (reauthorizingFixedAutosave0 && (ticket.GameVersion != _gameVersion
+            || sourceLease!.Prefix.GameVersion != _gameVersion || !sourceLease.Prefix.Peaceful
+            || !primaryLease!.Prefix.MatchesExpectedIdentity || !primaryLease.Prefix.Peaceful
+            || primaryLease.Prefix.GameVersion != _gameVersion || primaryLease.Prefix.GameTick != ticket.MinimumGameTick))
+            throw new InvalidOperationException("Fixed AutoSave0 must preserve the current native version and peaceful world.");
         if (reauthorizingExpiredPrimary
             ? !OwnedWorldVersionCompatibilityPolicy.AllowsReauthorization(ticket.GameVersion, _gameVersion)
             : ticket.GameVersion != _gameVersion)
@@ -953,11 +964,12 @@ internal sealed class GameSessionTracker : IDisposable
             || !string.IsNullOrWhiteSpace(ticket.QuarantineActionId)
             || !sourceLease.Prefix.MatchesExpectedIdentity
             || !OwnedWorldReauthorizationPolicy.AllowsLeaseTick(sourceLease.Prefix.GameTick,
-                ticket.MinimumGameTick, reauthorizingExpiredPrimary)))
+                ticket.MinimumGameTick, reauthorizingExpiredPrimary, reauthorizingFixedAutosave0)))
             throw new InvalidOperationException("Verified recovery requires its mode-specific tick and a healthy Journal-bearing ticket.");
 
         _expectedResumeTicket = ticket;
         _resumeSourceLease = sourceLease;
+        _resumePrimaryLease = primaryLease;
         _reauthorizationJournalLease = journalLease;
         _resumeSourceLeaseAcquiredAtUtc = DateTimeOffset.UtcNow;
         _ownedSaveState = OwnedSaveStates.WaitingForWorld;
@@ -983,7 +995,12 @@ internal sealed class GameSessionTracker : IDisposable
         {
             _resumeSourceLease = null;
             try { _reauthorizationJournalLease?.Dispose(); }
-            finally { _reauthorizationJournalLease = null; }
+            finally
+            {
+                _reauthorizationJournalLease = null;
+                try { _resumePrimaryLease?.Dispose(); }
+                finally { _resumePrimaryLease = null; }
+            }
         }
     }
 

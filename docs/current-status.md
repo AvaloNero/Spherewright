@@ -4,6 +4,8 @@
 
 ## Verified snapshot
 
+**Latest source slice (2026-09-27):** fixed AutoSave0 protected recovery is implemented, with original-primary overwrite-target proof, dedicated subsequent confirmation, durable consumption and no fallback. Full Release build and 2313 offline tests pass; MCP remains 64 tools/1 resource. Cold deployment, actual loading, entity5158 reconciliation and normal resave are not yet proved. See [source evidence](evidence/2026-09-27/fixed-autosave-recovery-source.md).
+
 **Latest re-entry (2026-09-27):** the subsequently authorized fixed-autosave inspection found AutoSave0 at tick75214675, with the same protected identity, native29088, stable double-read fingerprint and matching continuous Journal91. It covers the last observed75203871; entity5158 persistence is not yet proved. Primary73728691 and LastExit74238107 remain too old. DSP stays closed, the existing ticket is now expired, and no load or replay occurred. The next boundary is a supported explicit recovery of this fixed candidate, not more inspection permission; see [autosave evidence](evidence/2026-09-27/fixed-autosave-inspection.md) and [earlier reconciliation](evidence/2026-09-27/hps-first-infeed-reconciliation.md).
 
 - Documentation/evidence baseline: `346087b6b07c1b65b2e5567f5d24c141f4c9b739` (`2026-09-24T20:46:31+08:00`).

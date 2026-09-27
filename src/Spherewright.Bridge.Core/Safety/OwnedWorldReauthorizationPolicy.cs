@@ -25,8 +25,11 @@ public static class OwnedWorldReauthorizationPolicy
             ? "Reauthorization requires the exact saved tick, complete owned identity, recorded source version and peaceful primary."
             : null;
 
-    public static bool AllowsLeaseTick(long candidate, long minimum, bool reauthorizing) =>
-        reauthorizing ? candidate == minimum : candidate > minimum;
+    public static bool AllowsLeaseTick(long candidate, long minimum, bool reauthorizing,
+        bool reauthorizingAutosave0 = false) =>
+        reauthorizingAutosave0
+            ? reauthorizing && candidate > minimum
+            : reauthorizing ? candidate == minimum : candidate > minimum;
 
     public static bool HasMatchingEcho(PreparedOwnedWorldResumePlan plan) =>
         plan.Prepared && plan.RecoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredPrimary

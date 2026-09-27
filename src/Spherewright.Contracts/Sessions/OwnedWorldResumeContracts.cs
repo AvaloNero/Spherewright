@@ -5,6 +5,7 @@ public static class OwnedWorldResumeModes
     public const string Default = "default";
     public const string VerifiedNewerLastExit = "verified_newer_lastexit";
     public const string ReauthorizeExpiredPrimary = "reauthorize_expired_primary";
+    public const string ReauthorizeExpiredAutosave0 = "reauthorize_expired_autosave0";
 }
 
 public sealed class PrepareOwnedWorldResumeRequest

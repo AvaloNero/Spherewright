@@ -10,6 +10,8 @@ public static class OwnedWorldRecoveryPolicy
 
     public static string? ValidateRequest(PrepareOwnedWorldResumeRequest request)
     {
+        if (request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredAutosave0)
+            return OwnedWorldAutosaveRecoveryPolicy.ValidateRequest(request);
         if (request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredPrimary)
             return request.UserConfirmedInConversation || request.MinimumRecoveryGameTick.HasValue
                 || request.ExpectedRecoveryGameTick.HasValue

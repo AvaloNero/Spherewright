@@ -1392,10 +1392,10 @@ public static partial class SpherewrightTools
         IBridgeClient bridgeClient,
         string resumeToken,
         CancellationToken cancellationToken = default,
-[Description("default, verified_newer_lastexit, or reauthorize_expired_primary. The last mode previews the exact expired primary and original Journal, discloses sourceGameVersion/targetGameVersion and requires conversation confirmation at commit. Only the researched direct migrations from 0.10.34.28529 to 0.10.35.29057 or 0.10.35.29088 are supported; migration between those two targets is not supported; unknown pairs and downgrades reject. Journal origin/history remain intact with a durable transition. Never renew/edit an expired ticket.")] string recoveryMode = OwnedWorldResumeModes.Default,
+[Description("default, verified_newer_lastexit, reauthorize_expired_primary, or reauthorize_expired_autosave0. The expired-primary mode previews the exact expired primary and original Journal, discloses sourceGameVersion/targetGameVersion and requires conversation confirmation at commit. The AutoSave0 mode is a separate exact fixed-slot path: prepare requires a known floor and exact approved candidate tick, has evidence version 3, forbids prepare confirmation, and requires the same supported source/runtime/candidate version; no migration is available. Expired-primary supports only the researched direct migrations from 0.10.34.28529 to 0.10.35.29057 or 0.10.35.29088; migration between those two targets is not supported; unknown pairs and downgrades reject. Journal origin/history remain intact with a durable transition. Never renew/edit an expired ticket.")] string recoveryMode = OwnedWorldResumeModes.Default,
         [Description("Caller attests to actual explicit user confirmation in the conversation; never infer it.")] bool userConfirmedInConversation = false,
         [Description("Known latest progress that must not be rolled back; required only for verified recovery.")] long? minimumRecoveryGameTick = null,
-        [Description("Exact user-approved newer fixed LastExit candidate tick; required only for verified recovery.")] long? expectedRecoveryGameTick = null)
+        [Description("Exact user-approved newer fixed LastExit or fixed AutoSave0 candidate tick; required for verified_newer_lastexit and reauthorize_expired_autosave0.")] long? expectedRecoveryGameTick = null)
     {
         var request = new PrepareOwnedWorldResumeRequest
         {
@@ -1422,6 +1422,12 @@ public static partial class SpherewrightTools
                 BridgeErrorCodes.BridgeNotReady,
                 "The Plugin did not echo the exact expired-primary disclosure and confirmation binding; no token is exposed.",
                 false, "Use a matching cohort. Do not commit another mode or fabricate confirmation."));
+        if (recoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredAutosave0 && result.Success
+            && (result.Value is null || !OwnedWorldAutosaveRecoveryPolicy.HasMatchingEcho(request, result.Value)))
+            result = BridgeCallResult<PreparedOwnedWorldResumePlan>.Failed(BridgeError.Create(
+                BridgeErrorCodes.BridgeNotReady,
+                "The Plugin did not echo the exact expired-AutoSave0 disclosure, identity, candidate tick and same-version binding; no token is exposed.",
+                false, "Use a matching cohort. Do not commit another mode or fabricate confirmation."));
         return ToToolResult(result, "One-time exact owned-world resume plan prepared; no save was loaded or enumerated.");
     }
 
@@ -1432,13 +1438,13 @@ public static partial class SpherewrightTools
         Destructive = true,
         Idempotent = true,
         OpenWorld = false)]
-    [Description("Default healthy planned restarts load only the exact ticket-bound primary through DSPGame.StartGame. Real quarantine may load a qualifying fixed LastExit. An explicitly confirmed verified_newer_lastexit plan instead rechecks its exact candidate tick, identity and full-file evidence and holds a read-only file lease through adoption; drift rejects without fallback. All paths revalidate native menu readiness and durable Journal before loading; adoption must prove embedded owned identity, planet, peaceful state and Journal continuity before primary resave. Sandbox/resource multiplier are evidence, not gates. Poll the unique action to terminal, then fresh-read gameLoaded=true, owned/saved/healthy state, save tick and durable Journal; reconcile successful unsaved work, never replay it. Never replay an accepted resume or choose another save to satisfy a mistaken readiness wait.")]
+    [Description("Default healthy planned restarts load only the exact ticket-bound primary through DSPGame.StartGame. Real quarantine may load a qualifying fixed LastExit. An explicitly confirmed verified_newer_lastexit plan instead rechecks its exact candidate tick, identity and full-file evidence and holds a read-only file lease through adoption; drift rejects without fallback. An explicitly confirmed reauthorize_expired_autosave0 plan can load only DSP's fixed AutoSave0 after rechecking evidence version 3, exact newer tick, identity, peaceful state, durable Journal and same supported source/runtime/candidate version; it never selects another autosave or migrates a version. All paths revalidate native menu readiness and durable Journal before loading; adoption must prove embedded owned identity, planet, peaceful state and Journal continuity before primary resave. Sandbox/resource multiplier are evidence, not gates. Poll the unique action to terminal, then fresh-read gameLoaded=true, owned/saved/healthy state, save tick and durable Journal; reconcile successful unsaved work, never replay it. Never replay an accepted resume or choose another save to satisfy a mistaken readiness wait.")]
     public static async Task<CallToolResult> CommitOwnedWorldResumeAsync(
         IBridgeClient bridgeClient,
         string planToken,
         string idempotencyKey,
         CancellationToken cancellationToken = default,
-        [Description("Only for reauthorize_expired_primary: true after the user explicitly confirms this prepared disclosure in conversation, never inferred from a prior request to develop recovery.")] bool userConfirmedInConversation = false,
+        [Description("Only for reauthorize_expired_primary or reauthorize_expired_autosave0: true after the user explicitly confirms this prepared disclosure in conversation, never inferred from a prior request to develop recovery.")] bool userConfirmedInConversation = false,
         [Description("Echo this exact plan's confirmationDigest after subsequent consent. This is an Agent protocol echo, not a code the user must type. Empty for other modes.")] string confirmationDigest = "")
     {
         var result = await bridgeClient.CommitOwnedWorldResumeAsync(

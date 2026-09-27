@@ -243,6 +243,18 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("Default healthy planned restarts load only the exact ticket-bound primary", commitDescription);
         Assert.Contains("Real quarantine", commitDescription);
         Assert.Contains("verified_newer_lastexit", commitDescription);
+        Assert.Contains("reauthorize_expired_autosave0", commitDescription);
+        Assert.Contains("reauthorize_expired_autosave0", guide);
+        Assert.Contains("recoveryEvidenceVersion=3", guide);
+        var prepare = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareOwnedWorldResumeAsync))!;
+        var expectedTick = prepare.GetParameters().Single(parameter => parameter.Name == "expectedRecoveryGameTick");
+        var expectedTickDescription = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(
+            expectedTick, typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        Assert.Contains("fixed AutoSave0", expectedTickDescription);
+        var confirmation = commit.GetParameters().Single(parameter => parameter.Name == "userConfirmedInConversation");
+        var confirmationDescription = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(
+            confirmation, typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        Assert.Contains("reauthorize_expired_autosave0", confirmationDescription);
     }
 
     [Theory]
@@ -325,6 +337,76 @@ public sealed class SpherewrightToolsTests
 
         Assert.True(result.IsError);
         Assert.DoesNotContain("planToken", result.StructuredContent!.Value.GetRawText());
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ExpiredAutoSave0RequiresTheExactV3PluginDisclosureBeforeExposingPlan(bool validEcho)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            ResumePlan = validEcho ? new PreparedOwnedWorldResumePlan
+            {
+                Prepared = true, PlanToken = "autosave0-plan",
+                RecoveryMode = OwnedWorldResumeModes.ReauthorizeExpiredAutosave0,
+                RecoveryEvidenceVersion = 3, CandidateGameTick = 12345, MinimumGameTick = 12345,
+                ExactEmbeddedIdentityVerified = true, UserConfirmationRequired = true, CommitAllowedNow = false,
+                ConfirmationPrompt = Spherewright.Bridge.Core.Safety.OwnedWorldAutosaveRecoveryPolicy.ConfirmationPrompt,
+                ConfirmationDigest = "synthetic-autosave0-disclosure-digest",
+                SourceGameVersion = "0.10.35.29088", TargetGameVersion = "0.10.35.29088",
+            } : null,
+        };
+
+        var result = await SpherewrightTools.PrepareOwnedWorldResumeAsync(bridge, "expired-provenance",
+            recoveryMode: OwnedWorldResumeModes.ReauthorizeExpiredAutosave0,
+            minimumRecoveryGameTick: 12000, expectedRecoveryGameTick: 12345);
+
+        Assert.Equal(!validEcho, result.IsError);
+        Assert.False(bridge.LastResumePrepareRequest!.UserConfirmedInConversation);
+        Assert.Equal(12000, bridge.LastResumePrepareRequest.MinimumRecoveryGameTick);
+        Assert.Equal(12345, bridge.LastResumePrepareRequest.ExpectedRecoveryGameTick);
+        if (!validEcho) Assert.DoesNotContain("planToken", result.StructuredContent!.Value.GetRawText());
+    }
+
+    [Fact]
+    public async Task ExpiredAutoSave0DoesNotAcceptAnOldPluginOrAnotherRecoveryModeEcho()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            ResumePlan = new PreparedOwnedWorldResumePlan
+            {
+                Prepared = true, PlanToken = "old-plan",
+                RecoveryMode = OwnedWorldResumeModes.ReauthorizeExpiredPrimary,
+                RecoveryEvidenceVersion = 2, CandidateGameTick = 12345, MinimumGameTick = 12345,
+                ExactEmbeddedIdentityVerified = true, UserConfirmationRequired = true, CommitAllowedNow = false,
+                ConfirmationPrompt = Spherewright.Bridge.Core.Safety.OwnedWorldReauthorizationPolicy.ConfirmationPrompt,
+                ConfirmationDigest = "synthetic-disclosure-digest",
+                SourceGameVersion = "0.10.35.29088", TargetGameVersion = "0.10.35.29088",
+            },
+        };
+
+        var result = await SpherewrightTools.PrepareOwnedWorldResumeAsync(bridge, "expired-provenance",
+            recoveryMode: OwnedWorldResumeModes.ReauthorizeExpiredAutosave0,
+            minimumRecoveryGameTick: 12000, expectedRecoveryGameTick: 12345);
+
+        Assert.True(result.IsError);
+        Assert.DoesNotContain("planToken", result.StructuredContent!.Value.GetRawText());
+    }
+
+    [Theory]
+    [InlineData(true, 12000, 12345)]
+    [InlineData(false, -1, 12345)]
+    [InlineData(false, 12346, 12345)]
+    public async Task InvalidExpiredAutoSave0PrepareNeverReachesBridge(bool confirmed, long minimum, long expected)
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareOwnedWorldResumeAsync(bridge, "expired-provenance",
+            recoveryMode: OwnedWorldResumeModes.ReauthorizeExpiredAutosave0,
+            userConfirmedInConversation: confirmed, minimumRecoveryGameTick: minimum, expectedRecoveryGameTick: expected);
+
+        Assert.True(result.IsError);
+        Assert.Null(bridge.LastResumePrepareRequest);
     }
 
     [Fact]

@@ -19,6 +19,12 @@ Show the returned candidate tick and `confirmationPrompt`, then wait for a **sub
 
 The Plugin rechecks provenance, original Journal, menu revision and the complete primary, holds read-only file leases through adoption, and persists an attempt record and consumed tombstone before native loading. Interrupted/failed attempts require manual reconciliation; no automatic retry or continuation of a pending attempt is implemented. After success, poll the unique action to terminal and verify same identity, saved/healthy status and Journal continuity. The action includes normal primary resave before success and a fresh restart ticket; preserve the accepted-write audit budget and never replay earlier construction. Offline tests are not live recovery evidence.
 
+## Expired fixed AutoSave0 credential
+
+`reauthorize_expired_autosave0` is a separate, explicitly advertised recovery path for DSP's **fixed AutoSave0 slot only**. Prepare it with no confirmation flag, the known progress floor, and the exact user-approved AutoSave0 candidate tick. It rejects LastExit, the primary as a load source, every other autosave, arbitrary names, a candidate at or below the ticket floor, a missing/changed original primary, and any version migration. The original primary must still prove the same owned identity at exactly the ticket floor; both complete files are held read-only and fully fingerprinted through adoption. Require `recoveryEvidenceVersion=3`, `prepared=true`, matching embedded identity, `candidateGameTick=minimumGameTick=expectedRecoveryGameTick`, `userConfirmationRequired=true`, `commitAllowedNow=false`, a nonempty digest, the dedicated AutoSave0 prompt, and identical supported source/target native versions. An older Plugin echo exposes no plan.
+
+Show the dedicated prompt and wait for a **subsequent explicit user reply** before committing with the exact digest. The Plugin rechecks the exact candidate, full-file evidence, Journal checkpoint, menu readiness, candidate freshness and same-version binding while holding its read-only lease through adoption. It consumes the expired credential before native loading; interruption or failure requires manual reconciliation, never automatic retry or another autosave. After terminal success, fresh-read the resaved owned primary and durable Journal. Offline tests are not live recovery evidence.
+
 ## Commit discipline
 
 1. Fresh-read the session and player before prepare. Use the current session, planet, revision, and player state hash.

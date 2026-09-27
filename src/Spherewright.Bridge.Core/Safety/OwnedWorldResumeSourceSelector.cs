@@ -5,6 +5,7 @@ public enum OwnedWorldResumeSourceKind
     None = 0,
     LastExit = 1,
     OwnedPrimary = 2,
+    FixedAutoSave0 = 3,
 }
 
 public static class OwnedWorldResumeSourceSelector

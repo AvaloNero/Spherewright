@@ -54,6 +54,165 @@ function New-SpherewrightInstallExpectedMap {
     return $result
 }
 
+function Assert-SpherewrightInstallPathBudget {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$PluginStageParent,
+        [Parameter(Mandatory)][string]$McpStageParent,
+        [Parameter(Mandatory)][string]$PluginDestination,
+        [Parameter(Mandatory)][string]$McpDestination,
+        [Parameter(Mandatory)][object]$PluginExpectedFiles,
+        [Parameter(Mandatory)][object]$McpExpectedFiles
+    )
+
+    # Windows MAX_PATH includes the terminating NUL and directory operations
+    # reserve room for legacy 8.3 expansion.  Keep this installer below the
+    # conservative 259-file/247-directory UTF-16 budgets on every supported
+    # shell instead of relying on an extended-path opt-in:
+    # https://learn.microsoft.com/windows/win32/fileio/maximum-file-path-limitation
+    $maximumFileLength = 259
+    $maximumDirectoryLength = 247
+    $operationId = '0' * 32
+    $attemptId = '0' * 32
+    $mainPluginFile = $script:SpherewrightInstallTransactionMainPluginFile
+    $pluginExpected = New-SpherewrightInstallExpectedMap $PluginExpectedFiles
+    $mcpExpected = New-SpherewrightInstallExpectedMap $McpExpectedFiles
+    $seenDirectories = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    $seenFiles = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+
+    function Join-SpherewrightInstallBudgetPath {
+        param([Parameter(Mandatory)][string]$Root, [Parameter(Mandatory)][string]$Child)
+
+        # Do not use Join-Path for a prospective over-budget candidate: on
+        # Windows PowerShell it can throw PathTooLong before this guard can
+        # return the actionable shorten-target diagnostic.
+        return ($Root.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) +
+            [IO.Path]::DirectorySeparatorChar +
+            $Child.TrimStart([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar))
+    }
+
+    function Assert-SpherewrightInstallBudgetDirectory {
+        param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$Context)
+
+        $current = $Path
+        while ($true) {
+            if ($seenDirectories.Add($current) -and $current.Length -gt $maximumDirectoryLength) {
+                throw "Spherewright install path budget exceeds $maximumDirectoryLength UTF-16 characters for directory $Context ($($current.Length)): $current. Shorten the installation target."
+            }
+            $root = [IO.Path]::GetPathRoot($current)
+            if ([string]::IsNullOrWhiteSpace($root)) { throw "Path has no filesystem root while budgeting ${Context}: $current" }
+            if ([string]::Equals($current.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar), $root.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar), [StringComparison]::OrdinalIgnoreCase)) {
+                break
+            }
+            $parent = [IO.Path]::GetDirectoryName($current)
+            if ([string]::IsNullOrWhiteSpace($parent) -or [string]::Equals($parent, $current, [StringComparison]::OrdinalIgnoreCase)) {
+                throw "Directory path has no parent while budgeting ${Context}: $current"
+            }
+            $current = $parent
+        }
+    }
+
+    function Assert-SpherewrightInstallBudgetFile {
+        param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$Context)
+
+        $full = $Path
+        if ($seenFiles.Add($full) -and $full.Length -gt $maximumFileLength) {
+            throw "Spherewright install path budget exceeds $maximumFileLength UTF-16 characters for file $Context ($($full.Length)): $full. Shorten the installation target."
+        }
+        $parent = [IO.Path]::GetDirectoryName($full)
+        if ([string]::IsNullOrWhiteSpace($parent)) { throw "File path has no parent while budgeting ${Context}: $full" }
+        Assert-SpherewrightInstallBudgetDirectory -Path $parent -Context "$Context parent"
+    }
+
+    function Assert-SpherewrightInstallBudgetPayload {
+        param(
+            [Parameter(Mandatory)][string]$Root,
+            [Parameter(Mandatory)][Collections.Generic.Dictionary[string,string]]$ExpectedFiles,
+            [Parameter(Mandatory)][string]$Context,
+            [switch]$ExcludeMainPluginFile
+        )
+
+        Assert-SpherewrightInstallBudgetDirectory -Path $Root -Context $Context
+        foreach ($relative in @($ExpectedFiles.Keys | Sort-Object)) {
+            if ($ExcludeMainPluginFile -and $relative -ceq $mainPluginFile) { continue }
+            $candidate = Join-SpherewrightInstallBudgetPath -Root $Root -Child ($relative -replace '/', [IO.Path]::DirectorySeparatorChar)
+            Assert-SpherewrightInstallBudgetFile -Path $candidate -Context "$Context/$relative"
+        }
+    }
+
+    function Assert-SpherewrightInstallBudgetTransactionLayout {
+        param(
+            [Parameter(Mandatory)][string]$Root,
+            [Parameter(Mandatory)][ValidateSet('plugin','mcp')][string]$Role,
+            [Parameter(Mandatory)][Collections.Generic.Dictionary[string,string]]$ExpectedFiles,
+            [Parameter(Mandatory)][string]$Context
+        )
+
+        $transaction = Join-SpherewrightInstallBudgetPath -Root $Root -Child 'transaction'
+        Assert-SpherewrightInstallBudgetDirectory -Path $transaction -Context "$Context transaction"
+        Assert-SpherewrightInstallBudgetFile -Path (Join-SpherewrightInstallBudgetPath -Root $transaction -Child 'progress.json') -Context "$Context progress"
+        Assert-SpherewrightInstallBudgetPayload -Root (Join-SpherewrightInstallBudgetPath -Root $transaction -Child 'old-payload') -ExpectedFiles $ExpectedFiles -Context "$Context old-payload"
+
+        if ($Role -ceq 'plugin') {
+            Assert-SpherewrightInstallBudgetFile -Path (Join-SpherewrightInstallBudgetPath -Root $transaction -Child 'prior-main.dll') -Context "$Context prior-main"
+            $failedNew = Join-SpherewrightInstallBudgetPath -Root $transaction -Child 'failed-new'
+            Assert-SpherewrightInstallBudgetPayload -Root $failedNew -ExpectedFiles $ExpectedFiles -Context "$Context failed-new"
+            Assert-SpherewrightInstallBudgetFile -Path (Join-SpherewrightInstallBudgetPath -Root $failedNew -Child 'unresolved-live-main.dll') -Context "$Context failed-new unresolved main"
+        } else {
+            Assert-SpherewrightInstallBudgetPayload -Root (Join-SpherewrightInstallBudgetPath -Root $transaction -Child 'prior-live') -ExpectedFiles $ExpectedFiles -Context "$Context prior-live"
+            Assert-SpherewrightInstallBudgetPayload -Root (Join-SpherewrightInstallBudgetPath -Root $transaction -Child 'failed-new-live') -ExpectedFiles $ExpectedFiles -Context "$Context failed-new-live"
+        }
+
+        $attemptRoot = Join-SpherewrightInstallBudgetPath -Root $transaction -Child ('r-' + $attemptId)
+        Assert-SpherewrightInstallBudgetDirectory -Path $attemptRoot -Context "$Context recovery attempt"
+        if ($Role -ceq 'plugin') {
+            $recoveryPayload = Join-SpherewrightInstallBudgetPath -Root $attemptRoot -Child 'p'
+            Assert-SpherewrightInstallBudgetPayload -Root $recoveryPayload -ExpectedFiles $ExpectedFiles -Context "$Context recovery payload" -ExcludeMainPluginFile
+            Assert-SpherewrightInstallBudgetFile -Path (Join-SpherewrightInstallBudgetPath -Root $recoveryPayload -Child 'unresolved-live-main.dll') -Context "$Context recovery unresolved main"
+            $followup = Join-SpherewrightInstallBudgetPath -Root $attemptRoot -Child 'f'
+            Assert-SpherewrightInstallBudgetDirectory -Path $followup -Context "$Context recovery followup"
+            Assert-SpherewrightInstallBudgetFile -Path (Join-SpherewrightInstallBudgetPath -Root $followup -Child 'unresolved-live-main.dll') -Context "$Context recovery followup main"
+        } else {
+            Assert-SpherewrightInstallBudgetPayload -Root (Join-SpherewrightInstallBudgetPath -Root $attemptRoot -Child 'm') -ExpectedFiles $ExpectedFiles -Context "$Context recovery payload"
+        }
+    }
+
+    $pluginStageParentFull = ConvertTo-SpherewrightInstallCanonicalPath $PluginStageParent
+    $mcpStageParentFull = ConvertTo-SpherewrightInstallCanonicalPath $McpStageParent
+    $pluginDestinationFull = ConvertTo-SpherewrightInstallCanonicalPath $PluginDestination
+    $mcpDestinationFull = ConvertTo-SpherewrightInstallCanonicalPath $McpDestination
+    $pluginStageRoot = Join-SpherewrightInstallBudgetPath -Root $pluginStageParentFull -Child ('.spherewright-stage-' + $operationId + '-plugin')
+    $mcpStageRoot = Join-SpherewrightInstallBudgetPath -Root $mcpStageParentFull -Child ('.spherewright-stage-' + $operationId + '-mcp')
+    $pluginArchive = Join-SpherewrightInstallBudgetPath -Root $pluginStageParentFull -Child ('.spherewright-archive-' + $operationId + '-plugin')
+    $mcpArchive = Join-SpherewrightInstallBudgetPath -Root $mcpStageParentFull -Child ('.spherewright-archive-' + $operationId + '-mcp')
+
+    Assert-SpherewrightInstallBudgetPayload -Root $pluginDestinationFull -ExpectedFiles $pluginExpected -Context 'Plugin live payload'
+    Assert-SpherewrightInstallBudgetPayload -Root $mcpDestinationFull -ExpectedFiles $mcpExpected -Context 'MCP live payload'
+    Assert-SpherewrightInstallBudgetFile -Path (Join-SpherewrightInstallBudgetPath -Root $pluginStageParentFull -Child '.spherewright-install-pending.json') -Context 'pending startup marker'
+
+    foreach ($entry in @(
+        [pscustomobject]@{ root=$pluginStageRoot; role='plugin'; expected=$pluginExpected; context='Plugin stage' },
+        [pscustomobject]@{ root=$mcpStageRoot; role='mcp'; expected=$mcpExpected; context='MCP stage' },
+        [pscustomobject]@{ root=$pluginArchive; role='plugin'; expected=$pluginExpected; context='Plugin archive' },
+        [pscustomobject]@{ root=$mcpArchive; role='mcp'; expected=$mcpExpected; context='MCP archive' }
+    )) {
+        Assert-SpherewrightInstallBudgetPayload -Root (Join-SpherewrightInstallBudgetPath -Root $entry.root -Child 'payload') -ExpectedFiles $entry.expected -Context "$($entry.context) payload"
+        Assert-SpherewrightInstallBudgetTransactionLayout -Root $entry.root -Role $entry.role -ExpectedFiles $entry.expected -Context $entry.context
+    }
+
+    # Only the isolation directories are created below the MCP stage root.
+    # The executable remains under payload/live, and the bridge descriptor is
+    # deliberately required to remain nonexistent.
+    foreach ($mcpRoot in @($mcpStageRoot, $mcpArchive)) {
+        foreach ($probeName in @('metadata-probe', 'final-metadata-probe')) {
+            $isolation = Join-SpherewrightInstallBudgetPath -Root $mcpRoot -Child $probeName
+            Assert-SpherewrightInstallBudgetDirectory -Path $isolation -Context "MCP $probeName isolation"
+            Assert-SpherewrightInstallBudgetDirectory -Path (Join-SpherewrightInstallBudgetPath -Root $isolation -Child 'localappdata') -Context "MCP $probeName localappdata"
+            Assert-SpherewrightInstallBudgetFile -Path (Join-SpherewrightInstallBudgetPath -Root $isolation -Child 'bridge-descriptor-unavailable.json') -Context "MCP $probeName bridge descriptor"
+        }
+    }
+}
+
 function Test-SpherewrightInstallExpectedDirectory {
     param(
         [Parameter(Mandatory)][string]$RelativePath,
@@ -1181,6 +1340,9 @@ function Invoke-SpherewrightInstallTransaction {
         $locks = Enter-SpherewrightInstallTargetLocks -Targets @($pluginDestinationFull, $mcpDestinationFull)
         # This is deliberately before transaction-root creation, progress
         # records, backups, planned parent creation, or payload promotion.
+        Assert-SpherewrightInstallPathBudget -PluginStageParent $pluginStageInfo.parent -McpStageParent $mcpStageInfo.parent `
+            -PluginDestination $pluginDestinationFull -McpDestination $mcpDestinationFull `
+            -PluginExpectedFiles $pluginExpected -McpExpectedFiles $mcpExpected
         Assert-SpherewrightInstallNoPendingMarker -MarkerPath $pendingMarkerPath
         Assert-SpherewrightInstallNoPendingTransactionResidue -PluginDestination $pluginDestinationFull -McpDestination $mcpDestinationFull -AllowedStageRoots @($pluginStageInfo.root, $mcpStageInfo.root)
         $pluginStaged = Assert-SpherewrightInstallSnapshotComplete -Root $pluginStageInfo.payload -ExpectedFiles $pluginExpected

@@ -367,6 +367,19 @@ if (-not (Test-Path -LiteralPath (Join-Path $mcpSource 'Spherewright.Mcp.exe') -
 . (Join-Path $packageRoot 'SpherewrightInstallTransaction.ps1')
 $pendingMarker = Get-SpherewrightInstallPendingMarkerPath -PluginStageParent (Join-Path $gameRoot 'BepInEx')
 Assert-SpherewrightInstallNoPendingMarker -MarkerPath $pendingMarker
+$pluginStageParentForBudget = Join-Path $gameRoot 'BepInEx'
+$requestedMcpStageParent = [IO.Path]::GetDirectoryName($resolvedMcpDestination)
+if ([string]::IsNullOrWhiteSpace($requestedMcpStageParent)) { throw 'MCP staging requires a concrete existing parent directory.' }
+# Preflight has no right to create missing MCP parents.  Model the same nearest
+# existing ancestor a normal install would use so it can reject an unsafe path
+# before reporting its otherwise zero-write result.
+$preflightMcpStageParent = @(
+    Get-SpherewrightInstallExistingAncestorDirectories -Path $requestedMcpStageParent
+)[0]
+if ([string]::IsNullOrWhiteSpace([string]$preflightMcpStageParent)) { throw 'MCP staging requires a concrete existing parent directory.' }
+Assert-SpherewrightInstallPathBudget -PluginStageParent $pluginStageParentForBudget -McpStageParent ([string]$preflightMcpStageParent) `
+    -PluginDestination $pluginDestination -McpDestination $resolvedMcpDestination `
+    -PluginExpectedFiles $pluginExpectedFiles -McpExpectedFiles $mcpExpectedFiles
 if ($PreflightOnly) {
     [pscustomobject]@{ version=$version; integrityVerified=$true; exactFileSet=$true; preflightOnly=$true; installed=$false; transactionalUpgrade=$false } | ConvertTo-Json
     return
@@ -378,9 +391,8 @@ if ($PreflightOnly) {
     # StageOnly returns without replacing any live payload or protected state.
     $operationId = [guid]::NewGuid().ToString('N')
     $pluginScanRoot = Join-Path $gameRoot 'BepInEx\plugins'
-    $pluginStageParent = Join-Path $gameRoot 'BepInEx'
-    $mcpStageParent = [IO.Path]::GetDirectoryName($resolvedMcpDestination)
-    if ([string]::IsNullOrWhiteSpace($mcpStageParent)) { throw 'MCP staging requires a concrete existing parent directory.' }
+    $pluginStageParent = $pluginStageParentForBudget
+    $mcpStageParent = $requestedMcpStageParent
     $parentDirectoriesToCreate = [Collections.Generic.List[string]]::new()
     if (-not $StageOnly -and -not (Test-Path -LiteralPath $mcpStageParent)) {
         # Stage beneath an existing same-volume ancestor. Missing live parents
@@ -409,6 +421,11 @@ if ($PreflightOnly) {
         $residueAncestor = $residueParent
     }
     $protectedPaths = @($packageRoot, $pluginDestination, $resolvedMcpDestination)
+    # Recheck with the exact parent chosen for this staging pass.  StageOnly
+    # deliberately keeps its existing direct-parent rejection behavior.
+    Assert-SpherewrightInstallPathBudget -PluginStageParent $pluginStageParent -McpStageParent $mcpStageParent `
+        -PluginDestination $pluginDestination -McpDestination $resolvedMcpDestination `
+        -PluginExpectedFiles $pluginExpectedFiles -McpExpectedFiles $mcpExpectedFiles
     $pluginStage = New-StagePayloadPlan -Target $pluginDestination -StageParent $pluginStageParent -Role 'plugin' -OperationId $operationId -ForbiddenScanRoot $pluginScanRoot -ProtectedPaths $protectedPaths
     $mcpStage = New-StagePayloadPlan -Target $resolvedMcpDestination -StageParent $mcpStageParent -Role 'mcp' -OperationId $operationId -ForbiddenScanRoot $pluginScanRoot -ProtectedPaths ($protectedPaths + @($pluginStage.root))
     if (Test-InstallPathOverlap -First $pluginStage.root -Second $mcpStage.root) { throw 'Plugin and MCP staging roots must be separate.' }

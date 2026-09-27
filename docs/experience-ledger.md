@@ -6,6 +6,8 @@
 
 ## EXP-313 — 恢复目录的长度也属于安装安全预算
 
+- 2026-09-27 补充，`validated`（源码/离线），最近复验同日：共享路径预算现于预检、事务及恢复首次状态写前拒绝超限；两 shell 各通过 transaction 13 组/82 faults、recovery 3 组/2 child interruptions、preflight 56 cases/0 game calls，并核超限拒绝未改变 fixture/main/marker。覆盖整套未来证据路径，不靠缩短 fixture 代替产品保护。[验证范围](evidence/2026-09-27/install-path-budget.md)仅限源脚本及合成树；既有 ZIP 不变，新包与实机仍待。下列原始失败推断及证据限制保留。
+
 - 2026-09-27，`observed`，最近复验同日；真实dirty包在长GUID测试树的Windows PowerShell恢复Move及随后较短树cleanup均失败，PowerShell7通过，进一步缩短根后两shell五阶段均通过。目的路径按固定组件估算261/267字符，但首次失败树已清理、stderr未给精确路径，保留该证据限制。只缩短测试目录不是产品修复；安装前须验证未来stage/archive/recovery证据路径（含最长MCP相对文件），不能只看live路径。安装/恢复目录结构、payload或shell变化时复验。关联IFX-179及[完整对照](evidence/2026-09-27/install-package-interruption-recovery.md)；无实际部署或游戏调用。
 
 ## EXP-312 — 同档和连续 Journal 不代表保存覆盖最后施工

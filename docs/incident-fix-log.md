@@ -14,7 +14,9 @@
 
 ## IFX-179 — 安装成功路径未提前覆盖深层恢复证据路径限制
 
-- 2026-09-27，`open`。真实dirty包的内部transaction中断恢复，在Windows PowerShell深层temp树出现Move失败；缩短场景目录后恢复成功而cleanup仍失败，再缩短GUID根后完整通过。PowerShell7三次均通过。与261/267字符推算及源码拼接一致，强烈指向长路径限制；不把已清理失败树或无路径stderr写成完整因果实证。当前产品没有未来恢复路径长度预检，短路径fixture仅完成一个正例，不修复实际深安装目录风险。下一切片须在任何live写入前拒绝不可安全恢复的路径或另证长路径支持。关联EXP-313及[真实包五阶段与失败边界](evidence/2026-09-27/install-package-interruption-recovery.md)。未改归档、未部署、未触碰存档。
+- 2026-09-27 补充，`fixed_offline`：共享纯路径预算覆盖 live、stage/archive、原件备份、失败载荷、逐次 recovery 和 metadata isolation；文件 259/目录 247 UTF-16 code units 的保守兼容上限在预检、事务和恢复首次状态写前核验。两种 PowerShell 各通过 transaction 13 组/82 faults、recovery 3 组/2 次测试子进程中断、preflight 56 cases/0 game calls；超限场景核验 fixture/main/marker 不变，Sol 独立审核无 blocker。见[源码验证](evidence/2026-09-27/install-path-budget.md)。不追认旧 ZIP 含修复，不证明新包或真实安装/Unity；下列原始发现保留。
+
+- 2026-09-27 原始发现，彼时为 `open`。真实dirty包的内部transaction中断恢复，在Windows PowerShell深层temp树出现Move失败；缩短场景目录后恢复成功而cleanup仍失败，再缩短GUID根后完整通过。PowerShell7三次均通过。与261/267字符推算及源码拼接一致，强烈指向长路径限制；不把已清理失败树或无路径stderr写成完整因果实证。当时产品没有未来恢复路径长度预检，短路径fixture仅完成一个正例，不修复实际深安装目录风险。当时提出的下一切片是在任何live写入前拒绝不可安全恢复的路径或另证长路径支持，源码进展见上方补充。关联EXP-313及[真实包五阶段与失败边界](evidence/2026-09-27/install-package-interruption-recovery.md)。未改归档、未部署、未触碰存档。
 
 ## IFX-178 — Windows PowerShell 测试包装器将未知退出码误转为成功
 

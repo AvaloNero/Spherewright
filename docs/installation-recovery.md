@@ -66,6 +66,18 @@ There is no claim of atomic cross-volume upgrades, protection from all hardware
 failures, or universal recovery of partially written evidence. Local synthetic
 tests, source builds, cold deployment and real-package validation are separate
 evidence levels; consult the repository's `docs/current-status.md` before
-treating an implementation as live-validated. Windows PowerShell still has
-filesystem path-length limits; compact operation evidence names reduce depth
-but do not promise support for arbitrary long installation paths.
+treating an implementation as live-validated.
+
+The installer and recovery preview budget the complete future paths, including
+stage/archive roots, backups and per-attempt recovery evidence, before writes.
+For compatibility across supported PowerShell hosts they conservatively require
+file paths of at most 259 UTF-16 code units and directory paths of at most 247.
+These are product compatibility limits, not a claim that all Windows APIs share
+the same limit; see [Microsoft's path-length documentation](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation).
+Shortening only the live destination may not be sufficient: a path-budget rejection identifies
+the generated path that exceeds the budget. For a new installation, choose a
+shorter supported target and rerun preflight. For an already interrupted
+installation, keep the exact targets, marker and evidence unchanged and seek
+review; do not move its evidence tree or edit recorded paths to bypass refusal.
+The tool does not enable system long-path settings or rewrite paths to extended
+namespace syntax. Compact evidence names alone are not proof of safe recovery.

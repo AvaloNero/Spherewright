@@ -246,6 +246,59 @@ function Test-InstallRecoveryInterruptedOperation {
     Assert-TestInstallTransaction -Condition ((Get-TestInstallTransactionTree -Root $fixture.root) -ceq $beforePreview) -Message 'Recovery preview modified synthetic installation evidence.'
 
     if (-not $FirstInstall) {
+        # Simulate a legacy interrupted record whose two protected mirrors
+        # agree, but whose nested MCP manifest entry would make the next
+        # archive/recovery path unsafe. Invoke the write API directly so a
+        # budget rejection proves it occurs while its internal state is null:
+        # no recovery hook, main-DLL withholding, or evidence mutation is
+        # permitted before the diagnostic.
+        $pluginStageRoot = Split-Path -Parent $pair.pluginPayload
+        $mcpStageRoot = Split-Path -Parent $pair.mcpPayload
+        $pluginProgressPath = Join-Path $pluginStageRoot 'transaction\progress.json'
+        $mcpProgressPath = Join-Path $mcpStageRoot 'transaction\progress.json'
+        $pluginProgressBytes = [IO.File]::ReadAllBytes($pluginProgressPath)
+        $mcpProgressBytes = [IO.File]::ReadAllBytes($mcpProgressPath)
+        $beforeBudgetRecordMutation = Get-TestInstallTransactionTree -Root $fixture.root
+        $budgetRelative = 'support/' + ('x' * 220) + '.dll'
+        foreach ($progressPath in @($pluginProgressPath, $mcpProgressPath)) {
+            $record = [IO.File]::ReadAllText($progressPath, [Text.UTF8Encoding]::new($false, $true)) | ConvertFrom-Json -ErrorAction Stop
+            $record.mcpExpectedFiles = @($record.mcpExpectedFiles) + @([pscustomobject][ordered]@{relative=$budgetRelative;sha256=('0' * 64)})
+            $record.mcpOriginal.files = @($record.mcpOriginal.files) + @([pscustomobject][ordered]@{relative=$budgetRelative;exists=$false;sha256=$null})
+            [IO.File]::WriteAllText($progressPath, ($record | ConvertTo-Json -Depth 16), [Text.UTF8Encoding]::new($false))
+        }
+        $beforeBudgetRecovery = Get-TestInstallTransactionTree -Root $fixture.root
+        $newMainHashBeforeBudgetRecovery = (Get-FileHash -LiteralPath $oldMainPath -Algorithm SHA256).Hash
+        $recoveryMutationObserved = $false
+        $recoveryBudgetHook = {
+            param($step)
+            $recoveryMutationObserved = $true
+            throw "Recovery path budget was checked after mutation step $step."
+        }.GetNewClosure()
+        $recoveryBudgetRejected = $false
+        $recoveryBudgetError = ''
+        $recoveryBudgetTreeUnchanged = $false
+        $recoveryBudgetMainUnchanged = $false
+        $recoveryBudgetMarkerUnchanged = $false
+        try {
+            Invoke-SpherewrightInstallRecovery -PluginDestination $fixture.pluginDestination -McpDestination $fixture.mcpDestination `
+                -OperationId $pair.operationId -ExpectedEvidenceHash ('0' * 64) -BeforeMutation $recoveryBudgetHook | Out-Null
+        } catch {
+            $recoveryBudgetError = $_.Exception.Message
+            if ($recoveryBudgetError -notmatch 'Spherewright install path budget.*Shorten the installation target') { throw }
+            $recoveryBudgetRejected = $true
+            $recoveryBudgetTreeUnchanged = (Get-TestInstallTransactionTree -Root $fixture.root) -ceq $beforeBudgetRecovery
+            $recoveryBudgetMainUnchanged = (Get-FileHash -LiteralPath $oldMainPath -Algorithm SHA256).Hash -ceq $newMainHashBeforeBudgetRecovery
+            $recoveryBudgetMarkerUnchanged = Test-Path -LiteralPath $markerPath -PathType Leaf
+        } finally {
+            [IO.File]::WriteAllBytes($pluginProgressPath, $pluginProgressBytes)
+            [IO.File]::WriteAllBytes($mcpProgressPath, $mcpProgressBytes)
+        }
+        Assert-TestInstallTransaction -Condition ($recoveryBudgetRejected -and -not $recoveryMutationObserved) -Message 'Recovery accepted an over-budget legacy evidence map before its write state remained null.'
+        Assert-TestInstallTransaction -Condition $recoveryBudgetTreeUnchanged -Message 'An over-budget recovery context modified live, marker, or evidence state.'
+        Assert-TestInstallTransaction -Condition $recoveryBudgetMainUnchanged -Message 'An over-budget recovery context withheld the live main Plugin DLL.'
+        Assert-TestInstallTransaction -Condition $recoveryBudgetMarkerUnchanged -Message 'An over-budget recovery context altered its pending marker.'
+        Assert-TestInstallTransaction -Condition ((Get-TestInstallTransactionTree -Root $fixture.root) -ceq $beforeBudgetRecordMutation) -Message 'The synthetic legacy-record budget case did not restore its exact record bytes.'
+
         # These five negative cases reuse the same interrupted upgrade. They
         # alter only synthetic files, prove that rejection is write-free, then
         # put the exact bytes back before the approved restore below.

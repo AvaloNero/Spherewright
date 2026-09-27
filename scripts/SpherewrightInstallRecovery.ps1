@@ -161,6 +161,12 @@ function Get-SpherewrightInstallRecoveryContext {
         if ($role -eq 'plugin') { $expected=@{plugin=$pMap;mcp=$mMap}; $original=@{plugin=$pOriginal;mcp=$mOriginal} }
     }
     if ($immutable.plugin -cne $immutable.mcp) { throw 'Mirrored recovery records disagree on immutable payload evidence.' }
+    # The two mirrored records now agree on the exact maps.  Reject an unsafe
+    # stage/archive/recovery path before reading backups, live payloads, or
+    # any later recovery evidence; this context is also re-read before writes.
+    Assert-SpherewrightInstallPathBudget -PluginStageParent $pluginParent -McpStageParent $mcpParent `
+        -PluginDestination $plugin -McpDestination $mcp `
+        -PluginExpectedFiles $expected.plugin -McpExpectedFiles $expected.mcp
     $handoffFingerprint = [string]$records.plugin.runtimeHandoffFingerprint
     if ((Get-SpherewrightInstallTreeFingerprint (Join-Path $plugin 'runtime-handoff')) -cne $handoffFingerprint) { throw 'Protected runtime-handoff changed; recovery refused.' }
     $live = @{}

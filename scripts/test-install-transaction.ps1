@@ -4,6 +4,146 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'SpherewrightInstallTransaction.ps1')
 
 . (Join-Path $PSScriptRoot 'SpherewrightInstallTestSupport.ps1')
+
+function New-TestInstallTransactionBudgetMap {
+    param([Parameter(Mandatory)][string]$RelativePath)
+
+    $result = [Collections.Generic.Dictionary[string,string]]::new([StringComparer]::OrdinalIgnoreCase)
+    $result.Add($RelativePath, ('0' * 64))
+    return $result
+}
+
+function Test-InstallTransactionPathBudget {
+    param([Parameter(Mandatory)][string]$Root)
+
+    $shortPlugin = New-TestInstallTransactionBudgetMap -RelativePath 'Spherewright.Plugin.dll'
+    $shortMcp = New-TestInstallTransactionBudgetMap -RelativePath 'Spherewright.Mcp.exe'
+
+    # A 247-character live directory plus an 11-character leaf is a 259-
+    # character file path and remains supported. The next character must get
+    # our diagnostic rather than a shell-specific PathTooLong exception.
+    $pluginDirectory247 = 'C:\' + ('a' * 244)
+    Assert-TestInstallTransaction -Condition ($pluginDirectory247.Length -eq 247) -Message 'Synthetic 247-character Plugin directory calculation drifted.'
+    Assert-SpherewrightInstallPathBudget -PluginStageParent 'C:\s' -McpStageParent 'C:\m' -PluginDestination $pluginDirectory247 -McpDestination 'C:\d' `
+        -PluginExpectedFiles (New-TestInstallTransactionBudgetMap -RelativePath 'abcdefghijk') -McpExpectedFiles $shortMcp
+
+    $file260Rejected = $false
+    try {
+        Assert-SpherewrightInstallPathBudget -PluginStageParent 'C:\s' -McpStageParent 'C:\m' -PluginDestination $pluginDirectory247 -McpDestination 'C:\d' `
+            -PluginExpectedFiles (New-TestInstallTransactionBudgetMap -RelativePath 'abcdefghijkl') -McpExpectedFiles $shortMcp
+    } catch {
+        if ($_.Exception.Message -notmatch 'exceeds 259 UTF-16 characters.*Shorten the installation target') { throw }
+        $file260Rejected = $true
+    }
+    Assert-TestInstallTransaction -Condition $file260Rejected -Message 'A 260-character prospective file was not rejected by the path budget.'
+
+    $pluginDirectory248 = 'C:\' + ('b' * 245)
+    Assert-TestInstallTransaction -Condition ($pluginDirectory248.Length -eq 248) -Message 'Synthetic 248-character Plugin directory calculation drifted.'
+    $directory248Rejected = $false
+    try {
+        Assert-SpherewrightInstallPathBudget -PluginStageParent 'C:\s' -McpStageParent 'C:\m' -PluginDestination $pluginDirectory248 -McpDestination 'C:\d' `
+            -PluginExpectedFiles (New-TestInstallTransactionBudgetMap -RelativePath 'x') -McpExpectedFiles $shortMcp
+    } catch {
+        if ($_.Exception.Message -notmatch 'exceeds 247 UTF-16 characters.*Shorten the installation target') { throw }
+        $directory248Rejected = $true
+    }
+    Assert-TestInstallTransaction -Condition $directory248Rejected -Message 'A 248-character prospective directory was not rejected by the path budget.'
+
+    # The nested MCP payload form reaches both its 247-character parent and
+    # 259-character file boundary. This protects actual mcp/support paths.
+    $mcpDirectory239 = 'C:\' + ('c' * 236)
+    $nestedMcp259 = New-TestInstallTransactionBudgetMap -RelativePath 'support/abcdefghijk'
+    Assert-TestInstallTransaction -Condition ($mcpDirectory239.Length -eq 239) -Message 'Synthetic nested MCP base calculation drifted.'
+    Assert-SpherewrightInstallPathBudget -PluginStageParent 'C:\s' -McpStageParent 'C:\m' -PluginDestination 'C:\p' -McpDestination $mcpDirectory239 `
+        -PluginExpectedFiles $shortPlugin -McpExpectedFiles $nestedMcp259
+    $nestedMcp260Rejected = $false
+    try {
+        Assert-SpherewrightInstallPathBudget -PluginStageParent 'C:\s' -McpStageParent 'C:\m' -PluginDestination 'C:\p' -McpDestination $mcpDirectory239 `
+            -PluginExpectedFiles $shortPlugin -McpExpectedFiles (New-TestInstallTransactionBudgetMap -RelativePath 'support/abcdefghijkl')
+    } catch {
+        if ($_.Exception.Message -notmatch 'exceeds 259 UTF-16 characters.*Shorten the installation target') { throw }
+        $nestedMcp260Rejected = $true
+    }
+    Assert-TestInstallTransaction -Condition $nestedMcp260Rejected -Message 'The longest nested MCP payload path was not budgeted.'
+
+    # Archive roots are longer than stage roots. Exercise the deepest actual
+    # recovery follow-up candidate, which carries unresolved live-main evidence.
+    $operation = '0' * 32
+    $archiveRecoverySuffix = '\.spherewright-archive-' + $operation + '-plugin\transaction\r-' + $operation + '\f\unresolved-live-main.dll'
+    $archiveParentLength = 259 - $archiveRecoverySuffix.Length
+    $archiveParent = 'C:\' + ('d' * ($archiveParentLength - 3))
+    Assert-TestInstallTransaction -Condition (($archiveParent + $archiveRecoverySuffix).Length -eq 259) -Message 'Synthetic archive recovery boundary calculation drifted.'
+    Assert-SpherewrightInstallPathBudget -PluginStageParent $archiveParent -McpStageParent 'C:\m' -PluginDestination 'C:\p' -McpDestination 'C:\d' `
+        -PluginExpectedFiles $shortPlugin -McpExpectedFiles $shortMcp
+    $archiveRecoveryRejected = $false
+    try {
+        Assert-SpherewrightInstallPathBudget -PluginStageParent ($archiveParent + 'e') -McpStageParent 'C:\m' -PluginDestination 'C:\p' -McpDestination 'C:\d' `
+            -PluginExpectedFiles $shortPlugin -McpExpectedFiles $shortMcp
+    } catch {
+        if ($_.Exception.Message -notmatch 'Plugin archive recovery (unresolved|followup) main.*Shorten the installation target') { throw }
+        $archiveRecoveryRejected = $true
+    }
+    Assert-TestInstallTransaction -Condition $archiveRecoveryRejected -Message 'The archive/recovery unresolved-main path was not budgeted.'
+
+    # Keep the live MCP root short and make its archived recovery payload the
+    # boundary. This catches an otherwise invisible nested relative path under
+    # transaction/r-<attempt>/m before an install is allowed to create it.
+    $mcpRecoveryRelative = 'support/abcdefghijk'
+    $mcpArchiveRecoveryPrefix = '\.spherewright-archive-' + $operation + '-mcp\transaction\r-' + $operation + '\m\'
+    $mcpArchiveParentLength = 259 - $mcpArchiveRecoveryPrefix.Length - $mcpRecoveryRelative.Length
+    $mcpArchiveParent = 'C:\' + ('e' * ($mcpArchiveParentLength - 3))
+    Assert-TestInstallTransaction -Condition (($mcpArchiveParent + $mcpArchiveRecoveryPrefix + $mcpRecoveryRelative).Length -eq 259) -Message 'Synthetic MCP archive recovery boundary calculation drifted.'
+    Assert-SpherewrightInstallPathBudget -PluginStageParent 'C:\s' -McpStageParent $mcpArchiveParent -PluginDestination 'C:\p' -McpDestination 'C:\d' `
+        -PluginExpectedFiles $shortPlugin -McpExpectedFiles (New-TestInstallTransactionBudgetMap -RelativePath $mcpRecoveryRelative)
+    $mcpArchiveRecoveryRejected = $false
+    try {
+        Assert-SpherewrightInstallPathBudget -PluginStageParent 'C:\s' -McpStageParent ($mcpArchiveParent + 'f') -PluginDestination 'C:\p' -McpDestination 'C:\d' `
+            -PluginExpectedFiles $shortPlugin -McpExpectedFiles (New-TestInstallTransactionBudgetMap -RelativePath $mcpRecoveryRelative)
+    } catch {
+        if ($_.Exception.Message -notmatch 'MCP archive recovery payload.*Shorten the installation target') { throw }
+        $mcpArchiveRecoveryRejected = $true
+    }
+    Assert-TestInstallTransaction -Condition $mcpArchiveRecoveryRejected -Message 'The archived MCP recovery payload path was not budgeted.'
+
+    # Enter through the real transaction after its locks. A long manifest path
+    # must be rejected before record, marker, backup, or live-main mutation.
+    $fixture = New-TestInstallTransactionFixture -Root (Join-Path $Root 'budget-entry')
+    $overBudgetPluginExpected = [Collections.Generic.Dictionary[string,string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($relative in @($fixture.pair.pluginExpected.Keys)) {
+        $overBudgetPluginExpected.Add([string]$relative, [string]$fixture.pair.pluginExpected[$relative])
+    }
+    $overBudgetPluginExpected.Add(('support/' + ('x' * 220) + '.dll'), ('0' * 64))
+    $before = Get-TestInstallTransactionTree -Root $fixture.root
+    $mainPath = Join-Path $fixture.pluginDestination 'Spherewright.Plugin.dll'
+    $mainBefore = (Get-FileHash -LiteralPath $mainPath -Algorithm SHA256).Hash
+    $markerPath = Get-SpherewrightInstallPendingMarkerPath -PluginStageParent $fixture.pluginStageParent
+    $mutationObserved = $false
+    $mutationHook = {
+        param($step)
+        $mutationObserved = $true
+        throw "The path budget was checked after mutation step $step."
+    }.GetNewClosure()
+    $rejected = $false
+    $message = ''
+    try {
+        Invoke-SpherewrightInstallTransaction -PluginStagePayload $fixture.pair.pluginPayload -PluginDestination $fixture.pluginDestination `
+            -PluginExpectedFiles $overBudgetPluginExpected -McpStagePayload $fixture.pair.mcpPayload -McpDestination $fixture.mcpDestination `
+            -McpExpectedFiles $fixture.pair.mcpExpected -VerifyInstalled { param($liveMcpDirectory) throw 'Budget rejection did not run first.' } `
+            -BeforeMutation $mutationHook | Out-Null
+    } catch {
+        $message = $_.Exception.Message
+        if ($message -notmatch 'Spherewright install path budget.*Shorten the installation target') { throw }
+        $rejected = $true
+    }
+    Assert-TestInstallTransaction -Condition ($rejected -and -not $mutationObserved) -Message 'The direct transaction path budget did not reject before a mutation hook.'
+    Assert-TestInstallTransaction -Condition ((Get-TestInstallTransactionTree -Root $fixture.root) -ceq $before) -Message 'The direct transaction path budget rejection changed synthetic state.'
+    Assert-TestInstallTransaction -Condition ((Get-FileHash -LiteralPath $mainPath -Algorithm SHA256).Hash -ceq $mainBefore) -Message 'The direct transaction path budget rejection changed the live main Plugin DLL.'
+    Assert-TestInstallTransaction -Condition (-not (Test-Path -LiteralPath $markerPath)) -Message 'The direct transaction path budget rejection created a pending marker.'
+    foreach ($stageRoot in @((Split-Path -Parent $fixture.pair.pluginPayload), (Split-Path -Parent $fixture.pair.mcpPayload))) {
+        Assert-TestInstallTransaction -Condition (-not (Test-Path -LiteralPath (Join-Path $stageRoot 'transaction'))) -Message 'The direct transaction path budget rejection created a progress/backup transaction root.'
+    }
+}
+
 function Test-InstallTransactionMutationFaultCoverage {
     param(
         [Parameter(Mandatory)][string]$Root,
@@ -56,12 +196,15 @@ function Test-InstallTransactionMutationFaultCoverage {
     return $caseCount
 }
 
-$testRoot = Join-Path ([IO.Path]::GetTempPath()) ('spherewright-install-transaction-tests-' + [guid]::NewGuid().ToString('N'))
-if ((Split-Path -Leaf $testRoot) -notmatch '^spherewright-install-transaction-tests-[0-9a-f]{32}$') { throw 'Unsafe synthetic test cleanup root.' }
+$testRoot = Join-Path ([IO.Path]::GetTempPath()) ('swit-' + [guid]::NewGuid().ToString('N'))
+if ((Split-Path -Leaf $testRoot) -notmatch '^swit-[0-9a-f]{32}$') { throw 'Unsafe synthetic test cleanup root.' }
 [void][IO.Directory]::CreateDirectory($testRoot)
 $passed = 0
 $faultCases = 0
 try {
+    Test-InstallTransactionPathBudget -Root $testRoot
+    $passed++
+
     $successFixture = New-TestInstallTransactionFixture -Root (Join-Path $testRoot 'success')
     $handoffBefore = Get-TestInstallTransactionTree -Root (Join-Path $successFixture.pluginDestination 'runtime-handoff')
     $result = Invoke-TestInstallTransaction -Fixture $successFixture -Pair $successFixture.pair
@@ -293,7 +436,7 @@ try {
         $resolvedTestRoot = [IO.Path]::GetFullPath($testRoot)
         $tempPrefix = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
         if (-not $resolvedTestRoot.StartsWith($tempPrefix, [StringComparison]::OrdinalIgnoreCase) -or
-            (Split-Path -Leaf $resolvedTestRoot) -notmatch '^spherewright-install-transaction-tests-[0-9a-f]{32}$') { throw 'Refusing unsafe synthetic test cleanup.' }
+            (Split-Path -Leaf $resolvedTestRoot) -notmatch '^swit-[0-9a-f]{32}$') { throw 'Refusing unsafe synthetic test cleanup.' }
         [IO.Directory]::Delete($resolvedTestRoot, $true)
     }
 }

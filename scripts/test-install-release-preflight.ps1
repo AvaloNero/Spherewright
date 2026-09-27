@@ -3,10 +3,11 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 # Synthetic package/installation only. Never discover or operate a real game.
-$testRoot = Join-Path ([IO.Path]::GetTempPath()) ('spherewright-install-tests-' + [guid]::NewGuid().ToString('N'))
+$testRoot = Join-Path ([IO.Path]::GetTempPath()) ('swpf-' + [guid]::NewGuid().ToString('N'))
 [void][IO.Directory]::CreateDirectory($testRoot)
 $installer = Join-Path $PSScriptRoot 'install-release.ps1'
 $testCases = 0
+$script:fixtureNumber = 0
 function Get-Process { [CmdletBinding()] param([string]$Name) if ($Name -cne 'DSPGAME') { throw 'Unexpected process query' } }
 $global:SpherewrightSyntheticCopyFaultAfter = 0
 $global:SpherewrightSyntheticCopyFaultCount = 0
@@ -30,7 +31,8 @@ function Copy-Item {
     Microsoft.PowerShell.Management\Copy-Item @PSBoundParameters
 }
 function New-Fixture {
-    $root = Join-Path $testRoot ([guid]::NewGuid().ToString('N'))
+    $script:fixtureNumber++
+    $root = Join-Path $testRoot ('f' + $script:fixtureNumber)
     $package = Join-Path $root 'package'
     $game = Join-Path $root 'game'
     $mcp = Join-Path $root 'installed-mcp'
@@ -160,6 +162,7 @@ function Reject-Install($fixture,[string]$message,[string]$destination=$fixture.
     $script:testCases++
 }
 function Reject-Stage($fixture,[string]$message,[string]$destination=$fixture.mcp,[string]$game=$fixture.game,[switch]$AlsoPreflight) {
+    $fixtureBefore=Get-TreeSnapshot $fixture.root
     $pluginBefore=Get-TreeSnapshot "$game/BepInEx/plugins/Spherewright"
     $mcpBefore=Get-TreeSnapshot $destination
     $runtimeBefore=Get-TreeSnapshot $fixture.runtime
@@ -174,7 +177,7 @@ function Reject-Stage($fixture,[string]$message,[string]$destination=$fixture.mc
         & "$($fixture.package)/install.ps1" @stageArgs | Out-Null
     } catch { if (-not $_.Exception.Message.Contains($message)) { throw }; $rejected=$true }
     if (-not $rejected) { throw "Expected stage rejection: $message" }
-    if ((Get-TreeSnapshot "$game/BepInEx/plugins/Spherewright") -cne $pluginBefore -or (Get-TreeSnapshot $destination) -cne $mcpBefore -or (Get-TreeSnapshot $fixture.runtime) -cne $runtimeBefore -or (Get-TreeSnapshot $fixture.handoff) -cne $handoffBefore -or (Get-StageSnapshot "$game/BepInEx") -cne $pluginStageBefore -or (Get-StageSnapshot $mcpParent) -cne $mcpStageBefore) { throw 'Rejected stage operation modified live, protected, or staging state.' }
+    if ((Get-TreeSnapshot $fixture.root) -cne $fixtureBefore -or (Get-TreeSnapshot "$game/BepInEx/plugins/Spherewright") -cne $pluginBefore -or (Get-TreeSnapshot $destination) -cne $mcpBefore -or (Get-TreeSnapshot $fixture.runtime) -cne $runtimeBefore -or (Get-TreeSnapshot $fixture.handoff) -cne $handoffBefore -or (Get-StageSnapshot "$game/BepInEx") -cne $pluginStageBefore -or (Get-StageSnapshot $mcpParent) -cne $mcpStageBefore) { throw 'Rejected stage operation modified live, protected, or staging state.' }
     $script:testCases++
 }
 try {
@@ -189,6 +192,23 @@ try {
     if (-not $result.preflightOnly -or $result.installed -or -not $result.exactFileSet) { throw 'Invalid preview result' }
     if ((Get-TreeSnapshot "$($fixture.game)/BepInEx/plugins/Spherewright") -cne $pluginBefore -or (Get-TreeSnapshot $fixture.mcp) -cne $mcpBefore -or (Get-TreeSnapshot $fixture.runtime) -cne $runtimeBefore -or (Get-TreeSnapshot $fixture.handoff) -cne $handoffBefore) { throw 'Preflight install modified a destination or protected state.' }
     if ((Get-StageSnapshot "$($fixture.game)/BepInEx") -cne $pluginStageBefore -or (Get-StageSnapshot ([IO.Path]::GetDirectoryName($fixture.mcp))) -cne $mcpStageBefore) { throw 'Preflight-only created staging state.' }
+    $testCases++
+
+    # Preflight must use the normal-install nearest existing MCP ancestor for
+    # budgeting, yet remain completely write-free when a prospective live file
+    # exceeds the supported-shell length bound.
+    $fixture=New-Fixture; $manifest=Write-Manifest $fixture
+    $preflightPrefix=[IO.Path]::GetFullPath($fixture.root).TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar
+    $longMcpDestination=$preflightPrefix + ('q' * (241 - $preflightPrefix.Length - 4)) + '\mcp'
+    if ($longMcpDestination.Length -ne 241) { throw 'Synthetic preflight MCP path boundary calculation drifted.' }
+    $preflightBudgetBefore=Get-TreeSnapshot $fixture.root
+    $preflightBudgetRejected=$false
+    try { & "$($fixture.package)/install.ps1" -DspDir $fixture.game -McpDestination $longMcpDestination -Force -PreflightOnly | Out-Null }
+    catch {
+        if ($_.Exception.Message -notmatch 'Spherewright install path budget.*Shorten the installation target') { throw }
+        $preflightBudgetRejected=$true
+    }
+    if (-not $preflightBudgetRejected -or (Get-TreeSnapshot $fixture.root) -cne $preflightBudgetBefore) { throw 'Over-budget preflight was not rejected before any synthetic write.' }
     $testCases++
 
     $fixture=New-Fixture; $manifest=Write-Manifest $fixture
@@ -420,6 +440,6 @@ try {
 } finally {
     $resolved=[IO.Path]::GetFullPath($testRoot)
     $allowed=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar
-    if (-not $resolved.StartsWith($allowed,[StringComparison]::OrdinalIgnoreCase) -or [IO.Path]::GetFileName($resolved) -notmatch '^spherewright-install-tests-[0-9a-f]{32}$') { throw 'Refusing unsafe test cleanup' }
+    if (-not $resolved.StartsWith($allowed,[StringComparison]::OrdinalIgnoreCase) -or [IO.Path]::GetFileName($resolved) -notmatch '^swpf-[0-9a-f]{32}$') { throw 'Refusing unsafe test cleanup' }
     Remove-Item -LiteralPath $resolved -Recurse -Force
 }

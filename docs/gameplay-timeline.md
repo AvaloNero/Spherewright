@@ -11,6 +11,10 @@
 
 Luna随后仅执行既定的两台2012/filter1003分拣器和一次普通保存：5159在75382560接`2018→2020`，2012 `2→1`；5160在75384015接`2024→5116`，`1→0`；保存于75384857到R6。两组端点均读回唯一互返边，J91仍durable且无pending/error。此批没有重新读取5158；它的恢复保留仍以[固定自动档恢复证据](evidence/2026-09-27/fixed-autosave-recovery-live.md)为准。该保存只核销两个接口，不证明持续送料、产量、电力/燃料余量或本批后的重启；详见[本批原回执](evidence/2026-09-27/hps-remaining-infeeds-save.md)。
 
+### 2026-09-27 — HPS 供料诊断显示波动，最新直接门为硅石
+
+四段互不重叠的600tick只读窗口先见HPS1105 `60/min`，后见一次宽带/信息矩阵各`6/min`，最终指定链归零。最后窗口842与5115均满供电却都没有硅石1003输入；跨星球路线仅有configured route供货总量与carrier证据，dispatch仍unproven，不能写成运输故障根因。没有施工、保存或重放；持续供料、稳定产量、电力/燃料余量与修复仍待后续有界工序。详见[窗口诊断](evidence/2026-09-27/hps-supply-diagnostic-windows.md)。
+
 ### 2026-09-27 — 固定 LastExit 只读检查完成，保存点不足
 
 用户明确允许检查，并要求后续同类只读恢复核验不重复询问。LastExit身份/版本和J91匹配，但tick74238107早于5158成功施工；没有加载、覆盖或重放，accepted1不变。阻塞已从检查许可转为缺少覆盖已成功进度的保存点，详见[同一阶段证据补充](evidence/2026-09-27/hps-first-infeed-reconciliation.md#authorized-fixed-lastexit-inspection)。

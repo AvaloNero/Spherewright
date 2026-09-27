@@ -5558,6 +5558,8 @@ raw-aa19c3c5两个三NEW短样本只证明当前矿机旁及建筑间隙可放�
 - 关联：EXP-210、FoundryTransportPlanner、FoundryConstructionCompiler、game-api-foundry.md、包内playbook。
 - 最近复验：2026-09-06（767同档恢复后四个显式5对象候选均读到两路30/min分配，额定45/span2/80tick及30/span3/120tick，材料/科技足够；占位、无供电覆盖或跨纬线仍使全部CanPrepare=false。网络2的满负载缺口22200/tick与瞬时ratio1不矛盾。此为真实预算读回与拒绝路径，不是成功施工或实际吞吐）。
 
+- 最近复验：2026-09-28（102到场后两段独立native600tick只读窗口均为硅石5产/0耗、30/min；25仓3000，44塔硅254→261/500。到场静态快照的入口26为STT400000/span2、45/min，后续174为STT600000/span3、30/min，179为45/min；当前整路由174卡30/min。只升174/179后两接口自身为60/min但整路仍受26限45/min；三只全升普通2012才60/min，仍低于两炉120/min。focused `FoundryTransportPlannerTests` 26/26通过的是公式复验，不是持续送料、并行候选或施工授权；库存采样与窗口不严格同tick）。
+
 ### EXP-213 — Governor 增建比较应复用完整施工预算，且增量基于实测基线
 
 - 状态：`observed`

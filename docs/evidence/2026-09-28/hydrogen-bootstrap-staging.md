@@ -69,3 +69,42 @@ restored. No refuel, new factory entity, restart, continuous throughput or final
 version gate is claimed. Next, after audit commit/push/green CI and explicit
 workflow handoff: use the staged fuel normally, and test the dependency without
 repeatedly clearing storage.
+
+## Subsequent negative result and ordinary fuel use
+
+The staging/audit closure was pushed as `c167eaf` and CI36353041129 succeeded.
+The external ten-action window was explicitly sealed; game revision and ticks
+were not reset. A later independent600tick window76526024–76526623
+(`82fd488311d9455cb2a0f3abd7c594ba`/0002) has zero production/consumption for
+all nine selected items. Fresh3064 is full600 again; ring3404 has magnets6,
+turbines4 and graphite0, while rod3403 retains alloy2/D40 but rings0. Thus this
+20-item withdrawal did not establish sustained recovery. The unsampled interval
+is not asserted to be continuously idle. Do not repeat the same withdrawal.
+
+One ordinary refuel then moved20H2 from the backpack22→2 into the empty fuel
+chamber0→20 at76528518. Subsequent readback has chamber19/reactor item1120,
+showing entry into the native reactor path, not a sustained consumption rate.
+Normal save76535143/R65 follows, with unchanged originalJ91 and healthy writes;
+the new external window contains two accepted actions. No new factory audit or
+restart after this refuel is claimed; the earlier104 audit remains a dated
+snapshot. No building, recipe, connection or station configuration was changed.
+
+A later three-read packet `ae422baad37a4297abbc03fb2be876bc` retains the saved
+R65 boundary: player core800MJ, fuel chamberH2=7, reactor item1120, backpackH2=2.
+Its independent window76554428–76555027 again has0/0 for the nine selected
+factory items. Factory statistics are not a ledger of mecha fuel consumption;
+this finite fuel use does not establish a continuous factory hydrogen sink.
+
+- Refuel: `e171de1a7edd498db31adf32137d9688` terminal0006 SHA-256
+  `AF92AE0C261EA7FFC93D32BB904A7324ED12F29F59B45CD52836619B814906EC`;
+  proof0009 `7D3700C61D7D492ADC5EC8D30107068DC4342AEA24AC32EB3B176526763D8119`.
+- Save: `30a2f04c70814563a13a45cb9479a5f2` terminal0005
+  `791E1269DA83587C9ED163B11CC47E58D032978FBF6D8DA447C0CA9C6535C005`;
+  proof0008 `B0DE5ADBBA723CFE8393D900C573D8BCB72F0D5CD279F99BF0B6827DFEC4BCF6`.
+
+Next is a bounded permanent supply design, including existing coal-graphite
+conveyor routes and available station slots. The current MCP already supports
+station storage/output/charge modes inside `prepare_configure_building`; absence
+of a separately named station-config tool is not absence of that capability.
+Unoccupied slots do not prove that either endpoint or a complete route is usable.
+No new route is approved by this observation.

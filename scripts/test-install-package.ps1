@@ -89,66 +89,18 @@ function Invoke-TestInstallPackageCli {
         [Parameter(Mandatory)][string]$McpDestination,
         [Parameter(Mandatory)][string]$LogDirectory,
         [switch]$PreflightOnly,
+        [switch]$StageOnly,
         [switch]$Force
     )
 
-    $id = [guid]::NewGuid().ToString('N')
-    $stdoutPath = Join-Path $LogDirectory "installer-$id.stdout"
-    $stderrPath = Join-Path $LogDirectory "installer-$id.stderr"
     $arguments = @(
-        '-NoProfile',
-        '-ExecutionPolicy', 'Bypass',
-        '-File', (ConvertTo-TestInstallPackageQuotedArgument -Value $InstallerPath),
-        '-DspDir', (ConvertTo-TestInstallPackageQuotedArgument -Value $DspDir),
-        '-McpDestination', (ConvertTo-TestInstallPackageQuotedArgument -Value $McpDestination)
+        '-DspDir', $DspDir,
+        '-McpDestination', $McpDestination
     )
     if ($PreflightOnly) { $arguments += '-PreflightOnly' }
+    if ($StageOnly) { $arguments += '-StageOnly' }
     if ($Force) { $arguments += '-Force' }
-
-    $process = $null
-    $exitCode = $null
-    try {
-        $process = Start-Process -FilePath $ShellPath -ArgumentList ($arguments -join ' ') -WindowStyle Hidden -PassThru `
-            -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
-        # Windows PowerShell can otherwise expose a null ExitCode for a
-        # redirected Start-Process child after it exits. Bind its process handle
-        # while it is alive; the test still owns and alone may terminate it.
-        $null = $process.Handle
-        $stopwatch = [Diagnostics.Stopwatch]::StartNew()
-        while (-not $process.HasExited) {
-            foreach ($logPath in @($stdoutPath, $stderrPath)) {
-                $log = Get-Item -LiteralPath $logPath -Force -ErrorAction SilentlyContinue
-                if ($null -ne $log -and $log.Length -gt $script:TestInstallPackageOutputLimitBytes) {
-                    try { $process.Kill() } catch { }
-                    $process.WaitForExit(5000) | Out-Null
-                    throw "Owned installer CLI child exceeded the $script:TestInstallPackageOutputLimitBytes byte output bound."
-                }
-            }
-            if ($stopwatch.ElapsedMilliseconds -ge $script:TestInstallPackageTimeoutMilliseconds) {
-                try { $process.Kill() } catch { }
-                $process.WaitForExit(5000) | Out-Null
-                throw "Owned installer CLI child timed out after $script:TestInstallPackageTimeoutMilliseconds ms."
-            }
-            [Threading.Thread]::Sleep(100)
-        }
-        $process.WaitForExit()
-        $rawExitCode = $process.ExitCode
-        if ($null -eq $rawExitCode) {
-            $stdout = Read-TestInstallPackageBoundedLog -Path $stdoutPath
-            $stderr = Read-TestInstallPackageBoundedLog -Path $stderrPath
-            throw "Owned installer CLI child exited without an ExitCode. stdout=$($stdout.Length) chars; stderr=$($stderr.Length) chars."
-        }
-        $exitCode = [int]$rawExitCode
-    } finally {
-        if ($process) { $process.Dispose() }
-    }
-
-    if ($null -eq $exitCode) { throw 'Owned installer CLI child did not expose an exit code.' }
-    return [pscustomobject]@{
-        exitCode = $exitCode
-        stdout = Read-TestInstallPackageBoundedLog -Path $stdoutPath
-        stderr = Read-TestInstallPackageBoundedLog -Path $stderrPath
-    }
+    return Invoke-TestInstallPackageAuxiliaryScript -ShellPath $ShellPath -ScriptPath $InstallerPath -ScriptArguments $arguments -LogDirectory $LogDirectory -Label 'installer-cli'
 }
 
 function ConvertFrom-TestInstallPackageSuccessfulCli {
@@ -168,6 +120,189 @@ function ConvertFrom-TestInstallPackageSuccessfulCli {
     } catch {
         throw "$Context returned non-JSON installer stdout."
     }
+}
+
+function Invoke-TestInstallPackageAuxiliaryScript {
+    param(
+        [Parameter(Mandatory)][string]$ShellPath,
+        [Parameter(Mandatory)][string]$ScriptPath,
+        [Parameter(Mandatory)][string[]]$ScriptArguments,
+        [Parameter(Mandatory)][string]$LogDirectory,
+        [Parameter(Mandatory)][string]$Label
+    )
+
+    $id = [guid]::NewGuid().ToString('N')
+    $safeLabel = $Label -replace '[^A-Za-z0-9_-]', '-'
+    $stdoutPath = Join-Path $LogDirectory "$safeLabel-$id.stdout"
+    $stderrPath = Join-Path $LogDirectory "$safeLabel-$id.stderr"
+    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (ConvertTo-TestInstallPackageQuotedArgument -Value $ScriptPath))
+    foreach ($argument in $ScriptArguments) {
+        $arguments += (ConvertTo-TestInstallPackageQuotedArgument -Value $argument)
+    }
+
+    $process = $null
+    $exitCode = $null
+    try {
+        $process = Start-Process -FilePath $ShellPath -ArgumentList ($arguments -join ' ') -WindowStyle Hidden -PassThru `
+            -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+        $null = $process.Handle
+        $stopwatch = [Diagnostics.Stopwatch]::StartNew()
+        while (-not $process.HasExited) {
+            foreach ($logPath in @($stdoutPath, $stderrPath)) {
+                $log = Get-Item -LiteralPath $logPath -Force -ErrorAction SilentlyContinue
+                if ($null -ne $log -and $log.Length -gt $script:TestInstallPackageOutputLimitBytes) {
+                    try { $process.Kill() } catch { }
+                    $process.WaitForExit(5000) | Out-Null
+                    throw "Owned $Label child exceeded the $script:TestInstallPackageOutputLimitBytes byte output bound."
+                }
+            }
+            if ($stopwatch.ElapsedMilliseconds -ge $script:TestInstallPackageTimeoutMilliseconds) {
+                try { $process.Kill() } catch { }
+                $process.WaitForExit(5000) | Out-Null
+                throw "Owned $Label child timed out after $script:TestInstallPackageTimeoutMilliseconds ms."
+            }
+            [Threading.Thread]::Sleep(100)
+        }
+        $process.WaitForExit()
+        $rawExitCode = $process.ExitCode
+        if ($null -eq $rawExitCode) {
+            $stdout = Read-TestInstallPackageBoundedLog -Path $stdoutPath
+            $stderr = Read-TestInstallPackageBoundedLog -Path $stderrPath
+            throw "Owned $Label child exited without an ExitCode. stdout=$($stdout.Length) chars; stderr=$($stderr.Length) chars."
+        }
+        $exitCode = [int]$rawExitCode
+    } finally {
+        if ($null -ne $process) { $process.Dispose() }
+    }
+
+    return [pscustomobject]@{
+        exitCode = $exitCode
+        stdout = Read-TestInstallPackageBoundedLog -Path $stdoutPath
+        stderr = Read-TestInstallPackageBoundedLog -Path $stderrPath
+    }
+}
+
+function Invoke-TestInstallPackageCrashTransactionChild {
+    param(
+        [Parameter(Mandatory)][string]$ShellPath,
+        [Parameter(Mandatory)][string]$PackageRoot,
+        [Parameter(Mandatory)][string]$PluginStagePayload,
+        [Parameter(Mandatory)][string]$McpStagePayload,
+        [Parameter(Mandatory)][string]$PluginDestination,
+        [Parameter(Mandatory)][string]$McpDestination,
+        [Parameter(Mandatory)][string]$LogDirectory
+    )
+
+    $id = [guid]::NewGuid().ToString('N')
+    $childPath = Join-Path $LogDirectory ('transaction-interruption-' + $id + '.ps1')
+    $interruptionSentinelPath = Join-Path $LogDirectory ('transaction-interruption-' + $id + '.step')
+    $childSource = @'
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory)][string]$PackageRoot,
+    [Parameter(Mandatory)][string]$PluginStagePayload,
+    [Parameter(Mandatory)][string]$McpStagePayload,
+    [Parameter(Mandatory)][string]$PluginDestination,
+    [Parameter(Mandatory)][string]$McpDestination,
+    [Parameter(Mandatory)][string]$InterruptionSentinelPath
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Get-ExpectedStageFiles {
+    param([Parameter(Mandatory)][string]$Root)
+
+    $expected = [Collections.Generic.Dictionary[string,string]]::new([StringComparer]::OrdinalIgnoreCase)
+    $directories = [Collections.Generic.Stack[object]]::new()
+    $directories.Push([pscustomobject]@{ path=$Root; relative='' })
+    while ($directories.Count -gt 0) {
+        $current = $directories.Pop()
+        foreach ($item in @(Get-ChildItem -LiteralPath $current.path -Force)) {
+            $relative = if ([string]::IsNullOrEmpty([string]$current.relative)) { $item.Name } else { "$($current.relative)/$($item.Name)" }
+            if ($item.PSIsContainer) {
+                $directories.Push([pscustomobject]@{ path=$item.FullName; relative=$relative })
+            } else {
+                $expected.Add($relative, (Get-FileHash -LiteralPath $item.FullName -Algorithm SHA256).Hash)
+            }
+        }
+    }
+    return $expected
+}
+
+. (Join-Path $PackageRoot 'SpherewrightInstallTransaction.ps1')
+. (Join-Path $PackageRoot 'Test-SpherewrightStagedMcp.ps1')
+$manifest = Get-Content -LiteralPath (Join-Path $PackageRoot 'manifest.json') -Raw | ConvertFrom-Json
+$version = [string]$manifest.version
+$playbookPath = Join-Path $PackageRoot 'AGENT-PLAYBOOK.md'
+$mcpStageRoot = Split-Path -Parent $McpStagePayload
+$verifyInstalled = {
+    param([string]$LiveMcpDirectory)
+    Invoke-SpherewrightStagedMcpProbe -ExecutablePath (Join-Path $LiveMcpDirectory 'Spherewright.Mcp.exe') `
+        -ExpectedVersion $version -ExpectedPlaybookPath $playbookPath `
+        -IsolationDirectory (Join-Path $mcpStageRoot 'final-metadata-probe') | Out-Null
+    return [pscustomobject]@{ packageProbe = 'real' }
+}.GetNewClosure()
+$crashAfterMainPromotion = {
+    param([string]$Step)
+    if ($Step -ceq 'progress-verify-installed') {
+        $stream = [IO.File]::Open($InterruptionSentinelPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+        try {
+            $bytes = [Text.Encoding]::UTF8.GetBytes('progress-verify-installed')
+            $stream.Write($bytes, 0, $bytes.Length)
+            $stream.Flush($true)
+        } finally {
+            $stream.Dispose()
+        }
+        [Console]::Error.WriteLine('Intentional package-test interruption after main Plugin promotion at progress-verify-installed.')
+        [Console]::Error.Flush()
+        [Environment]::FailFast('Intentional package-test interruption after main Plugin promotion.')
+    }
+}.GetNewClosure()
+
+Invoke-SpherewrightInstallTransaction `
+    -PluginStagePayload $PluginStagePayload -PluginDestination $PluginDestination -PluginExpectedFiles (Get-ExpectedStageFiles -Root $PluginStagePayload) `
+    -McpStagePayload $McpStagePayload -McpDestination $McpDestination -McpExpectedFiles (Get-ExpectedStageFiles -Root $McpStagePayload) `
+    -VerifyInstalled $verifyInstalled -BeforeMutation $crashAfterMainPromotion | Out-Null
+throw 'The package interruption hook did not terminate its owned child.'
+'@
+    [IO.File]::WriteAllText($childPath, $childSource, [Text.UTF8Encoding]::new($false))
+    $result = Invoke-TestInstallPackageAuxiliaryScript -ShellPath $ShellPath -ScriptPath $childPath -ScriptArguments @(
+        '-PackageRoot', $PackageRoot,
+        '-PluginStagePayload', $PluginStagePayload,
+        '-McpStagePayload', $McpStagePayload,
+        '-PluginDestination', $PluginDestination,
+        '-McpDestination', $McpDestination,
+        '-InterruptionSentinelPath', $interruptionSentinelPath
+    ) -LogDirectory $LogDirectory -Label 'transaction-interruption'
+    Assert-TestInstallTransaction -Condition ($result.exitCode -ne 0) -Message 'The owned package transaction child did not terminate at the intended interruption point.'
+    Assert-TestInstallTransaction -Condition ((Test-Path -LiteralPath $interruptionSentinelPath -PathType Leaf) -and ((Get-Content -LiteralPath $interruptionSentinelPath -Raw -Encoding UTF8) -ceq 'progress-verify-installed')) -Message 'The owned package transaction child did not prove its exact interruption step.'
+    Assert-TestInstallTransaction -Condition ($result.stderr -match 'Intentional package-test interruption after main Plugin promotion at progress-verify-installed') -Message 'The owned package transaction child did not report its intentional interruption on stderr.'
+    return $result
+}
+
+function Invoke-TestInstallPackageRecoveryCli {
+    param(
+        [Parameter(Mandatory)][string]$ShellPath,
+        [Parameter(Mandatory)][string]$RecoveryPath,
+        [Parameter(Mandatory)][string]$PluginDestination,
+        [Parameter(Mandatory)][string]$McpDestination,
+        [Parameter(Mandatory)][string]$OperationId,
+        [Parameter(Mandatory)][string]$LogDirectory,
+        [switch]$RestoreOriginal,
+        [string]$ExpectedEvidenceHash
+    )
+
+    $arguments = @(
+        '-PluginDestination', $PluginDestination,
+        '-McpDestination', $McpDestination,
+        '-OperationId', $OperationId
+    )
+    if ($RestoreOriginal) {
+        $arguments += '-RestoreOriginal'
+        $arguments += @('-ExpectedEvidenceHash', $ExpectedEvidenceHash)
+    }
+    return Invoke-TestInstallPackageAuxiliaryScript -ShellPath $ShellPath -ScriptPath $RecoveryPath -ScriptArguments $arguments -LogDirectory $LogDirectory -Label 'recovery-cli'
 }
 
 function Assert-TestInstallPackageManifest {
@@ -258,6 +393,27 @@ function Assert-TestInstallPackagePairedCommit {
     }
 }
 
+function Assert-TestInstallPackagePairedRollback {
+    param(
+        [Parameter(Mandatory)][string]$TestRoot,
+        [Parameter(Mandatory)][string]$PluginStageParent,
+        [Parameter(Mandatory)][string]$McpStageParent,
+        [Parameter(Mandatory)][string]$OperationId,
+        [Parameter(Mandatory)][string]$PluginDestination,
+        [Parameter(Mandatory)][string]$McpDestination
+    )
+
+    $pluginArchive = Assert-TestInstallPackageDescendant -Path (Join-Path $PluginStageParent ('.spherewright-archive-' + $OperationId + '-plugin')) -Root $TestRoot -Context 'Plugin rollback archive'
+    $mcpArchive = Assert-TestInstallPackageDescendant -Path (Join-Path $McpStageParent ('.spherewright-archive-' + $OperationId + '-mcp')) -Root $TestRoot -Context 'MCP rollback archive'
+    foreach ($recordPath in @((Join-Path $pluginArchive 'transaction\progress.json'), (Join-Path $mcpArchive 'transaction\progress.json'))) {
+        Assert-TestInstallTransaction -Condition (Test-Path -LiteralPath $recordPath -PathType Leaf) -Message 'Rollback did not retain a paired transaction record.'
+        $record = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
+        Assert-TestInstallTransaction -Condition ([int]$record.schemaVersion -eq 1 -and [string]$record.operationId -ceq $OperationId -and [string]$record.status -ceq 'rolled_back') -Message 'Rollback archive record is not terminal rolled_back for the staged operation.'
+        Assert-TestInstallTransaction -Condition ((Get-TestInstallPackageFullPath -Path ([string]$record.pluginArchive)) -ceq $pluginArchive -and (Get-TestInstallPackageFullPath -Path ([string]$record.mcpArchive)) -ceq $mcpArchive) -Message 'Paired rollback records disagree about their archive pair.'
+        Assert-TestInstallTransaction -Condition ((Get-TestInstallPackageFullPath -Path ([string]$record.pluginDestination)) -ceq (Get-TestInstallPackageFullPath -Path $PluginDestination) -and (Get-TestInstallPackageFullPath -Path ([string]$record.mcpDestination)) -ceq (Get-TestInstallPackageFullPath -Path $McpDestination)) -Message 'Paired rollback records disagree about their live targets.'
+    }
+}
+
 function Assert-TestInstallPackageNoMarker {
     param([Parameter(Mandatory)][string]$MarkerPath)
     Assert-TestInstallTransaction -Condition (-not (Test-Path -LiteralPath $MarkerPath)) -Message 'Installer left its pending startup marker behind.'
@@ -275,7 +431,7 @@ $packageHash = (Get-FileHash -LiteralPath $resolvedPackagePath -Algorithm SHA256
 Assert-TestInstallTransaction -Condition ($packageHash -ceq $checksumParts[0].ToLowerInvariant()) -Message 'Package ZIP does not match its checksum sidecar.'
 
 $testParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
-$testRoot = Join-Path $testParent ('spherewright-install-package-' + [guid]::NewGuid().ToString('N'))
+$testRoot = Join-Path $testParent ('swip-' + [guid]::NewGuid().ToString('N'))
 $shellPath = [Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
 [void][IO.Directory]::CreateDirectory($testRoot)
 
@@ -349,6 +505,62 @@ try {
     Assert-TestInstallPackageNoMarker -MarkerPath $markerPath
     $script:TestInstallPackageStages++
 
+    # 5. The archived package can explicitly restore a partial-root first install
+    # after its own staged payload reaches main-Plugin promotion but never commits.
+    # The interruption uses the transaction's existing internal test hook, not an
+    # injection into install.ps1; it therefore does not claim an installer-CLI
+    # crash test or a real DSP deployment.
+    $recoveryRoot = Join-Path $testRoot 'r'
+    $recoveryGameRoot = Join-Path $recoveryRoot 'g'
+    $recoveryPluginDestination = Join-Path $recoveryGameRoot 'BepInEx\plugins\Spherewright'
+    $recoveryMcpBase = Join-Path $recoveryRoot 'm'
+    $recoveryMcpDestination = Join-Path $recoveryMcpBase 'installed'
+    $recoveryMarkerPath = Join-Path $recoveryGameRoot 'BepInEx\.spherewright-install-pending.json'
+    foreach ($sentinel in @(
+        (Join-Path $recoveryGameRoot 'DSPGAME.exe'),
+        (Join-Path $recoveryGameRoot 'DSPGAME_Data\Managed\Assembly-CSharp.dll'),
+        (Join-Path $recoveryGameRoot 'BepInEx\core\BepInEx.dll')
+    )) {
+        Write-TestInstallTransactionFile -Path $sentinel -Content 'synthetic sentinel: never launched'
+    }
+    $recoveryHandoffSentinel = Join-Path $recoveryPluginDestination 'runtime-handoff\partial-root-sentinel.json'
+    Write-TestInstallTransactionFile -Path $recoveryHandoffSentinel -Content 'partial-root handoff must remain unchanged'
+    [void][IO.Directory]::CreateDirectory($recoveryMcpBase)
+    $partialPluginBefore = Get-TestInstallTransactionTree -Root $recoveryPluginDestination
+    Assert-TestInstallTransaction -Condition (-not (Test-Path -LiteralPath (Join-Path $recoveryPluginDestination 'Spherewright.Plugin.dll') -PathType Leaf) -and -not (Test-Path -LiteralPath $recoveryMcpDestination)) -Message 'Partial-root recovery baseline unexpectedly contains a package payload.'
+
+    $staged = ConvertFrom-TestInstallPackageSuccessfulCli -CliResult (Invoke-TestInstallPackageCli -ShellPath $shellPath -InstallerPath $installerPath -DspDir $recoveryGameRoot -McpDestination $recoveryMcpDestination -LogDirectory $logs -StageOnly) -Context 'Partial-root staged package'
+    Assert-TestInstallTransaction -Condition ([bool]$staged.staged -and -not [bool]$staged.installed -and [bool]$staged.integrityVerified -and [bool]$staged.exactFileSet -and [bool]$staged.mcpHandshakeVerified -and [string]$staged.operationId -match '^[0-9a-f]{32}$') -Message 'StageOnly did not return an exact staged package operation with its MCP handshake verified.'
+    $stagedPluginPayload = Assert-TestInstallPackageDescendant -Path ([string]$staged.pluginStagedTo) -Root $testRoot -Context 'Staged Plugin payload'
+    $stagedMcpPayload = Assert-TestInstallPackageDescendant -Path ([string]$staged.mcpStagedTo) -Root $testRoot -Context 'Staged MCP payload'
+    Assert-TestInstallPackagePayload -Root $stagedPluginPayload -Expected $pluginExpected
+    Assert-TestInstallPackagePayload -Root $stagedMcpPayload -Expected $mcpExpected
+    Assert-TestInstallTransaction -Condition ((Get-TestInstallTransactionTree -Root $recoveryPluginDestination) -ceq $partialPluginBefore -and -not (Test-Path -LiteralPath $recoveryMcpDestination)) -Message 'StageOnly modified the partial-root live baseline.'
+
+    $crashResult = Invoke-TestInstallPackageCrashTransactionChild -ShellPath $shellPath -PackageRoot $packageRoot -PluginStagePayload $stagedPluginPayload -McpStagePayload $stagedMcpPayload -PluginDestination $recoveryPluginDestination -McpDestination $recoveryMcpDestination -LogDirectory $logs
+    $recoveryPluginStageRoot = Split-Path -Parent $stagedPluginPayload
+    $recoveryMcpStageRoot = Split-Path -Parent $stagedMcpPayload
+    Assert-TestInstallTransaction -Condition (Test-Path -LiteralPath $recoveryMarkerPath -PathType Leaf) -Message 'The interrupted package transaction did not retain its pending marker.'
+    $promotedMain = Join-Path $recoveryPluginDestination 'Spherewright.Plugin.dll'
+    Assert-TestInstallTransaction -Condition ((Test-Path -LiteralPath $promotedMain -PathType Leaf) -and ((Get-FileHash -LiteralPath $promotedMain -Algorithm SHA256).Hash -ieq $pluginExpected['Spherewright.Plugin.dll'])) -Message 'The interruption did not occur after the real staged main Plugin payload was promoted.'
+    foreach ($recordPath in @((Join-Path $recoveryPluginStageRoot 'transaction\progress.json'), (Join-Path $recoveryMcpStageRoot 'transaction\progress.json'))) {
+        Assert-TestInstallTransaction -Condition (Test-Path -LiteralPath $recordPath -PathType Leaf) -Message 'The interrupted package transaction did not retain both pre-terminal records.'
+        $record = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
+        Assert-TestInstallTransaction -Condition ([string]$record.operationId -ceq [string]$staged.operationId -and [string]$record.status -notin @('committed', 'rolled_back') -and [string]$record.phase -ceq 'copy-plugin-main-last') -Message 'The intentional interruption did not stop immediately after main-Plugin promotion.'
+    }
+
+    $recoveryCli = Join-Path $packageRoot 'recover-install.ps1'
+    $recoveryBeforePreview = Get-TestInstallPackageTargetSnapshot -TestRoot $testRoot
+    $preview = ConvertFrom-TestInstallPackageSuccessfulCli -CliResult (Invoke-TestInstallPackageRecoveryCli -ShellPath $shellPath -RecoveryPath $recoveryCli -PluginDestination $recoveryPluginDestination -McpDestination $recoveryMcpDestination -OperationId ([string]$staged.operationId) -LogDirectory $logs) -Context 'Archived recovery preview'
+    Assert-TestInstallTransaction -Condition ([string]$preview.mode -ceq 'preview' -and [bool]$preview.restoreAllowed -and [string]$preview.evidenceHash -match '^[0-9a-fA-F]{64}$') -Message 'Archived recovery preview did not issue a restore-bound evidence hash.'
+    Assert-TestInstallTransaction -Condition ((Get-TestInstallPackageTargetSnapshot -TestRoot $testRoot) -ceq $recoveryBeforePreview) -Message 'Archived recovery preview changed a synthetic target, stage, or archive parent.'
+    $restored = ConvertFrom-TestInstallPackageSuccessfulCli -CliResult (Invoke-TestInstallPackageRecoveryCli -ShellPath $shellPath -RecoveryPath $recoveryCli -PluginDestination $recoveryPluginDestination -McpDestination $recoveryMcpDestination -OperationId ([string]$staged.operationId) -LogDirectory $logs -RestoreOriginal -ExpectedEvidenceHash ([string]$preview.evidenceHash)) -Context 'Archived recovery restore'
+    Assert-TestInstallTransaction -Condition ([bool]$restored.restoredOriginal -and [string]$restored.status -ceq 'rolled_back') -Message 'Archived recovery did not report a verified original-state restore.'
+    Assert-TestInstallTransaction -Condition ((Get-TestInstallTransactionTree -Root $recoveryPluginDestination) -ceq $partialPluginBefore) -Message 'Archived recovery did not restore the exact partial Plugin root and runtime-handoff sentinel.'
+    Assert-TestInstallTransaction -Condition (-not (Test-Path -LiteralPath $recoveryMcpDestination) -and -not (Test-Path -LiteralPath $recoveryMarkerPath)) -Message 'Archived recovery did not restore the originally absent MCP payload or remove its verified marker.'
+    Assert-TestInstallPackagePairedRollback -TestRoot $testRoot -PluginStageParent (Split-Path -Parent $recoveryPluginStageRoot) -McpStageParent (Split-Path -Parent $recoveryMcpStageRoot) -OperationId ([string]$staged.operationId) -PluginDestination $recoveryPluginDestination -McpDestination $recoveryMcpDestination
+    $script:TestInstallPackageStages++
+
     [pscustomobject][ordered]@{
         package = [IO.Path]::GetFileName($resolvedPackagePath)
         zipSha256 = $packageHash
@@ -359,6 +571,7 @@ try {
         sameVersionWithoutForce = 'rejected_unchanged'
         forceReinstall = 'committed'
         runtimeHandoffSentinelPreserved = $true
+        partialRootFirstInstallRecovery = 'archived-stage/internal-transaction-hook/archived-recovery-cli'
         realPackagedMcpProbe = $true
         gameLaunches = 0
     } | ConvertTo-Json -Compress
@@ -367,7 +580,7 @@ try {
     $resolvedTestRoot = [IO.Path]::GetFullPath($testRoot)
     $leaf = Split-Path -Leaf $resolvedTestRoot
     if (-not $resolvedTestRoot.StartsWith($resolvedTempParent, [StringComparison]::OrdinalIgnoreCase) -or
-        $leaf -notmatch '^spherewright-install-package-[0-9a-f]{32}$') {
+        $leaf -notmatch '^swip-[0-9a-f]{32}$') {
         throw "Refusing to clean an unexpected test path: $resolvedTestRoot"
     }
     if (Test-Path -LiteralPath $resolvedTestRoot) {

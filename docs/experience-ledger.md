@@ -4,6 +4,10 @@
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
 
+## EXP-313 — 恢复目录的长度也属于安装安全预算
+
+- 2026-09-27，`observed`，最近复验同日；真实dirty包在长GUID测试树的Windows PowerShell恢复Move及随后较短树cleanup均失败，PowerShell7通过，进一步缩短根后两shell五阶段均通过。目的路径按固定组件估算261/267字符，但首次失败树已清理、stderr未给精确路径，保留该证据限制。只缩短测试目录不是产品修复；安装前须验证未来stage/archive/recovery证据路径（含最长MCP相对文件），不能只看live路径。安装/恢复目录结构、payload或shell变化时复验。关联IFX-179及[完整对照](evidence/2026-09-27/install-package-interruption-recovery.md)；无实际部署或游戏调用。
+
 ## EXP-312 — 同档和连续 Journal 不代表保存覆盖最后施工
 
 - 2026-09-27，`validated`，最近复验同日；仅限固定恢复候选的离线只读核验。LastExit内嵌身份、当前版本及J91均匹配，文件证据稳定且比primary新，仍早于已成功accepted施工，必须按已知进度下界拒绝恢复；外部Journal不能替代世界保存证明。用户已授权的同类固定候选只读检查直接做，不重复索取检查许可；不扩展为其他存档扫描或载入确认。候选、身份、进度下界或票据变化时复验；关联EXP-305/IFX-172及[阶段补充证据](evidence/2026-09-27/hps-first-infeed-reconciliation.md#authorized-fixed-lastexit-inspection)。未加载，不声称实体已落盘。

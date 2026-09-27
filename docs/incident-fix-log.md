@@ -12,6 +12,10 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-179 — 安装成功路径未提前覆盖深层恢复证据路径限制
+
+- 2026-09-27，`open`。真实dirty包的内部transaction中断恢复，在Windows PowerShell深层temp树出现Move失败；缩短场景目录后恢复成功而cleanup仍失败，再缩短GUID根后完整通过。PowerShell7三次均通过。与261/267字符推算及源码拼接一致，强烈指向长路径限制；不把已清理失败树或无路径stderr写成完整因果实证。当前产品没有未来恢复路径长度预检，短路径fixture仅完成一个正例，不修复实际深安装目录风险。下一切片须在任何live写入前拒绝不可安全恢复的路径或另证长路径支持。关联EXP-313及[真实包五阶段与失败边界](evidence/2026-09-27/install-package-interruption-recovery.md)。未改归档、未部署、未触碰存档。
+
 ## IFX-178 — Windows PowerShell 测试包装器将未知退出码误转为成功
 
 - 2026-09-27，`fixed_offline`。安装包测试的重定向`Start-Process`子进程在Windows PowerShell返回null `ExitCode`，旧`[int]`转换会得到`0`，因此首次无`-Force`阶段结果不能解释为产品安装器误放行。现于启动后立即绑定仅测试自建子进程的Handle，保留null拒绝，并维持输出/超时上限；两种shell的自建0/7退出码及最终真实包四阶段均通过。关联EXP-311及[实际包CLI范围](evidence/2026-09-27/install-package-cli.md)。不证明Unity、DSP原生版本、真实用户安装或发布。

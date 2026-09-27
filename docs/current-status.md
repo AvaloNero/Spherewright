@@ -4,6 +4,8 @@
 
 ## Verified snapshot
 
+**Latest coal-site approach and ten-write audit (2026-09-28):** one bounded Move reached the historical coal-cluster Walk point, then normally saved76757853/R77/J91; accepted10 is frozen. The closing mother audit at76764139 preserves5160 entities/10062 reciprocal edges/zero prebuilds. The unavailable long-route preview is only a historical-Walk exception, not a no-water, route, throughput, or restart claim. See [approach and closing-audit evidence](evidence/2026-09-28/coal-site-approach-ten-audit.md).
+
 **Latest graphite-route material kit (2026-09-28):** two ordinary transfers, three normal handcraft batches, and a normal save reached76704796/R74/J91 with accepted8. The player now carries400 basic belts and5 basic sorters. No build or configuration action was submitted; the two source warehouses' static configuration and links stayed intact. There was no whole-factory static audit in this stage. This is portable material only, not graphite delivery or sustained production. See [material-kit receipts](evidence/2026-09-28/graphite-route-material-kit.md).
 
 **Latest supply-plan constraint (2026-09-28):** the two proposed coal-graphite furnaces share miner106 with the old lines. Fresh complete diagnostics attribute a165 coal/min theoretical ceiling to that sole miner, below the proposed201.5/min concurrent budget (including a historical70 graphite/min allocation, not measured current demand). No new route has been built; compare normal coal augmentation before the long conveyor. See [capacity evidence and material plan](evidence/2026-09-28/coal-graphite-capacity-plan.md).

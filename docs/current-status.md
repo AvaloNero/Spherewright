@@ -4,6 +4,8 @@
 
 ## Verified snapshot
 
+**Current direct blocker (2026-09-28):** CNT3050 and fuel-ring3404 both trace missing graphite to hydrogen-blocked crackers3084/3083. Fresh reads confirm full H2/deuterium storage and fuel-rod3403 missing rings, despite adequate instantaneous power. Next: a bounded independent coal-graphite supply/bootstrap design plus actual consumption verification; no repair is yet authorized by this diagnosis, and clearing storage is not a sustained fix. See [coupled-dependency evidence](evidence/2026-09-28/cnt-hydrogen-ring-dependency.md).
+
 **Latest saved return (2026-09-28):** normal102→104 flight landed76312198 and saved76312274/R60/J91; its exact checkpoint is retired. The mother stage audit preserves5160 entities/10062 reciprocal edges/zero prebuilds; accepted7 remains. Local2255 now directly shows nanotubes1124=0, while4743 lacks broadband and1657 has inbound silicon300 with one working vessel. Next: trace existing CNT supply and measured transport timing; no further source rebuilding or sustained/restart acceptance yet. See [return/save audit](evidence/2026-09-28/silicon-return-mother-save-audit.md).
 
 **Latest post-repair supply observations (2026-09-28):** four separate600tick windows show source silicon132/132/54/42 per minute; mother silicon consumption0/0/120/96, with HPS/microcrystal/processors genuinely producing in the last two. Station44 orders and stock progress, but these gapped windows do not prove continuous supply. Purple still lacks broadband in the final window; next is local2255/4743 diagnosis, not further source rebuilding. See [four-window evidence](evidence/2026-09-28/silicon-post-repair-supply-windows.md).

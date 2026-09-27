@@ -4,7 +4,7 @@
 
 ## Verified snapshot
 
-**Latest re-entry (2026-09-27):** the user-authorized fixed LastExit inspection proves the same protected identity at tick74238107, current native version and matching continuous Journal91, but this predates successful sorter5158 at75194266. DSP remains closed; primary73728691 is older still. Neither known candidate covers the accepted1 construction. Do not load either or replay the build. The blocker is now insufficient saved progress, not permission to inspect LastExit; see [reconciliation and recovery evidence](evidence/2026-09-27/hps-first-infeed-reconciliation.md).
+**Latest re-entry (2026-09-27):** the subsequently authorized fixed-autosave inspection found AutoSave0 at tick75214675, with the same protected identity, native29088, stable double-read fingerprint and matching continuous Journal91. It covers the last observed75203871; entity5158 persistence is not yet proved. Primary73728691 and LastExit74238107 remain too old. DSP stays closed, the existing ticket is now expired, and no load or replay occurred. The next boundary is a supported explicit recovery of this fixed candidate, not more inspection permission; see [autosave evidence](evidence/2026-09-27/fixed-autosave-inspection.md) and [earlier reconciliation](evidence/2026-09-27/hps-first-infeed-reconciliation.md).
 
 - Documentation/evidence baseline: `346087b6b07c1b65b2e5567f5d24c141f4c9b739` (`2026-09-24T20:46:31+08:00`).
 - Last recorded installed cohort: `f4fc8e5`; its native DSP version was `0.10.35.29088`.

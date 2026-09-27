@@ -1,8 +1,10 @@
 # Spherewright experience ledger
 
-更新时间：2026-09-27（Asia/Singapore）
+更新时间：2026-09-28（Asia/Singapore）
 
 本文件是 Spherewright 实现、DSP 实机控制、运行环境与安全处置经验的权威账本。它记录“目前为什么这样做”以及“什么情况下必须重新检查”，不是成功日志，也不替代 `docs/research/` 的 API 证据、逐档日记、`docs/incident-fix-log.md` 的首次问题/修复记录或 `ROADMAP.md` 的版本验收门。
+
+2026-09-28 / EXP-188/290/299复验（`validated`，仓储动态缓冲窄范围，最近复验同日）：IFX-135在root燃料调用方复发，成功取料后不能冻结含buffers的`configurationStateHash`。静态仓格/连接用已存在的`Assert-AuditConfig`及覆盖这些字段的endpoint hash核证；材料守恒用同action原生终态，延迟仓库存允许正常生产变化。原回执证明3000→2800与玩家+200，后读2801并非异常增料；只执行尚未接受的refuel/save后缀，不重取。未改公共hash/协议，未把字段名当静态语义保证。新DTO/哈希实现或更换比较对象时重验字段覆盖，不能把仓储结论泛化到所有设备。见[本轮证据](evidence/2026-09-28/fuel-staging-ten-audit.md)及IFX-135。
 
 ## EXP-314 — 恢复须同时证明加载源和后续正常保存目标
 

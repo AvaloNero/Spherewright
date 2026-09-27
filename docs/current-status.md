@@ -4,6 +4,8 @@
 
 ## Verified snapshot
 
+**Latest silicon parallel input (2026-09-28):** native construction completed24→180→173 at76258416, preserving the original warehouse route and all checked old attachments. Sorter180 has filter1003 and native cycle200000 (nominal90/min, not measured delivery). SessionR51/accepted2/healthy remains unsaved after primary76164422. Next: upgrade179, separately complete the parallel outlet, then save and measure supply. See [source input evidence](evidence/2026-09-28/silicon-source-parallel-sorter.md).
+
 **Latest silicon-route action (2026-09-28):** existing174 normally upgraded2011→2012 at76223336; same-action silicon cargo and both endpoints survived, with one fast sorter consumed and one basic refunded. Session isR49/accepted1/healthy, but primary76164422 predates the upgrade: save/restart and sustained supply are not yet proved. Next: fresh native preview of parallel24→173. See [upgrade evidence](evidence/2026-09-28/silicon-sorter174-native-upgrade.md).
 
 **Latest silicon upgrade-material stage (2026-09-28):** normal local harvest and recursive crafting produced two fast sorters plus one spare coil, followed by two return moves and normal save76164422/R47/J91. The saved-world audit preserves all179 local entities/320 reciprocal edges and the original durable Journal; no route or machine was changed. Next: upgrade existing174 and fresh-test the parallel source interface; sustained supply remains unproved. See [materials/save evidence](evidence/2026-09-28/silicon-upgrade-materials-save-audit.md).

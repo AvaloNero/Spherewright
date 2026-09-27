@@ -4,6 +4,8 @@
 
 ## Verified snapshot
 
+**Latest runtime preview (2026-09-27):** one Steam launch reached the native29088 main menu. The new fixed-AutoSave0 prepare returned candidate75214675/evidenceVersion3/verified identity; only subsequent user confirmation blocks commit. No world was loaded, no credential consumed, and no save or construction replay occurred. See the [runtime preview](evidence/2026-09-27/fixed-autosave-cold-deployment.md#subsequent-native-main-menu-preview). Next: after explicit confirmation, fresh revalidate the same candidate, recover once and reconcile5158 before any construction.
+
 **Latest installation (2026-09-27):** local dirty-preview cohort `034300e` is cold-deployed through the package installer; 228/228 installed payload hashes match. Protected credential/Journal/handoff hashes are unchanged. Three legacy PDBs were recoverably backed up, not deleted. No world load/resave or entity5158 persistence is proved by installation; see [deployment evidence](evidence/2026-09-27/fixed-autosave-cold-deployment.md).
 
 **Source checkpoint (2026-09-27):** fixed AutoSave0 protected recovery is implemented, with original-primary overwrite-target proof, dedicated subsequent confirmation, durable consumption and no fallback. Full Release build and 2313 offline tests pass; MCP remains 64 tools/1 resource. Its source-only tests do not prove loading, entity5158 reconciliation or normal resave; subsequent cold deployment is recorded above. See [source evidence](evidence/2026-09-27/fixed-autosave-recovery-source.md).

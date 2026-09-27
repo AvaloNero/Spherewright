@@ -51,3 +51,29 @@ symbol backup), `2b07f97c5d4c4e12bdb38b93f0fff824` (installation intent/result).
 This stage proves local installation, not world loading, entity5158 persistence,
 normal resave, resumed production or whole-v0.4 readiness. The next step is a
 fresh runtime disclosure and subsequent user confirmation before any load.
+
+## Subsequent native main-menu preview
+
+Steam was not running. The three previously known registry installation values
+normalized to one executable; one Steam `-applaunch1366540` request started DSP.
+There was no direct game-executable launch or retry. Fresh Bridge/session reads
+reported native `0.10.35.29088`, Plugin0.4.0, no loaded world, unowned/read-only
+main menu and revision0. Unknown peaceful/sandbox values at the menu are not
+loaded-world evidence.
+
+One `prepare_resume_owned_game` for `reauthorize_expired_autosave0` succeeded,
+with known floor75203871, exact candidate75214675, evidenceVersion3, verified
+embedded identity and source/target29088. Its only blocker was
+`USER_CONFIRMATION_REQUIRED`; `commitAllowedNow=false`. The dedicated disclosure
+requires preserving the original identity/Journal, no fallback or imported
+copy, durable expired-credential consumption before load, and normal saving
+before a fresh credential. Interruption after consumption requires investigation,
+not replay. No commit, native load or save was attempted. Later confirmation
+must use a fresh plan with the same verified scope, not this preview token.
+
+Root independently read the actual prepared reply recorded at
+`2026-09-27T12:50:40Z`, evidence prefix `7a35ae8022394d339f6fd4ee2e874c42`.
+Its redacted evidence-file SHA-256 is
+`CD5BA0951E0C49355F4D640BEFC678C26F4F1FFCD6EC5FF6B30F76049AD821AB`.
+This is the first positive native-main-menu preview for the new mode, not a
+successful recovery. The redacted evidence file is not a reusable plan token.

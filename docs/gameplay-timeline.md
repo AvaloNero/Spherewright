@@ -3,6 +3,10 @@
 更新时间：2026-09-27（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+### 2026-09-27 — 固定自动档恢复成功，首个硅矿送料接口保留
+
+披露后用户明确要求恢复；Luna用fresh计划仅载入同身份自动档75214675，正常保存回主档75214706。回读75226640/R1为owned/healthy，原J91/91 durable；5158和1976/1980双端互返、旧1981边保留，背包2012仍为2，没有重建或重复扣料。外部accepted1→2，API内部正常保存不另算一次。全厂/凭据独立审计及边界统一记录于[恢复证据](evidence/2026-09-27/fixed-autosave-recovery-live.md)；另两接口与持续供料不因恢复成功而核销。
+
 ### 2026-09-27 — 固定 LastExit 只读检查完成，保存点不足
 
 用户明确允许检查，并要求后续同类只读恢复核验不重复询问。LastExit身份/版本和J91匹配，但tick74238107早于5158成功施工；没有加载、覆盖或重放，accepted1不变。阻塞已从检查许可转为缺少覆盖已成功进度的保存点，详见[同一阶段证据补充](evidence/2026-09-27/hps-first-infeed-reconciliation.md#authorized-fixed-lastexit-inspection)。

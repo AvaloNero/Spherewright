@@ -1001,6 +1001,7 @@
 
 ## IFX-072 — 临时保存调用受Shell别名与可选配置访问阻断
 
+- 2026-09-28 再现（仅私有调用方）：root 编写的煤矿短出口入口使用 `Rd`，被 PowerShell 内置 `rd → Remove-Item` 别名优先解析；首个读取的 Hashtable 参数在绑定阶段拒绝。执行退出 1、没有 Bridge 回执或 commit，也没有文件删除，原保存与 accepted3 不变。改为任务专属 `Read-CoalEnds`，并补实际函数分派到 mock transport 的零游戏测试；仅 Parser 或提前返回的 Smoke 不能覆盖这种命令解析错误。机械改名经独立审核通过；这不是 Plugin/MCP 修复或原生施工失败，后续施工结果另记阶段证据。
 - 首见：2026-09-08，第三氢消费者接通后的普通保存；状态`mitigated`，仅调用端，不是原生保存或公开接口缺陷。
 - 症状/根因：执行子Agent先后报告短函数名R被Invoke-History别名解析、无条件访问非仓储配置触发严格模式。root独立确认当前PowerShell的r别名定义；两次本地失败没有形成accepted保存，不能据此宣称游戏失败或换幂等键重放已成功动作。
 - 处理与证据：复用既有Invoke-SpherewrightNormalAction完成唯一21285f48，raw-9bf0ea36/save32115526；root使用有明确前缀的只读函数和既有可选属性helper，raw-24406aec核销11对象前后及当前、全玩家/J56及唯一原始/fresh终态。恢复源选择5项回归通过，无Plugin/MCP改动。

@@ -2492,6 +2492,7 @@ raw-aa19c3c5两个三NEW短样本只证明当前矿机旁及建筑间隙可放�
 
 ### EXP-267 — 私有调用必须避开Shell别名，并按组件处理可选DTO
 
+- 2026-09-28 复验：`Rd` 再次命中内置删除别名，首个 Bridge 调用前即因参数绑定失败，0 游戏调用/0 commit。此例确认原规则仍适用，但“Parser + 在导入前提前返回的 Smoke”不足以验证调用名。使用任务专属函数名，并以真实函数 AST、当前 Shell 命令解析和 mock transport 验证一次分派；本次 `Read-CoalEnds` 的 Function 类型、正确读取方法与单次 mock 命中均通过。此项只证明调用入口，不代替 fresh 原生预检、终态或资源守恒。关联 IFX-072；最近复验同日。
 - 状态：`validated`（当前PowerShell命令解析、可选属性读取及唯一保存核销）；日期/最近复验：2026-09-08；范围：私有调用端，不是Plugin/MCP新能力。
 - 证据/结论：Luna本次普通保存前报告R名称冲突及非仓配置访问错误；root本机Get-Alias确认r→Invoke-History。调用包装使用有任务前缀的明确名称，优先复用既有ActionClient，不用单字母函数覆盖Shell名称；非仓可选配置按实际属性存在性处理，不能把缺字段当作游戏改变或空仓。
 - 实机边界：raw-9bf0ea36唯一21285f48保存32115526；root raw-24406aec按Get-OptionalPropertyValue复核11对象前/后/当前配置、全玩家/J56及原始/fresh终态，accepted1/revision65、healthy。恢复源选择5项回归通过；无重复保存、额外游戏写入或新部署声明。

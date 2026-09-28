@@ -12,6 +12,12 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-182 — 私有施工 caller 将进度文本混入唯一终态 DTO
+
+- 2026-09-28，`fixed_offline`（私有 caller 返回值形状）。`Build-Gm` 在返回终态 DTO 的同一输出管道使用`Write-Output`写进度文本，令调用方得到字符串和 DTO 的数组，随后 StrictMode 在`targetObjectId`访问停止。电塔5161的原生 terminal 已成功；这是 caller-only 输出污染，不是 Plugin/MCP、DSP 原生施工或产品字段故障，且没有重放该成功动作。
+- 修正把进度改到 Host/Information 输出，离线 AST mock 以真实5161 terminal 验证 helper 恰返回一个 DTO；后续只执行已证明未提交的矿机+保存后缀，并由阶段审计核销5161/5162。产品源码、公开工具及正常施工语义未改。证据和未验边界见[本阶段记录](evidence/2026-09-28/coal-node319-power-miner-save-audit.md)。
+- 本次也复核既有 IFX-105/EXP-188/290/299：纯2201 power-node 的`powerNetworkId/powerServeRatio=null`是当前 reader 可观测性边界，不可误判断电或伪填network3；实际消费者矿机5162才以network3/serve1验电。该既有结论不重复新增经验条目。
+
 ## IFX-181 — 私有飞行调用方把整个终态 DTO 写到未脱敏输出
 
 - 2026-09-28，`fixed_offline`（未来私有输出路径）：root编写、Sol审核的有限飞行入口直接序列化整个action result；该DTO含`flightCheckpointReloadToken`。保护Bridge回执已脱敏，但并不覆盖另一路stdout。没有把凭据写入本仓文档，旧原证据不改写。

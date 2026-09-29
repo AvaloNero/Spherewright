@@ -2,6 +2,11 @@
 
 更新时间：2026-09-30（Asia/Singapore）
 
+## EXP-326 — 普通动作复用已验证提交器，零写字段错误须显式定位
+
+- 2026-09-30，`validated` 仅限本档科技1126的 caller 边界。运行时 owned/healthy、队列空且前置满足，但初版调用方用错误字段组成无诊断 gate，零请求；后续两次 native prepare 通过，手拼 commit 分别因缺准确 `sessionId`、`planetId` 而被 `STALE_SESSION`、`STALE_STATE` 拒绝，均无 accepted/actionId。主会话按同阶段两次失败接手，核 `CommitNormalActionRequest`，改用已有 `Invoke-SpherewrightNormalAction` 同调用方构造绑定字段、唯一幂等键并追同 action 终态；科技一次成功并正常保存，J93 持久。[原回执及科研窗口](evidence/2026-09-30/research-1126-caller-and-save.md)。
+- 准则：短动作直接发首个必要 Bridge 请求；每项前置 guard 按当前返回字段单独报错，不能藏在泛称 gate；已支持的普通写动作优先复用正常动作调用器，受保护原回执客户端在普通客户端后加载，不手拼每次 commit。两次同阶段拒绝即停交主会话换入口，不盲试第三份 payload。只在原回执明确零 accepted/零在途时重做 fresh prepare；已接受/结果未知仍须核原 action，绝不重放。首读到成功 commit 约九分钟主要是准备/返工，不是游戏动作耗时；未来按准备、动作、观察、审计分别计时，并用后续阶段验证流程确实缩短。
+
 ## EXP-325 — 保存恢复的短命 planToken 不跨调用方进程
 
 - 2026-09-30，`validated` 仅限本档这次计划重启，最近复验同日。普通保存 `78824574 / R26 / J92` 和正常退出后，主菜单的首次精确主档 resume prepare 可提交，但其 `planToken` 留在已结束的短命 PowerShell 调用方，故没有 commit、accepted 或在途恢复。执行者 fresh 再 prepare，并在同一受保护调用方完成唯一 commit、同 action 终态及身份/J92读回；恢复到 `78824606`，没有重新选档或重放成功动作。[阶段证据](evidence/2026-09-30/research-demand-save-resume-two-windows.md)。

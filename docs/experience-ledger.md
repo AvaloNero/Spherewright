@@ -2,6 +2,10 @@
 
 更新时间：2026-09-30（Asia/Singapore）
 
+## EXP-320 — Move 终态成功与玩家速度归零不是同一帧
+
+- 2026-09-30，`validated`（本档一次成功回撤及后续只读复验），最近复验同日。回撤 action 已在 tick78143374 `completed`，即时玩家为 `Walk`、目标距离约0.758米，但速度仍 `1.61493`；私有调用方要求第一帧 `≤0.1`，误报 `READBACK_MISMATCH`。稍后 fresh 后读为同一 owned 世界、`Walk`/速度0，未重新提交 Move。公共脚本新增 `Wait-SpherewrightPlayerSettled`：只对同 session/planet 做有界只读复查，返回 settled/未证明，不做 prepare/commit，也不改写原 action 成功事实。Windows PowerShell 与 PowerShell7 的客户端离线回归各59项/零游戏调用；新 helper 尚未在实机动作后实际调用。[实机与代码边界](evidence/2026-09-30/coal-approach-stall-and-save.md)。玩家状态 DTO、终态时序或客户端使用方式变化时复验。
+
 ## EXP-319 — 不能用预想 revision 增量否定已完成动作
 
 - 2026-09-30，`validated`（本档单次普通 Move 与受保护原回执），最近复验同日。已批准约4米短目标的唯一 action 在4.37秒调用方墙钟内终态 `completed`，玩家稳定 `Walk`/速度0、距目标约0.90米；私有读回脚本却假定 revision 必然 `2→3`，实值 `2→4`，误报 `READBACK_MISMATCH`。源码中的普通动作执行及完成路径均可能增加 revision；它是 fresh 状态/计划绑定值，不是按 accepted 次数推算的计数器。任何本地解析或非任务必要断言失败，先从受保护回执核同一 action/实体与现场，再判结果；已成功动作不重放。本次没有第二目标或保存。[原回执边界](evidence/2026-09-30/coal-short-move-revision-readback.md)。动作生命周期、revision 语义或调用方改变时复验。
@@ -16,6 +20,7 @@
 - 2026-09-29，`validated`（仅限本档本次普通 Move 的预检与终态），最近复验同日。两条正交约20米候选各有21个 observed、0 unknown 地表样本且 `shoreRisk=not_detected`；仅其中一条提交，181游戏tick后原生结果为 `position_stalled`、剩余16.13米，并明确 `doNotRetrySameTarget=true`。这是已接受失败写入，不能把已走出的约3.9米追认成目标完成，也不能以地表采样当建筑/植被碰撞证明。
 - 准则：先核原 action 终态，再 fresh 读 Walk/速度/能量及近处几何；不重放相同失败目标。能识别单障碍时考虑沿局部球面切平面背离约5米；否则最多四个正交约4米不同短目标、每方向一次，仍逐次走 fresh prepare/commit/terminal/readback。此规则不授权无界寻路、传送、位置写入或在十写冻结中继续试走。
 - [本次负例与边界](evidence/2026-09-29/coal-sorter-approach-stall-pilot.md)。具体阻挡物尚未证明；新布局、不同障碍、Move/watchdog/预览实现、DSP版本变化时复验。关联 EXP-179；不要把曾经另一档着陆基座卡脚的归因套在这次现场。
+- 2026-09-30 后续同档复验：两条约4米不同短目标先后成功；随后约8米前进及按静态建筑位置重新设计的约5米侧向目标虽分别有完整干地原生预览，仍各在180/181 tick原地 `position_stalled`，剩余距离几乎全长。旧整厂快照显示仓库827与制造台814约2.3米，但不能唯一归因 collider。停止相似方向并沿已证明来路回撤成功，随后普通保存78165513/J91；失败目标均未重试。此密集厂区须先重设计不穿夹缝的路线，不能再靠增加同方向近点反复试错。[阶段证据](evidence/2026-09-30/coal-approach-stall-and-save.md)。
 
 ## EXP-316 — 跨版本 Journal 要比较有效版本而非起源版本
 

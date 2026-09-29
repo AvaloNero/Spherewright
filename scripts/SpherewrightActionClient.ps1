@@ -77,6 +77,47 @@ function Wait-SpherewrightAction {
     throw "Action $ActionId did not reach a terminal state within $TimeoutSeconds seconds."
 }
 
+function Wait-SpherewrightPlayerSettled {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$SessionId,
+        [Parameter(Mandatory)][int]$PlanetId,
+        [ValidateRange(0, 100)][double]$MaximumSpeed = 0.1,
+        [ValidateRange(1, 60)][int]$TimeoutSeconds = 10
+    )
+
+    # A completed Move can leave one immediate player snapshot in Walk with
+    # residual speed. This is observation only: never prepare or replay an action.
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    $observations = 0
+    $lastPlayer = $null
+    do {
+        $response = Invoke-SpherewrightBridgeRequest -Method 'get_player_state' -SessionId $SessionId -Payload @{ planetId = $PlanetId }
+        $lastPlayer = Get-SpherewrightBridgeResult -Response $response -Operation 'get_player_state'
+        $observations++
+        if ($null -eq $lastPlayer.PSObject.Properties['sessionId'] -or
+            $null -eq $lastPlayer.PSObject.Properties['planetId'] -or
+            $null -eq $lastPlayer.PSObject.Properties['movementState'] -or
+            $null -eq $lastPlayer.PSObject.Properties['speed'] -or
+            $lastPlayer.sessionId -cne $SessionId -or
+            $lastPlayer.planetId -ne $PlanetId -or
+            -not ($lastPlayer.speed -is [double] -or $lastPlayer.speed -is [float] -or $lastPlayer.speed -is [decimal] -or $lastPlayer.speed -is [int] -or $lastPlayer.speed -is [long]) -or
+            [double]::IsNaN([double]$lastPlayer.speed) -or
+            [double]::IsInfinity([double]$lastPlayer.speed) -or
+            $lastPlayer.speed -lt 0) {
+            throw 'Player settlement readback is malformed or from a different session/planet; the original action result is unchanged.'
+        }
+        if ($lastPlayer.movementState -ceq 'Walk' -and $lastPlayer.speed -le $MaximumSpeed) {
+            return [pscustomobject]@{ settled = $true; player = $lastPlayer; observations = $observations }
+        }
+        $remainingMilliseconds = ($deadline - (Get-Date)).TotalMilliseconds
+        if ($remainingMilliseconds -le 0) { break }
+        Start-Sleep -Milliseconds ([int][Math]::Min(250, [Math]::Ceiling($remainingMilliseconds)))
+    } while ((Get-Date) -lt $deadline)
+
+    return [pscustomobject]@{ settled = $false; player = $lastPlayer; observations = $observations }
+}
+
 function Invoke-SpherewrightNormalAction {
     [CmdletBinding()]
     param(

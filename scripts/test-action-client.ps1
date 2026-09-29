@@ -48,9 +48,11 @@ function Assert-Action([bool]$Condition, [string]$Label) {
     if (-not $Condition) { throw "Action-client regression: $Label" }
     $script:checks++
 }
-function Reset-ActionStub([object[]]$States, [int]$ReadMilliseconds = 0) {
+function Reset-ActionStub([object[]]$States, [int]$ReadMilliseconds = 0, [object[]]$PlayerStates = @()) {
     $script:actionStubStates = [Collections.Generic.Queue[object]]::new()
     foreach ($state in $States) { $script:actionStubStates.Enqueue($state) }
+    $script:playerStubStates = [Collections.Generic.Queue[object]]::new()
+    foreach ($state in $PlayerStates) { $script:playerStubStates.Enqueue($state) }
     $script:actionStubCalls = [Collections.Generic.List[object]]::new()
     $script:actionStubSleeps = [Collections.Generic.List[int]]::new()
     $script:actionStubTime = [datetime]'2026-01-01T00:00:00Z'
@@ -72,6 +74,10 @@ function Invoke-SpherewrightBridgeRequest([string]$Method, [string]$SessionId, [
             $script:actionStubTime = $script:actionStubTime.AddMilliseconds($script:actionStubReadMilliseconds)
             if ($script:actionStubStates.Count) { $script:actionStubStates.Dequeue() }
             else { [pscustomobject]@{terminal=$false;succeeded=$false;state='waiting_for_game'} }
+        }
+        'get_player_state' {
+            if ($script:playerStubStates.Count) { $script:playerStubStates.Dequeue() }
+            else { [pscustomobject]@{sessionId='offline-session';planetId=104;movementState='Walk';speed=1.6} }
         }
         default { throw "Unexpected offline method: $Method" }
     }
@@ -137,4 +143,21 @@ $failure = $null
 try { Wait-SpherewrightAction -ActionId offline-action -SessionId offline-session | Out-Null } catch { $failure=$_.Exception.Message }
 Assert-Action ($failure -ceq 'offline transport failure') 'transport uncertainty propagated without retry'
 Assert-Action ($script:actionStubCalls.Count -eq 1 -and $script:actionStubSleeps.Count -eq 0) 'transport error never resubmits or sleeps'
+
+$moving = [pscustomobject]@{sessionId='offline-session';planetId=104;movementState='Walk';speed=1.61493}
+$settled = [pscustomobject]@{sessionId='offline-session';planetId=104;movementState='Walk';speed=0.0}
+Reset-ActionStub @() 0 @($moving, $settled)
+$observed = Wait-SpherewrightPlayerSettled -SessionId offline-session -PlanetId 104
+Assert-Action ($observed.settled -and $observed.observations -eq 2 -and $observed.player.speed -eq 0) 'transient post-terminal speed settles on bounded reread'
+Assert-Action (($script:actionStubCalls.method -join ',') -ceq 'get_player_state,get_player_state' -and ($script:actionStubSleeps -join ',') -ceq '250') 'settlement performs reads only and never replays action'
+
+Reset-ActionStub @() 0 @($moving)
+$observed = Wait-SpherewrightPlayerSettled -SessionId offline-session -PlanetId 104 -TimeoutSeconds 1
+Assert-Action (-not $observed.settled -and $observed.player.speed -eq 1.6) 'unsettled timeout remains an observation result, not action failure'
+Assert-Action (@($script:actionStubCalls | Where-Object method -NE 'get_player_state').Count -eq 0) 'unsettled timeout cannot prepare or commit'
+
+Reset-ActionStub @() 0 @([pscustomobject]@{sessionId='other-session';planetId=104;movementState='Walk';speed=0.0})
+$failure = $null
+try { Wait-SpherewrightPlayerSettled -SessionId offline-session -PlanetId 104 | Out-Null } catch { $failure=$_.Exception.Message }
+Assert-Action ($failure -like '*different session/planet*' -and $script:actionStubCalls.Count -eq 1) 'cross-session settlement readback rejects without replay'
 [pscustomobject]@{passed=$script:checks;gameCalls=0} | ConvertTo-Json -Compress

@@ -1,6 +1,10 @@
 # Spherewright experience ledger
 
-更新时间：2026-09-29（Asia/Singapore）
+更新时间：2026-09-30（Asia/Singapore）
+
+## EXP-319 — 不能用预想 revision 增量否定已完成动作
+
+- 2026-09-30，`validated`（本档单次普通 Move 与受保护原回执），最近复验同日。已批准约4米短目标的唯一 action 在4.37秒调用方墙钟内终态 `completed`，玩家稳定 `Walk`/速度0、距目标约0.90米；私有读回脚本却假定 revision 必然 `2→3`，实值 `2→4`，误报 `READBACK_MISMATCH`。源码中的普通动作执行及完成路径均可能增加 revision；它是 fresh 状态/计划绑定值，不是按 accepted 次数推算的计数器。任何本地解析或非任务必要断言失败，先从受保护回执核同一 action/实体与现场，再判结果；已成功动作不重放。本次没有第二目标或保存。[原回执边界](evidence/2026-09-30/coal-short-move-revision-readback.md)。动作生命周期、revision 语义或调用方改变时复验。
 
 ## EXP-318 — 跨会话哈希变化须用静态字段与原生资源证据解释
 

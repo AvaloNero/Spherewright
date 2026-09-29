@@ -91,17 +91,19 @@ public sealed class InstallationStartupGuardTests : IDisposable
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
         int Probe()
         {
+            // A cold Windows PowerShell process can start slowly on a busy CI
+            // runner. The mutex probe itself remains non-blocking (WaitOne(0)).
             using var process = Process.Start(new ProcessStartInfo(shell,
                 "-NoProfile -NonInteractive -EncodedCommand " + encoded)
             {
                 UseShellExecute = false,
                 CreateNoWindow = true
             }) ?? throw new InvalidOperationException("Failed to start mutex probe.");
-            if (!process.WaitForExit(10000))
+            if (!process.WaitForExit(30000))
             {
                 process.Kill();
                 process.WaitForExit();
-                throw new TimeoutException("Mutex probe exceeded ten seconds.");
+                throw new TimeoutException($"{shell} mutex probe exceeded thirty seconds.");
             }
             return process.ExitCode;
         }

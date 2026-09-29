@@ -2,6 +2,12 @@
 
 更新时间：2026-09-30（Asia/Singapore）
 
+## EXP-322 — 历史 Walk 落点是有界试走依据，不是新路径通行证明
+
+- 2026-09-30，`validated` 仅限本档这一条约88.9米实际完成的普通 Move。当前点到同档历史稳定 `Walk/0` 落点的 fresh 原生预检允许提交，但因超过32米完整地表预览不可用；前12米采样在约4米后入浅水。旧回执还证明历史落点至另一厂区点的95.69米 Move 曾成功，整厂非带中心的近似几何筛查未见中段大型建筑，但都不能替代当前路径的原生碰撞/水面证明。主会话只批准一个固定目标、唯一提交、同action终态及站稳读回；最终明确 `completed`、`Walk/0`、距目标1.013米且能量充足，随后5170升级和正常保存。不得泛化为长距离跨水安全、自动寻路或遇阻同目标重放。[阶段证据](evidence/2026-09-30/coal-historical-approach-sorter-upgrade-save.md)。现场建筑/地形、DSP移动实现、历史点身份或能源状态变化时重验。
+
+- 同次执行中，已批准且字段明确的单件升级曾花超过约两分钟只读源码/DTO、尚未发 Bridge 请求；主会话明确收敛到现有受保护入口后才迅速完成。复用 AGENTS 的两分钟准备报告、五分钟实质收回边界，不因“读更多背景”延后首个 fresh 请求；但不能因此省略原生 prepare、唯一 commit、终态和双端/材料核验。此条只约束执行流程，不修改游戏安全门；关联 EXP-321。
+
 ## EXP-320 — Move 终态成功与玩家速度归零不是同一帧
 
 - 2026-09-30，`validated`（本档一次成功回撤及后续只读复验），最近复验同日。回撤 action 已在 tick78143374 `completed`，即时玩家为 `Walk`、目标距离约0.758米，但速度仍 `1.61493`；私有调用方要求第一帧 `≤0.1`，误报 `READBACK_MISMATCH`。稍后 fresh 后读为同一 owned 世界、`Walk`/速度0，未重新提交 Move。公共脚本新增 `Wait-SpherewrightPlayerSettled`：只对同 session/planet 做有界只读复查，返回 settled/未证明，不做 prepare/commit，也不改写原 action 成功事实。Windows PowerShell 与 PowerShell7 的客户端离线回归各59项/零游戏调用；新 helper 尚未在实机动作后实际调用。[实机与代码边界](evidence/2026-09-30/coal-approach-stall-and-save.md)。玩家状态 DTO、终态时序或客户端使用方式变化时复验。

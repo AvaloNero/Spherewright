@@ -43,6 +43,17 @@ public sealed class AgentInventoryAccountingTests
     }
 
     [Fact]
+    public void PackagedPlaybookNamesResearchGuardsAndHashFields()
+    {
+        var playbook = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("name any failed field", playbook, StringComparison.Ordinal);
+        Assert.Contains("ownedBySpherewright", playbook, StringComparison.Ordinal);
+        Assert.Contains("expectedSelectionStateHash", playbook, StringComparison.Ordinal);
+        Assert.Contains("selectionStateHash", playbook, StringComparison.Ordinal);
+        Assert.Contains("not the general progression `stateHash`", playbook, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void PlayerToolDescriptionMakesExistingResearchAccountingDiscoverable()
     {
         var description = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetPlayerStateAsync))!

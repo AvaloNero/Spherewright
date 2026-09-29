@@ -37,3 +37,7 @@ jobs:
 
       - name: Run Core tests
         run: dotnet test Spherewright.Core.slnf --configuration Release --no-build --logger "console;verbosity=normal"
+
+      - name: Check package surface policy without game dependencies
+        shell: pwsh
+        run: ./scripts/test-package-surface-policy.ps1

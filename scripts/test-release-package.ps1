@@ -10,6 +10,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
+. (Join-Path $PSScriptRoot 'SpherewrightPackageSurface.ps1')
 $resolvedPackage = [IO.Path]::GetFullPath($PackagePath)
 if (-not (Test-Path -LiteralPath $resolvedPackage -PathType Leaf)) {
     throw "Release package not found: $resolvedPackage"
@@ -87,6 +88,7 @@ try {
     if (-not $process.Start()) {
         throw 'The packaged MCP executable did not start.'
     }
+    $stderrTask = $process.StandardError.ReadToEndAsync()
 
     $initialize = [ordered]@{
         jsonrpc = '2.0'
@@ -171,6 +173,17 @@ try {
         throw 'The packaged MCP returned an incomplete core-operation Agent playbook.'
     }
 
+    Assert-SpherewrightPackageSurface -Version $serverVersion -Tools $tools `
+        -PackagedPlaybook $packagedPlaybook -ResourcePlaybook $resourceText
+    $process.StandardInput.Close()
+    $remainingStdout = $process.StandardOutput.ReadToEndAsync()
+    if (-not $process.WaitForExit(5000)) { throw 'The packaged MCP did not stop after stdin closed.' }
+    if ($process.ExitCode -ne 0) { throw "The packaged MCP exited with code $($process.ExitCode)." }
+    if (-not $remainingStdout.Wait(5000) -or -not [string]::IsNullOrWhiteSpace($remainingStdout.Result)) {
+        throw 'Unexpected stdout after the final protocol response.'
+    }
+    if (-not $stderrTask.Wait(5000)) { throw 'The packaged MCP stderr did not finish draining.' }
+
     [pscustomobject]@{
         version = [string]$manifest.version
         productVersion = [string]$manifest.productVersion
@@ -185,6 +198,10 @@ try {
         packagedPlaybookBytes = (Get-Item -LiteralPath $packagedPlaybookPath).Length
         hasSessionState = $tools.name -contains 'spherewright_get_session_state'
         hasStationConfiguration = $tools.name -contains 'spherewright_prepare_configure_building'
+        packageSurfaceMatchesVersion = $true
+        packagedAndEmbeddedPlaybookMatch = $true
+        exitCode = $process.ExitCode
+        stderrCharacters = $stderrTask.Result.Length
         verified = $true
     } | ConvertTo-Json -Depth 3
 } finally {

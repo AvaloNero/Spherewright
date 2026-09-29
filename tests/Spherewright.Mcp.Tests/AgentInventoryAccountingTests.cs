@@ -54,6 +54,16 @@ public sealed class AgentInventoryAccountingTests
     }
 
     [Fact]
+    public void PackagedPlaybookReusesNormalActionCallerInsteadOfHandBuiltCommit()
+    {
+        var playbook = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("Invoke-SpherewrightNormalAction", playbook, StringComparison.Ordinal);
+        Assert.Contains("both commit `sessionId` and `planetId`", playbook, StringComparison.Ordinal);
+        Assert.Contains("Do not hand-build a fresh commit payload", playbook, StringComparison.Ordinal);
+        Assert.Contains("Two rejected commits at the same stage", playbook, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void PlayerToolDescriptionMakesExistingResearchAccountingDiscoverable()
     {
         var description = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetPlayerStateAsync))!

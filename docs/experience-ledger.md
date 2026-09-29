@@ -2,6 +2,11 @@
 
 更新时间：2026-09-29（Asia/Singapore）
 
+## EXP-318 — 跨会话哈希变化须用静态字段与原生资源证据解释
+
+- 2026-09-29，`validated`（本档 `28529→29088→29104` 同档恢复后的十写只读审计），最近复验同日。`FactoryEndpoint` 与 `FactoryConfiguration` 的规范哈希均包含 `SessionId`，后者还包含动态设备 Buffers；因此新 `GameData` 后全部对象的两个哈希不同，不能单独当作配置漂移。须从受保护原快照逐实体比较位置、身份、配方、过滤、静态仓/站设置、双向连接和电网归属，并留完整原回执；初次只留聚合摘要迫使本次重采52页。相关源码在 `src/Spherewright.Bridge.Core/Safety/CanonicalStateHash.cs`，证据见[十写审计](evidence/2026-09-29/coal-resume-move-ten-write-audit.md)。哈希版本/编码字段、恢复或快照实现改变时复验。
+- 本次静态比对 5169 个实体一致；矿机2440的唯一例外是覆盖列表删去节点161，原生资源读取报告该点已不存在，相邻铜点162仍正常。将这一项单独记录为环境变化，**不得把机械 `passed=false` 写成零差异审计**，也不能仅凭不存在推断耗尽的确切原因。节点生命周期、矿机原生覆盖或同档手动操作变化时复验；关联 EXP-317 的 Move 卡住结果仍不定位障碍。
+
 ## EXP-317 — 完整干地预览不能代替真实短程碰撞验收
 
 - 2026-09-29，`validated`（仅限本档本次普通 Move 的预检与终态），最近复验同日。两条正交约20米候选各有21个 observed、0 unknown 地表样本且 `shoreRisk=not_detected`；仅其中一条提交，181游戏tick后原生结果为 `position_stalled`、剩余16.13米，并明确 `doNotRetrySameTarget=true`。这是已接受失败写入，不能把已走出的约3.9米追认成目标完成，也不能以地表采样当建筑/植被碰撞证明。

@@ -30,6 +30,7 @@ public sealed class OwnedSavePrefixReaderTests
     [InlineData(34, 28529, 22, 9, "0.10.34.28529")]
     [InlineData(35, 29057, 23, 10, "0.10.35.29057")]
     [InlineData(35, 29088, 23, 10, "0.10.35.29088")]
+    [InlineData(35, 29104, 23, 10, "0.10.35.29104")]
     public void ReadsOnlyTheResearchedHeaderTuples(
         int versionPatch, int versionBuild, int gameDataPatch, int gameDescVersion, string expectedVersion)
     {
@@ -100,6 +101,7 @@ public sealed class OwnedSavePrefixReaderTests
     [InlineData(35, 29057, 13, 22, 9)]
     [InlineData(35, 29088, 13, 22, 9)]
     [InlineData(35, 29088, 13, 23, 9)]
+    [InlineData(35, 29104, 13, 22, 10)]
     [InlineData(36, 30000, 13, 23, 10)]
     public void RejectsMixedOrUnknownKnownHeaderTuples(
         int versionPatch, int versionBuild, int dataVersion, int gameDataPatch, int gameDescVersion)

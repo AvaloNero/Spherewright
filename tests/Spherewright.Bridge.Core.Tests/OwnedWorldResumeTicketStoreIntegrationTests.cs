@@ -15,6 +15,7 @@ public sealed class OwnedWorldResumeTicketStoreIntegrationTests
     private const string GameVersion = "0.10.34.28529";
     private const string TargetGameVersion = "0.10.35.29057";
     private const string TargetPatchGameVersion = "0.10.35.29088";
+    private const string CurrentPatchGameVersion = "0.10.35.29104";
     private const string OwnedSaveName = "synthetic-protected-world-identity";
     private const string SessionId = "synthetic-session";
     private const int PlanetId = 104;
@@ -188,11 +189,35 @@ public sealed class OwnedWorldResumeTicketStoreIntegrationTests
         Assert.Equal(string.Empty, rejection);
     }
 
+    [Fact]
+    public void Expired29088PrimaryWithExistingJournalHistoryCanPreviewExact29104Migration()
+    {
+        var prior = new GameplayJournalVersionTransition
+        {
+            FromGameVersion = GameVersion,
+            ToGameVersion = TargetPatchGameVersion,
+            AdoptedAtGameTick = MinimumTick - 2,
+            DurableThroughSequence = 2,
+            RecordedAtUtc = "2026-09-24T00:48:28.0000000+00:00",
+        };
+        using var scenario = VersionTransitionScenario.CreateExpired(
+            TargetPatchGameVersion, CurrentPatchGameVersion, GameVersion, new[] { prior });
+
+        Assert.False(scenario.Store.TryGetActiveTicket(scenario.Token, out _, out _));
+        Assert.True(scenario.Store.TryGetExpiredPrimaryProvenance(
+            scenario.Token, out var ticket, out _, out var rejection));
+        Assert.Equal(TargetPatchGameVersion, ticket!.GameVersion);
+        Assert.Equal(string.Empty, rejection);
+    }
+
     [Theory]
     [InlineData("0.10.33.00000", "0.10.35.29057")]
     [InlineData("0.10.35.29057", "0.10.34.28529")]
     [InlineData("0.10.35.29057", "0.10.35.29088")]
     [InlineData("0.10.35.29088", "0.10.35.29057")]
+    [InlineData("0.10.34.28529", "0.10.35.29104")]
+    [InlineData("0.10.35.29057", "0.10.35.29104")]
+    [InlineData("0.10.35.29104", "0.10.35.29088")]
     public void UnknownOrReverseRuntimeVersionCannotPrepareExpiredProvenance(
         string ticketVersion, string runtimeVersion)
     {
@@ -309,6 +334,57 @@ public sealed class OwnedWorldResumeTicketStoreIntegrationTests
         Assert.NotNull(ticket);
         Assert.Equal(runtimeGameVersion, ticket!.GameVersion);
         Assert.Equal(string.Empty, rejection);
+    }
+
+    [Fact]
+    public void TwoExactDurableTransitionsPermitFutureNormalResumeOn29104()
+    {
+        var transitions = new[]
+        {
+            new GameplayJournalVersionTransition
+            {
+                FromGameVersion = GameVersion, ToGameVersion = TargetPatchGameVersion,
+                AdoptedAtGameTick = MinimumTick - 2, DurableThroughSequence = 2,
+                RecordedAtUtc = "2026-09-24T00:48:28.0000000+00:00",
+            },
+            new GameplayJournalVersionTransition
+            {
+                FromGameVersion = TargetPatchGameVersion, ToGameVersion = CurrentPatchGameVersion,
+                AdoptedAtGameTick = MinimumTick - 1, DurableThroughSequence = 2,
+                RecordedAtUtc = "2026-09-29T00:48:28.0000000+00:00",
+            },
+        };
+        using var scenario = VersionTransitionScenario.CreateActive(
+            CurrentPatchGameVersion, GameVersion, transitions);
+
+        Assert.True(scenario.Store.TryGetActiveTicket(scenario.Token, out var ticket, out var rejection));
+        Assert.Equal(CurrentPatchGameVersion, ticket!.GameVersion);
+        Assert.Equal(string.Empty, rejection);
+    }
+
+    [Fact]
+    public void Old29088TicketCannotReplayAfterJournalAlreadyHas29104Transition()
+    {
+        var transitions = new[]
+        {
+            new GameplayJournalVersionTransition
+            {
+                FromGameVersion = GameVersion, ToGameVersion = TargetPatchGameVersion,
+                AdoptedAtGameTick = MinimumTick - 2, DurableThroughSequence = 2,
+                RecordedAtUtc = "2026-09-24T00:48:28.0000000+00:00",
+            },
+            new GameplayJournalVersionTransition
+            {
+                FromGameVersion = TargetPatchGameVersion, ToGameVersion = CurrentPatchGameVersion,
+                AdoptedAtGameTick = MinimumTick - 1, DurableThroughSequence = 2,
+                RecordedAtUtc = "2026-09-29T00:48:28.0000000+00:00",
+            },
+        };
+        using var scenario = VersionTransitionScenario.CreateExpired(
+            TargetPatchGameVersion, CurrentPatchGameVersion, GameVersion, transitions);
+
+        Assert.False(scenario.Store.TryGetExpiredPrimaryProvenance(
+            scenario.Token, out _, out _, out _));
     }
 
     private sealed class ExpiredScenario : IDisposable

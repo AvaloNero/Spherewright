@@ -1,6 +1,6 @@
 # Spherewright
 
-DSP version adaptation is narrow: exact `0.10.34.28529 → 0.10.35.29057` or `0.10.34.28529 → 0.10.35.29088` owned-primary migration preserves Journal origin/history and records a separate durable transition. One local live `28529 → 29088` recovery has completed; it is not arbitrary cross-version save loading or proof of a later restart, factory state, or production continuity. See the [current status](docs/current-status.md) and the [native evidence and live boundary](docs/research/game-api-version-0.10.35.md).
+DSP version adaptation is narrow: exact `0.10.34.28529 → 0.10.35.29057`, `0.10.34.28529 → 0.10.35.29088`, or `0.10.35.29088 → 0.10.35.29104` owned-primary migration preserves Journal origin/history and records a separate durable transition. One local live `28529 → 29088` recovery has completed; the 29104 extension has native comparison and offline-test evidence but no successful live load yet. Neither is arbitrary cross-version save loading or proof of production continuity. See the [current status](docs/current-status.md), [earlier native evidence](docs/research/game-api-version-0.10.35.md), and [29104 evidence](docs/research/game-api-version-0.10.35.29104.md).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D4)](#requirements)
@@ -25,7 +25,7 @@ main 已增加只读 `spherewright_get_foundry_plan`：从目标产量计算多�
 ### 支持范围
 
 - Windows x64
-- 《戴森球计划》未发布 0.4 包目标 `0.10.35.29088`；已发布 0.3.x 的历史本机验证为 `0.10.34.28529`
+- 《戴森球计划》未发布 0.4 包目标 `0.10.35.29104`（实机恢复待验）；已发布 0.3.x 的历史本机验证为 `0.10.34.28529`
 - BepInEx `5.4.17`
 - 单人、和平模式（关闭黑雾/战斗）
 - 任意沙盒设置和资源倍率；它们只作为运行证据，不会扩展可调用能力
@@ -181,7 +181,7 @@ See [current status](./docs/current-status.md), [ROADMAP.md](./ROADMAP.md), [doc
 The currently supported runtime scope is deliberately narrow:
 
 - Windows x64
-- Dyson Sphere Program (unreleased 0.4 package target: `0.10.35.29088`; released v0.3.x historical local validation: `0.10.34.28529`)
+- Dyson Sphere Program (unreleased 0.4 package target: `0.10.35.29104`, live recovery pending; released v0.3.x historical local validation: `0.10.34.28529`)
 - BepInEx `5.4.17.0`
 - single-player
 - peaceful mode
@@ -263,7 +263,7 @@ Leave DSP at its idle main menu, set `Safety.AllowWrites=true`, restart DSP, and
 
 ### Continue an existing save
 
-For a **previously owned** world whose 24-hour restart credential has expired, development 0.4 adds `reauthorize_expired_primary` to the existing resume flow: preview the exact primary and original Journal, show the disclosure, then wait for a new explicit confirmation before commit. It does not import a new copy, extend the old credential, select arbitrary saves or reconstruct history. Evidence drift refuses loading; interrupted attempts require manual reconciliation. The exact `28529 → 29088` path has one cold-deployed local live result, while later restart, fresh-factory and production evidence remains pending; see [current status](docs/current-status.md) and [the playbook](docs/agent-playbook.md#expired-planned-restart-credential).
+For a **previously owned** world whose 24-hour restart credential has expired, development 0.4 adds `reauthorize_expired_primary` to the existing resume flow: preview the exact primary and original Journal, show the disclosure, then wait for a new explicit confirmation before commit. It does not import a new copy, extend the old credential, select arbitrary saves or reconstruct history. Evidence drift refuses loading; interrupted attempts require manual reconciliation. The exact `28529 → 29088` path has one cold-deployed local live result; the exact `29088 → 29104` extension is still awaiting live recovery. See [current status](docs/current-status.md) and [the playbook](docs/agent-playbook.md#expired-planned-restart-credential).
 
 Set both `Safety.AllowWrites=true` and `Safety.AllowUserSaveImport=true`, restart DSP, and manually load the intended peaceful single-player save. Ask the Agent to prepare an import. It must show the returned disclosure and wait for a later explicit confirmation from you before commit creates a separate `Spherewright_Imported_*` copy. The original save is not overwritten, renamed, deleted, or selected by the import API. Sandbox state and resource multiplier are reported but do not block the import or later normal actions. From then on, both you and the Agent should continue in that copy; after restart, leave DSP at the main menu and use protected resume. After any manual play in the owned copy, the Agent must discard stale observations and plans, read the live state again, and prepare later writes against the current state hashes.
 

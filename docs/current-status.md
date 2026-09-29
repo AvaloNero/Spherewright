@@ -1,5 +1,7 @@
 # Current status
 
+**2026-09-29 re-entry gate:** Steam started DSP `0.10.35.29104` while the protected original owned primary remained at `0.10.35.29088`. The exact expired ticket is unconsumed, covers save tick `77676444` and durable Journal `J91`, and its two replicas match. One prepare-only call on the old cohort rejected as `SESSION_NOT_OWNED`; **no world was loaded or written**. An exact `29088 → 29104` source adaptation passed native metadata comparison, full Release build and offline tests; a new **dirty local preview** was cold-deployed after normal main-menu exit, with installed Plugin/MCP hashes matching the preview package. This is not live recovery or a release. See [the dated adaptation/deployment evidence](evidence/2026-09-29/dsp-29104-source-adaptation.md) and [native comparison](research/game-api-version-0.10.35.29104.md). The next gate is fresh exact-primary prepare/disclosure and a subsequent user confirmation before any commit.
+
 > **Historical saved-world baseline:** 2026-09-24. The separate September 26 re-entry section records newer checks; neither snapshot is a continuous assertion about the live game.
 
 ## Verified snapshot

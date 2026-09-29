@@ -285,16 +285,19 @@ internal sealed class GameplayJournalManager : IDisposable
             if (migrating)
             {
                 if (expectedResumeCheckpoint is null || !_sessions.CanMigratePendingResumeJournal(sourceGameVersion)
-                    || document.VersionTransitions.Count != 0
                     || document.Entries.Count != expectedResumeCheckpoint.MinimumDurableThroughSequence)
                     throw new InvalidDataException("The exact journal cannot prove the authorized version transition.");
-                document.VersionTransitions.Add(new GameplayJournalVersionTransition
+                var transition = new GameplayJournalVersionTransition
                 {
                     FromGameVersion = sourceGameVersion, ToGameVersion = _gameVersion,
                     AdoptedAtGameTick = GameMain.gameTick,
                     DurableThroughSequence = expectedResumeCheckpoint.MinimumDurableThroughSequence,
                     RecordedAtUtc = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture),
-                });
+                };
+                if (!OwnedWorldVersionCompatibilityPolicy.CanAppendTransition(document.GameVersion,
+                    document.VersionTransitions, document.Entries.Count, sourceGameVersion, _gameVersion, transition))
+                    throw new InvalidDataException("The exact journal cannot prove the authorized version transition.");
+                document.VersionTransitions.Add(transition);
             }
 
             _activeSessionId = sessionId;

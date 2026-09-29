@@ -5,15 +5,18 @@ namespace Spherewright.Bridge.Core.Safety;
 /// <summary>Researched, directional native migration; never a wildcard version bypass.</summary>
 public static class OwnedWorldVersionCompatibilityPolicy
 {
+    public const int MaximumDurableTransitions = 2;
     public const string SourceVersion = "0.10.34.28529";
     public const string TargetVersion = "0.10.35.29057";
     public const string TargetPatchVersion = "0.10.35.29088";
+    public const string CurrentPatchVersion = "0.10.35.29104";
 
     public static bool IsResearchedTarget(string version) =>
-        version == TargetVersion || version == TargetPatchVersion;
+        version == TargetVersion || version == TargetPatchVersion || version == CurrentPatchVersion;
 
     public static bool IsSupportedMigration(string source, string target) =>
-        source == SourceVersion && IsResearchedTarget(target);
+        (source == SourceVersion && (target == TargetVersion || target == TargetPatchVersion))
+        || (source == TargetPatchVersion && target == CurrentPatchVersion);
 
     public static bool AllowsReauthorization(string source, string target) =>
         !string.IsNullOrWhiteSpace(source) && (source == target || IsSupportedMigration(source, target));
@@ -24,14 +27,35 @@ public static class OwnedWorldVersionCompatibilityPolicy
         long entryCount, string expected)
     {
         if (string.IsNullOrWhiteSpace(origin) || transitions is null || entryCount < 0) return false;
-        if (transitions.Count == 0) return origin == expected;
-        if (transitions.Count != 1) return false;
-        var change = transitions[0];
-        return change is not null && change.FromGameVersion == origin
-            && IsSupportedMigration(change.FromGameVersion, change.ToGameVersion)
-            && change.ToGameVersion == expected && change.AdoptedAtGameTick >= 0
-            && change.DurableThroughSequence >= 0 && change.DurableThroughSequence <= entryCount
-            && DateTimeOffset.TryParse(change.RecordedAtUtc, System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.RoundtripKind, out _);
+        if (transitions.Count > MaximumDurableTransitions) return false;
+        var current = origin;
+        long previousTick = -1;
+        long previousSequence = -1;
+        foreach (var change in transitions)
+        {
+            if (change is null || change.FromGameVersion != current
+                || !IsSupportedMigration(change.FromGameVersion, change.ToGameVersion)
+                || change.AdoptedAtGameTick <= previousTick
+                || change.DurableThroughSequence < previousSequence
+                || change.DurableThroughSequence < 0 || change.DurableThroughSequence > entryCount
+                || !DateTimeOffset.TryParse(change.RecordedAtUtc, System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out _)) return false;
+            current = change.ToGameVersion;
+            previousTick = change.AdoptedAtGameTick;
+            previousSequence = change.DurableThroughSequence;
+        }
+        return current == expected;
+    }
+
+    public static bool CanAppendTransition(string origin,
+        IReadOnlyList<GameplayJournalVersionTransition>? transitions, long entryCount,
+        string source, string target, GameplayJournalVersionTransition? candidate)
+    {
+        if (candidate is null || transitions is null || transitions.Count >= MaximumDurableTransitions
+            || !IsSupportedMigration(source, target)
+            || !JournalMatches(origin, transitions, entryCount, source)) return false;
+        var proposed = transitions.ToList();
+        proposed.Add(candidate);
+        return JournalMatches(origin, proposed, entryCount, target);
     }
 }

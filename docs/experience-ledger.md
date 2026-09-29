@@ -1,6 +1,10 @@
 # Spherewright experience ledger
 
-更新时间：2026-09-28（Asia/Singapore）
+更新时间：2026-09-29（Asia/Singapore）
+
+## EXP-316 — 跨版本 Journal 要比较有效版本而非起源版本
+
+- 2026-09-29，`validated`（当前原 owned 主档的恢复前只读核查及随后 29104 实机 prepare），最近复验同日。Journal 的 `gameVersion` 保留创建时 `28529`，票据记录其已持久迁移后的有效版本 `29088`；只比较两字符串会误报 `TICKET_JOURNAL_MISMATCH`。须核完整、有序且持久的迁移链、91条连续事件、身份/追踪/checkpoint，再用产品内建精确 prepare 复验。该次本地误判发生于0 prepare/0 commit；纠正后唯一 `29088→29104` 恢复成功并正常保存，第二条迁移持久化。不能把本条用作跳过原生版本门、文件证据或改选存档的理由。证据见[29104实机恢复](evidence/2026-09-29/dsp-29104-owned-primary-live-recovery.md)；Journal结构/版本链策略或恢复入口变化时复验。
 
 ## EXP-315 — 副产物去路不能依赖被该副产物堵住的启动材料
 

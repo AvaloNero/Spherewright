@@ -2,6 +2,12 @@
 
 更新时间：2026-09-29（Asia/Singapore）
 
+## EXP-317 — 完整干地预览不能代替真实短程碰撞验收
+
+- 2026-09-29，`validated`（仅限本档本次普通 Move 的预检与终态），最近复验同日。两条正交约20米候选各有21个 observed、0 unknown 地表样本且 `shoreRisk=not_detected`；仅其中一条提交，181游戏tick后原生结果为 `position_stalled`、剩余16.13米，并明确 `doNotRetrySameTarget=true`。这是已接受失败写入，不能把已走出的约3.9米追认成目标完成，也不能以地表采样当建筑/植被碰撞证明。
+- 准则：先核原 action 终态，再 fresh 读 Walk/速度/能量及近处几何；不重放相同失败目标。能识别单障碍时考虑沿局部球面切平面背离约5米；否则最多四个正交约4米不同短目标、每方向一次，仍逐次走 fresh prepare/commit/terminal/readback。此规则不授权无界寻路、传送、位置写入或在十写冻结中继续试走。
+- [本次负例与边界](evidence/2026-09-29/coal-sorter-approach-stall-pilot.md)。具体阻挡物尚未证明；新布局、不同障碍、Move/watchdog/预览实现、DSP版本变化时复验。关联 EXP-179；不要把曾经另一档着陆基座卡脚的归因套在这次现场。
+
 ## EXP-316 — 跨版本 Journal 要比较有效版本而非起源版本
 
 - 2026-09-29，`validated`（当前原 owned 主档的恢复前只读核查及随后 29104 实机 prepare），最近复验同日。Journal 的 `gameVersion` 保留创建时 `28529`，票据记录其已持久迁移后的有效版本 `29088`；只比较两字符串会误报 `TICKET_JOURNAL_MISMATCH`。须核完整、有序且持久的迁移链、91条连续事件、身份/追踪/checkpoint，再用产品内建精确 prepare 复验。该次本地误判发生于0 prepare/0 commit；纠正后唯一 `29088→29104` 恢复成功并正常保存，第二条迁移持久化。不能把本条用作跳过原生版本门、文件证据或改选存档的理由。证据见[29104实机恢复](evidence/2026-09-29/dsp-29104-owned-primary-live-recovery.md)；Journal结构/版本链策略或恢复入口变化时复验。

@@ -26,4 +26,15 @@ The hash increases are `729` and `668`; both red/yellow point pairs decline. The
 
 A **single** later ready production window `78614765–78615364` reported coal `13 produced / 10 consumed`, graphite `5/8`, red matrix `2/2`, and yellow matrix `1/2`, where all four had `0/0` in the earlier ready window. This is a positive demand/production pulse, not yet a multi-window sustained rate, proof of complete yellow supply, or post-save restart. No factory construction, transfer, handcraft, flight or additional research selection occurred in this stage. Protected local evidence is indexed by the `action-3702113779af43fd8e3eafa06f30b5bf`, `action-c7cf09994c1d43fd91e102e92146eacf` and `action-7ef60bf461454892bd302f14ef6f77da` receipt groups.
 
-Next: compare independent production windows and the same affected buffers while research runs. If consumption continues but coal/graphite becomes truly supply-limited, revisit the complete supply/transport budget. Do not treat queue nonempty, temporary buffer loss, one inventory pulse, or nominal machine capacity as sustained output.
+## Repeated, separated production windows
+
+Two more read-only `get_overseer_production` results each used native factory statistics over exactly `600` game ticks; their intervals did not overlap. Main independently checked the protected production replies rather than asking the game to resample them:
+
+| Ready window | Coal `1006` P/C | Graphite `1109` P/C | Hydrogen `1120` P/C | Plastic `1115` P/C | Red `6002` P/C | Yellow `6003` P/C |
+|---|---:|---:|---:|---:|---:|---:|
+| `78632310–78632909` | `13/14` | `7/8` | `2/5` | `2/2` | `2/2` | `1/2` |
+| `78642360–78642959` | `14/12` | `6/6` | `2/3` | `2/2` | `1/2` | `1/2` |
+
+Here P/C means produced/consumed item counts within that window; it is not a full material balance for the intervals **between** windows. Fresh progression at tick `78644445` still had tech `1125` queued and unlocked=false, with hash `44519/240000`. Lab `84` was working at full power with red/yellow points `37550/37140`. Graphite store `114` had `2962/3000` across all 30 slots; furnace `113` was working with 4 coal input but still had graphite output `100/100`. Thus demand has restarted some production without yet freeing every output buffer or proving a long continuous rate. Separate infrastructure findings reported four depleted veins; the six target production entries in the second window had no findings, so the vein alerts are not assigned to this chain without tracing their actual entities. No game writes occurred in this follow-up; external accepted remains `5`. The two production receipts are the local protected groups `action-4245394d0fc74cd8a7599c63dd3cc3ca` and `action-c25047d9ca884d92871d1cffb326ce1e`.
+
+Next: test the lasting hydrogen sink and yellow-chain inventory trend; if a specific branch re-blocks, trace that endpoint before increasing upstream capacity. A fresh protected restart is still unproved for this research selection. Do not treat queue nonempty, temporary buffer loss, one inventory pulse, or nominal machine capacity as sustained output.

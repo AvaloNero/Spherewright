@@ -20,6 +20,18 @@ public sealed class AgentInventoryAccountingTests
     }
 
     [Fact]
+    public void PackagedPlaybookRequiresRuntimeItemIdentityBeforeSupplyRepair()
+    {
+        var playbook = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("runtime item identity", playbook, StringComparison.Ordinal);
+        Assert.Contains("itemId", playbook, StringComparison.Ordinal);
+        Assert.Contains("itemName", playbook, StringComparison.Ordinal);
+        Assert.Contains("get_recipe_catalog", playbook, StringComparison.Ordinal);
+        Assert.Contains("discard that diagnosis", playbook, StringComparison.Ordinal);
+        Assert.Contains("do not commit a supply change for the wrong material", playbook, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void PlayerToolDescriptionMakesExistingResearchAccountingDiscoverable()
     {
         var description = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetPlayerStateAsync))!

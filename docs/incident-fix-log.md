@@ -12,6 +12,11 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-184 — 恢复预检计划滞留在已退出的调用方进程
+
+- 2026-09-30，`mitigated`（外部调用流程及包内指南；无 Plugin 协议缺陷证据）。同档正常保存/关闭后首次默认 resume prepare 成功，但执行者结束了持有短时 token 的命令进程，未发 commit；这是零 accepted/零在途的调用方丢失，不是游戏加载失败。fresh prepare 后在同一受保护调用中唯一提交并于 `78824606` 成功，原档/J92连续。[阶段证据](evidence/2026-09-30/research-demand-save-resume-two-windows.md)。
+- 包内 playbook 与开发规范规定直接调用 Bridge 的短命脚本把 prepare/commit 留在同一调用方，不打印/落盘 token；普通 MCP 调用仍按公开协议传递。丢失前先证明未接受，已接受或不明时必须核原 action。新增包内资源回归测试；本次结论不证明该规则已冷部署至当前 MCP 或跨机器运行。关联 EXP-325。
+
 ## IFX-183 — 供料诊断把硫酸物品编号误认成有机晶体
 
 - 2026-09-30，`mitigated`（Agent 解释与包内执行指南；无 Plugin 物品目录缺陷证据）。原生 `itemId=1116/itemName=硫酸` 被调用方凭记忆解释为有机晶体，进而把设备861的石矿不足错接到黄糖链；主会话在任何供料写入前，以当前配方目录及针对 `1117` 的新窗口否定该解释。原动作/库存未因此改变。[纠正证据](evidence/2026-09-30/runtime-item-identity-correction.md)。

@@ -32,6 +32,17 @@ public sealed class AgentInventoryAccountingTests
     }
 
     [Fact]
+    public void PackagedPlaybookKeepsShortLivedPlanInProtectedCaller()
+    {
+        var playbook = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("same protected caller context", playbook, StringComparison.Ordinal);
+        Assert.Contains("do not print or persist a `planToken`", playbook, StringComparison.Ordinal);
+        Assert.Contains("Ordinary MCP prepare/commit tool calls", playbook, StringComparison.Ordinal);
+        Assert.Contains("zero accepted/in-flight actions", playbook, StringComparison.Ordinal);
+        Assert.Contains("reconcile its original action", playbook, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void PlayerToolDescriptionMakesExistingResearchAccountingDiscoverable()
     {
         var description = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.GetPlayerStateAsync))!

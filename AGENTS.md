@@ -47,6 +47,8 @@ Spherewright 是面向外部 Agent 的《戴森球计划》结构化控制层。
 
 2026-09-30 快路径补充：批准包已经给定固定目标、入口和停止条件时，执行者直接做首个必要 Bridge 请求，不用单独的“收到任务”回合或先研究旧阶段 caller；确有未满足前置条件才报具体 blocker。十写只读审计若发现旧 caller 固定了过期 revision/save/tick，立即改用既有受保护只读客户端采集当前同一 snapshot 和必要现场证据，不花数分钟移植旧 caller，也不因此省略逐实体/拓扑/Journal 核验。主会话只在时限、异常和闭合结果时介入，记录准备、动作、审计各自墙钟，不能用秒级游戏动作耗时掩盖多分钟空准备。密集厂区下一移动候选要考虑近处完整实体分布；地表预览不验证路径碰撞，一次部分前进后停滞不能按上一段成功推断下一转向可通行，停止相似尝试并重设计整片绕行路线。
 
+已批准短动作的首条 Bridge 回执是执行开始的证据；没有可指向的 runId/ordinal 时，应明确报“零请求”，不能声称只读调用已发或回执已落盘。前置检查与异常处理不得引入依赖未初始化变量的第二故障，遮住原始错误；普通动作直接复用已验证的 `Invoke-SpherewrightNormalAction`，不为每批重写 catch/commit 包装。首请求前若发生本地调用方错误，先核零 accepted/零在途，再由主会话给出确切字段或按六十秒规则接手；不让执行者另花一轮搜旧脚本或受保护目录。成功终态、相关读回已匹配的前缀不得因这类调用方错误重放。
+
 短动作 caller 的每项前置条件必须按当前 Bridge 返回的确切字段分别核验，并在零写拒绝时报告失败的字段名/值（仅脱敏安全值），不能把多个条件压成一个无诊断的 gate。先从当前 DTO/原回执取字段，不猜旧脚本名称；例如 owned session 是 `ownedBySpherewright`，科研选择绑定 `selectionStateHash` 与 `expectedSelectionStateHash`，不是通用 `stateHash`。直接 Bridge 执行已支持的普通动作，优先复用 `scripts/SpherewrightActionClient.ps1` 的 `Invoke-SpherewrightNormalAction` 统一构造含 sessionId/planetId 的 commit、唯一幂等键及同 action 终态；需受保护原回执时，在该普通客户端**之后**加载 `.local/SpherewrightAuditedBridgeClient.ps1`。不为每步手拼 commit DTO。本地字段/脚本错误且原回执证明零 accepted/零在途时，主会话一次给出准确字段后由 Luna 立即重做 fresh 单步；同一 commit 阶段两次拒绝即停、由主会话换回已验证入口，不自行试第三个手拼参数。不得升级为多轮方案审核，也不得把它记成原生游戏失败。每个短动作分别记首个 Bridge 请求、prepare、commit、terminal、读回的时间，超过60秒仍无首个请求即执行前述收回规则。
 
 新布局/连接、跨链取舍、模板不适用或两次同类失败由主会话直接设计/重设计，再把有界后缀交 Luna；没有 Sol 中转或第三轮盲试。固定算术由 Luna 复用已验证脚本；辅助任务失败不算游戏原生试错。结果不明、隔离、需新增原语或改变安全/协议/保存语义立即由主会话接手，不等重试次数。

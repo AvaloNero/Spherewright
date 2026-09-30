@@ -3,7 +3,7 @@
 更新时间：2026-09-30（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-09-30 — 建成5198远端→5197近端两段belt；action唯一终态成功，随后caller因settled包装误读exit1，禁止重放。独立读回R39/J96，accepted 6/10；新带未保存，下一步仅5197→Lab84 slot2分拣器附件预检。[科研消费者短带及读回契约](evidence/2026-09-30/science-consumer-stub.md)。
+2026-09-30 — 5199分拣器filter6004完成原生附件：5197 slot4↔5199 slot1、5199 slot0↔Lab84 slot2均互返；action成功，accepted 7/10，fresh R41。未保存、未证紫糖实际流入；下一步核源3051出口→空belt→5198中段。[科研消费者分拣器读回](evidence/2026-09-30/science-consumer-sorter.md)。
 
 2026-09-30 — 蓝色后备分拣器868正常配置过滤1202→1301，accepted升至2/10；空`targetObjectIds`和`itemDeltas`为合法回执，库存未变且本次未保存。Lab76输出缓存满仅为采样，不证明持续输送。[请求绑定与原生读回](evidence/2026-09-30/blue-backup-sorter-binding.md)。
 

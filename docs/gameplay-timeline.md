@@ -3,6 +3,8 @@
 更新时间：2026-10-01（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-01 — 新增L1→L0消费者下坡八段`5217→…→5210`及sorter `5218`，接入既有`5198→5197→5199→Lab84`；正常保存81554959/J96 durable，观察81554973/R12，accepted6/10。新恢复凭据可用但未验证重启；上游供料、紫糖到货和科研吞吐未证明。[消费者下坡段、分拣器与正常保存](evidence/2026-10-01/purple-consumer-down-ramp-and-save.md)。
+
 2026-10-01 — stdin调用空批次出现exit0/空stdout，但受保护intent索引与fresh读回核销为0 accepted；-File/Encoded离线入口回归3/3、0游戏调用。不是施工里程碑。[PowerShell入口与空执行核销](evidence/2026-10-01/powershell-stdin-entry-noop.md)。
 
 2026-10-01 — 北向0→1坡道的单一候选在planned point1撞到旧belt4880，`BUILD_LOCATION_INVALID/belt_path_existing_overlap`、0创建/0accepted；不代表整条native Stage1通过或所有坡道失败。[北向坡道占位拒绝](evidence/2026-10-01/purple-north-ramp-occupancy-blocker.md)。

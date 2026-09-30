@@ -1948,6 +1948,23 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public void SorterConfigurationGuideUsesRequestBindingNotBuildEchoes()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareConfigureBuildingAsync))!;
+        var description = ((System.ComponentModel.DescriptionAttribute)method.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).Single()).Description;
+        Assert.Contains("request-bound expectedStateHash", description);
+        Assert.Contains("sorter-build echo plannedSorterFilterItemId", description);
+        Assert.Contains("missing build echoes never justify replay", description);
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("request-bound `expectedStateHash`", guide);
+        Assert.Contains("not mandatory configuration fields", guide);
+        Assert.Contains("configuration terminal `targetObjectIds` may be empty", guide);
+        Assert.Contains("reuse the current Core canonical hash", guide);
+        Assert.Contains("poll the same action to terminal", guide);
+        Assert.Contains("replay an accepted action after a caller assertion fails", guide);
+    }
+
+    [Fact]
     public async Task ConfigureBuildingTool_MapsSorterFilterWithoutInventedResponseEchoes()
     {
         var bridge = new FakeBridgeClient(SuccessResult())

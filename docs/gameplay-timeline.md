@@ -3,6 +3,8 @@
 更新时间：2026-09-30（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-30 — 蓝色后备分拣器868正常配置过滤1202→1301，accepted升至2/10；空`targetObjectIds`和`itemDeltas`为合法回执，库存未变且本次未保存。Lab76输出缓存满仅为采样，不证明持续输送。[请求绑定与原生读回](evidence/2026-09-30/blue-backup-sorter-binding.md)。
+
 2026-09-30 — root重新开放窗口后的首个写为正常保存（accepted 1/10）：两笔材料转移已保存覆盖，fresh tick80425712 / R31、Journal durable J96；未验证重启恢复。[正常保存回执与边界](evidence/2026-09-30/core-materials-normal-save.md)。
 
 2026-09-30 — 十写封窗：十个 accepted 终态均成功，当前差异仅新增5195/5196及已核材料变化；accepted 10/10 仍冻结至提交、绿CI和root交接。[核心材料与工厂差异审计](evidence/2026-09-30/core-materials-ten-write-audit.md)。

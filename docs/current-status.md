@@ -1,23 +1,23 @@
 # Spherewright 当前快照
 
-更新：2026-09-30（Asia/Singapore）。本文件是覆盖式状态摘要，不是机器状态源；身份、Journal、accepted 与终态以 fresh 状态及受保护原回执为准。历史见[游戏时间线](gameplay-timeline.md)。
+更新：2026-09-30（Asia/Singapore）。本文件是覆盖式状态摘要，不是机器状态源；身份、accepted 与原生终态以 fresh 状态及受保护回执为准。历史见[游戏时间线](gameplay-timeline.md)。
 
-## 保存与写窗口
+## 当前配置与写窗口
 
 | 项 | 最近已核证值 | 边界 |
 |---|---|---|
 | 游戏 | owned-world-001 / planet104；DSP 0.10.35.29104 | 本次不代表重启恢复或发行验证 |
-| 最新读回 | run `52ccd4fc2e86454c88a17483b8ffe62e` ord7：tick 80425712 / revision 31；healthy | 本次是保存后状态读回 |
-| 保存与日志 | lastSaved tick 80425709；Journal durable J96，无 pending/error | 电路板与紫糖两笔转移已被正常保存覆盖 |
-| 外部写窗口 | root 已明确重新开放；accepted **1/10**，唯一写动作为正常保存 | 无在途或未核销动作；保存回执不代表重启恢复 |
-| Git / 发行 | 本文档批次前 main 为 `8fa8cec` 且其 CI 已绿 | 本文档提交需按准确 SHA 验 CI；不代表已安装或发布 |
+| 最新读回 | run `32b2cc3657084ae5b833d714d3a94348` ord18：tick80442890 / revision33；healthy | 配置读回，不等于生产窗口 |
+| 保存 | lastSaved tick80425709 | 蓝色后备分拣器868本次配置尚未保存 |
+| 外部写窗口 | accepted **2/10**，无在途动作 | 包含此前正常保存及本次一次配置动作；不得重放 |
+| Git / 发布 | 本批次前 main 为 `1c2300a` 且对应CI已绿 | 本批次须按准确SHA验CI；不代表安装或发布 |
 
-run `52ccd4fc2e86454c88a17483b8ffe62e` ord5 的唯一 `commit_save` action `8fdebc08-c842-4b67-809b-cef1c1edc59c`，ord6 成功完成于 tick 80425709；ord7 确认 lastSaved 与健康状态。原回执索引无 replay、unknown 或 intent。细节及计时边界见[正常保存事件](evidence/2026-09-30/core-materials-normal-save.md)。
+accepted action `24ede7d8-5d6b-4dc3-8a7f-eda4afd14fc9` 成功将868过滤由1202改为1301，连接26↔868↔76互返；`targetObjectIds=[]` 与 `itemDeltas=[]` 是此配置动作的合法回执。请求绑定使用Sorter配置hash，不要求建造回显字段；玩家库存未变。详情及离线复核见[蓝色后备分拣器事件](evidence/2026-09-30/blue-backup-sorter-binding.md)。
 
-## 下一消费者接口
+## 下一消费者接口与边界
 
-下一步先对 lab84 做最小消费者端口预检，再据结果决定上游。此前只读证据显示 lab84 紫糖科研点为0，储仓3051有紫糖2288、仅有输入5113而无输出；这说明待核真实输送接口，不证明当前仍无生产或已经供料。参见[升级后三窗诊断](evidence/2026-09-30/hydrogen-upgrade-three-window-diagnostic.md)。
+Lab76采样显示线圈6、电路6、blue output 10、working=false（输出buffer满）；这是采样边界，不证明868实际投递或持续供给。下一步仍是对Lab84做最小紫糖消费者端口预检，再据结果决定上游。Lab84紫糖科研点最后一次fresh读数为此前run `2e501713…` 中的0；本次未重读Lab84，结论不越过该样本边界。详见[Storage caller现场边界](evidence/2026-09-30/storage-buffer-caller-fix.md)。
 
-两笔转移现已保存，但本次没有测试重启恢复、持续生产、科研实际供料或2104解锁。不得将正常保存当作这些验收的替代。
+本次未测试重启恢复、紫糖实际科研供料或2104解锁；正常配置成功与采样点读数均不能替代这些验证。
 
-证据入口：[正常保存事件](evidence/2026-09-30/core-materials-normal-save.md) · [第十写材料与工厂审计](evidence/2026-09-30/core-materials-ten-write-audit.md) · [Roadmap](../ROADMAP.md)。
+证据入口：[蓝色后备分拣器事件](evidence/2026-09-30/blue-backup-sorter-binding.md) · [上次正常保存](evidence/2026-09-30/core-materials-normal-save.md) · [Roadmap](../ROADMAP.md)。

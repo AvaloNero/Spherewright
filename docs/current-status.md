@@ -7,17 +7,17 @@
 | 项 | 最近已核证值 | 边界 |
 |---|---|---|
 | 游戏 | owned-world-001 / planet104；DSP 0.10.35.29104 | 本次不代表重启恢复或发行验证 |
-| 最新读回 | run `f0bea78c9032414f993bec3a12ccdbfa` ord25：tick80526462 / revision37；同一owned planet104、healthy、saved、resume available | 保存读回，不等于重启恢复 |
-| 保存 | lastSaved tick80526460；ord26 Journal durable J96/96，无pending/error | 已覆盖868过滤配置；本次未验证重启 |
-| 外部写窗口 | accepted **5/10**，无在途动作 | 本阶段transfer、handcraft、save三项均有唯一成功终态；不得重放 |
-| Git / 发布 | 文档提交前基线 `73401fc` 的Windows Core CI已绿 | 本次文档提交按准确SHA另验CI；不代表安装或发布 |
+| 最新观察 | run `062cd8fce1024bbf805f67a0381da62a` ord1：tick80548608 / R39；同一owned planet104、healthy | 新建短带尚未保存，不代表重启恢复 |
+| 保存 | lastSaved tick80526460；ord3 Journal J96 durable、无pending/error | 5197/5198仍未被保存覆盖 |
+| 外部写窗口 | accepted **6/10**，无在途或未决 | 新短带施工已有唯一成功终态；caller exit1不改变其accepted结果，不得重放 |
+| Git / 发布 | 文档提交前基线 `fa636b4` 的Windows Core CI已绿 | 本批提交按准确SHA另验CI；不代表安装或发布 |
 
-run `f0bea78c9032414f993bec3a12ccdbfa` 中，源1511铁3000→2999、背包0→1；recipe85手搓一次，铁1→0、电路板2011由1→2、C1000→999，其余14种库存不变。保存动作成功且fresh读回R37/J96持久；完整索引、动作终态和计时边界见[紫糖路线材料事件](evidence/2026-09-30/purple-route-sorter-materials.md)。蓝色后备分拣器868先前过滤1202→1301，连接26↔868↔76互返；其请求绑定和合法空目标/差量回执见[蓝色后备分拣器事件](evidence/2026-09-30/blue-backup-sorter-binding.md)。
+run `bacc806ec604461491e462b5ad5e399f` 已建5198远端→5197近端两段belt，各自仅一条互返连接、头尾空；inventory item2001为372→370，其余15种不变。action `2da4f06d-abb0-4c0d-a68c-eeb98c97a043` 已在tick80538928成功终态；命令后续因`Wait-SpherewrightPlayerSettled`包装误当玩家DTO而exit1，不能据此重跑。21条原始索引、独立只读快照和接口契约见[科研消费者短带事件](evidence/2026-09-30/science-consumer-stub.md)。此前源1511取料/recipe85手搓保存仍见[紫糖路线材料事件](evidence/2026-09-30/purple-route-sorter-materials.md)。
 
 ## 下一消费者接口与边界
 
-Lab76此前采样显示线圈6、电路6、blue output 10、working=false（输出buffer满），不证明868持续供给。当前下一硬阻塞为Lab84紫糖消费者分拣器原生附件尚未验证：run `0abcbd57d7544a8aaba610ca788cf916` ord5仅证明slot2朝消费者方向的两段`native_grid`连接（2001×2）可放，未commit且plan token已丢弃；不代表整线接通。Lab84紫糖科研点最后fresh读数仍止于此前run `2e501713…` 的0，本次未重读。先最小验证消费者端口，再决定上游；详见[Storage caller现场边界](evidence/2026-09-30/storage-buffer-caller-fix.md)。
+独立只读run `062cd8fce1024bbf805f67a0381da62a` ord2显示玩家Walk、speed0、core energy800 MJ、3架无人机idle、0 working/0 pending；ord3为J96 durable；ord4功率仅单次采样（network3 ratio1，network4 ratio1），不代表持续供电。当前下一唯一阻塞为近端5197→Lab84 slot2原生分拣器附件预检。之前run `0abcbd57d7544a8aaba610ca788cf916` ord5只证明两个`native_grid`连接2001×2可放，0 commit/token discarded；目前仍未证明附件成功、完整紫糖通路或科研吞吐。此前Lab84紫糖科研点最后fresh读数仍止于run `2e501713…` 的0，本次未重读；详见[Storage caller现场边界](evidence/2026-09-30/storage-buffer-caller-fix.md)。
 
-本次未测试重启恢复、紫糖实际科研供料或2104解锁；正常配置成功与采样点读数均不能替代这些验证。
+本次未保存新带、未测试重启恢复、sorter attachment、完整紫糖输送或持续科研；短带施工成功与单次功率采样均不能替代这些验证。
 
-证据入口：[紫糖路线材料事件](evidence/2026-09-30/purple-route-sorter-materials.md) · [蓝色后备分拣器事件](evidence/2026-09-30/blue-backup-sorter-binding.md) · [上次正常保存](evidence/2026-09-30/core-materials-normal-save.md) · [Roadmap](../ROADMAP.md)。
+证据入口：[科研消费者短带事件](evidence/2026-09-30/science-consumer-stub.md) · [紫糖路线材料事件](evidence/2026-09-30/purple-route-sorter-materials.md) · [蓝色后备分拣器事件](evidence/2026-09-30/blue-backup-sorter-binding.md) · [Roadmap](../ROADMAP.md)。

@@ -94,6 +94,8 @@ function Wait-SpherewrightPlayerSettled {
         [ValidateRange(1, 60)][int]$TimeoutSeconds = 10
     )
 
+    # Returns { settled, player, observations }, NOT a PlayerState DTO.
+    # Check .settled, then use .player; a caller error never undoes the action.
     # A completed Move can leave one immediate player snapshot in Walk with
     # residual speed. This is observation only: never prepare or replay an action.
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)

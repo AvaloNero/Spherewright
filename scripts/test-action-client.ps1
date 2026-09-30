@@ -96,6 +96,36 @@ Assert-Action ($result.terminal -and $result.succeeded) 'immediate terminal retu
 Assert-Action ($script:actionStubCalls.Count -eq 1 -and $script:actionStubSleeps.Count -eq 0) 'no sleep after terminal'
 Assert-SameActionReads
 
+Reset-ActionStub @($success)
+$validated = Invoke-SpherewrightNormalAction -PrepareMethod prepare_build -CommitMethod commit_build -PreparePayload @{buildingItemId=2001} -SessionId offline-session -PlanetId 104 -ValidatePrepared {
+    param($plan)
+    return ($plan.prepared -and $plan.planToken -ceq 'offline-test-placeholder')
+}
+Assert-Action ($validated.result.succeeded) 'exact-plan callback allows one original commit'
+Assert-Action (($script:actionStubCalls.method -join ',') -ceq 'prepare_build,commit_build,get_action_result') 'validated plan uses existing single commit and terminal path'
+
+Reset-ActionStub @()
+Assert-Rejected {
+    Invoke-SpherewrightNormalAction -PrepareMethod prepare_build -CommitMethod commit_build -PreparePayload @{buildingItemId=2001} -SessionId offline-session -PlanetId 104 -ValidatePrepared { $false }
+}
+Assert-Action (($script:actionStubCalls.method -join ',') -ceq 'prepare_build') 'rejected exact plan never commits or polls'
+
+Reset-ActionStub @()
+Assert-Rejected {
+    Invoke-SpherewrightNormalAction -PrepareMethod prepare_build -CommitMethod commit_build -PreparePayload @{buildingItemId=2001} -SessionId offline-session -PlanetId 104 -ValidatePrepared { throw 'native plan changed' }
+}
+Assert-Action (($script:actionStubCalls.method -join ',') -ceq 'prepare_build') 'throwing exact-plan callback never commits or polls'
+
+Reset-ActionStub @()
+Assert-Rejected {
+    Invoke-SpherewrightNormalAction -PrepareMethod prepare_build -CommitMethod commit_build -PreparePayload @{buildingItemId=2001} -SessionId offline-session -PlanetId 104 -ValidatePrepared {
+        param($plan)
+        $plan.planToken = 'different-token'
+        return $true
+    }
+}
+Assert-Action (($script:actionStubCalls.method -join ',') -ceq 'prepare_build') 'mutated prepared token never commits or polls'
+
 Reset-ActionStub @($pending, $success)
 $intent = [guid]'00000000-0000-0000-0000-000000000001'
 $result = Invoke-SpherewrightNormalAction -PrepareMethod prepare_build -CommitMethod commit_build -PreparePayload @{buildingItemId=2001} -SessionId offline-session -PlanetId 104 -IdempotencyKey $intent

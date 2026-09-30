@@ -53,6 +53,8 @@ Spherewright 是面向外部 Agent 的《戴森球计划》结构化控制层。
 
 短动作 caller 的每项前置条件必须按当前 Bridge 返回的确切字段分别核验，并在零写拒绝时报告失败的字段名/值（仅脱敏安全值），不能把多个条件压成一个无诊断的 gate。先从当前 DTO/原回执取字段，不猜旧脚本名称；例如 owned session 是 `ownedBySpherewright`，科研选择绑定 `selectionStateHash` 与 `expectedSelectionStateHash`，不是通用 `stateHash`。直接 Bridge 执行已支持的普通动作，优先复用 `scripts/SpherewrightActionClient.ps1` 的 `Invoke-SpherewrightNormalAction` 统一构造含 sessionId/planetId 的 commit、唯一幂等键及同 action 终态；需受保护原回执时，在该普通客户端**之后**加载 `.local/SpherewrightAuditedBridgeClient.ps1`。不为每步手拼 commit DTO。本地字段/脚本错误且原回执证明零 accepted/零在途时，主会话一次给出准确字段后由 Luna 立即重做 fresh 单步；同一 commit 阶段两次拒绝即停、由主会话换回已验证入口，不自行试第三个手拼参数。不得升级为多轮方案审核，也不得把它记成原生游戏失败。每个短动作分别记首个 Bridge 请求、prepare、commit、terminal、读回的时间，超过60秒仍无首个请求即执行前述收回规则。
 
+需要在 commit 前逐字段核精确原生路径、源绑定、物料预算时，复用该客户端的可选 `ValidatePrepared` 回调，明确返回唯一布尔 `true` 才提交；拒绝或回调异常保持零 commit，不携旧 token 到新调用方。先在零游戏调用测试中覆盖通过/拒绝，再用于实机；不因已有 prepare-only 结果省略下一次 fresh 预检。
+
 新布局/连接、跨链取舍、模板不适用或两次同类失败由主会话直接设计/重设计，再把有界后缀交 Luna；没有 Sol 中转或第三轮盲试。固定算术由 Luna 复用已验证脚本；辅助任务失败不算游戏原生试错。结果不明、隔离、需新增原语或改变安全/协议/保存语义立即由主会话接手，不等重试次数。
 
 每次委派只传短任务包：本批目标、必要规则、输入快照/证据引用、固定入口和参数、数量/时限、完成及停止条件；返回仅差量、证据索引和未证明项，不默认复制整段历史。等待期间不反复催问或重复只读检查；以明确超时、异常或完成事件介入。独立审核必须核原始回执、检查覆盖范围并给可复核结论，不能只转述“通过”。已读且未变的背景大文档不为每个普通工序重复全读；按任务、DTO/实现变化和失败证据补读必要部分，规定的指令/技能阅读与版本完整回归不省略。既有成功前缀不重做，fresh 预检、terminal、材料/连接读回、全厂阶段审计、十写冻结、正常保存和及时小步提交推送规则不变。

@@ -2,6 +2,12 @@
 
 更新时间：2026-09-30（Asia/Singapore）
 
+## EXP-332 — 精确原生计划在已有提交器内验，不为每步重写 caller
+
+- 2026-09-30，`validated` 仅限离线调用器回归、`observed` 于同档零写现场预检。新煤矿机 `5171` 朝磁环约5 m 的 source-bound 带路被旧带 `3373` 在第6点原生拒绝；东向约14 m 则以完整 stage1、`native_device_port`、15条新带和无 blocker 通过，附近熔炉原生站位也通过。旧带最终接到磁环石墨过滤输入，但其即时货物为0；上述都不是施工或持续生产证据。[预检回执和界限](evidence/2026-09-30/coal-to-graphite-native-route-preview.md)。
+- 同阶段将 `ValidatePrepared` 可选回调接入共用普通动作客户端：只有**精确一个布尔 true**且 plan token 未变才进入原有 commit/同 action 轮询；false、异常或改 token 在零 commit 时结束。离线67项、零游戏调用通过，保持无回调行为。适用规则：事先批准有限路线时，只替换参数并在同一客户端回调核完整 native path、绑定和材料预算；不能因只读 preview 已通过就沿用旧 token，亦不为每段线路手写新的 commit/超时处理。实机验证触发：下一次此入口执行、Plugin/DSP 或 DTO 变化、任何 validation callback 异常。本条不放宽逐对象读回、十写审计或输出链验收。
+
+
 ## EXP-331 — 已走过的落点不等于完整去程；十写先核受保护终态
 
 - 2026-09-30，`validated` 仅限同档本次四段 Move、矿机施工和十写审计。四段原生 Move 均成功，但前两段抵达煤区后，通往最终施工范围的直连穿过旧建筑，回撤一段再沿另一条旧路线到位；约18.5秒回撤和两次未提交的涉水预览本可通过候选终点的完整邻域/路线筛查减少。已知 Walk 落点只证明该落点与曾经走通的特定路径，不证明从任意新起点都能直穿。业务已在正常施工范围内就先 `prepare_build`，不追建筑中心。[现场证据](evidence/2026-09-30/six-node-coal-miner-save-ten-write-audit.md)。

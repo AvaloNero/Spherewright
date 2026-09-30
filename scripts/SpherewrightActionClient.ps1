@@ -127,7 +127,8 @@ function Invoke-SpherewrightNormalAction {
         [Parameter(Mandatory)][string]$SessionId,
         [Parameter(Mandatory)][int]$PlanetId,
         [ValidateRange(1, 1800)][int]$TimeoutSeconds = 180,
-        [guid]$IdempotencyKey = [guid]::NewGuid()
+        [guid]$IdempotencyKey = [guid]::NewGuid(),
+        [scriptblock]$ValidatePrepared
     )
 
     $prepareResponse = Invoke-SpherewrightBridgeRequest -Method $PrepareMethod -SessionId $SessionId -Payload $PreparePayload
@@ -135,16 +136,31 @@ function Invoke-SpherewrightNormalAction {
     if (-not $prepared.prepared -or [string]::IsNullOrWhiteSpace([string]$prepared.planToken)) {
         throw "$PrepareMethod did not issue an executable plan token."
     }
+    $planToken = [string]$prepared.planToken
 
     if (-not $prepared.commitAllowedNow) {
         $codes = @($prepared.commitBlockers | ForEach-Object { $_.code }) -join ', '
         throw "$PrepareMethod is currently blocked: $codes"
     }
 
+    # Let a bounded caller verify the exact native path, source binding and
+    # material budget before commit, without reimplementing commit/wait logic.
+    # The callback must explicitly return one Boolean true. A failed or
+    # throwing check leaves the short-lived plan uncommitted.
+    if ($null -ne $ValidatePrepared) {
+        $validation = @(& $ValidatePrepared $prepared)
+        if ($validation.Count -ne 1 -or $validation[0] -isnot [bool] -or -not $validation[0]) {
+            throw "$PrepareMethod exact-plan validation did not approve the prepared plan."
+        }
+        if ([string]$prepared.planToken -cne $planToken) {
+            throw "$PrepareMethod exact-plan validation changed the prepared plan token."
+        }
+    }
+
     $commitResponse = Invoke-SpherewrightBridgeRequest -Method $CommitMethod -SessionId $SessionId -Payload @{
         sessionId = $SessionId
         planetId = $PlanetId
-        planToken = [string]$prepared.planToken
+        planToken = $planToken
         idempotencyKey = $IdempotencyKey.ToString('D')
     }
     $committed = Get-SpherewrightBridgeResult -Response $commitResponse -Operation $CommitMethod

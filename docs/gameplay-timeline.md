@@ -3,7 +3,7 @@
 更新时间：2026-10-01（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-01 — 有效健康票据下的固定AutoSave0恢复模式v4已编译和离线验证；匹配候选的明确授权不再重复询问。accepted仍8/10，尚未加载或核实施工恢复。[有效票据恢复修复](evidence/2026-10-01/active-fixed-autosave-recovery.md)。
+2026-10-01 — 有效健康票据固定AutoSave0恢复v4已冷部署并恢复同档，normal save80731225/J96durable/healthy，accepted9/10、无在途；8对象/16行材料/96原事件已独立核销，无重放/回档/重复确认。主干1932碰撞与紫糖实际供料仍待完成。[有效票据恢复事件](evidence/2026-10-01/active-fixed-autosave-recovery.md)。
 
 2026-09-30 — 只读恢复核验发现固定`fixedAutoSave0`候选覆盖已知进度；root正修复仅此候选的有效票据恢复路径，尚未加载。旧primary低于进度下限，LastExit解析失败不等于身份错误或崩溃；菜单DTO没有`menuReady`字段。[只读恢复与错误分类](evidence/2026-09-30/owned-recovery-readonly-and-error-fields.md)。
 

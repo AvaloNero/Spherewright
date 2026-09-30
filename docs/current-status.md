@@ -6,19 +6,19 @@
 
 | 项 | 最近已核证值 | 边界 |
 |---|---|---|
-| 游戏 | 目标/上次owned-world-001 / planet104；DSP 0.10.35.29104 | 当前菜单未加载，不代表重启恢复或发行验证 |
-| 最新只读状态 | run `ee9d0a4b31254130a79d628b61a5baeb` ord1：success，gameLoaded=false，version29104 / R0 / healthy / restartResumeAvailable | session/tick为空；随后DSP已退出，原因未定；DTO无`menuReady`字段，不证明原生载入就绪 |
-| 恢复候选 | 只读run `6a6264c35dbf46e9bdf62277af6a13f5` ord1：固定别名`fixedAutoSave0` tick80731193，覆盖已知进度下限80627903 | 身份/版本/和平非沙盒匹配；仍未加载，DLL默认路径未由native `GameSave.SavePath`复核 |
-| 保存与Journal | lastSaved tick80526460；J96 durable仅见于较早只读run `062cd8fce1024bbf805f67a0381da62a` ord3 | 不代表当前候选已恢复或本次状态已持久化 |
-| 外部写窗口 | accepted **8/10**，无在途 | 原生拒绝不新增accepted；此前成功前缀不重做 |
-| Git / 发布 | 调用方错误元数据`3361e2e`已push且CI36739694346 green；有效票据恢复修复待提交/部署 | 不代表安装、恢复或发布 |
+| 游戏 | 当前owned-world-001 /104，DSP 0.10.35.29104 | 已从精确固定AutoSave0恢复，和平/非沙盒/1×；不是0.4发行验收 |
+| 最新观察 / revision | 恢复核销run `669740f987b54a2f9f073a370b4578b0` ord1：80766832 /R1/healthy，newsession `41828547-0873-415e-a6aa-b90cbead076a` | 不是保存tick；下一写前仍fresh read |
+| 最近正常保存 | **80731225**，ownedSaveState=saved，新protected ticket已核 | native恢复action内部正常save；不回滚到旧80526460 |
+| durable Journal | 核销run ord11：原Journal ID、**J96 durable**、无pending/error；96原事件逐条一致 | 不由revision或accepted推算 |
+| 外部写窗口 | accepted **9/10**，无在途 | 恢复只新增1；第10accepted后仍冻结/独立审计/commit/push/green交接 |
+| 代码 / 安装 | `6bf35b7`已push，CI36743257284 green；同批228文件已冷部署，64tools/1resource | 本地候选包通过；未tag/release/Thunderstore发布 |
 
-旧primary tick80526460低于已知进度下限80627903；LastExit原生头读取失败，不能猜测原因。固定`fixedAutoSave0`候选80731193只读证明同owned身份/版本/和平非沙盒；native路径仍须fresh prepare重绑。用户已明确授权该披露候选直接恢复，不再重复问。新增有效票据模式`reauthorize_fixed_autosave0` /v4已编译、离线Core120/MCP13通过，仍待同批冷部署和实机恢复；不改到期、不转其他槽位、不扩任意加载。见[有效票据修复事件](evidence/2026-10-01/active-fixed-autosave-recovery.md)。
+用户明确授权的候选80731193已通过有效票据`reauthorize_fixed_autosave0` /v4原生prepare、唯一commit、同action终态及正常save/J连续闭环；不改到期、不换槽位、不回档、不重复问。第一次prepare仅因启动preload未完成零accepted，等待后fresh续试成功。root核原回执，见[有效票据恢复事件](evidence/2026-10-01/active-fixed-autosave-recovery.md)。
 
 ## 恢复边界与下一步
 
-施工前缀`5198→5197→5199→84`与`5202→5201→5200`尚未由正常保存覆盖或恢复读回核实；保留accepted，不重做。候选尚未加载；下一步是冷部署/受保护恢复/独立读回，之后再处理主干在实体1932处的原生碰撞，不能重试原路径或删端点。仓库出料、Lab84实际收料和持续科研未证明。
+恢复后已独立核8对象×14静态字段无差异、完整16行玩家材料相同（belt367/sorter1）、96原Journal事件连续。施工前缀`5198→5197→5199→84`与`5202→5201→5200`保留；这不是全厂十写审计。唯一物流blocker是主干在1932处原生碰撞；不重试原路径、不删端点、不重做成功前缀。3051紫糖1824、Lab84紫色研究点0，仓库出料/实际送达/持续科研仍未证明。
 
-本轮只做离线调用方错误元数据与fixture测试：action-client 87项、stage 26项（storage 28 / material 41检查），私有入口smoke通过；均为0游戏调用，smoke为0游戏写入。错误元数据不包含响应body/token、不自动重试，也不改变accepted语义。
+调用方错误元数据修复的离线fixture：action-client87、stage26（storage28/material41），私有smoke均0游戏调用/写入；有效票据模式Core120/MCP13、旧恢复66、包面37通过。离线结果与上表实机闭环分开；错误元数据不含响应body/token，不自动重试或改变accepted语义。
 
 证据入口：[只读恢复检查与错误字段事件](evidence/2026-09-30/owned-recovery-readonly-and-error-fields.md) · [紫糖主干碰撞与保存入口未达业务层](evidence/2026-09-30/purple-trunk-collision-and-save-unavailable.md) · [紫糖仓库出口短带](evidence/2026-09-30/purple-source-stub.md) · [科研消费者分拣器事件](evidence/2026-09-30/science-consumer-sorter.md) · [Roadmap](../ROADMAP.md)。

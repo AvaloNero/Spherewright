@@ -181,3 +181,111 @@ function Invoke-SpherewrightResearchAndSave {
         throw
     }
 }
+
+function Invoke-SpherewrightMaterialHandcraftAndSave {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$SessionId,
+        [Parameter(Mandatory)][ValidateRange(1, 2147483647)][int]$PlanetId,
+        [Parameter(Mandatory)][string]$GameVersion,
+        [Parameter(Mandatory)][ValidateRange(1, 2147483647)][int]$StorageEntityId,
+        [Parameter(Mandatory)][ValidateRange(1, 6000)][int]$MaterialItemId,
+        [Parameter(Mandatory)][ValidateRange(1, 1000)][int]$MaterialCount,
+        [Parameter(Mandatory)][ValidateRange(1, 2147483647)][int]$RecipeId,
+        [Parameter(Mandatory)][ValidateRange(1, 100)][int]$CraftCount,
+        [Parameter(Mandatory)][ValidateRange(0, 7)][int]$AcceptedBefore,
+        [Parameter(Mandatory)][scriptblock]$ValidateCraftPlan,
+        [Parameter(Mandatory)][scriptblock]$ValidateCraftReadback,
+        [Parameter(Mandatory)][scriptblock]$RecordEvidence,
+        [ValidateRange(1, 1800)][int]$TimeoutSeconds = 180
+    )
+    # One explicitly approved ordinary-material transfer, one recipe, one save.
+    # Caller supplies the single-writer lease and THREE external audit slots.
+    # Matrix/cache transfers are excluded; this does not select goals or recipes.
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    $phase = 'fresh_reads'; $acceptedDelta = 0
+    $actions = [Collections.Generic.List[object]]::new()
+    try {
+        $state = Read-SpherewrightStageResult get_session_state $SessionId @{}
+        Assert-SpherewrightStageSession $state $SessionId $PlanetId $GameVersion -RequireWrites
+        $journal = Read-SpherewrightStageResult get_gameplay_journal $SessionId @{}
+        $initialDurable = Get-SpherewrightDurableJournalBoundary $journal $SessionId
+        $player = Read-SpherewrightStageResult get_player_state $SessionId @{planetId=$PlanetId}
+        if ($player.sessionId -cne $SessionId -or $player.planetId -ne $PlanetId -or
+            (Get-SpherewrightStageField $player 'movementState') -cne 'Walk' -or
+            (Get-SpherewrightStageField $player 'speed') -gt .1 -or
+            (Get-SpherewrightStageField $player 'coreEnergy') -le 0 -or
+            @((Get-SpherewrightStageField $player 'handcraftQueue')).Count) { throw 'Settled powered player and empty forge queue required.' }
+        $source = Read-SpherewrightStageResult inspect_factory_entity $SessionId @{planetId=$PlanetId;objectId=$StorageEntityId}
+        if ($source.sessionId -cne $SessionId -or $source.planetId -ne $PlanetId -or $source.objectId -ne $StorageEntityId -or
+            (Get-SpherewrightStorageItemCount $source $MaterialItemId) -lt $MaterialCount) { throw 'Approved ordinary material source is unavailable.' }
+        $beforeCount = Get-SpherewrightInventoryCount $player $MaterialItemId
+        $firstPrepareMs = $watch.Elapsed.TotalMilliseconds
+        $phase = 'transfer'
+        $transfer = Invoke-SpherewrightNormalAction -PrepareMethod prepare_transfer -CommitMethod commit_transfer -SessionId $SessionId -PlanetId $PlanetId -TimeoutSeconds $TimeoutSeconds -PreparePayload @{
+            planetId=$PlanetId;direction='storage-to-player';storageEntityId=$StorageEntityId;itemId=$MaterialItemId;count=$MaterialCount
+            expectedPlayerStateHash=$player.stateHash;expectedStorageStateHash=$source.stateHash;stateHashVersion=1
+        } -ValidatePrepared {
+            param($plan)
+            $budget = @($plan.itemBudget)
+            [bool]($plan.actionKind -ceq 'transfer' -and $plan.sourceObjectId -eq $StorageEntityId -and
+                $null -eq $plan.destinationObjectId -and $budget.Count -eq 1 -and
+                $budget[0].itemId -eq $MaterialItemId -and $budget[0].count -eq $MaterialCount -and
+                $budget[0].direction -ceq 'storage-to-player')
+        }
+        if ($transfer.committed.idempotentReplay) { throw 'Unexpected replay; reconcile original stage.' }
+        $acceptedDelta++
+        $actions.Add([pscustomobject]@{actionId=$transfer.committed.actionId;kind='transfer';timingMs=$transfer.timingMs})
+        $phase = 'transfer_readback'
+        $player = Read-SpherewrightStageResult get_player_state $SessionId @{planetId=$PlanetId}
+        $afterSource = Read-SpherewrightStageResult inspect_factory_entity $SessionId @{planetId=$PlanetId;objectId=$StorageEntityId}
+        if ($player.sessionId -cne $SessionId -or $player.planetId -ne $PlanetId -or
+            (Get-SpherewrightInventoryCount $player $MaterialItemId) -ne $beforeCount+$MaterialCount -or
+            $transfer.result.beforeTargetAmount -lt $MaterialCount -or
+            $transfer.result.afterTargetAmount -ne $transfer.result.beforeTargetAmount-$MaterialCount) { throw 'Accepted ordinary material transfer is not conserved; no replay.' }
+        foreach ($field in @('sessionId','planetId','objectId','objectKind','itemId','componentKind','position','rotation','recipeId','connections','storageConfiguration')) {
+            if ((ConvertTo-Json -InputObject $source.$field -Depth 12 -Compress) -cne
+                (ConvertTo-Json -InputObject $afterSource.$field -Depth 12 -Compress)) { throw "Accepted transfer source changed $field; no replay." }
+        }
+        $state = Read-SpherewrightStageResult get_session_state $SessionId @{}
+        Assert-SpherewrightStageSession $state $SessionId $PlanetId $GameVersion -RequireWrites
+        $phase = 'handcraft'
+        $craft = Invoke-SpherewrightNormalAction -PrepareMethod prepare_handcraft -CommitMethod commit_handcraft -SessionId $SessionId -PlanetId $PlanetId -TimeoutSeconds $TimeoutSeconds -PreparePayload @{
+            planetId=$PlanetId;recipeId=$RecipeId;count=$CraftCount;expectedPlayerStateHash=$player.stateHash;stateHashVersion=1
+        } -ValidatePrepared $ValidateCraftPlan
+        if ($craft.committed.idempotentReplay) { throw 'Unexpected replay; reconcile original stage.' }
+        $acceptedDelta++
+        $actions.Add([pscustomobject]@{actionId=$craft.committed.actionId;kind='handcraft';timingMs=$craft.timingMs})
+        $phase = 'handcraft_readback'
+        $craftedPlayer = Read-SpherewrightStageResult get_player_state $SessionId @{planetId=$PlanetId}
+        if ($craftedPlayer.sessionId -cne $SessionId -or $craftedPlayer.planetId -ne $PlanetId -or @($craftedPlayer.handcraftQueue).Count) { throw 'Accepted handcraft identity/terminal queue readback failed; no replay.' }
+        $readback = @(& $ValidateCraftReadback $player $craftedPlayer $craft.result)
+        if ($readback.Count -ne 1 -or $readback[0] -isnot [bool] -or -not $readback[0]) { throw 'Accepted handcraft exact readback not approved; no replay.' }
+        $state = Read-SpherewrightStageResult get_session_state $SessionId @{}
+        Assert-SpherewrightStageSession $state $SessionId $PlanetId $GameVersion -RequireWrites
+        $phase = 'save'
+        $save = Invoke-SpherewrightNormalAction -PrepareMethod prepare_save -CommitMethod commit_save -SessionId $SessionId -PlanetId $PlanetId -TimeoutSeconds $TimeoutSeconds -PreparePayload @{
+            planetId=$PlanetId;expectedRevision=$state.revision;stateHashVersion=1
+        } -ValidatePrepared {param($plan) $plan.actionKind -ceq 'save' -and @($plan.itemBudget).Count -eq 0}
+        if ($save.committed.idempotentReplay) { throw 'Unexpected replay; reconcile original stage.' }
+        $acceptedDelta++
+        $actions.Add([pscustomobject]@{actionId=$save.committed.actionId;kind='save';timingMs=$save.timingMs})
+        $phase = 'save_readback'
+        $state = Read-SpherewrightStageResult get_session_state $SessionId @{}
+        Assert-SpherewrightStageSession $state $SessionId $PlanetId $GameVersion -RequireWrites
+        if ($state.ownedSaveState -cne 'saved' -or $state.lastOwnedSaveGameTick -ne $save.result.completedAtGameTick -or $state.restartResumeAvailable -ne $true) { throw 'Accepted save readback unproved; no replay.' }
+        $journal = Read-SpherewrightStageResult get_gameplay_journal $SessionId @{}
+        $durable = Get-SpherewrightDurableJournalBoundary $journal $SessionId
+        if ($durable -lt $initialDurable) { throw 'Durable Journal regressed; no replay.' }
+        $summary = [pscustomobject]@{result='completed';acceptedDelta=$acceptedDelta;acceptedAfter=$AcceptedBefore+$acceptedDelta;frozen=($AcceptedBefore+$acceptedDelta -ge 10);inFlightActionIds=@();actions=$actions.ToArray();observedTick=$state.gameTick;savedTick=$state.lastOwnedSaveGameTick;revision=$state.revision;durableThroughSequence=$durable;timingMs=[pscustomobject]@{entryToFirstPrepare=$firstPrepareMs;total=$watch.Elapsed.TotalMilliseconds};unproved=@('save_restart','production_throughput')}
+        $null = & $RecordEvidence $summary
+        return $summary
+    } catch {
+        if ($phase -in @('transfer','handcraft','save') -and $_.Exception.Data['spherewrightCommitAccepted'] -eq $true -and $_.Exception.Data['spherewrightIdempotentReplay'] -ne $true) { $acceptedDelta++ }
+        $_.Exception.Data['spherewrightStagePhase']=$phase
+        $_.Exception.Data['spherewrightStageAcceptedDelta']=$acceptedDelta
+        $_.Exception.Data['spherewrightPriorActionIds']=@($actions|ForEach-Object actionId)
+        $_.Exception.Data['spherewrightDoNotReplayStage']=$true
+        throw
+    }
+}

@@ -207,4 +207,283 @@ foreach ($invalidRequestedItemId in @(
 }
 Assert-Storage ($script:methods.Count -eq 0) 'storage helper fixtures make no Bridge or game requests'
 
-[pscustomobject]@{passed=$script:checks;storageChecks=$script:storageChecks;gameCalls=0;successfulFixtureRequests=14} | ConvertTo-Json -Compress
+# Material transfer -> handcraft -> save fixtures use the real normal-action
+# client above and replace only its existing offline transport.
+$script:materialChecks = 0
+function Assert-MaterialStage([bool]$Condition, [string]$Name) {
+    if (-not $Condition) { throw "Material stage regression: $Name" }
+    $script:materialChecks++
+}
+function Reset-MaterialStage([string]$Failure = '') {
+    $script:methods = [Collections.Generic.List[string]]::new()
+    $script:commitMethods = [Collections.Generic.List[string]]::new()
+    $script:fixtureCommits = [Collections.Generic.List[object]]::new()
+    $script:terminalActionIds = [Collections.Generic.List[string]]::new()
+    $script:playerQueueCounts = [Collections.Generic.List[int]]::new()
+    $script:materialFailure = $Failure
+    $script:sessionReads = 0; $script:journalReads = 0; $script:playerReads = 0; $script:sourceReads = 0
+    $script:revisionBeforeSave = 0; $script:savePayload = $null
+    $script:materialError = $null; $script:recordedMaterialSummary = $null
+    $script:craftReadbackCalls = 0; $script:gameCalls = 0; $script:hiddenPossibleActionId = ''
+    $script:materialItemId = 1301; $script:materialCount = 1; $script:recipeId = 85; $script:craftCount = 1
+}
+function Invoke-SpherewrightBridgeRequest([string]$Method, [string]$SessionId, [hashtable]$Payload) {
+    # This replacement is the local fixture transport; Invoke-SpherewrightNormalAction
+    # remains the production implementation and every request is recorded here.
+    $script:methods.Add($Method)
+    if ($SessionId -cne 'fixture-session') { throw 'Unexpected material fixture session.' }
+    $result = switch ($Method) {
+        get_session_state {
+            $script:sessionReads++
+            $revisions = @(13,29,83,157,259)
+            $revisionIndex = [int][Math]::Min($script:sessionReads - 1, $revisions.Count - 1)
+            $revision = $revisions[$revisionIndex]
+            if ($script:sessionReads -eq 3) { $script:revisionBeforeSave = $revision }
+            [pscustomobject]@{
+                sessionId=$SessionId;localPlanetId=104;gameVersion='fixture-version';gameLoaded=$true
+                ownedBySpherewright=$true;accessRestricted=$false;writeHealth='healthy';writeBlockers=@()
+                writesAllowed=$true;peacefulMode='confirmed_peaceful';gameTick=(80440000 + 100*$script:sessionReads)
+                revision=$revision;ownedSaveState='saved'
+                lastOwnedSaveGameTick=$(if($script:sessionReads -ge 4){80442879}else{80425709})
+                restartResumeAvailable=$true
+            }
+        }
+        get_gameplay_journal {
+            $script:journalReads++
+            $highest = if ($script:journalReads -eq 1) { 96 } else { 101 }
+            $pending = ($script:materialFailure -ceq 'journal_pending' -and $script:journalReads -gt 1)
+            [pscustomobject]@{
+                sessionId=$SessionId
+                entries=@(1..$highest | ForEach-Object { [pscustomobject]@{sequence=$_} })
+                durableThroughSequence=$highest;persistencePending=$pending;persistenceError=$null
+            }
+        }
+        get_player_state {
+            $script:playerReads++
+            $materialInventory = 0
+            if ($script:playerReads -ge 2) { $materialInventory += $script:materialCount }
+            if ($script:playerReads -ge 3) { $materialInventory -= $script:materialCount }
+            $firstInputInventory = if ($script:playerReads -lt 3) { 1 } else { 0 }
+            $craftedInventory = if ($script:playerReads -ge 3) { 1 } else { 0 }
+            $queue = @()
+            if ($script:materialFailure -ceq 'forge_queue' -and $script:playerReads -eq 1) {
+                $queue = @([pscustomobject]@{recipeId=999;count=1})
+            }
+            if ($script:materialFailure -ceq 'craft_readback' -and $script:playerReads -eq 3) {
+                $queue = @([pscustomobject]@{recipeId=$script:recipeId;count=1})
+            }
+            $script:playerQueueCounts.Add([int]$queue.Count)
+            [pscustomobject]@{
+                sessionId=$SessionId;planetId=104;movementState='Walk';speed=[double]0;coreEnergy=[long]100000
+                handcraftQueue=[object[]]$queue
+                inventory=@(
+                    [pscustomobject]@{itemId=$script:materialItemId;count=[int]$materialInventory},
+                    [pscustomobject]@{itemId=1101;count=[int]$firstInputInventory},
+                    [pscustomobject]@{itemId=2011;count=[int]$craftedInventory}
+                )
+                stateHash=("player-state-{0}" -f $script:playerReads)
+            }
+        }
+        inspect_factory_entity {
+            $script:sourceReads++
+            $available = if ($script:materialFailure -ceq 'source_missing') { 0 } else { 20 }
+            if ($script:sourceReads -gt 1) { $available -= $script:materialCount }
+            [pscustomobject]@{
+                sessionId=$SessionId;planetId=104;objectId=[int]$Payload.objectId;objectKind='entity'
+                itemId=2101;componentKind='storage';position=[pscustomobject]@{x=1;y=2;z=3}
+                rotation=[pscustomobject]@{x=0;y=0;z=0;w=1};recipeId=0;connections=@()
+                storageConfiguration=[pscustomobject]@{capacity=30};stateHash=("storage-state-{0}" -f $script:sourceReads)
+                buffers=@([pscustomobject]@{itemId=$script:materialItemId;role='storage';countUnit='items';unitsPerItem=1;count=[int]$available})
+            }
+        }
+        prepare_transfer {
+            $budgetItemId=$script:materialItemId;$budgetCount=$script:materialCount;$direction='storage-to-player'
+            if ($script:materialFailure -ceq 'transfer_budget') { $budgetCount++ }
+            [pscustomobject]@{
+                prepared=$true;commitAllowedNow=$true;planToken='private-transfer-token';actionKind='transfer'
+                sourceObjectId=[int]$Payload.storageEntityId;destinationObjectId=$null
+                itemBudget=@([pscustomobject]@{itemId=$budgetItemId;count=$budgetCount;direction=$direction})
+            }
+        }
+        prepare_handcraft {
+            $firstInputId=1101
+            if ($script:materialFailure -ceq 'craft_budget') { $firstInputId=1999 }
+            [pscustomobject]@{
+                prepared=$true;commitAllowedNow=$true;planToken='private-handcraft-token';actionKind='handcraft'
+                itemBudget=@(
+                    [pscustomobject]@{itemId=$firstInputId;count=1;direction='input'},
+                    [pscustomobject]@{itemId=$script:materialItemId;count=1;direction='input'},
+                    [pscustomobject]@{itemId=2011;count=1;direction='output'}
+                )
+            }
+        }
+        prepare_save {
+            $script:savePayload=$Payload
+            [pscustomobject]@{prepared=$true;commitAllowedNow=$true;planToken='private-save-token';actionKind='save';itemBudget=@()}
+        }
+        { $_ -in @('commit_transfer','commit_handcraft','commit_save') } {
+            $script:commitMethods.Add($Method)
+            if ($Method -ceq 'commit_save' -and $script:materialFailure -ceq 'save_commit_lost') {
+                $script:hiddenPossibleActionId='possible-save-action-3'
+                throw 'Fixture response lost after commit may have reached the server.'
+            }
+            $sequence=$script:commitMethods.Count
+            $kind=switch($Method){commit_transfer{'transfer'}commit_handcraft{'handcraft'}commit_save{'save'}}
+            $actionId=("fixture-{0}-action-{1}" -f $kind,$sequence)
+            $completedTick=switch($Method){commit_transfer{80442810}commit_handcraft{80442850}commit_save{80442879}}
+            $commitRecord=[pscustomobject]@{method=$Method;actionId=$actionId;completedAtGameTick=$completedTick}
+            if ($Method -ceq 'commit_transfer') {
+                $commitRecord | Add-Member -NotePropertyName beforeTargetAmount -NotePropertyValue 20
+                $commitRecord | Add-Member -NotePropertyName afterTargetAmount -NotePropertyValue (20 - $script:materialCount)
+            }
+            $script:fixtureCommits.Add($commitRecord)
+            [pscustomobject]@{accepted=$true;idempotentReplay=$false;actionId=$actionId}
+        }
+        get_action_result {
+            $matches=@($script:fixtureCommits | Where-Object { $_.actionId -ceq $Payload.actionId })
+            if ($matches.Count -ne 1) { throw 'Terminal observation must match one original accepted action.' }
+            $script:terminalActionIds.Add([string]$Payload.actionId)
+            $terminal=[ordered]@{
+                actionId=$Payload.actionId;terminal=$true;succeeded=$true
+                completedAtGameTick=$matches[0].completedAtGameTick
+            }
+            if ($matches[0].method -ceq 'commit_transfer') {
+                $terminal.beforeTargetAmount=$matches[0].beforeTargetAmount
+                $terminal.afterTargetAmount=$matches[0].afterTargetAmount
+            }
+            [pscustomobject]$terminal
+        }
+        default { throw "Unexpected material fixture method $Method" }
+    }
+    [pscustomobject]@{success=$true;result=$result}
+}
+
+$materialArguments = @{
+    SessionId='fixture-session';PlanetId=104;GameVersion='fixture-version';StorageEntityId=3051
+    MaterialItemId=1301;MaterialCount=1;RecipeId=85;CraftCount=1;AcceptedBefore=7;TimeoutSeconds=1
+    ValidateCraftPlan={
+        param($plan)
+        $budget=@($plan.itemBudget)
+        if ($plan.actionKind -cne 'handcraft' -or $budget.Count -ne 3) { return $false }
+        foreach ($expected in @(
+            [pscustomobject]@{itemId=1101;count=1;direction='input'},
+            [pscustomobject]@{itemId=1301;count=1;direction='input'},
+            [pscustomobject]@{itemId=2011;count=1;direction='output'}
+        )) {
+            $rows=@($budget | Where-Object { $_.itemId -eq $expected.itemId })
+            if ($rows.Count -ne 1 -or $rows[0].count -ne $expected.count -or
+                $rows[0].direction -cne $expected.direction) { return $false }
+        }
+        return $true
+    }
+    ValidateCraftReadback={
+        param($beforePlayer,$afterPlayer,$terminal)
+        $script:craftReadbackCalls++
+        if ($script:materialFailure -ceq 'multi_callback') { return @($true,$true) }
+        $beforeFirstInput=Get-SpherewrightInventoryCount -PlayerState $beforePlayer -ItemId 1101
+        $afterFirstInput=Get-SpherewrightInventoryCount -PlayerState $afterPlayer -ItemId 1101
+        $beforeSecondInput=Get-SpherewrightInventoryCount -PlayerState $beforePlayer -ItemId $script:materialItemId
+        $afterSecondInput=Get-SpherewrightInventoryCount -PlayerState $afterPlayer -ItemId $script:materialItemId
+        $beforeOutput=Get-SpherewrightInventoryCount -PlayerState $beforePlayer -ItemId 2011
+        $afterOutput=Get-SpherewrightInventoryCount -PlayerState $afterPlayer -ItemId 2011
+        return [bool]($terminal.terminal -eq $true -and $terminal.succeeded -eq $true -and
+            $afterFirstInput -eq ($beforeFirstInput - 1) -and
+            $afterSecondInput -eq ($beforeSecondInput - 1) -and
+            $afterOutput -eq ($beforeOutput + 1))
+    }
+    RecordEvidence={param($row) $script:recordedMaterialSummary=$row}
+}
+function Invoke-MaterialFailure([string]$Failure) {
+    Reset-MaterialStage $Failure
+    try { Invoke-SpherewrightMaterialHandcraftAndSave @materialArguments | Out-Null } catch { $script:materialError=$_ }
+    return $script:materialError
+}
+function Assert-MaterialCommitPrefix([int]$Count, [string]$Name) {
+    $commitIds=@($script:fixtureCommits | ForEach-Object actionId)
+    $terminalIds=@($script:terminalActionIds)
+    Assert-MaterialStage ($script:commitMethods.Count -eq $Count) "$Name has the exact attempted commit count"
+    Assert-MaterialStage ($terminalIds.Count -le $commitIds.Count -and
+        @($terminalIds | Where-Object { $commitIds -notcontains $_ }).Count -eq 0) "$Name terminals belong to their original commits"
+}
+
+Reset-MaterialStage
+$materialSummary=Invoke-SpherewrightMaterialHandcraftAndSave @materialArguments
+$materialCommitIds=@($script:fixtureCommits | ForEach-Object actionId)
+$materialTerminalIds=@($script:terminalActionIds)
+$materialMethods=@($script:commitMethods)
+Assert-MaterialStage ($materialSummary.result -ceq 'completed' -and $materialSummary.acceptedDelta -eq 3 -and
+    $materialSummary.acceptedAfter -eq 10 -and $materialSummary.frozen) 'one transfer, handcraft and save consume three audit slots'
+Assert-MaterialStage (($materialMethods -join ',') -ceq 'commit_transfer,commit_handcraft,commit_save' -and
+    $materialCommitIds.Count -eq 3 -and @($materialCommitIds | Sort-Object -Unique).Count -eq 3) 'three distinct accepted actions occur in order'
+Assert-MaterialStage (($materialCommitIds -join ',') -ceq ($materialTerminalIds -join ',')) 'every terminal observes its same original action'
+Assert-MaterialStage ($script:savePayload.expectedRevision -eq 83 -and $script:revisionBeforeSave -eq 83 -and
+    $materialSummary.revision -eq 157 -and $materialSummary.revision -ne ($script:savePayload.expectedRevision + 1)) 'save uses actual non-plus-one revisions'
+Assert-MaterialStage ($materialSummary.durableThroughSequence -eq 101 -and $script:journalReads -eq 2) 'saved summary requires the fresh durable Journal boundary'
+Assert-MaterialStage ($script:playerQueueCounts[0] -eq 0 -and $script:playerQueueCounts[2] -eq 0) 'empty forge queue permits transfer and verified handcraft completion'
+Assert-MaterialStage ($script:methods -contains 'prepare_transfer' -and $script:methods -contains 'prepare_handcraft' -and
+    $script:methods -contains 'prepare_save' -and $script:gameCalls -eq 0) 'offline transport fixture covers the complete flow with zero game calls'
+$summaryJson=ConvertTo-Json -InputObject $materialSummary -Depth 12 -Compress
+$recordJson=ConvertTo-Json -InputObject $script:recordedMaterialSummary -Depth 12 -Compress
+Assert-MaterialStage ($script:recordedMaterialSummary.acceptedAfter -eq 10 -and
+    $summaryJson -notmatch 'private-(transfer|handcraft|save)-token' -and
+    $recordJson -notmatch 'private-(transfer|handcraft|save)-token') 'returned and recorded summaries never expose plan tokens'
+Assert-MaterialCommitPrefix 3 'completed flow'
+
+$errorRecord=Invoke-MaterialFailure 'forge_queue'
+Assert-MaterialStage ($null -ne $errorRecord -and $errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 0 -and
+    $script:methods -notcontains 'prepare_transfer') 'nonempty initial forge queue stops before any prepare or commit'
+Assert-MaterialCommitPrefix 0 'nonempty forge queue'
+
+$errorRecord=Invoke-MaterialFailure 'source_missing'
+Assert-MaterialStage ($null -ne $errorRecord -and $errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 0 -and
+    $script:methods -notcontains 'prepare_transfer') 'missing source material creates zero commits'
+Assert-MaterialCommitPrefix 0 'missing source'
+
+$errorRecord=Invoke-MaterialFailure 'transfer_budget'
+Assert-MaterialStage ($null -ne $errorRecord -and $errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 0 -and
+    $script:methods -contains 'prepare_transfer' -and $script:methods -notcontains 'prepare_handcraft') 'mismatched transfer budget stops before any accepted action'
+Assert-MaterialCommitPrefix 0 'transfer budget mismatch'
+
+$errorRecord=Invoke-MaterialFailure 'craft_budget'
+Assert-MaterialStage ($null -ne $errorRecord -and $errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 1 -and
+    $errorRecord.Exception.Data['spherewrightStagePhase'] -ceq 'handcraft') 'mismatched forge budget retains only the accepted transfer prefix'
+Assert-MaterialStage (@($script:commitMethods | Where-Object {$_ -ceq 'commit_transfer'}).Count -eq 1 -and
+    $script:commitMethods -notcontains 'commit_handcraft' -and $script:commitMethods -notcontains 'commit_save') 'mismatched forge budget commits neither craft nor save'
+Assert-MaterialStage (@($errorRecord.Exception.Data['spherewrightPriorActionIds']).Count -eq 1) 'mismatched forge budget retains the original transfer action ID'
+Assert-MaterialCommitPrefix 1 'forge budget mismatch'
+
+$errorRecord=Invoke-MaterialFailure 'craft_readback'
+Assert-MaterialStage ($null -ne $errorRecord -and $errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 2 -and
+    $errorRecord.Exception.Data['spherewrightStagePhase'] -ceq 'handcraft_readback') 'failed handcraft queue readback retains both accepted actions'
+Assert-MaterialStage (@($script:commitMethods | Where-Object {$_ -ceq 'commit_handcraft'}).Count -eq 1 -and
+    $script:commitMethods -notcontains 'commit_save') 'failed handcraft readback neither replays craft nor saves'
+Assert-MaterialCommitPrefix 2 'handcraft readback failure'
+
+$errorRecord=Invoke-MaterialFailure 'multi_callback'
+Assert-MaterialStage ($null -ne $errorRecord -and $errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 2 -and
+    $errorRecord.Exception.Data['spherewrightStagePhase'] -ceq 'handcraft_readback' -and $script:craftReadbackCalls -eq 1) 'non-unique callback booleans fail closed after the accepted craft'
+Assert-MaterialStage (@($script:commitMethods | Where-Object {$_ -ceq 'commit_handcraft'}).Count -eq 1 -and
+    $script:commitMethods -notcontains 'commit_save') 'non-unique callback does not replay or save'
+Assert-MaterialCommitPrefix 2 'non-unique callback result'
+
+$errorRecord=Invoke-MaterialFailure 'save_commit_lost'
+Assert-MaterialStage ($null -ne $errorRecord -and $errorRecord.Exception.Data['spherewrightCommitMayHaveBeenAccepted'] -eq $true -and
+    $null -eq $errorRecord.Exception.Data['spherewrightCommitAccepted'] -and
+    $errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 2 -and
+    $errorRecord.Exception.Data['spherewrightDoNotReplayStage'] -eq $true) 'lost save response remains uncertain and preserves only the known accepted prefix'
+Assert-MaterialStage ($script:hiddenPossibleActionId -ne '' -and
+    @($script:commitMethods | Where-Object {$_ -ceq 'commit_save'}).Count -eq 1) 'uncertain save commit is attempted once and never resubmitted'
+Assert-MaterialCommitPrefix 3 'lost save commit'
+
+$errorRecord=Invoke-MaterialFailure 'journal_pending'
+Assert-MaterialStage ($null -ne $errorRecord -and $errorRecord.Exception.Data['spherewrightStagePhase'] -ceq 'save_readback' -and
+    $errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 3 -and $script:journalReads -eq 2) 'pending Journal blocks durable completion after the accepted save'
+Assert-MaterialStage ($null -eq $script:recordedMaterialSummary -and
+    @($script:commitMethods | Where-Object {$_ -ceq 'commit_save'}).Count -eq 1) 'pending Journal cannot emit a completed evidence summary or replay save'
+Assert-MaterialCommitPrefix 3 'pending Journal'
+Assert-MaterialStage ($script:gameCalls -eq 0) 'all material-stage cases remain offline transport fixtures'
+
+[pscustomobject]@{
+    passed=$script:checks;storageChecks=$script:storageChecks;materialChecks=$script:materialChecks
+    gameCalls=$script:gameCalls;successfulFixtureRequests=14;materialFixtureRequests=$script:methods.Count
+} | ConvertTo-Json -Compress

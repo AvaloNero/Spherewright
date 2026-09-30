@@ -3,6 +3,8 @@
 更新时间：2026-09-30（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-30 — 只读恢复核验发现固定`fixedAutoSave0`候选覆盖已知进度；root正修复仅此候选的有效票据恢复路径，尚未加载。旧primary低于进度下限，LastExit解析失败不等于身份错误或崩溃；菜单DTO没有`menuReady`字段。[只读恢复与错误分类](evidence/2026-09-30/owned-recovery-readonly-and-error-fields.md)。
+
 2026-09-30 — 5200→5198主干planned point3与旧belt1932碰撞，原生拒绝、0创建；accepted仍8/10。随后保存入口descriptor查找失败，无业务回执或save commit，lastSaved仍80526460。下一步仅菜单级只读恢复检查，无加载批准。[碰撞与保存边界](evidence/2026-09-30/purple-trunk-collision-and-save-unavailable.md)。
 
 2026-09-30 — 蓝色后备分拣器868正常配置过滤1202→1301，accepted升至2/10；空`targetObjectIds`和`itemDeltas`为合法回执，库存未变且本次未保存。Lab76输出缓存满仅为采样，不证明持续输送。[请求绑定与原生读回](evidence/2026-09-30/blue-backup-sorter-binding.md)。

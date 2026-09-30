@@ -60,6 +60,7 @@ function Reset-ActionStub([object[]]$States, [int]$ReadMilliseconds = 0, [object
     $script:actionStubTransportFailure = $false
     $script:commitStubTransportFailure = $false
     $script:commitStubResult = $null
+    $script:actionStubBridgeError = $null
 }
 function Get-Date { $script:actionStubTime }
 function Start-Sleep([int]$Milliseconds) {
@@ -77,6 +78,9 @@ function Invoke-SpherewrightBridgeRequest([string]$Method, [string]$SessionId, [
         }
         'get_action_result' {
             if ($script:actionStubTransportFailure) { throw 'offline transport failure' }
+            if ($null -ne $script:actionStubBridgeError) {
+                return [pscustomobject]@{success=$false;error=$script:actionStubBridgeError}
+            }
             $script:actionStubTime = $script:actionStubTime.AddMilliseconds($script:actionStubReadMilliseconds)
             if ($script:actionStubStates.Count) { $script:actionStubStates.Dequeue() }
             else { [pscustomobject]@{actionId='offline-action';terminal=$false;succeeded=$false;state='waiting_for_game'} }
@@ -245,4 +249,27 @@ foreach ($accepted in @($false, 'true')) {
     Assert-Action (@($script:actionStubCalls | Where-Object method -EQ 'get_action_result').Count -eq 0 -and @($script:actionStubCalls | Where-Object method -EQ 'commit_build').Count -eq 1) 'invalid/rejected commit is not polled or retried'
     Assert-Action ($failure.Data['spherewrightCommitMayHaveBeenAccepted'] -eq ($accepted -is [string])) 'explicit boolean rejection differs from malformed uncertainty'
 }
+# Use the real response helper: native read timeouts remain distinguishable
+# from descriptor discovery and preserve accepted-action reconciliation.
+$timeoutError = [pscustomobject]@{code='REQUEST_TIMEOUT';message='The Unity main-thread read request timed out.';retryable=$true;recovery='Inspect the original receipt; do not infer no execution.';details=@{planToken='private-error-token';authToken='private-error-auth'}}
+$failure = $null
+try { Get-SpherewrightBridgeResult -Response ([pscustomobject]@{success=$false;error=$timeoutError}) -Operation get_session_state | Out-Null } catch { $failure=$_.Exception }
+Assert-Action ($null -ne $failure -and $failure.Data['spherewrightBridgeOperation'] -ceq 'get_session_state' -and $failure.Data['spherewrightBridgeCode'] -ceq 'REQUEST_TIMEOUT') 'read timeout retains actual operation/code instead of descriptor failure'
+Assert-Action ($failure.Data['spherewrightBridgeMessage'] -ceq $timeoutError.message -and $failure.Data['spherewrightBridgeRetryable'] -eq $true -and $failure.Data['spherewrightBridgeRecovery'] -ceq $timeoutError.recovery) 'native message retryability and recovery retained without reinterpretation'
+Assert-Action (($failure.Data | ConvertTo-Json -Depth 5) -notmatch 'private-error-token|private-error-auth|planToken|authToken') 'raw error details and credentials are not copied'
+$failure=$null
+try { Get-SpherewrightBridgeResult -Response ([pscustomobject]@{success=$false;error=[pscustomobject]@{code='INVENTORY_INSUFFICIENT';message='Insufficient inventory.'}}) -Operation prepare_build | Out-Null } catch { $failure=$_.Exception }
+Assert-Action ($failure.Data['spherewrightBridgeCode'] -ceq 'INVENTORY_INSUFFICIENT' -and -not $failure.Data.Contains('spherewrightBridgeRetryable') -and -not $failure.Data.Contains('spherewrightBridgeRecovery')) 'absent optional failure fields stay unknown'
+$failure=$null
+try { Get-SpherewrightBridgeResult -Response @{success=$false;error=@{code='INVALID_REQUEST';message='Wrong request.';retryable=$false;recovery='Fresh inspect.'}} -Operation prepare_build | Out-Null } catch { $failure=$_.Exception }
+Assert-Action ($failure.Data['spherewrightBridgeRetryable'] -eq $false -and $failure.Data['spherewrightBridgeRecovery'] -ceq 'Fresh inspect.') 'dictionary error and false retryability preserved'
+$menu=[pscustomobject]@{gameLoaded=$false;sessionId=$null;gameTick=$null;bridgeConnected=$true}
+$sameMenu=Get-SpherewrightBridgeResult -Response ([pscustomobject]@{success=$true;result=$menu}) -Operation get_session_state
+Assert-Action ([object]::ReferenceEquals($menu,$sameMenu) -and $null -eq $sameMenu.PSObject.Properties['menuReady']) 'successful menu DTO unchanged and native readiness not invented'
+Reset-ActionStub @()
+$script:actionStubBridgeError=$timeoutError
+$failure=$null
+try { Invoke-SpherewrightNormalAction -PrepareMethod prepare_build -CommitMethod commit_build -PreparePayload @{} -SessionId offline-session -PlanetId 104 | Out-Null } catch { $failure=$_.Exception }
+Assert-Action ($failure.Data['spherewrightCommitAccepted'] -eq $true -and $failure.Data['spherewrightActionId'] -ceq 'offline-action' -and $failure.Data['spherewrightBridgeCode'] -ceq 'REQUEST_TIMEOUT') 'accepted write remains accepted after structured observation timeout'
+Assert-Action (($script:actionStubCalls.method -join ',') -ceq 'prepare_build,commit_build,get_action_result') 'timeout cannot trigger automatic reread or resubmission'
 [pscustomobject]@{passed=$script:checks;gameCalls=0} | ConvertTo-Json -Compress

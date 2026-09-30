@@ -135,7 +135,24 @@ function Get-SpherewrightBridgeResult {
     )
 
     if (-not $Response.success) {
-        throw "$Operation failed: $($Response.error.code): $($Response.error.message)"
+        $failure = [InvalidOperationException]::new("$Operation failed: $($Response.error.code): $($Response.error.message)")
+        # Preserve the server's actual failure; a read timeout is not evidence
+        # that descriptor discovery failed or that an accepted write vanished.
+        # Copy only this closed allowlist, never the response/body/plan token.
+        $failure.Data['spherewrightBridgeOperation'] = $Operation
+        $failure.Data['spherewrightBridgeCode'] = $Response.error.code
+        $failure.Data['spherewrightBridgeMessage'] = $Response.error.message
+        $metadataNames = @{retryable='spherewrightBridgeRetryable';recovery='spherewrightBridgeRecovery'}
+        foreach ($field in @('retryable','recovery')) {
+            if ($Response.error -is [Collections.IDictionary]) {
+                if ($Response.error.Contains($field)) {
+                    $failure.Data[$metadataNames[$field]] = $Response.error[$field]
+                }
+            } elseif ($null -ne $Response.error.PSObject.Properties[$field]) {
+                $failure.Data[$metadataNames[$field]] = $Response.error.PSObject.Properties[$field].Value
+            }
+        }
+        throw $failure
     }
 
     return $Response.result

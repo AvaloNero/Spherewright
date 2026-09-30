@@ -10,7 +10,7 @@ function Assert-Stage([bool]$Condition, [string]$Name) {
 function Reset-Stage([string]$Failure = '') {
     $script:methods = [Collections.Generic.List[string]]::new()
     $script:sessionReads = 0; $script:progressReads = 0; $script:journalReads = 0
-    $script:actionId = ''; $script:failure = $Failure; $script:researchPayload = $null; $script:savePayload = $null
+    $script:actionId = ''; $script:failure = $Failure; $script:researchPayload = $null; $script:savePayload = $null; $script:researchBudget = @()
 }
 function Invoke-SpherewrightBridgeRequest([string]$Method, [string]$SessionId, [hashtable]$Payload) {
     $script:methods.Add($Method)
@@ -23,7 +23,7 @@ function Invoke-SpherewrightBridgeRequest([string]$Method, [string]$SessionId, [
         get_player_state { [pscustomobject]@{sessionId=$SessionId;planetId=104} }
         get_progression_state {
             $script:progressReads++
-            [pscustomobject]@{sessionId=$SessionId;planetId=104;selectionStateHash='fresh-selection';selectionStateHashVersion=1;techQueue=$(if($script:progressReads -gt 1 -and $script:failure -cne 'readback'){@(1607)}else{@()});technologies=@()}
+            [pscustomobject]@{sessionId=$SessionId;planetId=104;selectionStateHash='fresh-selection';selectionStateHashVersion=1;techQueue=$(if($script:progressReads -gt 1 -and $script:failure -cne 'readback'){@(2104)}else{@()});technologies=@()}
         }
         get_gameplay_journal {
             $script:journalReads++
@@ -33,7 +33,18 @@ function Invoke-SpherewrightBridgeRequest([string]$Method, [string]$SessionId, [
         prepare_select_research {
             $script:researchPayload=$Payload
             if ($Payload.expectedSelectionStateHash -cne 'fresh-selection' -or $Payload.ContainsKey('expectedProgressionStateHash')) { throw 'Wrong research hash field' }
-            [pscustomobject]@{prepared=$true;commitAllowedNow=$true;planToken='private-fixture-token';actionKind='select-research';itemBudget=@()}
+            # Match PrepareSelectResearchOnMainThread: these are the technology's
+            # future research costs, not immediate backpack deductions.
+            $script:researchBudget = @(6001..6004 | ForEach-Object {
+                [pscustomobject]@{itemId=$_;name='fixture-matrix';count=500;direction='research-consumption'}
+            })
+            switch ($script:failure) {
+                budget_missing { $script:researchBudget = @() }
+                budget_direction { $script:researchBudget[0].direction = 'consume' }
+                budget_count { $script:researchBudget[0].count = 501 }
+                budget_duplicate { $script:researchBudget[0].itemId = 6002 }
+            }
+            [pscustomobject]@{prepared=$true;commitAllowedNow=$true;planToken='private-fixture-token';actionKind='select-research';itemBudget=$script:researchBudget;completionCondition="DSP's normal technology queue contains the requested technology and currentTech reflects the queue head."}
         }
         prepare_save {
             $script:savePayload=$Payload
@@ -56,12 +67,22 @@ function Invoke-SpherewrightBridgeRequest([string]$Method, [string]$SessionId, [
     }
     [pscustomobject]@{success=$true;result=$result}
 }
-$arguments = @{SessionId='fixture-session';PlanetId=104;GameVersion='fixture-version';TechId=1607;AcceptedBefore=8;ValidateResearchPlan={param($p) $p.actionKind -ceq 'select-research' -and @($p.itemBudget).Count -eq 0};RecordEvidence={param($row) $script:recorded=$row}}
+$arguments = @{SessionId='fixture-session';PlanetId=104;GameVersion='fixture-version';TechId=2104;AcceptedBefore=8;ValidateResearchPlan={
+    param($p)
+    if ($p.actionKind -cne 'select-research' -or @($p.itemBudget).Count -ne 4 -or
+        $p.completionCondition -cne "DSP's normal technology queue contains the requested technology and currentTech reflects the queue head.") { return $false }
+    foreach ($itemId in 6001..6004) {
+        $rows = @($p.itemBudget | Where-Object itemId -eq $itemId)
+        if ($rows.Count -ne 1 -or $rows[0].count -ne 500 -or $rows[0].direction -cne 'research-consumption') { return $false }
+    }
+    return $true
+};RecordEvidence={param($row) $script:recorded=$row}}
 Reset-Stage
 $result = Invoke-SpherewrightResearchAndSave @arguments
 Assert-Stage ($result.acceptedDelta -eq 2 -and $result.acceptedAfter -eq 10 -and $result.frozen) 'counts actual accepted and freezes at ten'
 Assert-Stage ($script:savePayload.expectedRevision -eq 7 -and $result.revision -eq 11 -and $result.durableThroughSequence -eq 95) 'uses actual revision and durable Journal, no plus-one or old J'
 Assert-Stage ($script:methods.Count -eq 14 -and @($script:methods | Where-Object {$_ -like 'commit_*'}).Count -eq 2) 'one research then one save, no replay'
+Assert-Stage ($script:researchPayload.techId -eq 2104 -and $script:researchBudget.Count -eq 4) 'accepts approved nonempty native future research budget'
 Assert-Stage (($result | ConvertTo-Json -Depth 8) -notmatch 'private-fixture-token' -and $result.timingMs.entryToFirstPrepare -ge 0 -and $null -eq $result.timingMs.dispatchToFirstPrepare) 'compact credential-free timing, unknown dispatch stays null'
 Assert-Stage ($script:recorded.acceptedAfter -eq 10 -and $result.unproved -contains 'save_restart') 'summary is not a restart or throughput proof'
 foreach ($failure in @('readback','journal','lost_commit')) {
@@ -73,6 +94,13 @@ foreach ($failure in @('readback','journal','lost_commit')) {
     if ($failure -ceq 'readback') { Assert-Stage ($errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 1 -and $script:methods -notcontains 'prepare_save') 'unproved selection prevents save without reclassifying research' }
     if ($failure -ceq 'journal') { Assert-Stage ($errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 2) 'summary failure retains both accepted actions' }
     if ($failure -ceq 'lost_commit') { Assert-Stage ($errorRecord.Exception.Data['spherewrightCommitMayHaveBeenAccepted'] -eq $true -and $errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 1) 'second commit stays uncertain, not falsely rejected or counted known' }
+}
+foreach ($failure in @('budget_missing','budget_direction','budget_count','budget_duplicate')) {
+    Reset-Stage $failure
+    $errorRecord = $null
+    try { Invoke-SpherewrightResearchAndSave @arguments | Out-Null } catch { $errorRecord=$_ }
+    Assert-Stage ($null -ne $errorRecord -and $errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 0) "$failure fails exact budget validation before acceptance"
+    Assert-Stage (@($script:methods | Where-Object {$_ -like 'commit_*'}).Count -eq 0) "$failure never commits research or save"
 }
 Reset-Stage
 $invalid = @{}; foreach($key in $arguments.Keys){$invalid[$key]=$arguments[$key]}; $invalid.AcceptedBefore=9

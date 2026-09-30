@@ -77,6 +77,8 @@ function Invoke-SpherewrightResearchAndSave {
 
     # Caller must already hold the verified single-writer handoff and two write
     # slots. Do not import a historical executor or infer permissions from this count.
+    # Research itemBudget is native future research-consumption, not an empty
+    # inventory transaction. Validate it against the approved fresh tech requirements.
     $watch = [Diagnostics.Stopwatch]::StartNew()
     $phase = 'fresh_reads'
     $actions = [Collections.Generic.List[object]]::new()

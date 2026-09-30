@@ -27,6 +27,10 @@
 - `SpherewrightProductionSampling.ps1` 只是原有600-tick native生产读取的有限调度：固定≤32对象/≤8物品/时限/请求与样本预算/条件，整个窗在开始tick之后；原transport留全回执，样本只存引用及派生量。独立窗不得重叠；连续模式缺口/未合格状态重置信用，不能少于36000ticks。无逐样本模型决策，无写入，不自动续时/重开；实验结束或异常才交模型。已阻塞的legacy读请求不能由此取消，不能启动第二执行者。不是源归因、Governor声明/2×、连续健康或保存恢复验收替代品。
 - 复用`gh`一次读取准确40位提交的CI状态/链接；没有run仍为unknown，status不是独立签字。caller新增原action的`observedExecutionGameTicks`，与轮询wall time分开；缺原生tick字段则null，不由墙钟换算。
 
+## 科研入口的原生预算样例修正
+
+回到0.4科研准备时，主会话核对`NormalGameActionCoordinator.PrepareSelectResearchOnMainThread`：`itemBudget`包含未来研究消耗，direction为`research-consumption`，不是空的即时背包交易。原stage测试的空预算样例不符合该返回，照抄会制造调用方假阻塞；模板本身未假定空预算。本次只修样例并在模板旁说明语义，改用已核原生2104的蓝/红/黄/紫矩阵各500预算；缺预算、错方向、错数量、重复物品均在commit前拒绝。普通保存仍要求空预算。`pwsh -File scripts/test-stage-tools.ps1` **26检查通过、零游戏调用**，成功fixture仍14请求/两次唯一commit，已有不确定结果与不重放负例保留。没有改Plugin、权限、协议或部署，也未据此声称科技解锁。日常仅实际PowerShell7与相关CI；5.1兼容/安装/最终包改动才另做双版本验证。
+
 ## 可重复离线比较与未验证项
 
 | 同输入fixture | 改造前 | 改造后 | 边界 |

@@ -42,6 +42,12 @@ jobs:
         shell: pwsh
         run: ./scripts/test-action-client.ps1
 
+      - name: Test bounded stage and evidence helpers offline
+        shell: pwsh
+        run: |
+          ./scripts/test-stage-tools.ps1
+          ./scripts/test-evidence-index.ps1
+
       - name: Check package surface policy without game dependencies
         shell: pwsh
         run: ./scripts/test-package-surface-policy.ps1

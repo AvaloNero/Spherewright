@@ -6,7 +6,7 @@ Spherewright 是《戴森球计划》的外部 Agent 控制层，不内置 LLM�
 
 - 只保留主会话与 **gpt-6-luna / max**。主会话确定目标、批准范围、困难接口与安全边界，处理设计/代码实质变更，独立核关键原回执和差异，负责 Git/CI、版本门。Luna 在批准的有限阶段内准备参数、复用固定入口、作为唯一游戏 writer 执行与一次取证；不自授权新工序、不自签独立验收。不另派 Sol/Terra 或常驻 Agent，不擅自换模型/推理档位。
 - 成熟工序只交一个短任务包：阶段结果与停止条件；批准对象、入口、参数、数量/时间预算；当前证据引用及 accepted/在途边界。Luna 返回结果、accepted/在途、实际差量、失败字段、原证据索引、未证明项和下一 blocker。完整回执留在受保护证据库，不在对话里复制大日志；主会话直接核原始回执和覆盖，不重采无变化证据。
-- 固定模板只更换现场参数。直接复用 `scripts/SpherewrightActionClient.ps1` 的 `Invoke-SpherewrightNormalAction`、`ValidatePrepared`、`Wait-SpherewrightAction` 和 `Wait-SpherewrightPlayerSettled`；需要受保护原回执时，普通客户端之后加载现有 `.local/SpherewrightAuditedBridgeClient.ps1`。短命直接 Bridge 调用中的 prepare 和 commit 必须在同一受保护调用方上下文，不能为跨进程携带而打印或落盘 token。普通 MCP 双工具调用仍遵守公开协议。
+- 固定模板只更换现场参数。直接复用 `scripts/SpherewrightActionClient.ps1` 的 `Invoke-SpherewrightNormalAction`、`ValidatePrepared`、`Wait-SpherewrightAction` 和 `Wait-SpherewrightPlayerSettled`；科研→核验→保存模板见 `scripts/SpherewrightStageTools.ps1`。需要受保护原回执时，普通客户端之后加载现有 `.local/SpherewrightAuditedBridgeClient.ps1`，最后加载薄模板（模板不重新导入/覆盖 transport）。短命直接 Bridge 调用中的 prepare 和 commit 必须在同一受保护调用方上下文，不能为跨进程携带而打印或落盘 token。普通 MCP 双工具调用仍遵守公开协议。
 - 已批准且前置满足的相邻动作可在一个有限阶段内逐步 fresh prepare/commit/terminal/readback，阶段末统一整理。不要每步重读全历史、重写 caller、重开方案讨论或等无关 CI。两次同类原生拒绝、真实偏差或授权门触发即停，主会话重设计；成功前缀不重做。
 - 委派到首个业务 prepare、prepare/commit 到 terminal/读回、游戏物理等待、取证/验收/文档/Git/CI 分别计时。准备超时要真正收敛或停止，不反复续时；**超时本身不是接管许可**。接管前必须证明原执行者已停止、无在途动作、无未核销结果，并完成单写者交接。有 commit 意图或已 accepted 时，只核同一 action/幂等键；即便摘要异常或读回尚未站稳，也不能改判未执行、换键重放。
 

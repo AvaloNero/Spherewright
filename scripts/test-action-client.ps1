@@ -59,6 +59,7 @@ function Reset-ActionStub([object[]]$States, [int]$ReadMilliseconds = 0, [object
     $script:actionStubReadMilliseconds = $ReadMilliseconds
     $script:actionStubTransportFailure = $false
     $script:commitStubTransportFailure = $false
+    $script:commitStubResult = $null
 }
 function Get-Date { $script:actionStubTime }
 function Start-Sleep([int]$Milliseconds) {
@@ -71,13 +72,14 @@ function Invoke-SpherewrightBridgeRequest([string]$Method, [string]$SessionId, [
         'prepare_build' { [pscustomobject]@{prepared=$true;commitAllowedNow=$true;planToken='offline-test-placeholder'} }
         'commit_build' {
             if ($script:commitStubTransportFailure) { throw 'offline commit transport failure' }
+            if ($null -ne $script:commitStubResult) { return [pscustomobject]@{success=$true;result=$script:commitStubResult} }
             [pscustomobject]@{accepted=$true;actionId='offline-action'}
         }
         'get_action_result' {
             if ($script:actionStubTransportFailure) { throw 'offline transport failure' }
             $script:actionStubTime = $script:actionStubTime.AddMilliseconds($script:actionStubReadMilliseconds)
             if ($script:actionStubStates.Count) { $script:actionStubStates.Dequeue() }
-            else { [pscustomobject]@{terminal=$false;succeeded=$false;state='waiting_for_game'} }
+            else { [pscustomobject]@{actionId='offline-action';terminal=$false;succeeded=$false;state='waiting_for_game'} }
         }
         'get_player_state' {
             if ($script:playerStubStates.Count) { $script:playerStubStates.Dequeue() }
@@ -92,8 +94,8 @@ function Assert-SameActionReads {
     Assert-Action ($reads.Count -gt 0) 'at least one action observation'
     Assert-Action (@($reads | Where-Object { $_.sessionId -cne 'offline-session' -or $_.payload.actionId -cne 'offline-action' }).Count -eq 0) 'same action and session on every observation'
 }
-$pending = [pscustomobject]@{terminal=$false;succeeded=$false;state='waiting_for_game'}
-$success = [pscustomobject]@{terminal=$true;succeeded=$true;state='completed'}
+$pending = [pscustomobject]@{actionId='offline-action';terminal=$false;succeeded=$false;state='waiting_for_game'}
+$success = [pscustomobject]@{actionId='offline-action';terminal=$true;succeeded=$true;state='completed'}
 Reset-ActionStub @($success)
 $result = Wait-SpherewrightAction -ActionId offline-action -SessionId offline-session
 Assert-Action ($result.terminal -and $result.succeeded) 'immediate terminal returned unchanged'
@@ -181,10 +183,11 @@ Assert-Action ($script:actionStubCalls.Count -eq 7) 'bounded long-action observa
 Assert-Action (@($script:actionStubCalls | Where-Object method -NE 'get_action_result').Count -eq 0) 'wait never prepares or commits'
 Assert-SameActionReads
 
-Reset-ActionStub @($pending, [pscustomobject]@{terminal=$true;succeeded=$false;state='failed';message='offline blocked'})
+Reset-ActionStub @($pending, [pscustomobject]@{actionId='offline-action';terminal=$true;succeeded=$false;state='failed';message='offline blocked';failureKind='position_stalled';stalledGameTicks=180;doNotRetrySameTarget=$true})
 $failure = $null
-try { Wait-SpherewrightAction -ActionId offline-action -SessionId offline-session | Out-Null } catch { $failure=$_.Exception.Message }
+try { Wait-SpherewrightAction -ActionId offline-action -SessionId offline-session | Out-Null } catch { $failure=$_.Exception.Message; $terminalError=$_.Exception }
 Assert-Action ($failure -ceq 'Action offline-action ended as failed: offline blocked') 'terminal failure is propagated'
+Assert-Action ($terminalError.Data['spherewrightTerminal'] -eq $true -and $terminalError.Data['spherewright_failureKind'] -ceq 'position_stalled' -and $terminalError.Data['spherewright_stalledGameTicks'] -eq 180 -and $terminalError.Data['spherewright_doNotRetrySameTarget'] -eq $true) 'structured native failure fields retained'
 Assert-Action ($script:actionStubCalls.Count -eq 2 -and ($script:actionStubSleeps -join ',') -ceq '250') 'no further observation or sleep after failure'
 Assert-SameActionReads
 
@@ -227,4 +230,18 @@ Reset-ActionStub @() 0 @([pscustomobject]@{sessionId='other-session';planetId=10
 $failure = $null
 try { Wait-SpherewrightPlayerSettled -SessionId offline-session -PlanetId 104 | Out-Null } catch { $failure=$_.Exception.Message }
 Assert-Action ($failure -like '*different session/planet*' -and $script:actionStubCalls.Count -eq 1) 'cross-session settlement readback rejects without replay'
+
+Reset-ActionStub @([pscustomobject]@{actionId='other-action';terminal=$true;succeeded=$true})
+$failure = $null
+try { Invoke-SpherewrightNormalAction -PrepareMethod prepare_build -CommitMethod commit_build -PreparePayload @{} -SessionId offline-session -PlanetId 104 | Out-Null } catch { $failure=$_.Exception }
+Assert-Action ($failure.Data['spherewrightCommitAccepted'] -eq $true -and $failure.Data['spherewrightActionId'] -ceq 'offline-action' -and $failure.Message -like '*identity mismatch*') 'wrong returned action cannot resolve an accepted intent'
+Assert-Action (@($script:actionStubCalls | Where-Object method -EQ 'commit_build').Count -eq 1) 'identity mismatch never replays'
+foreach ($accepted in @($false, 'true')) {
+    Reset-ActionStub @()
+    $script:commitStubResult = [pscustomobject]@{accepted=$accepted;actionId=''}
+    $failure = $null
+    try { Invoke-SpherewrightNormalAction -PrepareMethod prepare_build -CommitMethod commit_build -PreparePayload @{} -SessionId offline-session -PlanetId 104 | Out-Null } catch { $failure=$_.Exception }
+    Assert-Action (@($script:actionStubCalls | Where-Object method -EQ 'get_action_result').Count -eq 0 -and @($script:actionStubCalls | Where-Object method -EQ 'commit_build').Count -eq 1) 'invalid/rejected commit is not polled or retried'
+    Assert-Action ($failure.Data['spherewrightCommitMayHaveBeenAccepted'] -eq ($accepted -is [string])) 'explicit boolean rejection differs from malformed uncertainty'
+}
 [pscustomobject]@{passed=$script:checks;gameCalls=0} | ConvertTo-Json -Compress

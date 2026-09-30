@@ -22,7 +22,7 @@ function Add-Fixture([int]$Ordinal, [string]$Type, [object]$Result, [string]$AtU
 try {
     Add-Fixture 1 'bridge-response-commit_build' @{accepted=$true;actionId='action-one';idempotentReplay=$false;planToken='fixture-secret-must-not-appear'} '2026-09-30T00:00:00Z'
     Add-Fixture 2 'bridge-response-get_action_result' @{actionId='action-one';terminal=$false;state='waiting_for_game'} '2026-09-30T00:00:01Z'
-    Add-Fixture 3 'bridge-response-get_action_result' @{actionId='action-one';terminal=$true;succeeded=$true;state='completed';completedAtGameTick=123} '2026-09-30T00:00:02Z'
+    Add-Fixture 3 'bridge-response-get_action_result' @{actionId='action-one';terminal=$true;succeeded=$true;state='completed';completedAtGameTick=123} '2026-09-30T00:00:02.125Z'
     Add-Fixture 4 'bridge-response-commit_build' @{accepted=$true;actionId='action-one';idempotentReplay=$true} '2026-09-30T00:00:03Z'
     Add-Fixture 5 'bridge-response-commit_save' @{accepted=$true;actionId='action-two';idempotentReplay=$false} '2026-09-30T00:00:04Z'
     $indexJson = & (Join-Path $PSScriptRoot 'Get-SpherewrightEvidenceIndex.ps1') -EvidenceDirectory $fixtureDir -RunIds @($run)
@@ -32,7 +32,7 @@ try {
     $summary = $indexJson | ConvertFrom-Json
     if ($summary.acceptedUnique -ne 2 -or $summary.replayResponses -ne 1 -or
         @($summary.unresolvedActionIds).Count -ne 1 -or $summary.unresolvedActionIds[0] -cne 'action-two' -or
-        $summary.actions[0].receiptWallMs -ne 2000 -or $summary.actions[0].completedAtGameTick -ne 123 -or
+        $summary.actions[0].receiptWallMs -ne 2125 -or $summary.actions[0].completedAtGameTick -ne 123 -or
         $summary.auditCoverage -cne 'action_receipts_only') {
         throw 'Evidence index incorrectly counted a replay, missing terminal, or receipt time.'
     }
@@ -41,7 +41,18 @@ try {
         & (Join-Path $PSScriptRoot 'Get-SpherewrightEvidenceIndex.ps1') -EvidenceDirectory $fixtureDir -RunIds @($otherRun) | Out-Null
     } catch { $missingRejected = $true }
     if (-not $missingRejected) { throw 'Index silently accepted a missing run.' }
-    [pscustomobject]@{passed=2;gameCalls=0} | ConvertTo-Json -Compress
+    $intentPath = Join-Path $fixtureDir ('action-' + $run + '-0006-commit-intent.json')
+    [pscustomobject]@{recordType='commit-intent';runId=$run;ordinal=6;recordedAtUtc='2026-09-30T00:00:05Z';payload=@{method='commit_build';request=@{planToken='fixture-secret-must-not-appear'}}} | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $intentPath
+    $files.Add($intentPath)
+    $indexJson = & (Join-Path $PSScriptRoot 'Get-SpherewrightEvidenceIndex.ps1') -EvidenceDirectory $fixtureDir -RunIds @($run)
+    $summary = $indexJson | ConvertFrom-Json
+    if ($summary.acceptedUnique -ne 2 -or -not $summary.newWriteBlocked -or @($summary.unresolvedCommitIntents).Count -ne 1 -or
+        $summary.unresolvedCommitIntents[0].intentOrdinal -ne 6 -or $indexJson -match 'fixture-secret-must-not-appear') { throw 'Lost commit response incorrectly became safe to replay.' }
+    Add-Fixture 7 'bridge-response-commit_build' @{} '2026-09-30T00:00:06Z' $false
+    $summary = (& (Join-Path $PSScriptRoot 'Get-SpherewrightEvidenceIndex.ps1') -EvidenceDirectory $fixtureDir -RunIds @($run)) | ConvertFrom-Json
+    if (@($summary.unclassifiedCommitResponses).Count -ne 1 -or @($summary.unresolvedCommitIntents).Count -ne 1 -or
+        $summary.rejectedCommitResponses -ne 0) { throw 'Error envelope inferred a trustworthy rejection.' }
+    [pscustomobject]@{passed=4;gameCalls=0} | ConvertTo-Json -Compress
 } finally {
     foreach ($file in $files) { Remove-Item -LiteralPath $file -Force }
     Remove-Item -LiteralPath $fixtureDir -Force

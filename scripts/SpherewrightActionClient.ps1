@@ -57,9 +57,17 @@ function Wait-SpherewrightAction {
             actionId = $ActionId
         }
         $action = Get-SpherewrightBridgeResult -Response $response -Operation 'get_action_result'
+        if ($null -eq $action.PSObject.Properties['actionId'] -or $action.actionId -cne $ActionId) {
+            throw 'Action observation identity mismatch; retain the original action and do not resubmit.'
+        }
         if ($action.terminal) {
             if (-not $action.succeeded) {
-                throw "Action $ActionId ended as $($action.state): $($action.message)"
+                $failure = [InvalidOperationException]::new("Action $ActionId ended as $($action.state): $($action.message)")
+                $failure.Data['spherewrightTerminal'] = $true
+                foreach ($field in @('state','failureKind','stalledGameTicks','remainingDistance','doNotRetrySameTarget','recommendedRecovery')) {
+                    if ($null -ne $action.PSObject.Properties[$field]) { $failure.Data['spherewright_' + $field] = $action.$field }
+                }
+                throw $failure
             }
 
             return $action
@@ -134,6 +142,7 @@ function Invoke-SpherewrightNormalAction {
     $startedTicks = [Diagnostics.Stopwatch]::GetTimestamp()
     $phase = 'prepare'
     $commitMayHaveBeenAccepted = $false
+    $commitAccepted = $null
     $actionId = $null
     try {
         $prepareResponse = Invoke-SpherewrightBridgeRequest -Method $PrepareMethod -SessionId $SessionId -Payload $PreparePayload
@@ -174,7 +183,16 @@ function Invoke-SpherewrightNormalAction {
         }
         $committed = Get-SpherewrightBridgeResult -Response $commitResponse -Operation $CommitMethod
         $committedTicks = [Diagnostics.Stopwatch]::GetTimestamp()
+        if ($null -eq $committed.PSObject.Properties['accepted'] -or $committed.accepted -isnot [bool]) {
+            throw 'Commit response has no trustworthy acceptance field; reconcile the original intent, never resubmit.'
+        }
+        $commitAccepted = $committed.accepted
+        if (-not $commitAccepted) {
+            $commitMayHaveBeenAccepted = $false
+            throw 'Commit response explicitly rejected this intent.'
+        }
         $actionId = [string]$committed.actionId
+        if ([string]::IsNullOrWhiteSpace($actionId)) { throw 'Accepted commit lacks an action ID; reconcile its original intent.' }
 
         $phase = 'terminal_observation'
         $terminal = Wait-SpherewrightAction -ActionId $actionId -SessionId $SessionId -TimeoutSeconds $TimeoutSeconds
@@ -198,6 +216,10 @@ function Invoke-SpherewrightNormalAction {
         try {
             $_.Exception.Data['spherewrightPhase'] = $phase
             $_.Exception.Data['spherewrightCommitMayHaveBeenAccepted'] = $commitMayHaveBeenAccepted
+            $_.Exception.Data['spherewrightCommitAccepted'] = $commitAccepted
+            if ($commitAccepted -eq $true -and $null -ne $committed.PSObject.Properties['idempotentReplay']) {
+                $_.Exception.Data['spherewrightIdempotentReplay'] = $committed.idempotentReplay
+            }
             $_.Exception.Data['spherewrightElapsedMs'] = [math]::Round(([Diagnostics.Stopwatch]::GetTimestamp() - $startedTicks) / ([double][Diagnostics.Stopwatch]::Frequency / 1000.0), 3)
             if (-not [string]::IsNullOrWhiteSpace($actionId)) {
                 $_.Exception.Data['spherewrightActionId'] = $actionId

@@ -3,6 +3,8 @@
 更新时间：2026-10-01（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-01 — 消费者侧L1六带`5230→5232→5231→5233→5234→5235`/`2001×6`施工成功，但尚未连5217；最近保存81944570早于该施工，观察82022047/R24，accepted4/10 OPEN。下一接口5235→5217/filter6004待只读预检，未写成通过。[东侧消费者接口最小带段](evidence/2026-10-01/purple-east-consumer-interface-span.md)。
+
 2026-10-01 — 2001双带非移除式覆盖`5205→5229→5228→5219`已保存至81944570，观察81944582/R22、J96 durable；窗口3/10 OPEN。选定17对象读回非整厂census。`5203→5219`/2011 sorter接口仍TooSkew拒绝，源仓、供料、科研与真实重启未证明。[西侧源端带段覆盖与正常保存](evidence/2026-10-01/purple-source-west-cover-and-save.md)。
 
 2026-10-01 — 正常保存81820689覆盖西侧九带5219–5227，观察81820702/R19、J96 durable；新窗口accepted1/10 OPEN。真实重启未验证。唯一下一接口`5203→5219`/filter6004只读预检TooSkew、nativeChecks0，源端未连，不能同候选重试。[西侧九带正常保存与源端接口边界](evidence/2026-10-01/purple-west-ramp-normal-save.md)。

@@ -10,8 +10,8 @@
 | 游戏/安装 | 受保护回执显示运行中 DSP `0.10.35.29104`；当前已安装 Plugin/MCP 的**精确 SHA 本次未重验** | 不把源码 HEAD、旧包或文档修改视作冷部署；工具面/哈希以最后一次安装记录及下一次实际检查为准 |
 | 正式发行 | `v0.4.0` 未 tag、未 Release、未发布 Thunderstore | [Roadmap](../ROADMAP.md) 的全部验收门仍适用；旧 0.4 本地候选包不是正式包 |
 | owned world | `owned-world-001`，母星104，最后正常保存 **tick80012591** | 保存 action 终态成功，`ownedSaveState=saved`、write health `healthy`，protected resume advertised；此次保存后**未验证重启恢复** |
-| 最近观察 | 只读 run `58687b5685714196b502be2ac9afb170/0004–0006`：session **tick80053207 / revision22**，player80053776，Journal80053780；最后零预建筑查询仍80012597 | 观察晚于保存，不能将观察 tick 当作 durable save tick；本次没有重采工厂或验证重启，继续写前必须 fresh 读取 |
-| Journal | **durableThroughSequence95**、`persistencePending=false` | 本阶段无新的首次事件；Journal 与游戏 revision/accepted 是不同计数 |
+| 最近观察 | 只读 run `47f2c7af593f440e8fa95cf997385905/0092`：session **tick80142282 / revision22**；最后零预建筑查询仍80012597 | 采样90请求封顶，命令已结束，没有最终完整边界；观察不是保存，继续写前仍须fresh读取 |
+| Journal | 同run0003：tick80141009，**durableThroughSequence95**、`persistencePending=false`、error为空 | 这是实验开始处的durable边界，非实验结束复核；与revision/accepted不同 |
 | 外部写审计 | 新窗口 **accepted 4/10**，未触发冻结 | 前一10写窗口审计、push、绿CI后才开的新窗口；此值只在原 action 台账继续核算，绝不重置 tick/revision/J |
 
 ## 已完成与未证明
@@ -22,12 +22,12 @@
 
 ## 当前 blocker、动作和下一阶段
 
-- 当前硬边界：新旧带接口已建，但“石墨真正进入旧消费者并持续加工”尚未完成连续实验；只读已确认3404 recipe103→1205超级磁场环、3403 recipe41→1802氘核燃料棒。连续实验未开始，不得用1209/1121替代产出身份或为了孤立上游继续扩建。
+- 当前硬边界：新旧带已接，但“石墨进入旧消费者并持续加工”仍未完成验收；runtime3404 recipe103→1205、3403 recipe41→1802。有限实验保留了1个完整600-tick窗口，后续触及请求预算，不是原生拒绝；不能把单窗、全星球产量或摘要丢失当作整链通过/全部未执行，见[原回执与调用方修复](evidence/2026-09-30/minimal-workflow-efficiency.md#有限采样的实际边界与慢速回归)。
 - 本窗四个动作均terminal/succeeded；只读新增accepted=0。Luna已停止，无活动句柄/在途/未核销；冲突仍冻结核同action。旧5192→3362/3365 `TooSkew` 目标不原样重提；已成功5193–5196禁止重放。新写按当前规则fresh预检和读回。
-- 本轮任务仅做本地流程优化和离线测试，不自动加载、部署、追加施工或发行。下一次游戏任务须先 fresh 核 owned/session/版本/J 与外部 accepted 4/10，再按批准范围执行；上次保存后的重启持久性仍待单独实机核销。
+- 本轮流程优化不加载、部署、追加施工或发行；有限只读实验已停止，不自动续时/重开。下一次游戏任务仍须fresh核owned/session/版本/J及外部accepted4/10；保存后的重启持久性待实机核销。
 
 ## 证据入口
 
 [当前规则](../AGENTS.md) · [Roadmap](../ROADMAP.md) · [Agent playbook](agent-playbook.md) · [存档日记](gameplay-timeline.md) · [十写审计](evidence/2026-09-30/graphite-outlet-extension-ten-audit.md) · [本窗保存与连接](evidence/2026-09-30/graphite-inlet-two-sorters-save.md)。受保护原回执只在本机证据库中，提交文档只保留脱敏索引；独立验收不能只读本摘要。
 
-本轮仅做[最小离线流程优化](evidence/2026-09-30/minimal-workflow-efficiency.md)，新入口不授予游戏写入或验收权限。
+本轮[最小流程优化](evidence/2026-09-30/minimal-workflow-efficiency.md)不授予游戏写入或验收权限。

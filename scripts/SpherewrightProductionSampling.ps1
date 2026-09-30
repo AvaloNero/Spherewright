@@ -21,32 +21,41 @@ function Invoke-SpherewrightProductionExperiment {
         [ValidateRange(36000,360000)][int]$RequiredContinuousGameTicks=36000,
         [ValidateRange(1,1800)][int]$TimeoutSeconds=180,
         [ValidateRange(1,4096)][int]$MaximumRequests=90,
-        [ValidateRange(1,10)][int]$PollSeconds=1
+        [ValidateRange(1,10)][int]$PollSeconds=5
     )
     if (@($EntityIds|Where-Object {$_ -le 0}).Count -or @($ItemIds|Where-Object {$_ -le 0}).Count -or
         @($EntityIds|Sort-Object -Unique).Count -ne $EntityIds.Count -or @($ItemIds|Sort-Object -Unique).Count -ne $ItemIds.Count -or
         ($Mode -ceq 'independent' -and $MaximumSamples -lt $RequiredWindows) -or
         ($Mode -ceq 'continuous' -and $IntervalGameTicks -gt $WindowGameTicks)) { throw 'Invalid fixed scope/cadence/budget; no request sent.' }
     $started=Get-Date; $deadline=$started.AddSeconds($TimeoutSeconds)
-    $experiment=[pscustomobject]@{requests=0;readWallMs=0.0;pollWaitMs=0.0;samples=0;qualifying=0;resets=0;covered=0;startTick=$null;endTick=$null;lastWindowEnd=$null;lastSessionTick=$null;nextTick=0;firstTick=$null;lastTick=$null;lastRates=@()}
+    $experiment=[pscustomobject]@{requests=0;lastMethod=$null;readWallMs=0.0;pollWaitMs=0.0;samples=0;qualifying=0;resets=0;covered=0;startTick=$null;endTick=$null;lastWindowEnd=$null;lastSessionTick=$null;nextTick=0;firstTick=$null;lastTick=$null;lastRates=@()}
     $read = {
         param([string]$Method,[hashtable]$Payload)
-        if ((Get-Date) -ge $deadline -or $experiment.requests -ge $MaximumRequests) { throw 'Finite sampling deadline/request budget reached; do not extend or restart.' }
+        $experiment.lastMethod=$Method
+        if ((Get-Date) -ge $deadline -or $experiment.requests -ge $MaximumRequests) {
+            $failure=[InvalidOperationException]::new('Finite sampling deadline/request budget reached; do not extend or restart.')
+            $failure.Data['spherewrightSamplingFailureKind']=$(if ((Get-Date) -ge $deadline) {'deadline_exhausted'} else {'request_budget_exhausted'})
+            throw $failure
+        }
         if ($Method -notin @('get_session_state','inspect_factory_entity','get_power_summary','get_overseer_production')) { throw 'Sampling is read-only.' }
         $experiment.requests++
         $clock=[Diagnostics.Stopwatch]::StartNew()
-        $value=Read-SpherewrightStageResult $Method $SessionId $Payload
-        $experiment.readWallMs+=$clock.Elapsed.TotalMilliseconds
-        if ((Get-Date) -ge $deadline) { throw 'Read crossed the original sampling deadline; evidence retained, no new request.' }
+        try { $value=Read-SpherewrightStageResult $Method $SessionId $Payload }
+        finally { $clock.Stop(); $experiment.readWallMs+=$clock.Elapsed.TotalMilliseconds }
+        if ((Get-Date) -ge $deadline) {
+            $failure=[InvalidOperationException]::new('Read crossed the original sampling deadline; evidence retained, no new request.')
+            $failure.Data['spherewrightSamplingFailureKind']='read_crossed_deadline'
+            throw $failure
+        }
         return $value
     }
-    $null = & $RecordEvidence ([pscustomobject]@{event='production-experiment-intent';mode=$Mode;entityIds=$EntityIds;itemIds=$ItemIds;intervalGameTicks=$IntervalGameTicks;windowGameTicks=$WindowGameTicks;requiredWindows=$RequiredWindows;requiredContinuousGameTicks=$RequiredContinuousGameTicks;maximumSamples=$MaximumSamples;maximumRequests=$MaximumRequests;deadlineUtc=$deadline.ToUniversalTime().ToString('o');gameWrites=0})
-    $initial=& $read get_session_state @{}
-    Assert-SpherewrightStageSession $initial $SessionId $PlanetId $GameVersion
-    # Exclude the rolling window that predates the declared experiment. Wait in
-    # game ticks, within the original wall/request budget, not via a model loop.
-    $experiment.nextTick=[long]$initial.gameTick+$WindowGameTicks
+    $null = & $RecordEvidence ([pscustomobject]@{event='production-experiment-intent';mode=$Mode;entityIds=$EntityIds;itemIds=$ItemIds;intervalGameTicks=$IntervalGameTicks;windowGameTicks=$WindowGameTicks;pollSeconds=$PollSeconds;requiredWindows=$RequiredWindows;requiredContinuousGameTicks=$RequiredContinuousGameTicks;maximumSamples=$MaximumSamples;maximumRequests=$MaximumRequests;deadlineUtc=$deadline.ToUniversalTime().ToString('o');gameWrites=0})
     try {
+        $initial=& $read get_session_state @{}
+        Assert-SpherewrightStageSession $initial $SessionId $PlanetId $GameVersion
+        # Exclude the rolling window that predates the declared experiment. Wait in
+        # game ticks, within the original wall/request budget, not via a model loop.
+        $experiment.nextTick=[long]$initial.gameTick+$WindowGameTicks
         while ($experiment.samples -lt $MaximumSamples) {
             $beginMarker=& $ReceiptMarker
             $state=& $read get_session_state @{}
@@ -83,6 +92,10 @@ function Invoke-SpherewrightProductionExperiment {
                 $window.endGameTick-$window.startGameTick+1 -ne $WindowGameTicks -or $production.capturedAtGameTick -lt $window.endGameTick)) { throw 'Native window fields do not match the declared period.' }
             if ($window.state -ceq 'ready' -and $window.startGameTick -le $initial.gameTick) { throw 'Native window predates the declared experiment; do not count it.' }
             if ($window.state -ceq 'ready' -and $null -ne $experiment.lastWindowEnd -and $window.endGameTick -le $experiment.lastWindowEnd) { throw 'Stale/regressed native window; do not count or replay it.' }
+            $local=@($production.planets|Where-Object planetId -EQ $PlanetId)
+            if ($local.Count -ne 1 -or @($local[0].production).Count -ne $ItemIds.Count -or
+                (@($local[0].production.itemId|Sort-Object) -join ',') -cne (@($ItemIds|Sort-Object) -join ',')) { throw 'Local item-rate coverage unproved.' }
+            $experiment.lastRates=@($local[0].production|Select-Object itemId,itemName,producedCount,consumedCount,actualProductionPerMinute,actualConsumptionPerMinute)
             if ($Mode -ceq 'independent') {
                 if ($valid -and $null -ne $experiment.lastWindowEnd -and $window.startGameTick -le $experiment.lastWindowEnd) { throw 'Independent windows overlap; evidence cannot be combined.' }
                 if ($valid) { $experiment.qualifying++ }
@@ -103,10 +116,6 @@ function Invoke-SpherewrightProductionExperiment {
             $experiment.nextTick=[long]$window.endGameTick+$IntervalGameTicks
             if ($null -eq $experiment.firstTick) { $experiment.firstTick=$production.capturedAtGameTick }
             $experiment.lastTick=$production.capturedAtGameTick
-            $local=@($production.planets|Where-Object planetId -EQ $PlanetId)
-            if ($local.Count -ne 1 -or @($local[0].production).Count -ne $ItemIds.Count -or
-                (@($local[0].production.itemId|Sort-Object) -join ',') -cne (@($ItemIds|Sort-Object) -join ',')) { throw 'Local item-rate coverage unproved.' }
-            $experiment.lastRates=@($local[0].production|Select-Object itemId,itemName,producedCount,consumedCount,actualProductionPerMinute,actualConsumptionPerMinute)
             $null=& $RecordEvidence ([pscustomobject]@{event='production-sample';index=$experiment.samples;runId=$beginMarker.runId;firstOrdinal=$beginMarker.ordinal+1;lastOrdinal=$endMarker.ordinal;window=$window;valid=$valid;resetReason=$resetReason;coveredGameTicks=$experiment.covered;rates=$experiment.lastRates;healthScope='sampled_only'})
             if (($Mode -ceq 'independent' -and $experiment.qualifying -ge $RequiredWindows) -or ($Mode -ceq 'continuous' -and $experiment.covered -ge $RequiredContinuousGameTicks)) { break }
         }
@@ -118,9 +127,21 @@ function Invoke-SpherewrightProductionExperiment {
         $null=& $RecordEvidence $summary
         return $summary
     } catch {
-        $_.Exception.Data['spherewrightSamplingRequests']=$experiment.requests
-        $_.Exception.Data['spherewrightSamplingDeadlineUtc']=$deadline.ToUniversalTime().ToString('o')
-        $_.Exception.Data['spherewrightGameWrites']=0
-        throw
+        $samplingError=$_
+        $failureKind=$samplingError.Exception.Data['spherewrightSamplingFailureKind']
+        if (-not $failureKind) { $failureKind='observation_failed' }
+        $samplingError.Exception.Data['spherewrightSamplingFailureKind']=$failureKind
+        $samplingError.Exception.Data['spherewrightSamplingRequests']=$experiment.requests
+        $samplingError.Exception.Data['spherewrightSamplingSamples']=$experiment.samples
+        $samplingError.Exception.Data['spherewrightSamplingDeadlineUtc']=$deadline.ToUniversalTime().ToString('o')
+        $samplingError.Exception.Data['spherewrightGameWrites']=0
+        # Keep completed sample receipts even when a later read fails. Failure is
+        # not a production verdict, and never starts another experiment/worker.
+        try {
+            $null=& $RecordEvidence ([pscustomobject]@{event='production-experiment-failed';result='not_proven';failureKind=$failureKind;method=$experiment.lastMethod;message=$samplingError.Exception.Message;samples=$experiment.samples;qualifyingWindows=$experiment.qualifying;requests=$experiment.requests;maximumRequests=$MaximumRequests;lastObservedTick=$experiment.lastTick;coveredGameTicks=$experiment.covered;deadlineUtc=$deadline.ToUniversalTime().ToString('o');gameWrites=0;governorAcceptance=$false;automaticRestart=$false;timingMs=@{reads=[math]::Round($experiment.readWallMs,3);scheduledWait=$experiment.pollWaitMs;total=((Get-Date)-$started).TotalMilliseconds}})
+        } catch {
+            $samplingError.Exception.Data['spherewrightFailureEvidenceError']=$_.Exception.Message
+        }
+        throw $samplingError
     }
 }

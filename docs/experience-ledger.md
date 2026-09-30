@@ -2,11 +2,23 @@
 
 更新时间：2026-09-30（Asia/Singapore）
 
+## EXP-334 — 已接受施工超过调用方等待上限，只核同一 action
+
+- 2026-09-30，validated 于同档原生 15 带施工。5171 的 source-bound 完整原生计划以 2001×15 唯一提交后，DSP 建立 15 个预建筑并扣料；普通调用方 180 秒观察上限到时仍是 waiting_for_game。其后受保护只读继续查询**原 action**，先见三架无人机工作、后见预建筑为零，最终原 action 于 tick 79913556 返回 completed/succeeded，唯一实体 5172–5186、带库存 393→378、矿机互返端点和新线煤货读回成立。没有换幂等键、没有重放整段，也没有把调用方 timeout 当游戏失败。[本阶段证据](evidence/2026-09-30/coal-miner-outlet-furnace-save.md)。
+- 规则：正常施工的调用方时间上限仅约束观察，不撤销已被接受的游戏动作；延续轮询同一 action，并读预建筑/无人机状态来解释等待。下批依据对象数量、游戏实际 FPS 和上一动作墙钟设置有界观察预算，仍须终态及逐对象核验，不靠无界延长或另发 commit。适用范围为普通原生施工；动作状态机、Drone 或 DSP 帧率变化时复验。本次炉 5187 已建/保存，但配方与物流仍未配置，不将煤到货冒充石墨量产。
+
+## EXP-333 — 委派的工作目录要落实到执行命令
+
+- 2026-09-30，validated 仅限本次零写调用方故障：Luna 收到仓库完整路径，却仍从外层 DSPAgent 工作目录寻找普通与受保护客户端；在 60 秒快路径界限内没有 prepare_build、commit、actionId 或在途动作。主会话核受保护序号后接手，直接在 Spherewright 工作目录复用既有客户端。游戏没有因该失败发生任何建造或回档。[零写故障与随后原生施工](evidence/2026-09-30/coal-miner-outlet-furnace-save.md)。
+- 规则：短任务包的完整路径不是 shell 的工作目录；首个执行命令必须显式设 workdir 或使用仓库绝对路径。零请求时立即报告并交回，不再做跨进程的 dot-source 探索；若已有 prepare/commit，先按原回执核销而非按时间收回。复验触发：执行环境、调用入口或委派模板变化。
+
 ## EXP-332 — 精确原生计划在已有提交器内验，不为每步重写 caller
 
 - 2026-09-30，`validated` 仅限离线调用器回归、`observed` 于同档零写现场预检。新煤矿机 `5171` 朝磁环约5 m 的 source-bound 带路被旧带 `3373` 在第6点原生拒绝；东向约14 m 则以完整 stage1、`native_device_port`、15条新带和无 blocker 通过，附近熔炉原生站位也通过。旧带最终接到磁环石墨过滤输入，但其即时货物为0；上述都不是施工或持续生产证据。[预检回执和界限](evidence/2026-09-30/coal-to-graphite-native-route-preview.md)。
 - 同阶段将 `ValidatePrepared` 可选回调接入共用普通动作客户端：只有**精确一个布尔 true**且 plan token 未变才进入原有 commit/同 action 轮询；false、异常或改 token 在零 commit 时结束。离线67项、零游戏调用通过，保持无回调行为。适用规则：事先批准有限路线时，只替换参数并在同一客户端回调核完整 native path、绑定和材料预算；不能因只读 preview 已通过就沿用旧 token，亦不为每段线路手写新的 commit/超时处理。实机验证触发：下一次此入口执行、Plugin/DSP 或 DTO 变化、任何 validation callback 异常。本条不放宽逐对象读回、十写审计或输出链验收。
 
+
+- 同日实机复验将“仅离线、待真实执行”更新为 validated（仅限本档两次正常 build）：新鲜15带计划在该回调内逐点对比旧受保护路径、核 native_device_port/full_path_stage1 与 2001×15，通过后唯一提交；炉位回调核吸附中心和 2302×1，两者均正常建成并保存 79921801/J95。此结论不扩大到其它带等级、其它端口或已运行石墨链。[现场原回执](evidence/2026-09-30/coal-miner-outlet-furnace-save.md)。
 
 ## EXP-331 — 已走过的落点不等于完整去程；十写先核受保护终态
 

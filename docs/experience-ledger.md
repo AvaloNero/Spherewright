@@ -2,6 +2,11 @@
 
 更新时间：2026-09-30（Asia/Singapore）
 
+## EXP-335 — 分拣器槽位详情不可用时核计划、终态与互返连接
+
+- 2026-09-30，validated 仅限本档新煤线一次分拣器施工。原生 fresh 计划将开放带端5172接到炉5187，exact_slots 源虚拟槽 -1、炉槽10、过滤煤1006、2011×1；唯一 action 建成5188，背包3→2，完工连接实读为5172 slot4↔5188 slot1、5188 slot0↔5187 slot10，双侧互返。只读 sorterEndpoints 详情单独返回 unavailable/native_sorter_slots_unavailable_or_over_limit；因此不能把此 DTO 当作已提供槽位详情，但也不能否定同 action 终态和实际 connections 的独立核验。后续炉配方17正常完成、保存79954353/J95，另一个窗口见炉输入煤4、输出石墨33、working且满供电。[阶段证据](evidence/2026-09-30/coal-furnace-input-recipe-save.md)。
+- 规则：完工槽位证明组合原生预检绑定、动作终态以及两侧实体连接反向读回；可选详细 DTO 不可用要明说，不伪造其内容。煤进炉及一窗石墨缓存增长不是持续输出；炉输出线路和多窗速率仍须分别证实。复验触发：分拣器/带端/炉连接、DTO或 DSP/Plugin版本变化。
+
 ## EXP-334 — 已接受施工超过调用方等待上限，只核同一 action
 
 - 2026-09-30，validated 于同档原生 15 带施工。5171 的 source-bound 完整原生计划以 2001×15 唯一提交后，DSP 建立 15 个预建筑并扣料；普通调用方 180 秒观察上限到时仍是 waiting_for_game。其后受保护只读继续查询**原 action**，先见三架无人机工作、后见预建筑为零，最终原 action 于 tick 79913556 返回 completed/succeeded，唯一实体 5172–5186、带库存 393→378、矿机互返端点和新线煤货读回成立。没有换幂等键、没有重放整段，也没有把调用方 timeout 当游戏失败。[本阶段证据](evidence/2026-09-30/coal-miner-outlet-furnace-save.md)。

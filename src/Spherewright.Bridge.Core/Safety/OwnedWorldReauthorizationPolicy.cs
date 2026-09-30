@@ -19,6 +19,10 @@ public static class OwnedWorldReauthorizationPolicy
         bool consumed, DateTimeOffset issued, DateTimeOffset expires, DateTimeOffset now) =>
         healthy && journalVerified && !consumed && issued < expires && expires <= now;
 
+    public static bool AllowsActiveProvenance(bool healthy, bool journalVerified,
+        bool consumed, DateTimeOffset issued, DateTimeOffset expires, DateTimeOffset now) =>
+        healthy && journalVerified && !consumed && issued <= now && now < expires && issued < expires;
+
     public static string? ValidateCandidate(long savedTick, string gameVersion, OwnedSavePrefixEvidence evidence) =>
         savedTick < 0 || evidence.GameTick != savedTick || !evidence.MatchesExpectedIdentity
         || !evidence.Peaceful || !string.Equals(gameVersion, evidence.GameVersion, StringComparison.Ordinal)

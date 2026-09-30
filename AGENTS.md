@@ -27,7 +27,7 @@ Spherewright 是《戴森球计划》的外部 Agent 控制层，不内置 LLM�
 - 禁止注入物品/科技、瞬建、传送或写位置、直接改游戏缓冲、存档编辑、无界寻路/布局/自动扩产、绕过科技/材料/地形/原生规则。黑雾战斗、多人/Nebula、任意第三方 Mod 兼容和跨恒星曲速不在当前验收授权。移动/飞行只能用正常订单并检查停滞、能量、落地/速度；读不到的状态不是零或成功。
 - 不用键鼠宏、截图识别、Computer Use、外部内存扫描、游戏加速或程序集修改替代正常 MCP 游戏动作。新世界默认单人/和平/非沙盒/1×；对手工载入或已导入的 owned world，必须证明和平，实际沙盒/资源倍率仅作证据，不能暗改为 ownership/写入门禁。玩家在 owned 副本内手动操作后，Agent 要 fresh read/state hash 再继续。
 - ownership 只来自精确 `GameData` 与受保护登记/票据，不看文件名前缀或 Steam 账号。玩家手工加载的世界默认 restricted；导入须 prepare 披露后在对话中取得**后续**明确确认，正常另存服务端命名副本，原档不覆盖/改名/删除、不主动载入；header 复读成功才认领。导入 Journal 从导入点开始，绝不补造过去事件。普通保存只作用于当前 owned identity。
-- 健康重启默认 ticket-bound exact primary；受限 LastExit、固定 AutoSave0 和 expired-primary 只在各自现有受保护路径、证据与所需后续确认齐全时使用，不开放 save picker、任意路径或回档。用户已长期授权对当前实现固定候选做有界**只读**身份/稳定性核验；此权不等于加载。旧票据一次性消费且留 durable tombstone，恢复后旧 session/cursor/plan 均失效，需核 Journal 连续和当前原生版本。具体迁移配对、披露与恢复异常见 playbook/专题证据，不能据旧授权扩大版本或候选。飞行 checkpoint 只用于对应失败，成功保存后退役。
+- 健康重启默认 ticket-bound exact primary；用户已授权核验通过的当前 owned primary直接恢复，不重复问。受限 LastExit、固定 AutoSave0 和 expired-primary 仍各走受保护证据路径，不开放 save picker、任意路径或回档。有效健康票据的固定 AutoSave0 使用`reauthorize_fixed_autosave0`；明确授权已经匹配披露候选时，不再重复确认，fresh prepare、精确digest和commit授权字段仍保留。过期恢复/迁移继续遵守各自后续确认门，不能把泛泛“继续”扩大为另一候选授权。有界固定候选**只读**核验长期允许，但不自行扩大加载范围。旧票据一次性消费且留 durable tombstone；恢复核Journal/原生版本，旧session/cursor/plan失效；中断或unknown不得重放。见playbook/专题证据。飞行checkpoint成功保存后退役。
 - 冷部署/重启先普通保存并核终态、正常关闭已确认的游戏进程，再安装同批 Plugin/MCP、核程序集哈希，按受保护票据启动和恢复；不热替换、不直接启动游戏 EXE、不并发重复启动。安装预检不等于事务升级或游戏实机通过。
 - 凭据、plan token、真实存档名、用户绝对路径、原始存档、DLL、未脱敏日志和 runtime descriptor 不进 Git/对话。Named Pipe 当前用户 ACL、高熵认证、协议大小/队列/帧预算、MCP stdout 纯协议等安全边界不改。
 

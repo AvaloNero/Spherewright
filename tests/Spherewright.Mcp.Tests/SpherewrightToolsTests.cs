@@ -242,11 +242,18 @@ public sealed class SpherewrightToolsTests
             typeof(System.ComponentModel.DescriptionAttribute))!).Description;
         Assert.Contains("Default healthy planned restarts load only the exact ticket-bound primary", commitDescription);
         Assert.Contains("Real quarantine", commitDescription);
-        Assert.Contains("verified_newer_lastexit", commitDescription);
-        Assert.Contains("reauthorize_expired_autosave0", commitDescription);
+        Assert.Contains("Verified-newer LastExit", commitDescription);
+        Assert.Contains("Fixed AutoSave0 uses evidence version3 with expired provenance or version4 with an active healthy credential", commitDescription);
         Assert.Contains("reauthorize_expired_autosave0", guide);
         Assert.Contains("recoveryEvidenceVersion=3", guide);
+        Assert.Contains("reauthorize_fixed_autosave0", guide);
+        Assert.Contains("Require evidence version **4**", guide);
         var prepare = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.PrepareOwnedWorldResumeAsync))!;
+        var recoveryMode = prepare.GetParameters().Single(parameter => parameter.Name == "recoveryMode");
+        var recoveryModeDescription = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(
+            recoveryMode, typeof(System.ComponentModel.DescriptionAttribute))!).Description;
+        Assert.Contains("reauthorize_fixed_autosave0", recoveryModeDescription);
+        Assert.Contains("evidence version4", recoveryModeDescription);
         var expectedTick = prepare.GetParameters().Single(parameter => parameter.Name == "expectedRecoveryGameTick");
         var expectedTickDescription = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(
             expectedTick, typeof(System.ComponentModel.DescriptionAttribute))!).Description;
@@ -254,7 +261,7 @@ public sealed class SpherewrightToolsTests
         var confirmation = commit.GetParameters().Single(parameter => parameter.Name == "userConfirmedInConversation");
         var confirmationDescription = ((System.ComponentModel.DescriptionAttribute)Attribute.GetCustomAttribute(
             confirmation, typeof(System.ComponentModel.DescriptionAttribute))!).Description;
-        Assert.Contains("reauthorize_expired_autosave0", confirmationDescription);
+        Assert.Contains("Active fixed AutoSave0 accepts an existing explicit conversation grant", confirmationDescription);
     }
 
     [Theory]
@@ -369,6 +376,41 @@ public sealed class SpherewrightToolsTests
         if (!validEcho) Assert.DoesNotContain("planToken", result.StructuredContent!.Value.GetRawText());
     }
 
+    [Theory]
+    [InlineData(4, OwnedWorldResumeModes.ReauthorizeFixedAutosave0, false)]
+    [InlineData(3, OwnedWorldResumeModes.ReauthorizeFixedAutosave0, true)]
+    [InlineData(3, OwnedWorldResumeModes.ReauthorizeExpiredAutosave0, true)]
+    public async Task ActiveFixedAutoSave0RequiresExactV4PluginEchoAndRejectsExpiredV3Disclosure(
+        int evidenceVersion, string echoedMode, bool blocked)
+    {
+        var prompt = echoedMode == OwnedWorldResumeModes.ReauthorizeFixedAutosave0
+            ? Spherewright.Bridge.Core.Safety.OwnedWorldAutosaveRecoveryPolicy.ActiveConfirmationPrompt
+            : Spherewright.Bridge.Core.Safety.OwnedWorldAutosaveRecoveryPolicy.ConfirmationPrompt;
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            ResumePlan = new PreparedOwnedWorldResumePlan
+            {
+                Prepared = true, PlanToken = "fixed-autosave0-plan",
+                RecoveryMode = echoedMode, RecoveryEvidenceVersion = evidenceVersion,
+                CandidateGameTick = 80731193, MinimumGameTick = 80731193,
+                ExactEmbeddedIdentityVerified = true, UserConfirmationRequired = true, CommitAllowedNow = false,
+                ConfirmationPrompt = prompt, ConfirmationDigest = "synthetic-fixed-autosave0-digest",
+                SourceGameVersion = "0.10.35.29104", TargetGameVersion = "0.10.35.29104",
+            },
+        };
+
+        var result = await SpherewrightTools.PrepareOwnedWorldResumeAsync(bridge, "active-provenance",
+            recoveryMode: OwnedWorldResumeModes.ReauthorizeFixedAutosave0,
+            minimumRecoveryGameTick: 80627903, expectedRecoveryGameTick: 80731193);
+
+        Assert.Equal(blocked, result.IsError);
+        Assert.Equal(OwnedWorldResumeModes.ReauthorizeFixedAutosave0, bridge.LastResumePrepareRequest!.RecoveryMode);
+        Assert.Equal(80627903, bridge.LastResumePrepareRequest.MinimumRecoveryGameTick);
+        Assert.Equal(80731193, bridge.LastResumePrepareRequest.ExpectedRecoveryGameTick);
+        Assert.False(bridge.LastResumePrepareRequest.UserConfirmedInConversation);
+        if (blocked) Assert.DoesNotContain("planToken", result.StructuredContent!.Value.GetRawText());
+    }
+
     [Fact]
     public async Task ExpiredAutoSave0DoesNotAcceptAnOldPluginOrAnotherRecoveryModeEcho()
     {
@@ -395,14 +437,17 @@ public sealed class SpherewrightToolsTests
     }
 
     [Theory]
-    [InlineData(true, 12000, 12345)]
-    [InlineData(false, -1, 12345)]
-    [InlineData(false, 12346, 12345)]
-    public async Task InvalidExpiredAutoSave0PrepareNeverReachesBridge(bool confirmed, long minimum, long expected)
+    [InlineData(OwnedWorldResumeModes.ReauthorizeExpiredAutosave0, true, 12000, 12345)]
+    [InlineData(OwnedWorldResumeModes.ReauthorizeExpiredAutosave0, false, -1, 12345)]
+    [InlineData(OwnedWorldResumeModes.ReauthorizeExpiredAutosave0, false, 12346, 12345)]
+    [InlineData(OwnedWorldResumeModes.ReauthorizeFixedAutosave0, true, 80627903, 80731193)]
+    [InlineData(OwnedWorldResumeModes.ReauthorizeFixedAutosave0, false, -1, 80731193)]
+    [InlineData(OwnedWorldResumeModes.ReauthorizeFixedAutosave0, false, 80731194, 80731193)]
+    public async Task InvalidAutoSave0PrepareNeverReachesBridge(string mode, bool confirmed, long minimum, long expected)
     {
         var bridge = new FakeBridgeClient(SuccessResult());
         var result = await SpherewrightTools.PrepareOwnedWorldResumeAsync(bridge, "expired-provenance",
-            recoveryMode: OwnedWorldResumeModes.ReauthorizeExpiredAutosave0,
+            recoveryMode: mode,
             userConfirmedInConversation: confirmed, minimumRecoveryGameTick: minimum, expectedRecoveryGameTick: expected);
 
         Assert.True(result.IsError);

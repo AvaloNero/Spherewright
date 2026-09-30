@@ -946,11 +946,11 @@ internal sealed class GameSessionTracker : IDisposable
         }
 
         if (reauthorizingFixedAutosave0 && (!reauthorizingExpiredPrimary || primaryLease is null))
-            throw new InvalidOperationException("Fixed AutoSave0 recovery requires expired provenance and subsequent confirmation.");
+            throw new InvalidOperationException("Fixed AutoSave0 recovery requires verified protected provenance, explicit authority and the primary lease.");
         if (!reauthorizingFixedAutosave0 && primaryLease is not null)
             throw new InvalidOperationException("A primary overwrite-target lease belongs only to fixed AutoSave0 recovery.");
         if (reauthorizingExpiredPrimary && (sourceLease is null || journalLease is null))
-            throw new InvalidOperationException("Expired-provenance reauthorization requires verified source and original-Journal leases.");
+            throw new InvalidOperationException("Protected reauthorization requires verified source and original-Journal leases.");
         if (reauthorizingFixedAutosave0 && (ticket.GameVersion != _gameVersion
             || sourceLease!.Prefix.GameVersion != _gameVersion || !sourceLease.Prefix.Peaceful
             || !primaryLease!.Prefix.MatchesExpectedIdentity || !primaryLease.Prefix.Peaceful

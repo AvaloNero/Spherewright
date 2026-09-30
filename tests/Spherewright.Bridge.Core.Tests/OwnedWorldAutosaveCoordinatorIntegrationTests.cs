@@ -20,11 +20,15 @@ public sealed class OwnedWorldAutosaveCoordinatorIntegrationTests
     private const string Version = "0.10.35.29088";
     private const long SavedTick = 12345;
     private const long CandidateTick = 20000;
+    private const string ExpiredMode = OwnedWorldResumeModes.ReauthorizeExpiredAutosave0;
+    private const string ActiveMode = OwnedWorldResumeModes.ReauthorizeFixedAutosave0;
 
-    [Fact]
-    public void PrepareDisclosesWithoutLoadOrConsumptionAndCommitNeedsSubsequentConsent()
+    [Theory]
+    [InlineData(ExpiredMode)]
+    [InlineData(ActiveMode)]
+    public void PrepareDisclosesWithoutLoadOrConsumptionAndCommitNeedsModeSpecificConversationAuthority(string mode)
     {
-        using var fixture = new Fixture();
+        using var fixture = new Fixture(mode);
         var plan = fixture.Prepare();
         Assert.True(plan.UserConfirmationRequired);
         Assert.False(plan.CommitAllowedNow);
@@ -42,10 +46,12 @@ public sealed class OwnedWorldAutosaveCoordinatorIntegrationTests
         Assert.Equal(0, DSPGame.LoadCalls);
     }
 
-    [Fact]
-    public void CommitConsumesBeforeExactLoaderAndIdempotencyDoesNotLoadTwice()
+    [Theory]
+    [InlineData(ExpiredMode)]
+    [InlineData(ActiveMode)]
+    public void CommitConsumesBeforeExactLoaderAndIdempotencyDoesNotLoadTwice(string mode)
     {
-        using var fixture = new Fixture();
+        using var fixture = new Fixture(mode);
         var request = fixture.Confirmed(fixture.Prepare());
         DSPGame.BeforeLoad = () =>
         {
@@ -59,6 +65,8 @@ public sealed class OwnedWorldAutosaveCoordinatorIntegrationTests
         Assert.Equal(1, DSPGame.LoadCalls);
         Assert.True(fixture.Sessions.Reauthorizing);
         Assert.True(fixture.Sessions.FixedAutosave);
+        Assert.False(fixture.HasActiveProvenance());
+        Assert.False(fixture.HasExpiredProvenance());
         Assert.Equal(CandidateTick, fixture.Sessions.SourceLease!.Prefix.GameTick);
         Assert.NotNull(fixture.Sessions.JournalLease);
         Assert.NotNull(fixture.Sessions.PrimaryLease);
@@ -70,16 +78,23 @@ public sealed class OwnedWorldAutosaveCoordinatorIntegrationTests
     }
 
     [Theory]
-    [InlineData("file")]
-    [InlineData("journal")]
-    [InlineData("revision")]
-    [InlineData("slot-missing")]
-    [InlineData("primary-file")]
-    [InlineData("primary-identity")]
-    [InlineData("primary-newer-than-ticket")]
-    public void PreparedEvidenceDriftNeverLoadsOrConsumes(string change)
+    [InlineData(ExpiredMode, "file")]
+    [InlineData(ExpiredMode, "journal")]
+    [InlineData(ExpiredMode, "revision")]
+    [InlineData(ExpiredMode, "slot-missing")]
+    [InlineData(ExpiredMode, "primary-file")]
+    [InlineData(ExpiredMode, "primary-identity")]
+    [InlineData(ExpiredMode, "primary-newer-than-ticket")]
+    [InlineData(ActiveMode, "file")]
+    [InlineData(ActiveMode, "journal")]
+    [InlineData(ActiveMode, "revision")]
+    [InlineData(ActiveMode, "slot-missing")]
+    [InlineData(ActiveMode, "primary-file")]
+    [InlineData(ActiveMode, "primary-identity")]
+    [InlineData(ActiveMode, "primary-newer-than-ticket")]
+    public void PreparedEvidenceDriftNeverLoadsOrConsumes(string mode, string change)
     {
-        using var fixture = new Fixture();
+        using var fixture = new Fixture(mode);
         var request = fixture.Confirmed(fixture.Prepare());
         switch (change)
         {
@@ -106,10 +121,12 @@ public sealed class OwnedWorldAutosaveCoordinatorIntegrationTests
         Assert.Equal(0, DSPGame.LoadCalls);
     }
 
-    [Fact]
-    public void MissingFixedSlotNeverFallsBackToPrimaryLastExitOrAnotherAutosave()
+    [Theory]
+    [InlineData(ExpiredMode)]
+    [InlineData(ActiveMode)]
+    public void MissingFixedSlotNeverFallsBackToPrimaryLastExitOrAnotherAutosave(string mode)
     {
-        using var fixture = new Fixture();
+        using var fixture = new Fixture(mode);
         File.Copy(fixture.CandidatePath, GameSave.SavePath(Identity), overwrite: true);
         File.Copy(fixture.CandidatePath, GameSave.SavePath(GameSave.LastExit));
         File.Move(fixture.CandidatePath, GameSave.SavePath("_autosave_1"));
@@ -118,10 +135,12 @@ public sealed class OwnedWorldAutosaveCoordinatorIntegrationTests
         Assert.True(fixture.HasProvenance());
     }
 
-    [Fact]
-    public void NativeFailureAfterConsumptionDoesNotReviveProvenanceAndReleasesLeases()
+    [Theory]
+    [InlineData(ExpiredMode)]
+    [InlineData(ActiveMode)]
+    public void NativeFailureAfterConsumptionDoesNotReviveProvenanceAndReleasesLeases(string mode)
     {
-        using var fixture = new Fixture();
+        using var fixture = new Fixture(mode);
         var request = fixture.Confirmed(fixture.Prepare());
         DSPGame.BeforeLoad = () =>
         {
@@ -138,14 +157,19 @@ public sealed class OwnedWorldAutosaveCoordinatorIntegrationTests
     }
 
     [Theory]
-    [InlineData("missing")]
-    [InlineData("corrupt")]
-    [InlineData("identity")]
-    [InlineData("unreadable")]
-    [InlineData("newer-than-ticket")]
-    public void UnknownOrDifferentOriginalPrimaryCannotBecomeAnOverwriteTarget(string change)
+    [InlineData(ExpiredMode, "missing")]
+    [InlineData(ExpiredMode, "corrupt")]
+    [InlineData(ExpiredMode, "identity")]
+    [InlineData(ExpiredMode, "unreadable")]
+    [InlineData(ExpiredMode, "newer-than-ticket")]
+    [InlineData(ActiveMode, "missing")]
+    [InlineData(ActiveMode, "corrupt")]
+    [InlineData(ActiveMode, "identity")]
+    [InlineData(ActiveMode, "unreadable")]
+    [InlineData(ActiveMode, "newer-than-ticket")]
+    public void UnknownOrDifferentOriginalPrimaryCannotBecomeAnOverwriteTarget(string mode, string change)
     {
-        using var fixture = new Fixture();
+        using var fixture = new Fixture(mode);
         FileStream? lockedPrimary = null;
         try
         {
@@ -164,6 +188,93 @@ public sealed class OwnedWorldAutosaveCoordinatorIntegrationTests
         finally { lockedPrimary?.Dispose(); }
     }
 
+    [Theory]
+    [InlineData(ExpiredMode, false, true)]
+    [InlineData(ActiveMode, true, false)]
+    public void FixedAndExpiredModesNeverAcceptEachOthersProvenance(
+        string mode, bool activeExpected, bool expiredExpected)
+    {
+        using var fixture = new Fixture(mode);
+        Assert.Equal(activeExpected, fixture.HasActiveProvenance());
+        Assert.Equal(expiredExpected, fixture.HasExpiredProvenance());
+    }
+
+    [Theory]
+    [InlineData(ExpiredMode, "missing-confirmation")]
+    [InlineData(ExpiredMode, "wrong-digest")]
+    [InlineData(ActiveMode, "missing-confirmation")]
+    [InlineData(ActiveMode, "wrong-digest")]
+    public void MissingOrIncorrectCommitAuthorityDoesNotConsumeOrLoad(string mode, string change)
+    {
+        using var fixture = new Fixture(mode);
+        var request = fixture.Confirmed(fixture.Prepare());
+        if (change == "missing-confirmation") request.UserConfirmedInConversation = false;
+        else request.ConfirmationDigest += "-changed";
+
+        var result = fixture.Coordinator.CommitOnMainThread(request);
+
+        Assert.False(result.Success);
+        Assert.Equal(BridgeErrorCodes.UserConfirmationRequired, result.Error!.Code);
+        Assert.True(fixture.HasProvenance());
+        Assert.Equal(0, DSPGame.LoadCalls);
+    }
+
+    [Fact]
+    public void ActiveProvenanceRequiresBothUnchangedTicketReplicas()
+    {
+        using var fixture = new Fixture(ActiveMode);
+        fixture.ChangeTicketReplica(handoff: true, ticket => ticket.ExpiresAtUtc = ticket.ExpiresAtUtc.AddMinutes(1));
+
+        Assert.False(fixture.HasActiveProvenance());
+        Assert.False(fixture.Coordinator.PrepareOnMainThread(fixture.Request()).Success);
+        Assert.Equal(0, DSPGame.LoadCalls);
+    }
+
+    [Fact]
+    public void ActivePreparedPlanRejectsAnyCredentialExpiryChangeBeforeLoad()
+    {
+        using var fixture = new Fixture(ActiveMode);
+        var request = fixture.Confirmed(fixture.Prepare());
+        fixture.ChangeTicketReplica(handoff: false, ticket => ticket.ExpiresAtUtc = ticket.ExpiresAtUtc.AddMinutes(1));
+        fixture.ChangeTicketReplica(handoff: true, ticket => ticket.ExpiresAtUtc = ticket.ExpiresAtUtc.AddMinutes(1));
+
+        var result = fixture.Coordinator.CommitOnMainThread(request);
+
+        Assert.False(result.Success);
+        Assert.Equal(BridgeErrorCodes.StaleState, result.Error!.Code);
+        Assert.Equal(0, DSPGame.LoadCalls);
+        Assert.True(fixture.HasTicketReplicas()); // A changed, unconsumed credential is not silently renewed or consumed.
+    }
+
+    [Theory]
+    [InlineData("journal-missing")]
+    [InlineData("quarantine")]
+    [InlineData("consumed")]
+    public void ActiveTicketStoreRejectsMissingJournalQuarantinedOrConsumedProvenance(string change)
+    {
+        using var fixture = new Fixture(ActiveMode);
+        switch (change)
+        {
+            case "journal-missing":
+                File.Delete(fixture.JournalPath);
+                break;
+            case "quarantine":
+                var quarantineAction = Guid.NewGuid().ToString("D");
+                fixture.ChangeTicketReplica(handoff: false, ticket => ticket.QuarantineActionId = quarantineAction);
+                fixture.ChangeTicketReplica(handoff: true, ticket => ticket.QuarantineActionId = quarantineAction);
+                break;
+            case "consumed":
+                var plan = fixture.Prepare();
+                var result = fixture.Coordinator.CommitOnMainThread(fixture.Confirmed(plan));
+                Assert.True(result.Success, result.Error?.Message);
+                break;
+        }
+
+        fixture.ReopenStore();
+        Assert.False(fixture.HasActiveProvenance());
+        Assert.Equal(change == "consumed" ? 1 : 0, DSPGame.LoadCalls);
+    }
+
     private sealed class Fixture : IDisposable
     {
         private readonly string _root = Path.Combine(Path.GetTempPath(), "Spherewright", "autosave-coordinator", Guid.NewGuid().ToString("N"));
@@ -172,13 +283,15 @@ public sealed class OwnedWorldAutosaveCoordinatorIntegrationTests
         private string JournalId => GameplayJournalIdentity.HashOwnedSaveIdentity(Identity);
         internal string CandidatePath => GameSave.SavePath(GameSave.AutoSave0);
         internal string PrimaryPath => GameSave.SavePath(Identity);
+        internal string Mode { get; }
         internal OwnedWorldResumeTicketStore Store { get; private set; } = null!;
         internal string Token { get; }
         internal GameSessionTracker Sessions { get; } = new();
         internal OwnedWorldResumeCoordinator Coordinator { get; }
 
-        internal Fixture()
+        internal Fixture(string mode = ExpiredMode)
         {
+            Mode = mode;
             Directory.CreateDirectory(Runtime);
             Directory.CreateDirectory(Handoff);
             GameSave.Root = Path.Combine(_root, "saves");
@@ -196,8 +309,9 @@ public sealed class OwnedWorldAutosaveCoordinatorIntegrationTests
                 });
             Token = Store.CurrentResumeToken!;
             WriteJournal("original");
-            var issuedAt = DateTimeOffset.UtcNow.AddDays(-2);
-            var expiresAt = issuedAt.AddDays(1);
+            var now = DateTimeOffset.UtcNow;
+            var issuedAt = Mode == ActiveMode ? now.AddMinutes(-1) : now.AddDays(-2);
+            var expiresAt = Mode == ActiveMode ? now.AddDays(1) : issuedAt.AddDays(1);
             foreach (var directory in new[] { Runtime, Handoff })
             {
                 var path = Path.Combine(directory, "owned-world-resume.json");
@@ -227,10 +341,22 @@ public sealed class OwnedWorldAutosaveCoordinatorIntegrationTests
 
         internal void ReopenStore() => Store = new(Runtime, Handoff, "synthetic-bridge", Version, new ManualLogSource());
         internal OwnedWorldResumeCoordinator NewCoordinator() => new(true, 60, 10, 16, Sessions, Store);
-        internal bool HasProvenance() => Store.TryGetExpiredPrimaryProvenance(Token, out _, out _, out _);
+        internal bool HasActiveProvenance() => Store.TryGetFixedAutosaveProvenance(Token, out _, out _, out _);
+        internal bool HasExpiredProvenance() => Store.TryGetExpiredPrimaryProvenance(Token, out _, out _, out _);
+        internal bool HasProvenance() => Mode == ActiveMode ? HasActiveProvenance() : HasExpiredProvenance();
+        internal string TicketReplicaPath(bool handoff) => Path.Combine(handoff ? Handoff : Runtime, "owned-world-resume.json");
+        internal string JournalPath => Path.Combine(Runtime, "journals", "gameplay-" + JournalId + ".json");
+        internal bool HasTicketReplicas() => File.Exists(TicketReplicaPath(false)) && File.Exists(TicketReplicaPath(true));
+        internal void ChangeTicketReplica(bool handoff, Action<OwnedWorldResumeTicket> change)
+        {
+            var path = TicketReplicaPath(handoff);
+            var ticket = PluginJson.Deserialize<OwnedWorldResumeTicket>(File.ReadAllText(path))!;
+            change(ticket);
+            File.WriteAllText(path, PluginJson.Serialize(ticket));
+        }
         internal PrepareOwnedWorldResumeRequest Request() => new()
         {
-            ResumeToken = Token, RecoveryMode = OwnedWorldResumeModes.ReauthorizeExpiredAutosave0,
+            ResumeToken = Token, RecoveryMode = Mode,
             MinimumRecoveryGameTick = CandidateTick - 10, ExpectedRecoveryGameTick = CandidateTick,
         };
         internal PreparedOwnedWorldResumePlan Prepare()
@@ -246,9 +372,8 @@ public sealed class OwnedWorldAutosaveCoordinatorIntegrationTests
         };
         internal void WriteJournal(string creationMarker)
         {
-            var path = Path.Combine(Runtime, "journals", "gameplay-" + JournalId + ".json");
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, PluginJson.Serialize(new GameplayJournalDocument
+            Directory.CreateDirectory(Path.GetDirectoryName(JournalPath)!);
+            File.WriteAllText(JournalPath, PluginJson.Serialize(new GameplayJournalDocument
             {
                 Version = 1, JournalId = JournalId, OwnedSaveIdentityHash = JournalId, GameVersion = Version,
                 TrackingMode = GameplayJournalTrackingModes.AttachedExistingSave, HistoricalCoverageComplete = false,

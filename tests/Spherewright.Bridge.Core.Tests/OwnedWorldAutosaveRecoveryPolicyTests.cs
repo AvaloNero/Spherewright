@@ -10,25 +10,34 @@ public sealed class OwnedWorldAutosaveRecoveryPolicyTests
     private const string Identity = "synthetic-protected-world-identity";
     private const string Version = "0.10.35.29088";
     private const string ConfirmationDigest = "sha256:exact-autosave0-plan";
+    private const string ExpiredMode = OwnedWorldResumeModes.ReauthorizeExpiredAutosave0;
+    private const string ActiveMode = OwnedWorldResumeModes.ReauthorizeFixedAutosave0;
     private static readonly DateTimeOffset Issued = new(2026, 9, 16, 0, 0, 0, TimeSpan.Zero);
 
-    [Fact]
-    public void ExactNewerSameVersionAutoSave0CandidatePasses()
+    [Theory]
+    [InlineData(ExpiredMode)]
+    [InlineData(ActiveMode)]
+    public void ExactNewerSameVersionAutoSave0CandidatePasses(string mode)
     {
         var evidence = ReadEvidence();
 
-        Assert.Null(Validate(Request(), evidence));
+        Assert.Null(Validate(Request(mode), evidence));
     }
 
     [Theory]
-    [InlineData("confirmation")]
-    [InlineData("missing-known")]
-    [InlineData("missing-expected")]
-    [InlineData("negative-known")]
-    [InlineData("expected-before-known")]
-    public void AutoSave0PrepareIsDisclosureOnlyAndRequiresExactBounds(string changed)
+    [InlineData(ExpiredMode, "confirmation")]
+    [InlineData(ExpiredMode, "missing-known")]
+    [InlineData(ExpiredMode, "missing-expected")]
+    [InlineData(ExpiredMode, "negative-known")]
+    [InlineData(ExpiredMode, "expected-before-known")]
+    [InlineData(ActiveMode, "confirmation")]
+    [InlineData(ActiveMode, "missing-known")]
+    [InlineData(ActiveMode, "missing-expected")]
+    [InlineData(ActiveMode, "negative-known")]
+    [InlineData(ActiveMode, "expected-before-known")]
+    public void AutoSave0PrepareIsDisclosureOnlyAndRequiresExactBounds(string mode, string changed)
     {
-        var request = Request();
+        var request = Request(mode);
         switch (changed)
         {
             case "confirmation": request.UserConfirmedInConversation = true; break;
@@ -42,20 +51,31 @@ public sealed class OwnedWorldAutosaveRecoveryPolicyTests
     }
 
     [Theory]
-    [InlineData("ticket-floor")]
-    [InlineData("candidate")]
-    [InlineData("not-newer")]
-    [InlineData("primary-missing")]
-    [InlineData("primary-older")]
-    [InlineData("primary-equal")]
-    [InlineData("primary-newer")]
-    [InlineData("source-migration")]
-    [InlineData("unsupported-same-version")]
-    [InlineData("written-before-ticket")]
-    [InlineData("saved-before-ticket")]
-    public void ProgressVersionAndFreshnessChangesRejectAutoSave0Candidate(string changed)
+    [InlineData(ExpiredMode, "ticket-floor")]
+    [InlineData(ExpiredMode, "candidate")]
+    [InlineData(ExpiredMode, "not-newer")]
+    [InlineData(ExpiredMode, "primary-missing")]
+    [InlineData(ExpiredMode, "primary-older")]
+    [InlineData(ExpiredMode, "primary-equal")]
+    [InlineData(ExpiredMode, "primary-newer")]
+    [InlineData(ExpiredMode, "source-migration")]
+    [InlineData(ExpiredMode, "unsupported-same-version")]
+    [InlineData(ExpiredMode, "written-before-ticket")]
+    [InlineData(ExpiredMode, "saved-before-ticket")]
+    [InlineData(ActiveMode, "ticket-floor")]
+    [InlineData(ActiveMode, "candidate")]
+    [InlineData(ActiveMode, "not-newer")]
+    [InlineData(ActiveMode, "primary-missing")]
+    [InlineData(ActiveMode, "primary-older")]
+    [InlineData(ActiveMode, "primary-equal")]
+    [InlineData(ActiveMode, "primary-newer")]
+    [InlineData(ActiveMode, "source-migration")]
+    [InlineData(ActiveMode, "unsupported-same-version")]
+    [InlineData(ActiveMode, "written-before-ticket")]
+    [InlineData(ActiveMode, "saved-before-ticket")]
+    public void ProgressVersionAndFreshnessChangesRejectAutoSave0Candidate(string mode, string changed)
     {
-        var request = Request();
+        var request = Request(mode);
         var evidence = ReadEvidence();
         var ticketMinimum = 12000L;
         var ticketIssued = Issued;
@@ -84,10 +104,13 @@ public sealed class OwnedWorldAutosaveRecoveryPolicyTests
     }
 
     [Theory]
-    [InlineData("identity")]
-    [InlineData("peaceful")]
-    [InlineData("candidate-version")]
-    public void EmbeddedEvidenceMustRemainExactAndPeaceful(string changed)
+    [InlineData(ExpiredMode, "identity")]
+    [InlineData(ExpiredMode, "peaceful")]
+    [InlineData(ExpiredMode, "candidate-version")]
+    [InlineData(ActiveMode, "identity")]
+    [InlineData(ActiveMode, "peaceful")]
+    [InlineData(ActiveMode, "candidate-version")]
+    public void EmbeddedEvidenceMustRemainExactAndPeaceful(string mode, string changed)
     {
         var identity = changed == "identity" ? "different-world" : Identity;
         var evidence = ReadEvidence(identity: identity,
@@ -102,31 +125,43 @@ public sealed class OwnedWorldAutosaveRecoveryPolicyTests
             evidence = OwnedSavePrefixReader.Read(stream, Identity);
         }
 
-        Assert.NotNull(Validate(Request(), evidence));
+        Assert.NotNull(Validate(Request(mode), evidence));
     }
 
     [Theory]
-    [InlineData("old-plugin")]
-    [InlineData("wrong-mode")]
-    [InlineData("not-prepared")]
-    [InlineData("identity")]
-    [InlineData("candidate")]
-    [InlineData("minimum")]
-    [InlineData("confirmation-missing")]
-    [InlineData("commit-allowed")]
-    [InlineData("prompt")]
-    [InlineData("digest")]
-    [InlineData("migration")]
-    [InlineData("unsupported-same-version")]
-    public void PluginEchoMustBindTheExactAutoSave0Disclosure(string changed)
+    [InlineData(ExpiredMode, "old-plugin")]
+    [InlineData(ExpiredMode, "wrong-mode")]
+    [InlineData(ExpiredMode, "not-prepared")]
+    [InlineData(ExpiredMode, "identity")]
+    [InlineData(ExpiredMode, "candidate")]
+    [InlineData(ExpiredMode, "minimum")]
+    [InlineData(ExpiredMode, "confirmation-missing")]
+    [InlineData(ExpiredMode, "commit-allowed")]
+    [InlineData(ExpiredMode, "prompt")]
+    [InlineData(ExpiredMode, "digest")]
+    [InlineData(ExpiredMode, "migration")]
+    [InlineData(ExpiredMode, "unsupported-same-version")]
+    [InlineData(ActiveMode, "old-plugin")]
+    [InlineData(ActiveMode, "wrong-mode")]
+    [InlineData(ActiveMode, "not-prepared")]
+    [InlineData(ActiveMode, "identity")]
+    [InlineData(ActiveMode, "candidate")]
+    [InlineData(ActiveMode, "minimum")]
+    [InlineData(ActiveMode, "confirmation-missing")]
+    [InlineData(ActiveMode, "commit-allowed")]
+    [InlineData(ActiveMode, "prompt")]
+    [InlineData(ActiveMode, "digest")]
+    [InlineData(ActiveMode, "migration")]
+    [InlineData(ActiveMode, "unsupported-same-version")]
+    public void PluginEchoMustBindTheExactAutoSave0Disclosure(string mode, string changed)
     {
-        var plan = MatchingPlan();
-        Assert.True(OwnedWorldAutosaveRecoveryPolicy.HasMatchingEcho(Request(), plan));
+        var plan = MatchingPlan(mode);
+        Assert.True(OwnedWorldAutosaveRecoveryPolicy.HasMatchingEcho(Request(mode), plan));
 
         switch (changed)
         {
             case "old-plugin": plan.RecoveryEvidenceVersion--; break;
-            case "wrong-mode": plan.RecoveryMode = OwnedWorldResumeModes.ReauthorizeExpiredPrimary; break;
+            case "wrong-mode": plan.RecoveryMode = mode == ActiveMode ? ExpiredMode : OwnedWorldResumeModes.ReauthorizeExpiredPrimary; break;
             case "not-prepared": plan.Prepared = false; break;
             case "identity": plan.ExactEmbeddedIdentityVerified = false; break;
             case "candidate": plan.CandidateGameTick = 12346; break;
@@ -139,7 +174,25 @@ public sealed class OwnedWorldAutosaveRecoveryPolicyTests
             case "unsupported-same-version": plan.SourceGameVersion = plan.TargetGameVersion = "0.10.33.00000"; break;
         }
 
-        Assert.False(OwnedWorldAutosaveRecoveryPolicy.HasMatchingEcho(Request(), plan));
+        Assert.False(OwnedWorldAutosaveRecoveryPolicy.HasMatchingEcho(Request(mode), plan));
+    }
+
+    [Theory]
+    [InlineData(true, true, false, -1, 1, true)]
+    [InlineData(true, true, false, 0, 1, true)]
+    [InlineData(true, true, false, 1, 2, false)]
+    [InlineData(true, true, false, -1, 0, false)]
+    [InlineData(true, true, false, -1, -1, false)]
+    [InlineData(false, true, false, -1, 1, false)]
+    [InlineData(true, false, false, -1, 1, false)]
+    [InlineData(true, true, true, -1, 1, false)]
+    public void ActiveCredentialMustBeHealthyJournaledUnconsumedAndInsideItsOriginalExpiryWindow(
+        bool healthy, bool journalVerified, bool consumed, int issuedDelta, int expiresDelta, bool allowed)
+    {
+        var now = Issued;
+        Assert.Equal(allowed, OwnedWorldReauthorizationPolicy.AllowsActiveProvenance(
+            healthy, journalVerified, consumed,
+            now.AddSeconds(issuedDelta), now.AddSeconds(expiresDelta), now));
     }
 
     [Theory]
@@ -153,23 +206,23 @@ public sealed class OwnedWorldAutosaveRecoveryPolicyTests
         Assert.Equal(allowed, OwnedWorldReauthorizationPolicy.AllowsLeaseTick(
             candidate, 12345, reauthorizing, reauthorizingAutosave0));
 
-    private static PrepareOwnedWorldResumeRequest Request() => new()
+    private static PrepareOwnedWorldResumeRequest Request(string mode = ExpiredMode) => new()
     {
-        RecoveryMode = OwnedWorldResumeModes.ReauthorizeExpiredAutosave0,
+        RecoveryMode = mode,
         MinimumRecoveryGameTick = 12000,
         ExpectedRecoveryGameTick = 12345,
     };
 
-    private static PreparedOwnedWorldResumePlan MatchingPlan() => new()
+    private static PreparedOwnedWorldResumePlan MatchingPlan(string mode = ExpiredMode) => new()
     {
         Prepared = true,
-        RecoveryMode = OwnedWorldResumeModes.ReauthorizeExpiredAutosave0,
-        RecoveryEvidenceVersion = OwnedWorldAutosaveRecoveryPolicy.EvidenceVersion,
+        RecoveryMode = mode,
+        RecoveryEvidenceVersion = OwnedWorldAutosaveRecoveryPolicy.EvidenceVersionFor(mode),
         ExactEmbeddedIdentityVerified = true,
         CandidateGameTick = 12345,
         MinimumGameTick = 12345,
         UserConfirmationRequired = true,
-        ConfirmationPrompt = OwnedWorldAutosaveRecoveryPolicy.ConfirmationPrompt,
+        ConfirmationPrompt = OwnedWorldAutosaveRecoveryPolicy.ConfirmationPromptFor(mode),
         ConfirmationDigest = ConfirmationDigest,
         SourceGameVersion = Version,
         TargetGameVersion = Version,

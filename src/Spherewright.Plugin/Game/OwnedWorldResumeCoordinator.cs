@@ -91,7 +91,9 @@ internal sealed class OwnedWorldResumeCoordinator
             blockers.Add(new WriteBlocker
             {
                 Code = BridgeErrorCodes.UserConfirmationRequired,
-                Message = "Display this plan's disclosure and wait for subsequent explicit conversation confirmation before commit.",
+                Message = payload.ActiveFixedAutosaveRecovery
+                    ? "Verify this exact disclosed owned candidate is covered by explicit conversation authority; an existing matching grant needs no repeated question."
+                    : "Display this plan's disclosure and wait for subsequent explicit conversation confirmation before commit.",
             });
         if (!_writesConfigured)
         {
@@ -110,7 +112,7 @@ internal sealed class OwnedWorldResumeCoordinator
             ExpectedPlanetId = ticket.ExpectedPlanetId,
             MinimumGameTick = payload!.MinimumGameTick,
             RecoveryMode = payload.Request.RecoveryMode,
-            RecoveryEvidenceVersion = payload.FixedAutosaveRecovery ? OwnedWorldAutosaveRecoveryPolicy.EvidenceVersion
+            RecoveryEvidenceVersion = payload.FixedAutosaveRecovery ? OwnedWorldAutosaveRecoveryPolicy.EvidenceVersionFor(payload.Request.RecoveryMode)
                 : payload.Reauthorizing ? OwnedWorldReauthorizationPolicy.EvidenceVersion
                 : payload.VerifiedRecovery ? OwnedWorldRecoveryPolicy.EvidenceVersion : 0,
             CandidateGameTick = payload.VerifiedRecovery || payload.Reauthorizing ? payload.MinimumGameTick : (long?)null,
@@ -118,13 +120,13 @@ internal sealed class OwnedWorldResumeCoordinator
             UserConfirmationRequired = payload.Reauthorizing,
             SourceGameVersion = ticket.GameVersion,
             TargetGameVersion = _tickets.CurrentGameVersion,
-            ConfirmationPrompt = payload.FixedAutosaveRecovery ? OwnedWorldAutosaveRecoveryPolicy.ConfirmationPrompt
+            ConfirmationPrompt = payload.FixedAutosaveRecovery ? OwnedWorldAutosaveRecoveryPolicy.ConfirmationPromptFor(payload.Request.RecoveryMode)
                 : payload.Reauthorizing ? OwnedWorldReauthorizationPolicy.ConfirmationPrompt : string.Empty,
             ConfirmationDigest = payload.Reauthorizing ? payload.Fingerprint : string.Empty,
             CommitAllowedNow = blockers.Count == 0,
             CommitBlockers = blockers,
             CompletionCondition = payload.FixedAutosaveRecovery
-                ? "Only the fixed native AutoSave0 at this exact verified tick may load after subsequent explicit consent. Identity, known progress floor, current version, file evidence and original Journal are rechecked; expired provenance is durably consumed before loading. Adoption and Journal continuity precede normal save to the original owned primary and a fresh credential. No fallback, slot selection or replay after interruption."
+                ? "Only the fixed native AutoSave0 at this exact verified tick may load under explicit conversation authority for this candidate. Identity, known progress floor, current version, file evidence and original Journal are rechecked; protected provenance is durably consumed before loading without editing expiry. Adoption and Journal continuity precede normal save to the original owned primary and a fresh credential. No fallback, slot selection or replay after interruption."
                 : payload.Reauthorizing
                 ? "Only the exact primary and original Journal at this checkpoint may continue after subsequent explicit consent. Commit revalidates all evidence, consumes expired provenance before loading, and normal save alone issues a fresh credential. No fallback or import."
                 : payload.VerifiedRecovery
@@ -202,8 +204,8 @@ internal sealed class OwnedWorldResumeCoordinator
             : request.UserConfirmedInConversation || !string.IsNullOrEmpty(request.ConfirmationDigest))
             return GameCallResult<OwnedWorldResumeResult>.Failed(BridgeError.Create(
                 BridgeErrorCodes.UserConfirmationRequired,
-                "Expired-provenance reauthorization requires subsequent explicit confirmation; other resume modes do not accept this flag.",
-                false, "Prepare a fresh disclosure and ask the user; do not infer confirmation from an earlier development request."));
+                "Protected recovery requires explicit conversation authority and the exact prepared disclosure digest; other resume modes do not accept this flag.",
+                false, "Prepare a fresh disclosure. Use only an explicit grant matching this candidate, never a generic development request."));
         var rejection = "The one-time resume ticket changed after prepare.";
         OwnedSaveRecoveryLease? sourceLease = null;
         OwnedSaveRecoveryLease? primaryLease = null;
@@ -235,9 +237,10 @@ internal sealed class OwnedWorldResumeCoordinator
         try
         {
             if (payload.Reauthorizing)
-                journalLease = _tickets.OpenReauthorizationJournalLease(currentTicket, payload.Provenance);
+                journalLease = _tickets.OpenReauthorizationJournalLease(currentTicket, payload.Provenance,
+                    payload.ActiveFixedAutosaveRecovery);
             if (payload.Reauthorizing && !_tickets.TryConsumeReauthorization(currentTicket.ResumeToken,
-                payload.Provenance, action.ActionId, payload.Fingerprint))
+                payload.Provenance, action.ActionId, payload.Fingerprint, payload.ActiveFixedAutosaveRecovery))
                 return GameCallResult<OwnedWorldResumeResult>.Failed(BridgeError.Create(
                     BridgeErrorCodes.StaleState,
                     "The exact provenance changed or durable consumption failed; no load was started.",
@@ -366,6 +369,8 @@ internal sealed class OwnedWorldResumeCoordinator
         out OwnedWorldResumeTicket? ticket, out string provenance, out string rejection)
     {
         provenance = string.Empty;
+        if (request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeFixedAutosave0)
+            return _tickets.TryGetFixedAutosaveProvenance(token, out ticket, out provenance, out rejection);
         return request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredPrimary
             || request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredAutosave0
             ? _tickets.TryGetExpiredPrimaryProvenance(token, out ticket, out provenance, out rejection)
@@ -399,7 +404,7 @@ internal sealed class OwnedWorldResumeCoordinator
         try
         {
             // No caller-supplied path or autosave enumeration. Ticket/Journal already validated by the store.
-            if (request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredAutosave0)
+            if (OwnedWorldAutosaveRecoveryPolicy.IsFixedAutosaveMode(request.RecoveryMode))
             {
                 // This mode does not combine autosave recovery with version migration.
                 if (!string.Equals(ticket.GameVersion, _tickets.CurrentGameVersion, StringComparison.Ordinal))
@@ -638,7 +643,9 @@ internal sealed class OwnedWorldResumeCoordinator
 
         public bool VerifiedRecovery => Request.RecoveryMode == OwnedWorldResumeModes.VerifiedNewerLastExit;
 
-        public bool FixedAutosaveRecovery => Request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredAutosave0;
+        public bool FixedAutosaveRecovery => OwnedWorldAutosaveRecoveryPolicy.IsFixedAutosaveMode(Request.RecoveryMode);
+
+        public bool ActiveFixedAutosaveRecovery => Request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeFixedAutosave0;
 
         public bool Reauthorizing => Request.RecoveryMode == OwnedWorldResumeModes.ReauthorizeExpiredPrimary
             || FixedAutosaveRecovery;

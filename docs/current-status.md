@@ -7,17 +7,17 @@
 | 项 | 最近已核证值 | 边界 |
 |---|---|---|
 | 游戏 | owned-world-001 / planet104；DSP 0.10.35.29104 | 本次不代表重启恢复或发行验证 |
-| 最新读回 | run `32b2cc3657084ae5b833d714d3a94348` ord18：tick80442890 / revision33；healthy | 配置读回，不等于生产窗口 |
-| 保存 | lastSaved tick80425709 | 蓝色后备分拣器868本次配置尚未保存 |
-| 外部写窗口 | accepted **2/10**，无在途动作 | 包含此前正常保存及本次一次配置动作；不得重放 |
-| Git / 发布 | 本批次前 main 为 `1c2300a` 且对应CI已绿 | 本批次须按准确SHA验CI；不代表安装或发布 |
+| 最新读回 | run `f0bea78c9032414f993bec3a12ccdbfa` ord25：tick80526462 / revision37；同一owned planet104、healthy、saved、resume available | 保存读回，不等于重启恢复 |
+| 保存 | lastSaved tick80526460；ord26 Journal durable J96/96，无pending/error | 已覆盖868过滤配置；本次未验证重启 |
+| 外部写窗口 | accepted **5/10**，无在途动作 | 本阶段transfer、handcraft、save三项均有唯一成功终态；不得重放 |
+| Git / 发布 | 文档提交前基线 `73401fc` 的Windows Core CI已绿 | 本次文档提交按准确SHA另验CI；不代表安装或发布 |
 
-accepted action `24ede7d8-5d6b-4dc3-8a7f-eda4afd14fc9` 成功将868过滤由1202改为1301，连接26↔868↔76互返；`targetObjectIds=[]` 与 `itemDeltas=[]` 是此配置动作的合法回执。请求绑定使用Sorter配置hash，不要求建造回显字段；玩家库存未变。详情及离线复核见[蓝色后备分拣器事件](evidence/2026-09-30/blue-backup-sorter-binding.md)。
+run `f0bea78c9032414f993bec3a12ccdbfa` 中，源1511铁3000→2999、背包0→1；recipe85手搓一次，铁1→0、电路板2011由1→2、C1000→999，其余14种库存不变。保存动作成功且fresh读回R37/J96持久；完整索引、动作终态和计时边界见[紫糖路线材料事件](evidence/2026-09-30/purple-route-sorter-materials.md)。蓝色后备分拣器868先前过滤1202→1301，连接26↔868↔76互返；其请求绑定和合法空目标/差量回执见[蓝色后备分拣器事件](evidence/2026-09-30/blue-backup-sorter-binding.md)。
 
 ## 下一消费者接口与边界
 
-Lab76采样显示线圈6、电路6、blue output 10、working=false（输出buffer满）；这是采样边界，不证明868实际投递或持续供给。下一步仍是对Lab84做最小紫糖消费者端口预检，再据结果决定上游。Lab84紫糖科研点最后一次fresh读数为此前run `2e501713…` 中的0；本次未重读Lab84，结论不越过该样本边界。详见[Storage caller现场边界](evidence/2026-09-30/storage-buffer-caller-fix.md)。
+Lab76此前采样显示线圈6、电路6、blue output 10、working=false（输出buffer满），不证明868持续供给。当前下一硬阻塞为Lab84紫糖消费者分拣器原生附件尚未验证：run `0abcbd57d7544a8aaba610ca788cf916` ord5仅证明slot2朝消费者方向的两段`native_grid`连接（2001×2）可放，未commit且plan token已丢弃；不代表整线接通。Lab84紫糖科研点最后fresh读数仍止于此前run `2e501713…` 的0，本次未重读。先最小验证消费者端口，再决定上游；详见[Storage caller现场边界](evidence/2026-09-30/storage-buffer-caller-fix.md)。
 
 本次未测试重启恢复、紫糖实际科研供料或2104解锁；正常配置成功与采样点读数均不能替代这些验证。
 
-证据入口：[蓝色后备分拣器事件](evidence/2026-09-30/blue-backup-sorter-binding.md) · [上次正常保存](evidence/2026-09-30/core-materials-normal-save.md) · [Roadmap](../ROADMAP.md)。
+证据入口：[紫糖路线材料事件](evidence/2026-09-30/purple-route-sorter-materials.md) · [蓝色后备分拣器事件](evidence/2026-09-30/blue-backup-sorter-binding.md) · [上次正常保存](evidence/2026-09-30/core-materials-normal-save.md) · [Roadmap](../ROADMAP.md)。

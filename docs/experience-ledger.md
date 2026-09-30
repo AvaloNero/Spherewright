@@ -2,6 +2,10 @@
 
 更新时间：2026-09-30（Asia/Singapore）
 
+## EXP-338 — 自动科研缓存 wholeItemCount 不是背包可转移库存
+
+- 2026-09-30，observed 于本档十写封窗。run f322467c06ef4a738a6fb5720e757213 ord14机甲研究缓存空；紫糖转移成功后玩家先从0到500，ord20 `autoManageResearchItems=true` 时背包为0，而缓存含1,800,000点/500整件等值/0余数，与自动管理缓存一致，不是材料丢失。缓存等值不等于当前背包库存，不能用于计划 player-to-storage 转移；科研解锁及供料仍需独立证据。[单份审计](evidence/2026-09-30/core-materials-ten-write-audit.md)。
+
 ## EXP-337 — 十写审计复用已落盘的单快照，不因本地计数错误重采
 
 - 2026-09-30，`validated` 于 owned-world-001 本窗口第十写：5192非移除cover保留原姿态，原生追加2条普通带5193/5194，终态79993390、材料−2；累计10个互异已接受 action 的原始终态全成功、无幂等回放。一次只读单快照52页5194实体/10122互返边/0 prebuild，原5171对象仅矿机预期出料边变化。第一次展示把5171+23误算为5193，完整快照已受保护落盘，按原页离线纠正5194；不用因本地断言重新扫厂或重交动作。Journal J95 durable、owned/healthy、和平/非沙盒/1×、背包仅批准消耗。[严格审计](evidence/2026-09-30/graphite-outlet-extension-ten-audit.md)。

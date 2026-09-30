@@ -3,6 +3,8 @@
 更新时间：2026-09-30（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-09-30 — 十写封窗：十个 accepted 终态均成功，当前差异仅新增5195/5196及已核材料变化；accepted 10/10 仍冻结至提交、绿CI和root交接。[核心材料与工厂差异审计](evidence/2026-09-30/core-materials-ten-write-audit.md)。
+
 ### 2026-09-30 — 分拣器升级后三窗只读诊断
 
 只读run完成三个有间隔的600-tick窗：1121各产5（30/min），1802燃料0/0/2；3064氢589/587/587，3073和3403的读数仍不证明持续燃料供应。功率回执只证明采样点；没有写入，accepted仍8/10。最终session **80282748 / R28**、Journal **80282749 / durable J96**，保存仍为80273796。科研端下一硬接口是把已有紫糖实际送到lab84，不是重造流水线。[诊断窗口、样本与边界](evidence/2026-09-30/hydrogen-upgrade-three-window-diagnostic.md)。

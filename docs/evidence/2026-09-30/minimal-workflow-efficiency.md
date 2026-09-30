@@ -2,6 +2,8 @@
 
 日期：2026-09-30（Asia/Singapore）。起始源码 `5fa0a2c`，工作树干净；不新增施工、加载、部署或发行。只保留 root 与既有 gpt-6-luna/max，后者已停止：新增 accepted=0、无在途/未核销动作、无活动命令；原写窗口仍为4/10。
 
+后续分工：root 保持现有模型，负责目标、代码设计、安全和独立游戏验收；两只 Luna 均为 gpt-6-luna/max，一只为唯一游戏 writer，按界限执行 prepare/commit/terminal/readback/取证；按需另启离线维护 Luna，仅处理直接相关测试、根据 root 已核验事实整理单份事件/快照短引用，并在 root 确认证据与范围后按文件分区串行 commit/push、收集准确 SHA 对应 CI。十写门、不重放、独立验收与完整原始证据要求不变。
+
 ## 核查：复用与未解决项
 
 - `5fa0a2c` 已将根规则74141→12359 bytes、当前状态50918→4504 bytes（本轮开始值）；旧原文有归档，不再次迁移。规则/快照/历史已分离；共享 caller 已有 exact `ValidatePrepared`、唯一 commit、同 action 轮询、站稳复读和阶段计时。

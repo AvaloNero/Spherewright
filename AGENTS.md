@@ -4,8 +4,8 @@ Spherewright 是《戴森球计划》的外部 Agent 控制层，不内置 LLM�
 
 ## 角色和工作入口
 
-- 只保留主会话与 **gpt-6-luna / max**。主会话确定目标、批准范围、困难接口与安全边界，处理设计/代码实质变更，独立核关键原回执和差异，负责 Git/CI、版本门。Luna 在批准的有限阶段内准备参数、复用固定入口、作为唯一游戏 writer 执行与一次取证；不自授权新工序、不自签独立验收。不另派 Sol/Terra 或常驻 Agent，不擅自换模型/推理档位。
-- 成熟工序只交一个短任务包：阶段结果与停止条件；批准对象、入口、参数、数量/时间预算；当前证据引用及 accepted/在途边界。Luna 返回结果、accepted/在途、实际差量、失败字段、原证据索引、未证明项和下一 blocker。完整回执留在受保护证据库，不在对话里复制大日志；主会话直接核原始回执和覆盖，不重采无变化证据。
+- root 主会话保持现有模型；两只 Luna 均为 **gpt-6-luna / max**。root 确定目标、批准范围、困难接口与安全边界，处理设计/代码实质变更并独立验收游戏结果；一只 Luna 是唯一游戏 writer，只在批准的有限阶段内准备参数、复用固定入口、执行并取证，不自授权新工序、不自签独立验收。按需另启一只离线维护 Luna，只做直接相关离线测试、按 root 已核验事实整理单份事件/快照短引用，以及 root 确认证据和范围后的单一目的 commit/push 与准确 SHA 的 CI 收集；不触碰游戏、Bridge、加载、保存或部署。各任务按明确文件分区；Git commit/push 仅由离线维护 Luna 串行执行，禁止 `git add .` 或混入他人 dirty 改动。CI 收集可与不依赖该变更的游戏准备/取证并行；pending 不算通过，main 上 red 先修。十写后的独立审计、文档、commit/push、绿 CI 和 root 明确交接门保持不变。无需时不保留额外代理，不另派 Sol/Terra，不擅自换模型/推理档位。
+- 成熟工序只交一个短任务包：阶段结果与停止条件；批准对象、入口、参数、数量/时间预算；当前证据引用及 accepted/在途边界。游戏 Luna 返回结果、accepted/在途、实际差量、失败字段、原证据索引、未证明项和下一 blocker。完整回执留在受保护证据库，不在对话里复制大日志；主会话直接核原始回执和覆盖，不重采无变化证据。
 - 固定模板只更换现场参数。直接复用 `scripts/SpherewrightActionClient.ps1` 的 `Invoke-SpherewrightNormalAction`、`ValidatePrepared`、`Wait-SpherewrightAction` 和 `Wait-SpherewrightPlayerSettled`；科研→核验→保存模板见 `scripts/SpherewrightStageTools.ps1`。需要受保护原回执时，普通客户端之后加载现有 `.local/SpherewrightAuditedBridgeClient.ps1`，最后加载薄模板（模板不重新导入/覆盖 transport）。短命直接 Bridge 调用中的 prepare 和 commit 必须在同一受保护调用方上下文，不能为跨进程携带而打印或落盘 token。普通 MCP 双工具调用仍遵守公开协议。
 - 已批准且前置满足的相邻动作可在一个有限阶段内逐步 fresh prepare/commit/terminal/readback，阶段末统一整理。不要每步重读全历史、重写 caller、重开方案讨论或等无关 CI。两次同类原生拒绝、真实偏差或授权门触发即停，主会话重设计；成功前缀不重做。
 - 委派到首个业务 prepare、prepare/commit 到 terminal/读回、游戏物理等待、取证/验收/文档/Git/CI 分别计时。准备超时要真正收敛或停止，不反复续时；**超时本身不是接管许可**。接管前必须证明原执行者已停止、无在途动作、无未核销结果，并完成单写者交接。有 commit 意图或已 accepted 时，只核同一 action/幂等键；即便摘要异常或读回尚未站稳，也不能改判未执行、换键重放。
@@ -34,8 +34,8 @@ Spherewright 是《戴森球计划》的外部 Agent 控制层，不内置 LLM�
 ## 十写门、验证与提交
 
 - accepted 是**外部审计计数**，含已接受但最终失败，不因游戏 revision/tick/Journal 变化归零；幂等回放不重复计。第10个 accepted 后冻结下一次游戏 commit：核十个原终态或唯一状态核销、owned/和平/实际沙盒/倍率/write health、玩家与 Journal durable/pending/error、单份完整工厂快照的 built/prebuild/拓扑/相关库存/供电、未解释增量与 unknown。与封存基线作确定性差异，主会话独立核关键原回执、覆盖和异常。审计、必要文档、单一目的 commit/push、绿 CI、主会话明确交接后才开新的外部计数窗口；不触碰游戏内计数。
-- 当前代码变动跑直接相关最小测试；执行入口/导入链变化还跑真实 `pwsh -File` 零游戏调用 smoke。版本完整回归按 Roadmap 跑 locked restore、Core/Contracts/MCP 测试、当前 DLL 完整 Release 构建和必要实机/包测试；离线、部署、实机、异机证据分开写，不冒充。DSP API 新路径先核本机 DLL 精确类型/签名/调用条件与 SHA，再测试和冷部署实测；不猜方法名。
-- 在 `main` 保留工作树已有修改。每个独立且可验证的代码修复、施工/保存阶段、明确 blocker 或十写审计，必要测试和 diff/status 后单一目的 commit 并 push，确认远端与对应 CI；CI 红先修，不叠加无关工作。普通只读和私有参数准备不单独造里程碑。不 reset/clean/force push，不提交敏感或半成品。tag、GitHub Release、Thunderstore 发布均须用户单独审核授权；本轮流程优化不授权游戏施工、加载、部署或发行。
+- 当前代码变动跑直接相关最小测试；离线维护 Luna 仅运行与本次维护直接相关的测试。日常只运行实际 `pwsh` 与直接相关 CI；执行入口/导入链变化还跑真实 `pwsh -File` 零游戏调用 smoke。仅涉及 Windows PowerShell 5.1 兼容、安装或最终包的变更才额外用 5.1 验证。版本完整回归按 Roadmap 跑 locked restore、Core/Contracts/MCP 测试、当前 DLL 完整 Release 构建和必要实机/包测试；离线、部署、实机、异机证据分开写，不冒充。DSP API 新路径先核本机 DLL 精确类型/签名/调用条件与 SHA，再测试和冷部署实测；不猜方法名。
+- 在 `main` 保留工作树已有修改。每个独立且可验证的代码修复、施工/保存阶段、明确 blocker 或十写审计，必要测试和 diff/status 后，由离线维护 Luna 在 root 确认阶段证据与提交范围后单一目的 commit 并 push，核对准确远端 SHA 并读取对应 CI；pending 不算通过，CI 红先修，不叠加无关工作。普通只读和私有参数准备不单独造里程碑。不 reset/clean/force push，不提交敏感或半成品。tag、GitHub Release、Thunderstore 发布均须用户单独审核授权；本轮流程优化不授权游戏施工、加载、部署或发行。
 - 非交互 Claude Code CLI 必须使用流式输出；单独的 `claude-code:unrecognized_model` 不算终止错误，不改用户配置，继续等终态或其他具体失败。外审无终态须如实标未完成，不能当通过。
 
 ## 按需索引

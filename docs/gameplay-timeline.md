@@ -3,7 +3,9 @@
 更新时间：2026-10-01（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-01 — 紫糖源尾正常延伸3带，终态80910125、耗材3；十写完整5205实体/10146互返边/J96审计通过，资源313消失单独补证，仍待commit/green交接后保存。未证明紫糖送达或科研吞吐。[短转弯与十写事件](evidence/2026-10-01/purple-source-dogleg-ten-write-audit.md)。
+2026-10-01 — 紫糖源尾三带已正常保存至81057002，后续观察81057016/R4、J96 durable；新写窗accepted1/10，无在途。尚未验证重启恢复或紫糖送达/科研吞吐。[紫糖源尾正常保存](evidence/2026-10-01/purple-source-normal-save.md)。
+
+2026-10-01 — 紫糖源尾正常延伸3带，终态80910125、耗材3；十写完整5205实体/10146互返边/J96审计通过，资源313消失单独补证。未证明紫糖送达或科研吞吐。[短转弯与十写事件](evidence/2026-10-01/purple-source-dogleg-ten-write-audit.md)。
 
 2026-10-01 — 有效健康票据固定AutoSave0恢复v4已冷部署并恢复同档，normal save80731225/J96durable/healthy，accepted9/10、无在途；8对象/16行材料/96原事件已独立核销，无重放/回档/重复确认。主干1932碰撞与紫糖实际供料仍待完成。[有效票据恢复事件](evidence/2026-10-01/active-fixed-autosave-recovery.md)。
 

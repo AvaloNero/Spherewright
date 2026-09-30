@@ -3,6 +3,8 @@
 更新时间：2026-10-01（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-01 — stdin调用空批次出现exit0/空stdout，但受保护intent索引与fresh读回核销为0 accepted；-File/Encoded离线入口回归3/3、0游戏调用。不是施工里程碑。[PowerShell入口与空执行核销](evidence/2026-10-01/powershell-stdin-entry-noop.md)。
+
 2026-10-01 — 北向0→1坡道的单一候选在planned point1撞到旧belt4880，`BUILD_LOCATION_INVALID/belt_path_existing_overlap`、0创建/0accepted；不代表整条native Stage1通过或所有坡道失败。[北向坡道占位拒绝](evidence/2026-10-01/purple-north-ramp-occupancy-blocker.md)。
 
 2026-10-01 — 新增高层四带`5206→5208→5207→5209`成功并由正常保存81208004覆盖；`5205→5206`/filter6004接口在几何阶段拒绝，nativeChecks=0、未调用DSP放置验证，送达未证明。accepted3/10、无在途。[高层前缀、接口与保存](evidence/2026-10-01/purple-elevated-prefix-interface-and-save.md)。

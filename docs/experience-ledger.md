@@ -2,6 +2,12 @@
 
 更新时间：2026-09-30（Asia/Singapore）
 
+## EXP-336 — 两段带中心接近不等于原生分拣器可投影
+
+- 2026-09-30，`observed` 于同档石墨出炉短带。四段2001短带5189–5192在完整 native_grid/stage1 预检后唯一建成并保存79986033/J95；炉5187→首段5189的2011/filter1109为原生正例，但尚未施工。末段5192→旧带3362的两带分拣器在 `no_admissible_seed` 拒绝；转向相邻直线旧带3365仍为 `no_finite_projection`，16个种子过筛但目标路径区间零有限投影、零原生placement checks。位置/姿态近似平行和约2.5m中心间距不能替代 DSP 的目标段原生path interval与顺序投影。[短带及负例](evidence/2026-09-30/graphite-outlet-short-belt-save.md)。
+- 规则：同一原生错误在两个明确旧带候选上出现后停止盲试，保留成功短带并正常保存；若要新增路线，先用当前 DLL 的目标后源投影规则重设计能覆盖对应区间的追加段，再 fresh 原生预检，不能放宽 `<11°`朝向门或修改已成功段。`no_finite_projection` 不是“距离过远”，也不是所有带带连接不可能。适用范围只到本档现有两个带段；复验触发为路径延长、native segment窗、DSP/Plugin变更或新候选原生回执。
+- 同批本地调用方复验：prepared belt 响应的模式字段是 `plannedBeltPath.routingMode`，不是顶层 `beltPathMode`。误读后零 commit，fresh重取再提交；后续短动作先核当前 DTO 字段，避免把本地展示错误误报为原生失败。
+
 ## EXP-335 — 分拣器槽位详情不可用时核计划、终态与互返连接
 
 - 2026-09-30，validated 仅限本档新煤线一次分拣器施工。原生 fresh 计划将开放带端5172接到炉5187，exact_slots 源虚拟槽 -1、炉槽10、过滤煤1006、2011×1；唯一 action 建成5188，背包3→2，完工连接实读为5172 slot4↔5188 slot1、5188 slot0↔5187 slot10，双侧互返。只读 sorterEndpoints 详情单独返回 unavailable/native_sorter_slots_unavailable_or_over_limit；因此不能把此 DTO 当作已提供槽位详情，但也不能否定同 action 终态和实际 connections 的独立核验。后续炉配方17正常完成、保存79954353/J95，另一个窗口见炉输入煤4、输出石墨33、working且满供电。[阶段证据](evidence/2026-09-30/coal-furnace-input-recipe-save.md)。

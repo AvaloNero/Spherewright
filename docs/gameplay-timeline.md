@@ -3,6 +3,8 @@
 更新时间：2026-10-01（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-01 — 仓1511取铁6并原生手搓出6个分拣器，正常保存81634733/J96 durable、观察81634743/R16；accepted9/10，无在途。后续仓读比转移终态多1、来源未归因；备料未安装，上游供给/科研/重启均未证明。[紫糖分拣器备料与正常保存](evidence/2026-10-01/purple-sorter-material-kit-and-save.md)。
+
 2026-10-01 — 新增L1→L0消费者下坡八段`5217→…→5210`及sorter `5218`，接入既有`5198→5197→5199→Lab84`；正常保存81554959/J96 durable，观察81554973/R12，accepted6/10。新恢复凭据可用但未验证重启；上游供料、紫糖到货和科研吞吐未证明。[消费者下坡段、分拣器与正常保存](evidence/2026-10-01/purple-consumer-down-ramp-and-save.md)。
 
 2026-10-01 — stdin调用空批次出现exit0/空stdout，但受保护intent索引与fresh读回核销为0 accepted；-File/Encoded离线入口回归3/3、0游戏调用。不是施工里程碑。[PowerShell入口与空执行核销](evidence/2026-10-01/powershell-stdin-entry-noop.md)。

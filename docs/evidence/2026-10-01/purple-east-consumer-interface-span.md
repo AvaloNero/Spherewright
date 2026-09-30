@@ -16,4 +16,4 @@ root 选定对象审计 run `b3a90de01b4e40e285c551599a541a9a` ord1 `east-consum
 
 下一待核接口是 `5235→5217` / filter `6004` 的 sorter 只读预检；其结果不在本事件范围内，不能提前写成通过。仓库供料、raised 主干、消费者连接、紫糖/物料送达、科研推进、持续产出及真实重启均未证明。
 
-本入口 41.9 秒中约39.7秒用于 terminal 观察；这不是总流程耗时，也不能单独归因于无人机。固定 free-span caller 仅作参数包装，hash 最后 fresh；AST 与 `-File` 零游戏调用 smoke、9个离线 plan fixtures 已由 root 核验。本次8对象审计为0游戏调用，不代表全套测试。
+本入口 41.9 秒中约39.7秒用于 terminal 观察；这不是总流程耗时，也不能单独归因于无人机。固定 free-span caller 仅作参数包装，hash 最后 fresh；AST 与实际 `pwsh -File` 零游戏调用 smoke 已由 root 核验。本次8对象审计为0游戏调用；本事件不声明 plan-fixture 数量，也不代表全套测试。

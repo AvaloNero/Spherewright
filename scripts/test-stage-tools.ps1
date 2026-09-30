@@ -3,9 +3,14 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'SpherewrightActionClient.ps1')
 . (Join-Path $PSScriptRoot 'SpherewrightStageTools.ps1')
 $script:checks = 0
+$script:storageChecks = 0
 function Assert-Stage([bool]$Condition, [string]$Name) {
     if (-not $Condition) { throw "Stage regression: $Name" }
     $script:checks++
+}
+function Assert-Storage([bool]$Condition, [string]$Name) {
+    if (-not $Condition) { throw "Storage count regression: $Name" }
+    $script:storageChecks++
 }
 function Reset-Stage([string]$Failure = '') {
     $script:methods = [Collections.Generic.List[string]]::new()
@@ -112,4 +117,94 @@ Assert-Stage ($ciFixture.observed -and $ciFixture.runs[0].conclusion -ceq 'succe
 function gh { $global:LASTEXITCODE=0; '[]' }
 $ciFixture=Get-SpherewrightCommitChecks -CommitSha ('a'*40)
 Assert-Stage (-not $ciFixture.observed) 'absent workflow run stays unknown'
-[pscustomobject]@{passed=$script:checks;gameCalls=0;successfulFixtureRequests=14} | ConvertTo-Json -Compress
+
+# Direct offline fixtures for observed built-storage snapshots. These call no
+# transport; keep their count separate from the existing 26 stage assertions.
+function New-StorageTestBuffer($ItemId, $Count, $Role='storage', $CountUnit='items', $UnitsPerItem=1) {
+    [pscustomobject]@{itemId=$ItemId;role=$Role;countUnit=$CountUnit;unitsPerItem=$UnitsPerItem;count=$Count}
+}
+function New-StorageTestSnapshot($Buffers) {
+    [pscustomobject]@{objectKind='entity';componentKind='storage';buffers=$Buffers}
+}
+function Assert-StorageReject($Snapshot, [string]$Name) {
+    $caught = $false
+    try { Get-SpherewrightStorageItemCount -Snapshot $Snapshot -ItemId 6004 | Out-Null } catch { $caught = $true }
+    Assert-Storage $caught $Name
+}
+
+$storageBuffers = [Collections.Generic.List[object]]::new()
+for ($index = 0; $index -lt 11; $index++) {
+    $storageBuffers.Add((New-StorageTestBuffer -ItemId 6004 -Count 200))
+}
+$storageBuffers.Add((New-StorageTestBuffer -ItemId 6004 -Count 124))
+$storageBuffers.Add((New-StorageTestBuffer -ItemId 1120 -Count 5000))
+$storageBuffers.Add((New-StorageTestBuffer -ItemId 1802 -Count 9))
+$storageSnapshot = New-StorageTestSnapshot -Buffers $storageBuffers.ToArray()
+$storageTotal = Get-SpherewrightStorageItemCount -Snapshot $storageSnapshot -ItemId 6004
+Assert-Storage (@($storageSnapshot.buffers | Where-Object itemId -eq 6004).Count -eq 12) 'fixture covers twelve occupied grids for the same item'
+Assert-Storage ($storageTotal -eq [long]2324) 'sums 11 x 200 plus 124 and ignores other item types'
+
+$zeroSnapshot = New-StorageTestSnapshot -Buffers @((New-StorageTestBuffer -ItemId 6004 -Count 0))
+Assert-Storage ((Get-SpherewrightStorageItemCount -Snapshot $zeroSnapshot -ItemId 6004) -eq 0) 'observed zero count is valid'
+$emptySnapshot = [pscustomobject]@{objectKind='entity';componentKind='storage';buffers=[object[]]@()}
+Assert-Storage ((Get-SpherewrightStorageItemCount -Snapshot $emptySnapshot -ItemId 6004) -eq 0) 'observed empty buffer list is valid zero'
+
+$missingBuffersSnapshot = [pscustomobject]@{objectKind='entity';componentKind='storage'}
+Assert-StorageReject $missingBuffersSnapshot 'missing buffers are unknown, not zero'
+$nullBuffersSnapshot = [pscustomobject]@{objectKind='entity';componentKind='storage';buffers=$null}
+Assert-StorageReject $nullBuffersSnapshot 'null buffers are unknown, not zero'
+$researchSnapshot = [pscustomobject]@{objectKind='entity';componentKind='research-matrix';buffers=@();points=36000}
+Assert-StorageReject $researchSnapshot 'research-matrix points are not storage items'
+$unknownComponentSnapshot = [pscustomobject]@{objectKind='entity';componentKind='unrecognized';buffers=@()}
+Assert-StorageReject $unknownComponentSnapshot 'unknown component is rejected'
+
+foreach ($invalidItemId in @(
+    [pscustomobject]@{value=$null;name='null'},
+    [pscustomobject]@{value='6004';name='string'},
+    [pscustomobject]@{value=0;name='zero'},
+    [pscustomobject]@{value=-1;name='negative'},
+    [pscustomobject]@{value=([long]2147483648);name='above Int32 range'}
+)) {
+    $invalidIdBuffer = New-StorageTestBuffer -ItemId $invalidItemId.value -Count 1
+    Assert-StorageReject (New-StorageTestSnapshot -Buffers @($invalidIdBuffer)) "observed $($invalidItemId.name) itemId is rejected"
+}
+$nullRows = [Collections.Generic.List[object]]::new()
+$nullRows.Add($null)
+Assert-StorageReject (New-StorageTestSnapshot -Buffers $nullRows.ToArray()) 'null buffer rows are rejected'
+
+$badRoleSnapshot = New-StorageTestSnapshot -Buffers @((New-StorageTestBuffer -ItemId 6004 -Count 1 -Role 'research-matrix'))
+Assert-StorageReject $badRoleSnapshot 'wrong storage role is rejected'
+$badUnitSnapshot = New-StorageTestSnapshot -Buffers @((New-StorageTestBuffer -ItemId 6004 -Count 1 -CountUnit 'points'))
+Assert-StorageReject $badUnitSnapshot 'wrong count unit is rejected'
+$badUnitsPerItemSnapshot = New-StorageTestSnapshot -Buffers @((New-StorageTestBuffer -ItemId 6004 -Count 1 -UnitsPerItem 2))
+Assert-StorageReject $badUnitsPerItemSnapshot 'non-unit item multiplier is rejected'
+
+$negativeCountSnapshot = New-StorageTestSnapshot -Buffers @((New-StorageTestBuffer -ItemId 6004 -Count -1))
+Assert-StorageReject $negativeCountSnapshot 'negative count is rejected'
+$nullCountSnapshot = New-StorageTestSnapshot -Buffers @((New-StorageTestBuffer -ItemId 6004 -Count $null))
+Assert-StorageReject $nullCountSnapshot 'null count is rejected'
+$fractionalCountSnapshot = New-StorageTestSnapshot -Buffers @((New-StorageTestBuffer -ItemId 6004 -Count 1.5))
+Assert-StorageReject $fractionalCountSnapshot 'fractional count is rejected'
+$booleanCountSnapshot = New-StorageTestSnapshot -Buffers @((New-StorageTestBuffer -ItemId 6004 -Count $true))
+Assert-StorageReject $booleanCountSnapshot 'boolean count is rejected'
+$missingCountBuffer = [pscustomobject]@{itemId=6004;role='storage';countUnit='items';unitsPerItem=1}
+$missingCountSnapshot = New-StorageTestSnapshot -Buffers @($missingCountBuffer)
+Assert-StorageReject $missingCountSnapshot 'missing count is rejected'
+$overflowSnapshot = New-StorageTestSnapshot -Buffers @(
+    (New-StorageTestBuffer -ItemId 6004 -Count ([long]::MaxValue)),
+    (New-StorageTestBuffer -ItemId 6004 -Count 1)
+)
+Assert-StorageReject $overflowSnapshot 'Int64 sum overflow is rejected'
+foreach ($invalidRequestedItemId in @(
+    [pscustomobject]@{value=$null;name='null'},
+    [pscustomobject]@{value=-1;name='negative'},
+    [pscustomobject]@{value=([long]2147483648);name='above Int32 range'},
+    [pscustomobject]@{value='not-an-id';name='non-numeric string'}
+)) {
+    $caught = $false
+    try { Get-SpherewrightStorageItemCount -Snapshot $storageSnapshot -ItemId $invalidRequestedItemId.value | Out-Null } catch { $caught = $true }
+    Assert-Storage $caught "requested $($invalidRequestedItemId.name) itemId is rejected"
+}
+Assert-Storage ($script:methods.Count -eq 0) 'storage helper fixtures make no Bridge or game requests'
+
+[pscustomobject]@{passed=$script:checks;storageChecks=$script:storageChecks;gameCalls=0;successfulFixtureRequests=14} | ConvertTo-Json -Compress

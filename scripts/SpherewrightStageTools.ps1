@@ -24,6 +24,38 @@ function Get-SpherewrightStageField($Value, [string]$Name) {
     return $Value.$Name
 }
 
+function Get-SpherewrightStorageItemCount {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$Snapshot,
+        [Parameter(Mandatory)][ValidateRange(1, 2147483647)][int]$ItemId
+    )
+    if ((Get-SpherewrightStageField $Snapshot 'objectKind') -cne 'entity' -or
+        (Get-SpherewrightStageField $Snapshot 'componentKind') -cne 'storage') {
+        throw 'An observed built storage entity is required; research points are not items.'
+    }
+    $null = Get-SpherewrightStageField $Snapshot 'buffers'
+    if ($null -eq $Snapshot.buffers) { throw 'Storage buffers were not observed.' }
+    [long]$total = 0
+    # Storage emits one row per occupied grid, not one row per item type.
+    foreach ($buffer in @($Snapshot.buffers)) {
+        $observedItemId = Get-SpherewrightStageField $buffer 'itemId'
+        if (($observedItemId -isnot [int] -and $observedItemId -isnot [long]) -or
+            $observedItemId -le 0 -or $observedItemId -gt [int]::MaxValue) { throw 'Storage item identity is not a positive supported integer.' }
+        if ($observedItemId -ne $ItemId) { continue }
+        if ((Get-SpherewrightStageField $buffer 'role') -cne 'storage' -or
+            (Get-SpherewrightStageField $buffer 'countUnit') -cne 'items' -or
+            (Get-SpherewrightStageField $buffer 'unitsPerItem') -ne 1) {
+            throw 'Storage item count has an incompatible role or unit.'
+        }
+        $count = Get-SpherewrightStageField $buffer 'count'
+        if (($count -isnot [int] -and $count -isnot [long]) -or $count -lt 0 -or
+            $total -gt [long]::MaxValue - $count) { throw 'Storage item count is not a non-negative bounded integer.' }
+        $total += $count
+    }
+    return $total
+}
+
 function Read-SpherewrightStageResult([string]$Method, [string]$SessionId, [hashtable]$Payload) {
     Get-SpherewrightBridgeResult -Response (Invoke-SpherewrightBridgeRequest -Method $Method -SessionId $SessionId -Payload $Payload) -Operation $Method
 }

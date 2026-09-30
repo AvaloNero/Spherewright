@@ -23,11 +23,11 @@
 ## 当前 blocker、动作和下一阶段
 
 - 当前硬边界：新旧带接口已建，但“石墨真正进入旧消费者并持续加工”尚未完成连续实验；只读已确认3404 recipe103→1205超级磁场环、3403 recipe41→1802氘核燃料棒。连续实验未开始，不得用1209/1121替代产出身份或为了孤立上游继续扩建。
-- 截至本次受保护读回，四个批准动作全部 terminal，没有已知在途施工/未核销 action；Luna 已停止游戏推进。若之后发现原回执或现场冲突，立即冻结并核同一 action。旧失败的5192→3362/3365原生 `TooSkew` 目标不得原样重提；已成功5193–5196不得整段重放。任何新写仍须 fresh prepare、唯一 commit、同 action 终态和材料/连接复读。
+- 本窗四个动作均terminal/succeeded；只读新增accepted=0。Luna已停止，无活动句柄/在途/未核销；冲突仍冻结核同action。旧5192→3362/3365 `TooSkew` 目标不原样重提；已成功5193–5196禁止重放。新写按当前规则fresh预检和读回。
 - 本轮任务仅做本地流程优化和离线测试，不自动加载、部署、追加施工或发行。下一次游戏任务须先 fresh 核 owned/session/版本/J 与外部 accepted 4/10，再按批准范围执行；上次保存后的重启持久性仍待单独实机核销。
 
 ## 证据入口
 
 [当前规则](../AGENTS.md) · [Roadmap](../ROADMAP.md) · [Agent playbook](agent-playbook.md) · [存档日记](gameplay-timeline.md) · [十写审计](evidence/2026-09-30/graphite-outlet-extension-ten-audit.md) · [本窗保存与连接](evidence/2026-09-30/graphite-inlet-two-sorters-save.md)。受保护原回执只在本机证据库中，提交文档只保留脱敏索引；独立验收不能只读本摘要。
 
-本轮只做[最小离线流程优化](evidence/2026-09-30/minimal-workflow-efficiency.md)，新增accepted=0；Luna已停止、无活动句柄/在途/未核销动作。新模板不是加载、施工、独立验收或发行授权。
+本轮仅做[最小离线流程优化](evidence/2026-09-30/minimal-workflow-efficiency.md)，新入口不授予游戏写入或验收权限。

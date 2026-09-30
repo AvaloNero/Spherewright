@@ -2,6 +2,21 @@
 # Importing this file makes zero requests. These helpers grant no write authority.
 Set-StrictMode -Version Latest
 
+function Get-SpherewrightCommitChecks {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string]$CommitSha)
+    # Reuse gh, fetch once, exact full SHA. An absent run is unknown, not green.
+    $json = & gh run list --repo AvaloNero/Spherewright --commit $CommitSha --limit 5 --json databaseId,headSha,status,conclusion,url
+    if ($LASTEXITCODE -ne 0) { throw 'CI status collection failed; do not infer success.' }
+    $decoded = ($json -join "`n") | ConvertFrom-Json
+    $runs = @()
+    # Windows PowerShell can emit JSON [] as one empty-array pipeline object.
+    # Normalize enumeration before StrictMode property access; absent is unknown.
+    foreach ($run in $decoded) { if ($null -ne $run) { $runs += ,$run } }
+    if (@($runs | Where-Object { $_.headSha -cne $CommitSha }).Count) { throw 'CI returned a different source commit.' }
+    [pscustomobject]@{commit=$CommitSha;observed=($runs.Count -gt 0);runs=$runs;signOff=$false}
+}
+
 function Get-SpherewrightStageField($Value, [string]$Name) {
     if ($null -eq $Value -or $null -eq $Value.PSObject.Properties[$Name]) {
         throw "Required response field missing: $Name"
@@ -87,7 +102,7 @@ function Invoke-SpherewrightResearchAndSave {
             planetId=$PlanetId;techId=$TechId;expectedSelectionStateHash=$hash;stateHashVersion=$hashVersion;prioritizeQueued=$PrioritizeQueued
         } -ValidatePrepared $ValidateResearchPlan
         if (-not $research.committed.idempotentReplay) { $acceptedDelta++ }
-        $actions.Add([pscustomobject]@{actionId=$research.committed.actionId;kind='select-research';timingMs=$research.timingMs})
+        $actions.Add([pscustomobject]@{actionId=$research.committed.actionId;kind='select-research';timingMs=$research.timingMs;observedExecutionGameTicks=$research.observedExecutionGameTicks})
         $phase = 'research_readback'
         $progress = Read-SpherewrightStageResult get_progression_state $SessionId @{planetId=$PlanetId}
         if ($progress.sessionId -cne $SessionId -or $progress.planetId -ne $PlanetId -or
@@ -101,7 +116,7 @@ function Invoke-SpherewrightResearchAndSave {
             planetId=$PlanetId;expectedRevision=$state.revision;stateHashVersion=1
         } -ValidatePrepared { param($plan) $plan.actionKind -ceq 'save' -and @($plan.itemBudget).Count -eq 0 }
         if (-not $save.committed.idempotentReplay) { $acceptedDelta++ }
-        $actions.Add([pscustomobject]@{actionId=$save.committed.actionId;kind='save';timingMs=$save.timingMs})
+        $actions.Add([pscustomobject]@{actionId=$save.committed.actionId;kind='save';timingMs=$save.timingMs;observedExecutionGameTicks=$save.observedExecutionGameTicks})
         $phase = 'save_readback'
         $state = Read-SpherewrightStageResult get_session_state $SessionId @{}
         Assert-SpherewrightStageSession $state $SessionId $PlanetId $GameVersion -RequireWrites

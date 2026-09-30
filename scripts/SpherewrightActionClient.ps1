@@ -202,6 +202,11 @@ function Invoke-SpherewrightNormalAction {
             prepared = $prepared
             committed = $committed
             result = $terminal
+            observedExecutionGameTicks = $(if ($null -ne $terminal.PSObject.Properties['startedAtGameTick'] -and
+                $null -ne $terminal.PSObject.Properties['completedAtGameTick'] -and $null -ne $terminal.startedAtGameTick -and
+                $null -ne $terminal.completedAtGameTick -and $terminal.completedAtGameTick -ge $terminal.startedAtGameTick) {
+                [long]$terminal.completedAtGameTick-[long]$terminal.startedAtGameTick
+            } else { $null })
             timingMs = [pscustomobject]@{
                 prepare = [math]::Round(($preparedTicks - $startedTicks) / $ticksPerMillisecond, 3)
                 planValidation = [math]::Round(($validatedTicks - $preparedTicks) / $ticksPerMillisecond, 3)

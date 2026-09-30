@@ -78,4 +78,10 @@ Reset-Stage
 $invalid = @{}; foreach($key in $arguments.Keys){$invalid[$key]=$arguments[$key]}; $invalid.AcceptedBefore=9
 try { Invoke-SpherewrightResearchAndSave @invalid | Out-Null } catch { }
 Assert-Stage ($script:methods.Count -eq 0) 'insufficient external audit budget rejected before any request'
+function gh { $global:LASTEXITCODE=0; '[{"databaseId":1,"headSha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","status":"completed","conclusion":"success","url":"https://example.invalid/ci"}]' }
+$ciFixture=Get-SpherewrightCommitChecks -CommitSha ('a'*40)
+Assert-Stage ($ciFixture.observed -and $ciFixture.runs[0].conclusion -ceq 'success' -and -not $ciFixture.signOff) 'exact SHA CI snapshot is not independent sign-off'
+function gh { $global:LASTEXITCODE=0; '[]' }
+$ciFixture=Get-SpherewrightCommitChecks -CommitSha ('a'*40)
+Assert-Stage (-not $ciFixture.observed) 'absent workflow run stays unknown'
 [pscustomobject]@{passed=$script:checks;gameCalls=0;successfulFixtureRequests=14} | ConvertTo-Json -Compress

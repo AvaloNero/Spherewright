@@ -95,7 +95,7 @@ function Assert-SameActionReads {
     Assert-Action (@($reads | Where-Object { $_.sessionId -cne 'offline-session' -or $_.payload.actionId -cne 'offline-action' }).Count -eq 0) 'same action and session on every observation'
 }
 $pending = [pscustomobject]@{actionId='offline-action';terminal=$false;succeeded=$false;state='waiting_for_game'}
-$success = [pscustomobject]@{actionId='offline-action';terminal=$true;succeeded=$true;state='completed'}
+$success = [pscustomobject]@{actionId='offline-action';terminal=$true;succeeded=$true;state='completed';startedAtGameTick=100;completedAtGameTick=160}
 Reset-ActionStub @($success)
 $result = Wait-SpherewrightAction -ActionId offline-action -SessionId offline-session
 Assert-Action ($result.terminal -and $result.succeeded) 'immediate terminal returned unchanged'
@@ -112,6 +112,7 @@ Assert-Action (($script:actionStubCalls.method -join ',') -ceq 'prepare_build,co
 Assert-Action ($null -ne $validated.timingMs -and $validated.timingMs.prepare -ge 0 -and
     $validated.timingMs.planValidation -ge 0 -and $validated.timingMs.commit -ge 0 -and
     $validated.timingMs.terminalObservation -ge 0 -and $validated.timingMs.total -ge 0) 'timing splits added without a second game request'
+Assert-Action ($validated.observedExecutionGameTicks -eq 60) 'native execution game ticks remain separate from observation wall time'
 
 Reset-ActionStub @()
 Assert-Rejected {

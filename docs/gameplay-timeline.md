@@ -3,6 +3,8 @@
 更新时间：2026-10-01（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-01 — 地面主干point7与旧belt1299原生占位冲突、0创建/0accepted；1932为另一独立碰撞。无第三次盲试或删端点授权，绕行方案未证明可行。[地面主干跨线阻塞](evidence/2026-10-01/purple-ground-trunk-crossing-blocker.md)。
+
 2026-10-01 — 紫糖源尾三带已正常保存至81057002，后续观察81057016/R4、J96 durable；新写窗accepted1/10，无在途。尚未验证重启恢复或紫糖送达/科研吞吐。[紫糖源尾正常保存](evidence/2026-10-01/purple-source-normal-save.md)。
 
 2026-10-01 — 紫糖源尾正常延伸3带，终态80910125、耗材3；十写完整5205实体/10146互返边/J96审计通过，资源313消失单独补证。未证明紫糖送达或科研吞吐。[短转弯与十写事件](evidence/2026-10-01/purple-source-dogleg-ten-write-audit.md)。

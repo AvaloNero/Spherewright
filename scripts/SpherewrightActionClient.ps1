@@ -131,43 +131,78 @@ function Invoke-SpherewrightNormalAction {
         [scriptblock]$ValidatePrepared
     )
 
-    $prepareResponse = Invoke-SpherewrightBridgeRequest -Method $PrepareMethod -SessionId $SessionId -Payload $PreparePayload
-    $prepared = Get-SpherewrightBridgeResult -Response $prepareResponse -Operation $PrepareMethod
-    if (-not $prepared.prepared -or [string]::IsNullOrWhiteSpace([string]$prepared.planToken)) {
-        throw "$PrepareMethod did not issue an executable plan token."
-    }
-    $planToken = [string]$prepared.planToken
-
-    if (-not $prepared.commitAllowedNow) {
-        $codes = @($prepared.commitBlockers | ForEach-Object { $_.code }) -join ', '
-        throw "$PrepareMethod is currently blocked: $codes"
-    }
-
-    # Let a bounded caller verify the exact native path, source binding and
-    # material budget before commit, without reimplementing commit/wait logic.
-    # The callback must explicitly return one Boolean true. A failed or
-    # throwing check leaves the short-lived plan uncommitted.
-    if ($null -ne $ValidatePrepared) {
-        $validation = @(& $ValidatePrepared $prepared)
-        if ($validation.Count -ne 1 -or $validation[0] -isnot [bool] -or -not $validation[0]) {
-            throw "$PrepareMethod exact-plan validation did not approve the prepared plan."
+    $startedTicks = [Diagnostics.Stopwatch]::GetTimestamp()
+    $phase = 'prepare'
+    $commitMayHaveBeenAccepted = $false
+    $actionId = $null
+    try {
+        $prepareResponse = Invoke-SpherewrightBridgeRequest -Method $PrepareMethod -SessionId $SessionId -Payload $PreparePayload
+        $prepared = Get-SpherewrightBridgeResult -Response $prepareResponse -Operation $PrepareMethod
+        if (-not $prepared.prepared -or [string]::IsNullOrWhiteSpace([string]$prepared.planToken)) {
+            throw "$PrepareMethod did not issue an executable plan token."
         }
-        if ([string]$prepared.planToken -cne $planToken) {
-            throw "$PrepareMethod exact-plan validation changed the prepared plan token."
-        }
-    }
+        $planToken = [string]$prepared.planToken
 
-    $commitResponse = Invoke-SpherewrightBridgeRequest -Method $CommitMethod -SessionId $SessionId -Payload @{
-        sessionId = $SessionId
-        planetId = $PlanetId
-        planToken = $planToken
-        idempotencyKey = $IdempotencyKey.ToString('D')
-    }
-    $committed = Get-SpherewrightBridgeResult -Response $commitResponse -Operation $CommitMethod
-    $terminal = Wait-SpherewrightAction -ActionId ([string]$committed.actionId) -SessionId $SessionId -TimeoutSeconds $TimeoutSeconds
-    return [pscustomobject]@{
-        prepared = $prepared
-        committed = $committed
-        result = $terminal
+        if (-not $prepared.commitAllowedNow) {
+            $codes = @($prepared.commitBlockers | ForEach-Object { $_.code }) -join ', '
+            throw "$PrepareMethod is currently blocked: $codes"
+        }
+        $preparedTicks = [Diagnostics.Stopwatch]::GetTimestamp()
+
+        # A bounded callback checks the exact native path, source and budget.
+        # Only one explicit Boolean true permits the original commit.
+        $phase = 'plan_validation'
+        if ($null -ne $ValidatePrepared) {
+            $validation = @(& $ValidatePrepared $prepared)
+            if ($validation.Count -ne 1 -or $validation[0] -isnot [bool] -or -not $validation[0]) {
+                throw "$PrepareMethod exact-plan validation did not approve the prepared plan."
+            }
+            if ([string]$prepared.planToken -cne $planToken) {
+                throw "$PrepareMethod exact-plan validation changed the prepared plan token."
+            }
+        }
+        $validatedTicks = [Diagnostics.Stopwatch]::GetTimestamp()
+
+        $phase = 'commit'
+        # Once the request is attempted, an exception is not proof of rejection.
+        $commitMayHaveBeenAccepted = $true
+        $commitResponse = Invoke-SpherewrightBridgeRequest -Method $CommitMethod -SessionId $SessionId -Payload @{
+            sessionId = $SessionId
+            planetId = $PlanetId
+            planToken = $planToken
+            idempotencyKey = $IdempotencyKey.ToString('D')
+        }
+        $committed = Get-SpherewrightBridgeResult -Response $commitResponse -Operation $CommitMethod
+        $committedTicks = [Diagnostics.Stopwatch]::GetTimestamp()
+        $actionId = [string]$committed.actionId
+
+        $phase = 'terminal_observation'
+        $terminal = Wait-SpherewrightAction -ActionId $actionId -SessionId $SessionId -TimeoutSeconds $TimeoutSeconds
+        $terminalTicks = [Diagnostics.Stopwatch]::GetTimestamp()
+        $ticksPerMillisecond = [double][Diagnostics.Stopwatch]::Frequency / 1000.0
+        return [pscustomobject]@{
+            prepared = $prepared
+            committed = $committed
+            result = $terminal
+            timingMs = [pscustomobject]@{
+                prepare = [math]::Round(($preparedTicks - $startedTicks) / $ticksPerMillisecond, 3)
+                planValidation = [math]::Round(($validatedTicks - $preparedTicks) / $ticksPerMillisecond, 3)
+                commit = [math]::Round(($committedTicks - $validatedTicks) / $ticksPerMillisecond, 3)
+                terminalObservation = [math]::Round(($terminalTicks - $committedTicks) / $ticksPerMillisecond, 3)
+                total = [math]::Round(($terminalTicks - $startedTicks) / $ticksPerMillisecond, 3)
+            }
+        }
+    } catch {
+        # Metadata is advisory; never replace the original exception or turn
+        # an accepted/uncertain commit into a caller-side rejection.
+        try {
+            $_.Exception.Data['spherewrightPhase'] = $phase
+            $_.Exception.Data['spherewrightCommitMayHaveBeenAccepted'] = $commitMayHaveBeenAccepted
+            $_.Exception.Data['spherewrightElapsedMs'] = [math]::Round(([Diagnostics.Stopwatch]::GetTimestamp() - $startedTicks) / ([double][Diagnostics.Stopwatch]::Frequency / 1000.0), 3)
+            if (-not [string]::IsNullOrWhiteSpace($actionId)) {
+                $_.Exception.Data['spherewrightActionId'] = $actionId
+            }
+        } catch { }
+        throw
     }
 }

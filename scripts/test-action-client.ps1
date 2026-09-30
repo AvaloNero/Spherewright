@@ -58,6 +58,7 @@ function Reset-ActionStub([object[]]$States, [int]$ReadMilliseconds = 0, [object
     $script:actionStubTime = [datetime]'2026-01-01T00:00:00Z'
     $script:actionStubReadMilliseconds = $ReadMilliseconds
     $script:actionStubTransportFailure = $false
+    $script:commitStubTransportFailure = $false
 }
 function Get-Date { $script:actionStubTime }
 function Start-Sleep([int]$Milliseconds) {
@@ -68,7 +69,10 @@ function Invoke-SpherewrightBridgeRequest([string]$Method, [string]$SessionId, [
     $script:actionStubCalls.Add([pscustomobject]@{method=$Method;sessionId=$SessionId;payload=$Payload})
     $result = switch ($Method) {
         'prepare_build' { [pscustomobject]@{prepared=$true;commitAllowedNow=$true;planToken='offline-test-placeholder'} }
-        'commit_build' { [pscustomobject]@{accepted=$true;actionId='offline-action'} }
+        'commit_build' {
+            if ($script:commitStubTransportFailure) { throw 'offline commit transport failure' }
+            [pscustomobject]@{accepted=$true;actionId='offline-action'}
+        }
         'get_action_result' {
             if ($script:actionStubTransportFailure) { throw 'offline transport failure' }
             $script:actionStubTime = $script:actionStubTime.AddMilliseconds($script:actionStubReadMilliseconds)
@@ -103,6 +107,9 @@ $validated = Invoke-SpherewrightNormalAction -PrepareMethod prepare_build -Commi
 }
 Assert-Action ($validated.result.succeeded) 'exact-plan callback allows one original commit'
 Assert-Action (($script:actionStubCalls.method -join ',') -ceq 'prepare_build,commit_build,get_action_result') 'validated plan uses existing single commit and terminal path'
+Assert-Action ($null -ne $validated.timingMs -and $validated.timingMs.prepare -ge 0 -and
+    $validated.timingMs.planValidation -ge 0 -and $validated.timingMs.commit -ge 0 -and
+    $validated.timingMs.terminalObservation -ge 0 -and $validated.timingMs.total -ge 0) 'timing splits added without a second game request'
 
 Reset-ActionStub @()
 Assert-Rejected {
@@ -125,6 +132,36 @@ Assert-Rejected {
     }
 }
 Assert-Action (($script:actionStubCalls.method -join ',') -ceq 'prepare_build') 'mutated prepared token never commits or polls'
+
+Reset-ActionStub @()
+$planFailure = $null
+try {
+    Invoke-SpherewrightNormalAction -PrepareMethod prepare_build -CommitMethod commit_build -PreparePayload @{buildingItemId=2001} -SessionId offline-session -PlanetId 104 -ValidatePrepared { $false } | Out-Null
+} catch { $planFailure = $_.Exception }
+Assert-Action ($planFailure.Data['spherewrightPhase'] -ceq 'plan_validation' -and
+    $planFailure.Data['spherewrightCommitMayHaveBeenAccepted'] -eq $false -and
+    @($script:actionStubCalls | Where-Object method -EQ 'commit_build').Count -eq 0) 'precommit validation failure is classified without a commit'
+
+Reset-ActionStub @()
+$script:commitStubTransportFailure = $true
+$commitFailure = $null
+try {
+    Invoke-SpherewrightNormalAction -PrepareMethod prepare_build -CommitMethod commit_build -PreparePayload @{buildingItemId=2001} -SessionId offline-session -PlanetId 104 | Out-Null
+} catch { $commitFailure = $_.Exception }
+Assert-Action ($commitFailure.Message -ceq 'offline commit transport failure' -and
+    $commitFailure.Data['spherewrightPhase'] -ceq 'commit' -and
+    $commitFailure.Data['spherewrightCommitMayHaveBeenAccepted'] -eq $true -and
+    ($script:actionStubCalls.method -join ',') -ceq 'prepare_build,commit_build') 'commit transport failure stays uncertain and is never replayed'
+
+Reset-ActionStub @() 0
+$terminalFailure = $null
+try {
+    Invoke-SpherewrightNormalAction -PrepareMethod prepare_build -CommitMethod commit_build -PreparePayload @{buildingItemId=2001} -SessionId offline-session -PlanetId 104 -TimeoutSeconds 1 | Out-Null
+} catch { $terminalFailure = $_.Exception }
+Assert-Action ($terminalFailure.Data['spherewrightPhase'] -ceq 'terminal_observation' -and
+    $terminalFailure.Data['spherewrightActionId'] -ceq 'offline-action' -and
+    $terminalFailure.Data['spherewrightCommitMayHaveBeenAccepted'] -eq $true -and
+    @($script:actionStubCalls | Where-Object method -EQ 'commit_build').Count -eq 1) 'caller timeout preserves original action and does not submit again'
 
 Reset-ActionStub @($pending, $success)
 $intent = [guid]'00000000-0000-0000-0000-000000000001'

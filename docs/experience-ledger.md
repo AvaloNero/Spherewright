@@ -1,6 +1,15 @@
 # Spherewright experience ledger
 
-更新时间：2026-09-30（Asia/Singapore）
+更新时间：2026-10-01（Asia/Singapore）
+
+## EXP-339 — 十写审计保留调用参数边界并用精确原生后态核销朝向差异
+
+- 状态：`validated`
+- 日期：2026-10-01。
+- 可复用规则：完整只读capture经`pwsh -File`传递数组时先核参数基数；53项折叠成1项触发本地guard属于调用端问题，不是游戏故障。保留原比较器`false`结果，再以同一已批准原生动作的prepare、完工前后详情和旧边读回作补充对照；只有精确解释的quaternion变化可被核销，位置、旧边和其他静态字段仍严格比较，不能全局忽略rotation。6个故意修改rotation/position/connection的离线fixture均拒绝。
+- 本次结论：原native cover动作的`5205/5219`朝向变化由精确原生完工后态解释，补充审计通过；原始比较结果保留。已保留的53页快照仅作有限补读，不重采整厂、不重放已accepted动作。快照字节数不等于模型token，也不作为端到端时间/节省比例证明。
+- 限制：该核销只适用于与批准动作及前后证据完全匹配的变化；不授权新写，也不解除10/10 FROZEN。见[十写独立审计](evidence/2026-10-01/purple-raised-window-ten-write-audit.md)。
+- 关联：EXP-231/232/337。
 
 ## EXP-338 — 自动科研缓存 wholeItemCount 不是背包可转移库存
 

@@ -3,7 +3,7 @@
 更新时间：2026-10-01（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-01 — 接口电塔`5313`（item2201）原生施工成功，旧端配置/连接保持、背包2201由1→0；观察82631628/R43。最近保存仍82523330/J96 durable，未覆盖该塔；accepted5/10 OPEN。供电与后续分拣器、保存另行核验。[紫糖East接口电塔施工](evidence/2026-10-01/purple-east-interface-power-tower.md)。
+2026-10-01 — 新分拣器`5314`以`2011/filter6004`接通`5266→5284`，端口实际读回、network3/ratio1；正常保存82658561/J96 durable，观察82658575/R46，accepted7/10 OPEN。上游仓库供料、持续生产与真实重启未证明。[East1—East2分拣器连接与正常保存](evidence/2026-10-01/purple-east1-east2-powered-interface-and-save.md)。
 
 2026-10-01 — 十写独立审计完成；最近保存82280505，closing观察82348777/R34。accepted10/10仍FROZEN，须等文档提交、CI绿和root交接，不得自行开窗；真实重启未验证。[紫糖主干十写独立审计](evidence/2026-10-01/purple-raised-window-ten-write-audit.md)。
 

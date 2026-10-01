@@ -3,7 +3,7 @@
 更新时间：2026-10-01（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-01 — 新分拣器`5314`以`2011/filter6004`接通`5266→5284`，端口实际读回、network3/ratio1；正常保存82658561/J96 durable，观察82658575/R46，accepted7/10 OPEN。上游仓库供料、持续生产与真实重启未证明。[East1—East2分拣器连接与正常保存](evidence/2026-10-01/purple-east1-east2-powered-interface-and-save.md)。
+2026-10-01 — 新源仓出口分拣器`5315`以`2011/filter6004`接通`3051→5202`，正常保存至82726418/J96 durable；观察82726431/R49，accepted9/10 OPEN。后续样本未能单独归因持续供料或科研点变化；真实重启未验证。[紫糖源仓出口分拣器与正常保存](evidence/2026-10-01/purple-source-warehouse-outlet-and-save.md)。
 
 2026-10-01 — 十写独立审计完成；最近保存82280505，closing观察82348777/R34。accepted10/10仍FROZEN，须等文档提交、CI绿和root交接，不得自行开窗；真实重启未验证。[紫糖主干十写独立审计](evidence/2026-10-01/purple-raised-window-ten-write-audit.md)。
 

@@ -10,7 +10,7 @@
 
 之后唯一正常保存 action `d2539d3f-f2b1-4069-a6fa-cbd91052a38d` 在 run `7dea5acbfd444c23acc738baea25b46e` 完成：prepare 4、intent 5、commit 6、terminal 7、session 8、Journal 9；保存 tick `83066935`，观察 tick `83066952` / R2，J96 durable、96 条记录完整、无 pending/error，`resumeAvailable=true`。独立 save proof `1629d7e5e40e49c5a9431d1f3cd53ce0` / SHA-256 `5853881F86DB56BC0D5F704E1FFD5807848A54CC6A644271E5BA77B7E7CDAFA5` 核对原 save terminal、session 与 Journal。保存任务的 Agent 连接中断后，从原回执核销成功，未重发保存。当前外部窗口为 **4/10 OPEN**，无 unknown 或在途写；`resumeAvailable` 不是此次保存后的实际重启/恢复测试。
 
-保存后最终只读 run `4eb695b3a9b14ce1b4784bb223e8f883`：ordinal1 player、2 session，closing **83113691 / R2**，savedTick仍83066935，owned/healthy、Walk/speed0。独立 proof `de1ecec183ad4f2baec4e84a723365c6` / SHA-256 `6009D18ED95DCF94ABE9A44EF2C6BCF39B06536ABF619FC49921268FCC64473F` 逐项核保存后背包与保存前的itemId/count/inc完全相同。J96权威仍为保存run ordinal9，本批没有再次读取Journal。Luna已停止所有游戏调用。
+保存后的一次只读 run `4eb695b3a9b14ce1b4784bb223e8f883`：ordinal1 player、2 session，closing **83113691 / R2**，savedTick仍83066935，owned/healthy、Walk/speed0。独立 proof `de1ecec183ad4f2baec4e84a723365c6` / SHA-256 `6009D18ED95DCF94ABE9A44EF2C6BCF39B06536ABF619FC49921268FCC64473F` 逐项核保存后背包与保存前的itemId/count/inc完全相同。J96权威仍为保存run ordinal9，本批没有再次读取Journal。该次保存后库存核验结束时，Luna停止游戏调用；本文末尾另记录的最终端点复核仅为三项只读请求。
 
 从诊断到保存前，6004 背包从0到500、mecha科研缓存从1,800,000 points / 500 whole items到空，跨缓冲物料守恒；该变化发生在save之前，不是save产生的转移或新生产证据。其它背包count/inc不变。观测到的是coreEnergyCapacity 800→1600 MJ，最终coreEnergy约914.1 MJ，二者不能混用。没有本阶段新施工、采集、库存转移、配置写或Move；2104需求门不成立后，原拟正常手动采集64件1005石矿并原生转存95的有限试验，以及B多窗/C 36000 tick试验均取消，未生成其prepare token。
 
@@ -38,10 +38,20 @@ runtime 配方及原料读数显示：
 
 ## 停止条件与未证明项
 
-当前硬阻塞是石源配方路径不满足输入，尤其 861 的原石 5/8；没有依据新造紫糖路线或提交石矿机方案。此前有限 miner 选址均为 prepare-only 拒绝，未形成 plan/commit：已有记录中的点位碰撞 3727（yaw 90）和 87（yaw 0）只描述候选冲突，不证明其它所有候选都失败。不得重复这些地址、盲目换朝向或改动成功线路。没有开始 harvest、transfer、build、configuration 或 Move；持续采石、硫酸/紫糖生产、端到端供料、36000 tick 配平及保存后的真实重启均未证明。
+此前原料诊断的硬阻塞是石源配方路径不满足输入，尤其 861 的原石 5/8；本事件末尾的复核没有重新读取该链。没有依据新造紫糖路线或提交石矿机方案。此前有限 miner 选址均为 prepare-only 拒绝，未形成 plan/commit：已有记录中的点位碰撞 3727（yaw 90）和 87（yaw 0）只描述候选冲突，不证明其它所有候选都失败。不得重复这些地址、盲目换朝向或改动成功线路。此前没有开始 harvest、transfer、build、configuration 或 Move；持续采石、硫酸/紫糖生产、端到端供料、36000 tick 配平及保存后的真实重启均未证明。
 
-截至最终只读累计49个Bridge响应：48成功、1个菜单只读超时；accepted新增为恢复和保存各一笔，业务施工0、原生写拒绝0。已知调用层局部错误2次（启动ACL检查FileInfo API不兼容、诊断完成后的汇总表达式错误），均未引起游戏写重发；启动前无唯一descriptor是零游戏调用的环境阻塞。Agent连接失败也未改判已接受动作。模型调用数及provider/root+Luna的缓存输入、非缓存输入、输出用量未知，不以Bridge次数代替、不估token节省。
+截至此前保存后库存核验，累计49个Bridge响应：48成功、1个菜单只读超时；accepted新增为恢复和保存各一笔，业务施工0、原生写拒绝0。此前已知调用层局部错误2次（启动ACL检查FileInfo API不兼容、诊断完成后的汇总表达式错误），均未引起游戏写重发；启动前无唯一descriptor是零游戏调用的环境阻塞。Agent连接失败也未改判已接受动作。模型调用数及provider/root+Luna的缓存输入、非缓存输入、输出用量未知，不以Bridge次数代替、不估token节省。
 
 恢复14份原响应跨度约6.908秒，但启动和精确guard准备另有墙钟开销；诊断委派到首回执约428秒，20次读取仅5.512秒，说明准备仍明显慢于执行，不能声称本次整体提速。保存leaf639.309ms（prepare112.792、commit329.920、terminal read149.673ms）仅为入口内部阶段；原生started=completed=83066935，观察到0个elapsed game tick。完整阶段首次委派墙钟、取证/文档/Git/CI及模型总量尚无完整可比计量，不伪造比例。
 
 本地直接相关证据索引fixture4项通过、0游戏调用；私有恢复guard的AST smoke及12个离线fixture通过，未把它们算实机生产验收。本阶段只有一份事件和覆盖式状态摘要待单一目的提交；没有逐belt/sorter/save提交或重复全量本地构建。安装runtime仍为`6bf35b7b81a2e50c8e9f42feebbc1f15552096de`，228 files / 64 tools / 1 resource；没有新部署、tag或发布。
+
+## 最终端点需求复核与停止边界
+
+本节覆盖上文较早的科研状态快照；它只记录最后一次端点需求复核，不扩展此前的紫糖路线诊断。本批 pinned main source 为 `43ff39b1d93c7e84bf47ee6c4495cb761f7a1746`；installed runtime `6bf35b7b81a2e50c8e9f42feebbc1f15552096de` 未变。上文的 `0f8a9005a23143d98074021b1811acd6632769dd` 是此前阶段 source，不是本批 source。只读 run `6ee2c6143a574f2fbbc4ab2f3bb669d2` 的 ordinal 1–3 分别为 session、Journal 与 progression，三条均成功；回执跨度 496.6008 ms，不代表整阶段耗时。session tick 83562352 / R5 / save 83307746，progression tick 83562381。2104 Mecha Core 的 6001、6002、6003、6004 各 500 需求已完成；它已解锁 4/4、300000/300000 且未排队，完成来自历史库存。当前队列中的 2904 是既有状态，不是本次新选择或新目标；ordinal 3 显示仍 locked、hash 254749/720000，需求仅为 6001、6002、6003 各 2000，没有 6004。该 ordinal 中的 2904 字段不包含在 proof `46d381933273410bb6c544328f2e9ae8` 内。
+
+Journal 为 durable 97/97、无 pending/error，与正常保存 run `ae6b5599c8a94606939cad538a23b7c4` ordinal 18 逐条一致；不能误用其 ordinal 6 的旧 J96。root proof `46d381933273410bb6c544328f2e9ae8` ordinal 1 / SHA-256 `96F6540868097E51FA9CD898CADDD2725B28ECE349A76BCF64B4C49323BFB152` 核对了三项只读回执、其中 session 的保存点引用，以及 J97 与原保存回执 ordinal 18 的一致性；它没有复核 save action terminal。本地成功 proof 片段耗时 374.1968 ms，仅是成功部分。
+
+本批只做上述三项只读查询，没有实体、生产或 closing 请求，没有 prepare/commit、施工、Move、采集或保存；external accepted 仍为 6/10 OPEN，本批新增 accepted 为 0，无 unknown 或在途。此前诊断中的 861 石矿 5/8 与 2255 碳纳米管缺料没有在本批 fresh 重验或修复。2104 的需求门已不存在且其解锁由历史库存支撑，不是新 1402→4743→6004→Lab84 链的结果。该端到端目标仍未完成；A/B/C 多窗与 36000 tick 持续试验均未核销为通过。停止于此，不改选其他科技、不扩建紫糖链，也不将保存后未核验的自然科研进展说成已保存或已重启恢复。
+
+本阶段原生拒绝数为 0。Luna 摘要曾把 `techId` 字段读错为 `technologyId`；root 本地索引另有三处字段/方法名与 Journal ordinal 选择错误，合计四项本地解析错误，均由同一批既有回执纠正，无额外游戏请求或重放。没有本阶段业务 prepare/commit 耗时、模型/provider usage 或完整墙钟数据；只读回执与成功 proof 片段不能用于宣称整阶段提速。

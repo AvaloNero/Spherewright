@@ -5,6 +5,8 @@
 
 2026-10-01 — 紫糖供料路线十写审计完成，保存82810176/J96 durable，closing82812633/R50；accepted10/10仍FROZEN，待绿CI和root交接。三段间隔窗口的星球104原生6004生产/消耗为0/1；已确认4743缺1402，待核其上游原因。不代表连续36,000 ticks或实际重启。[紫糖供料十写审计与持续产出诊断](evidence/2026-10-01/purple-supply-ten-write-audit-and-output-diagnostic.md)。
 
+2026-10-01 — 新external窗口0/10 OPEN交接后，空矿机86回收与正常保存成功，现为2/10 OPEN；保存82996662/J96 durable，closing session82996677/R53。node196在tick83000303的单资源观察为remaining46310/miner0，不是新session。组15两项矿机预检均原生拒绝：ord23 overlap101、run3c6c… ordinal3 overlap4920；无plan/commit，已停交root重设计。[石料源短缺诊断与空矿机回收](evidence/2026-10-01/stone-source-exhaustion-and-recovery.md)。
+
 2026-10-01 — 新源仓出口分拣器`5315`以`2011/filter6004`接通`3051→5202`，正常保存至82726418/J96 durable；观察82726431/R49，accepted9/10 OPEN。后续样本未能单独归因持续供料或科研点变化；真实重启未验证。[紫糖源仓出口分拣器与正常保存](evidence/2026-10-01/purple-source-warehouse-outlet-and-save.md)。
 
 2026-10-01 — 十写独立审计完成；最近保存82280505，closing观察82348777/R34。accepted10/10仍FROZEN，须等文档提交、CI绿和root交接，不得自行开窗；真实重启未验证。[紫糖主干十写独立审计](evidence/2026-10-01/purple-raised-window-ten-write-audit.md)。

@@ -4,7 +4,7 @@
 
 ## 已核实的生产与供料证据
 
-原生生产结果 run `f089e5e92afa474eac98a1144835ab36` ordinal 7 以顶层 `planets` 返回，不是 `planetId`。其中 planet104 的 `1124` / item `1402` 实际生产和消耗均为0；其原生上游路径追至 factory 实体 `861`。在 `861` 上游的硫酸 recipe24 环节，raw-stone `1005` 可用5、单周期需求8；5/8是该 recipe 的供需对照，不是1124直接需要石料8。
+原生生产结果 run `f089e5e92afa474eac98a1144835ab36` ordinal 7 以顶层 `planets` 返回，不是 `planetId`。其中 planet104 的 `1124` / item `1402` 实际生产和消耗均为0；其原生上游路径追至 factory 实体 `861`。在 `861` 配置的硫酸 recipe24 中，raw-stone `1005` 可用5、单周期需求8；5/8是该 recipe 的供需对照，不是1124直接需要石料8。
 
 只读 run `639b98d0c21a491fb96244e546eaf864` ordinal 1–2 补证：`3050` 有 graphene×2、titanium×2，CNT output为0；其读回 `powerNetwork=3` / ratio 1。factory实体 `861` 读到 oil 12、water 8、stone 5、acid 0；861不是资源节点。
 
@@ -14,7 +14,7 @@ fresh 只读 run `d8fcfbf5cd7640b0b05b8daed27bf187` closing tick **82943275 / R5
 
 ## 空矿机回收与正常保存
 
-施工 run `9161aa6c7e4f4d1086a7cda1651358bf` 内仅有两个 unique accepted 动作，均 succeeded 且无 unknown/在途：dismantle action `e3ea6f27-12fd-4708-8cd4-2847345d3eec` terminal tick **82996601**；随后 save action `531d4045-3e7a-433d-9144-f24bb25210ca` terminal tick **82996662**。回收读回确认 `86` 为 `INVALID_ENTITY`，玩家 `2301` 从0增至1；其他库存数量/增量及位置保持，`87` 仅删除指向 `86` 的入边，其他已核静态字段和连接保持。
+施工 run `9161aa6c7e4f4d1086a7cda1651358bf` 内仅有两个 unique accepted 动作，均 succeeded 且无 unknown/在途：dismantle action `e3ea6f27-12fd-4708-8cd4-2847345d3eec` terminal tick **82996601**；随后 save action `531d4045-3e7a-433d-9144-f24bb25210ca` terminal tick **82996662**。回收读回确认 `86` 为 `INVALID_ENTITY`，玩家 `2301` 从0增至1；其他背包count/inc及位置保持，`87` 仅删除指向 `86` 的入边，其他已核静态字段和连接保持。
 
 正常保存 **82996662** 后 closing session 为 **82996677 / R53**，同一 owned identity、原生版本29104、healthy，`resumeAvailable=true`；J96完整前缀 durable、无 pending/error。最近另一次单资源读数是 node196 在 tick **83000303**，remaining46310、miner0；它不是新 session/完整工厂快照。本次保存读回不等于实际重启验证。proof `d71b086225ea43c89919a7d396bb9ab0`，SHA-256 `B41BDA21414812FAC632619256F73A0046E7CE30513580BCA482098A57A53803`，由root复核21条原 response，未增加Game调用。
 

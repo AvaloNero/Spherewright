@@ -20,7 +20,7 @@
 
 此前紫糖供料十写审计与完整路线已闭环，见[紫糖供料十写审计与持续产出诊断](evidence/2026-10-01/purple-supply-ten-write-audit-and-output-diagnostic.md)。十写交接后新窗从accepted **0/10 OPEN** 开始；现已核两项accepted成功终态，当前为 **2/10 OPEN**，R/tick/J未重置。回收空实体 `86` 后 `2301` 为0→1，其余已核库存与位置保持；正常保存82996662，closing82996677/R53，J96完整前缀durable。
 
-先前原生生产结果显示1124的1402实际产耗为0，native上游路径追至factory实体861；raw-stone1005可用5、硫酸recipe24每周期需求8。861不是资源节点，5/8也不是1124直接石料需求。回收前复用完整快照证实 `86→87→…→128→859→95→…→861` 拓扑路径；带局部1005×1属于128，859 held为空。回收后没有新的完整工厂 census。两项组15矿机预检已停止，ordinal23与101 overlap、`3c6c3d78b01d4576884a27d61fc0b560` ordinal3与4920 overlap，均 `BUILD_LOCATION_INVALID`、无plan/commit。Native搜索记录的是末尾拒绝，不证明其他候选都被这两实体阻挡；组15位置需重新设计。回收、保存与细节见[石料源短缺诊断与空矿机回收](evidence/2026-10-01/stone-source-exhaustion-and-recovery.md)。未证明持续采石、硫酸或紫糖生产及真实重启。
+先前原生生产结果显示1124与1402实际产耗均为0；1124的原生上游诊断路径追至factory实体861；raw-stone1005可用5、硫酸recipe24每周期需求8。861不是资源节点，5/8也不是1124直接石料需求。回收前复用完整快照证实 `86→87→…→128→859→95→…→861` 拓扑路径；带局部1005×1属于128，859 held为空。回收后没有新的完整工厂 census。两项组15矿机预检已停止，ordinal23与101 overlap、`3c6c3d78b01d4576884a27d61fc0b560` ordinal3与4920 overlap，均 `BUILD_LOCATION_INVALID`、无plan/commit。Native搜索记录的是末尾拒绝，不证明其他候选都被这两实体阻挡；组15位置需重新设计。回收、保存与细节见[石料源短缺诊断与空矿机回收](evidence/2026-10-01/stone-source-exhaustion-and-recovery.md)。未证明持续采石、硫酸或紫糖生产及真实重启。
 
 调用方错误元数据修复的离线fixture：action-client87、stage26（storage28/material41），私有smoke均0游戏调用/写入；有效票据模式Core120/MCP13、旧恢复66、包面37通过。离线结果与上表实机闭环分开；错误元数据不含响应body/token，不自动重试或改变accepted语义。
 

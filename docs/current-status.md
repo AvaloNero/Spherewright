@@ -1,24 +1,20 @@
 # Spherewright 当前快照
 
-更新：2026-10-02（Asia/Singapore）。本文件是覆盖式摘要，不是机器状态源；状态以原始受保护回执和独立审计为准。当前唯一授权按序为 Gate 1（定位唯一直接根因、实施最小修复并取得稳定启动正例）、Gate 2（建设 1210 链）、Gate 3（之后才联合连续运行至少 36000 ticks 且两链均 ≥1/min）。Gate 3 的持续门不是 Gate 1 / Gate 2 的准入条件。
+更新：2026-10-02（Asia/Singapore）。本文是覆盖式状态摘要，不是机器状态源；完整 receipt 锚点与历史基线见[阶段证据](evidence/2026-10-02/fuel-startup-and-owned-resume.md)。燃料验证顺序仍为 Gate 1（定位唯一直接根因、实施最小修复并取得稳定启动正例）、Gate 2（建设 1210 链）、Gate 3（此后联合连续运行至少 36000 ticks 且两链均 ≥1/min）；持续门不是前两 Gate 的准入条件。
 
-## 会话与写窗
+## 最近保存、观测与计数
 
-- Steam 于 2026-10-01 23:23:44.497 +08 启动一次；初期出现一次只读 `REQUEST_TIMEOUT`，同一进程随后正常恢复。没有第二次启动或因超时重放写入。
-- 受保护恢复 run `resume-73e809688e314e42a157641fd211d774`：ordinal 27 为 `resume-owned-game / completed / terminal / succeeded`。从原 primary 正常保存 tick 84232813 恢复后，session 为 R1、planet 104、DSP 0.10.35.29104、healthy；随后 native normal save 为 tick 84232844。Journal 97/97 durable，全部 entries 与既有 J97 基线一致。
-- 九写独立审计 **PASS**：9 accepted、9 successful terminal、0 replay、0 unknown、0 in-flight、0 unresolved commit。窗口按 9/10 **提前冻结**；恢复已正常保存，不为凑第十次而另发 Save。此审计通过不等于燃料门通过。
-- 阶段源码 pin 为 `07f246cd511d51c26bbc53c6543530491235832a`；installed runtime/cohort source 为 `6bf35b7b81a2e50c8e9f42feebbc1f15552096de`（DSP 0.10.35.29104）。Plugin 4 + MCP 224 共 228 文件与 manifest 哈希匹配，native 引用 2/2 一致；Plugin/MCP 源码未变。64 tools / 1 resource 是历史索引，不是本次新握手。本阶段未重新安装或部署。
+- 最近确认的正常保存是新窗 Save：run `c8913aa1b7fb4981a0dccc15071237ab` 的唯一 accepted 为 `b16f243f-a153-4de3-840d-97001815ccfe`；commit ordinal 27、terminal ordinal 28 成功，保存 tick 84577452。ordinal 29 收尾 session 为 R8 / observe tick 84577456 / saved=true / owned / healthy / restartResumeAvailable=true；ordinal 30 Journal durable 97、pending=false、error=null。
+- 后续完整快照 run `1bf0a4a449f24781970df6311864e4ac` 的 54 页 / 5325 实体快照在 tick 84601331；prebuild=0，收尾 session ordinal 71 为 R8 / observe tick 84601862，lastOwnedSaveGameTick 仍为 84577452，J97。独立全厂审计 PASS；关键差异与 proof 锚点见阶段证据。
+- 旧写窗 9/10 已 PASS 并冻结。当前新窗 **4/10 提前冻结**，本阶段限额 7 accepted（矿机、belt、sorter、Save 合计）已用 4，lifetime accepted 13；四项均有 terminal receipts，0 replay / unknown / in-flight。最近一段 fresh production window 结束于 84603249；它是单窗观测，不是 fuel Gate 通过。下一写窗要等本次文档 commit/push、对应 CI 绿色和 root 明确交接，不能自动归零。
+- 新矿机 object 86 只覆盖 node 203；9 段新 belt 经 sorter 5325 接入 87，再沿旧的 87→88 路径运输。旧厂线未改。详细对象、receipt 和边界见阶段证据。该施工不等于燃料 Gate 通过。
 
-## 当前燃料读数
+旧窗独立 proof 核读 45 条 receipts，核销 9 个 unique accepted：9/9 terminal succeeded、0 replay、0 unknown、0 in-flight、0 unresolved commit；其 PASS 仅确认写窗与连续性，不是 fuel Gate PASS。本轮不含重装或部署。
 
-只读 run `105ab304cd6f42ddbdfc25d0b3117848` 共 80 次 Bridge 读取、33.963 秒、0 写。完整快照为 54 页 / 5314 实体（tick 84306887）；prebuild 返回 0，收尾 tick 84308579，normal save 84232844，Journal 97/97。完整审计和来源见[本阶段证据](evidence/2026-10-02/fuel-startup-and-owned-resume.md)。
+## 下一阻塞项
 
-在 tick 84307953–84308552 的 600-tick 窗口，native `get_overseer_production` 记录：石墨 1/1 件（6/6 件/min），精炼油 2/1（12/6 件/min），氢 4/12（24/72 件/min），重氢 0/0，item 1802 氘核燃料棒 0/0。前列是该窗口的件数（产/耗），括号为该短窗报告的速率；不能解释为持续生产，也不能由满供电推出燃料达标。Gate 1 仍未通过：唯一直接根因、最小修复及稳定启动正例尚未证明；该短窗不是 Gate 3 测试。
+较早采样汇总为 `samples=0 / requests=19`，但原始 production ordinal 20 有完整的 600-tick native 观测；为什么该响应未被汇总为有效 sample 尚未定位。离线 `test-production-sampling` 为 27/27 PASS，protected-serialization 另有 1 条 fixture PASS；两者都不代表多窗实验通过。fresh run `65858d773c7c4b589ecac6d8eba98168` 又提供一段 600-tick counts 短窗，仍不足以证明持续产率。独立全厂快照审计已 PASS；保存后尚无真实 restart，但 restart 不作为 Gate 1 准入条件。
 
-同一采样的 network 3 为 303250/303250 J/t、capacity 1894000 J/t、ratio 1；network 4 为 1800/1800 J/t、capacity 10000 J/t、ratio 1。该点样只能说明采样时负载获供，不证明燃料链或长期稳定。氢分配因果仍未定；对象 5187 / belt 3365 的竞争仍是假说，不能写成根因。
+石矿源点替换、材料路径与新接线已完成四写独立核验；这仍未证明燃料端稳定启动正例或当前最小直接 blocker 已排除。Gate 1 尚未通过，Gate 2 的 1210 链建设尚未开始，Gate 3 的 ≥36000-tick 联合运行尚未执行。四写施工阶段有 4 个 caller errors；另一次后续采样在 ordinal 22 因私有校验读取了错误字段 `sample.state.planetId`（session 字段为 `localPlanetId`）而本地失败；该 run 有 session/entity/power/production 等只读回执，没有新的游戏写入，0 accepted。该读取已修正，受保护回调 AST fixture 为 2/2，Game 调用 0；新有限只读采样尚未完成。上述调用方问题与原生几何/覆盖拒绝、计划拒绝和无人机正常返航等待分开计数，旧历史解析错误总数仍未知。
 
-## 仍未证明
-
-原生只读诊断确认矿机 106 的 `resourceNodes` 从 `[312]` 变为 `[]`，同窗 native finding 为矿脉耗尽、剩余 0；这是相应静态差异的解释，不是燃料修复。对象 3074 的 storage `valid[]` 与 H/D 为 0；对象 3079 报告 `power-generation-current-tick=16122 J/t`，即使 `isWorking=false` 也不等于零发电。本地字段/方法/路径解析曾出错，精确总数未知，均未产生 Game/Bridge 调用；计量只采用 ordinal 233 的真实 `get_overseer_production` 回执，重复读取本地回执不计作额外 native 调用。
-
-紫糖 `1402 → 4743 → 6004 → Lab84` 仍停在原需求门，见[紫糖阶段证据](evidence/2026-10-01/purple-demand-gate-and-stone-shortfall.md)；本阶段没有施工或改选目标。Gate 2 的 1210 建设尚未开始；Gate 3 的 ≥36000-tick 联合运行（两链均 ≥1/min）尚未执行。氢分配根因与 Gate 1 所需最小修复 / 稳定启动正例仍未证明。9/10 窗口冻结后，不自动重置 accepted 或开启新窗；须待本次文档单一目的 commit/push、对应 CI 绿色且 root 明确 handoff。较早燃料短窗仍按历史记录保留；本快照不把历史观测覆盖成当前结论。凭据、计划 token、真实存档名、绝对私有路径和 raw body 不入库。
+当前阶段源码 pin 为 `2c34bdcc68e7215f8a3b9980d4cae385a6385bc2`，installed runtime/cohort source 为 `6bf35b7b81a2e50c8e9f42feebbc1f15552096de`（DSP 0.10.35.29104）；完整版本与安装核对见阶段证据。本轮不声称部署、fresh MCP handshake、持续燃料达标或最终验收。

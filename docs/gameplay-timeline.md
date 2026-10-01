@@ -3,6 +3,8 @@
 更新时间：2026-10-01（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-01 — 紫糖供料路线十写审计完成，保存82810176/J96 durable，closing82812633/R50；accepted10/10仍FROZEN，待绿CI和root交接。三个间隔600-tick窗均见4743的6004产量为0，下一输入缺口为1402；不代表连续36,000 ticks或实际重启。[紫糖供料十写审计与持续产出诊断](evidence/2026-10-01/purple-supply-ten-write-audit-and-output-diagnostic.md)。
+
 2026-10-01 — 新源仓出口分拣器`5315`以`2011/filter6004`接通`3051→5202`，正常保存至82726418/J96 durable；观察82726431/R49，accepted9/10 OPEN。后续样本未能单独归因持续供料或科研点变化；真实重启未验证。[紫糖源仓出口分拣器与正常保存](evidence/2026-10-01/purple-source-warehouse-outlet-and-save.md)。
 
 2026-10-01 — 十写独立审计完成；最近保存82280505，closing观察82348777/R34。accepted10/10仍FROZEN，须等文档提交、CI绿和root交接，不得自行开窗；真实重启未验证。[紫糖主干十写独立审计](evidence/2026-10-01/purple-raised-window-ten-write-audit.md)。

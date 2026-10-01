@@ -1,30 +1,34 @@
 # Spherewright 当前快照
 
-更新：2026-10-01（Asia/Singapore）。本文件为覆盖式摘要，不是机器状态源；accepted 与原生终态以 fresh 状态和受保护回执为准。
+更新：2026-10-01（Asia/Singapore）。本文件是覆盖式摘要，不是机器状态源；session、accepted 计数和 action 终态以最新受保护回执为准。
 
 ## 当前配置与写窗口
 
 | 项 | 最近已核证值 | 边界 |
 |---|---|---|
-| 游戏 | owned-world-001 / planet 104，DSP 0.10.35.29104 | 同一已核 owned identity；不代表 0.4 发行验收。 |
-| 最近正常保存 | save tick 83923751；session R5→R6，观察 83923765 | root proof 208d3de8 核验 terminal 与 J97；实际重启未做。 |
-| 外部写窗口 | accepted **7/10 OPEN** | 本阶段保存新增 1 accepted；无 unknown 或在途写。 |
-| 本轮基线与安装 | pinned main source `c1540b88219956e682475dbe152d0afe81615655`；installed runtime `6bf35b7b81a2e50c8e9f42feebbc1f15552096de` | 228 files / 64 tools / 1 resource；DSP 29104，未新部署。 |
+| 源码 / 安装 | pinned source `b3264af9812552c359c7f6331d35dcca283d9b7e`；installed runtime `6bf35b7b81a2e50c8e9f42feebbc1f15552096de` | DSP 0.10.35.29104；228 files / 64 tools / 1 resource。root核对两版本 `src` 与 `tests` 无差异；未重新部署。 |
+| 游戏会话 | owned-world-001 / planet 104 / R7，最新 session 观察 tick 84244696，healthy | 最新正常保存 tick 84232813；最近 Journal 在保存后读回 J97 durable，不是 84244696 同 tick 采集。真实 restart/resume 尚未验证。 |
+| 科技 | 2104 于 tick 83027891 解锁；2904 于 tick 84027632 解锁；均 4/4 完成、队列空 | 两项进度均已由上述正常保存覆盖；不代表新燃料链或当前 Foundry 草案已施工。 |
+| 外部写窗口 | accepted **8/10 OPEN** | 本阶段唯一新增 accepted 为正常保存；无 unknown、无在途写、无本阶段施工写入。不替代 fresh 全厂 census。 |
 
-## 燃料持续性门
+## 燃料与石墨边界
 
-本轮唯一权威事件为[氘燃料持续性就绪复核](evidence/2026-10-01/fuel-continuous-readiness-check.md)。连续窗口为 36273 ticks、73 样本、1146 次原生读取成功；预声明门槛 ≥1 棒/分钟，重叠窗口 produced 计数之和 8 仅为覆盖区间产量上界，对应速率上界 0.794 棒/分钟，门槛未通过。73 个样本中的 network 3 consumerRatio 均 ≥0.999，但只是采样点，不是连续功率历史证明。重氢供给/分配仍未满足目标速率，具体物理修复未定位；不据单帧 `working` 或重叠采样相加宣称持续生产。旧 180 秒实验与本次新连续计划彼此独立，旧窗不获连续信用。
+唯一权威燃料记录为[燃料持续性就绪复核](evidence/2026-10-01/fuel-continuous-readiness-check.md)：预声明至少 1 棒/分钟未通过；重叠采样给出的速率上界为 0.794 棒/分钟，不能当作实际速率。氘供应/分配的物理修复未定位，不降低持续门。
 
-## 紫糖需求与未完成目标
+本阶段只读诊断观察了石墨与氘/重氢设备的瞬时状态，不能据短窗宣布全厂停机或唯一长周期因果。复用的 5315 对象场景是缓存快照，不是 fresh 全厂预检；现有图上存在通向下游的 reciprocal 路径，但 5187 与其他石墨负载共用 belt 3365 是否造成竞争仍是假说。详见本阶段[Drive、存档与燃料/石墨边界](evidence/2026-10-01/drive-four-save-and-fuel-graphite-boundary.md)。
 
-2104 的 6001–6004 各 500 需求已由历史库存完成，technology 已解锁；它不再是新紫糖供给链的消费门。既有[紫糖关键路径事件](evidence/2026-10-01/purple-critical-path-source-route-demand.md)中的 1402→4743→6004→Lab84 端到端目标仍未完成。燃料采样不是紫糖修复，也不授权改选其他科技或扩建紫糖链。
+## Foundry 只读草案
 
-## 保存与调用边界
+Foundry 对 1210、目标 1/min 的深度 3 计划返回 `executable=false`：金刚石 4/min → 引力透镜 1/min → 空间翘曲器 1/min。依赖奇异物质 1127 的自动外供，尚未证明；物流、场地、库存预算和供电也未验证。建筑物品 2302×1、2303×2 不是实体 ID 或整链预算。该读取不是 native preflight、施工或持续产出证明，也不授权开始建造。
 
-正常保存 run `4c6736540ddb455287a92896221fa0b3` 的 action `e51499fc-84d0-4fdb-b075-e7e285da8c65` 已由 root proof `208d3de801194eb58860f58e5d528aae` 独立核销：8 条原生回执成功、J97 durable，保存 83923751，accepted 6→7。实际 restart/resume 未验证。此前 2104/Journal 快照见紫糖事件；不从本次燃料采样推断科研、其他库存或重启结果。
+## 回归与计量边界
 
-发送前 ordinal 防护只阻止已占用证据序号的请求；它不是原子事务，也不能补救发送后的 I/O 故障。本地调用方/索引摘要修正均不等于原生生产验收；没有新 Plugin/MCP surface 或 runtime 部署。
+在本机实际 `pwsh` 与私有 .NET SDK 8.0.424 下，locked Core restore、Release build、2416 个 Core/Contracts/MCP tests、完整 `Spherewright.sln` Release build 均通过，构建 0 warnings / 0 errors。早先经 PATH dotnet 启动的四个入口（restore、build、test、full build）都因找不到 SDK 以 `-2147450735` 退出；这是四次 runtime caller startup failure，不是编译/测试失败。局部阶段时间与原日志索引见事件记录；不推算端到端提速或 provider/model 用量。
 
-## 安全边界
+本阶段共 47 次 Game native calls（45 只读、save prepare/commit 各 1），无 native refusal。writer 两项 DTO 摘要错误中，首项曾补读 session/progression 两次，第二项离线核销；root 三项审计解析修正均零 Game calls。首个诊断响应到保存 prepare 响应相隔 52.337 分钟，而 save leaf 约 1.651 秒；本轮未交付生产修复，不宣称效率提升。没有 accepted 动作重放；本机回归 Game calls 为 0。无新 Plugin/MCP surface、安装或部署变化。
 
-只对精确核验的 owned identity 执行有界动作，遵守 fresh prepare、计划校验、唯一 commit、同 action terminal/readback 与 durable Journal。accepted 不因 revision、tick 或 Journal 变化清零；断线或摘要异常不授权重放。遇到 unknown、quarantine、身份/版本漂移或结果无法核销时冻结新写并交 root。凭据、token、真实存档名、绝对私有路径和 raw body 不入库。
+## 未完成目标与安全边界
+
+石墨/氘燃料仍未通过持续门；Foundry 的三级供应计划仍是不可执行只读草案，自动 Matter 外供及中途恢复未验证。紫糖 1402→4743→6004→Lab84 仍未端到端完成；2104 已由历史库存解锁，不得据此宣称紫糖路线通过或擅自改选目标。未证明持续燃料、Foundry 实体建设、真实重启或最终双包验收。
+
+只对精确核验的 owned identity 执行有界动作，遵守 fresh prepare、计划校验、唯一 commit、同 action terminal/readback 与 durable Journal。accepted 不因 revision、tick 或 Journal 变化清零；摘要异常或断线不授权重放。遇到 unknown、quarantine、身份/版本漂移或结果无法核销时冻结新写并交 root。凭据、token、真实存档名、绝对私有路径和 raw body 不入库。

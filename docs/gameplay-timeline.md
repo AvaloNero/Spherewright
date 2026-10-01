@@ -3,7 +3,7 @@
 更新时间：2026-10-01（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-01 — 新窗口原生建成北向双覆盖16带`5268..5283`，连接`5227→5243`；有限独立审计通过。观察82470758/R36，J96 durable；最近保存82280505早于施工，窗口accepted1/10 OPEN。[紫糖北向原生覆盖带段](evidence/2026-10-01/purple-north-native-cover.md)。
+2026-10-01 — 新窗口依次完成北向双覆盖16带与East2原生23带；本次East2观察82483605/R38、J96 durable，最近保存82280505早于施工，accepted2/10 OPEN。`5306→5230`的正确2001双覆盖仅预检通过，尚未施工或保存。[紫糖 East2 原生带段](evidence/2026-10-01/purple-east2-native-span.md)。
 
 2026-10-01 — 十写独立审计完成；最近保存82280505，closing观察82348777/R34。accepted10/10仍FROZEN，须等文档提交、CI绿和root交接，不得自行开窗；真实重启未验证。[紫糖主干十写独立审计](evidence/2026-10-01/purple-raised-window-ten-write-audit.md)。
 

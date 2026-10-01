@@ -20,27 +20,44 @@ $unresolvedIntents = [Collections.Generic.List[object]]::new()
 $unclassifiedCommitResponses = [Collections.Generic.List[object]]::new()
 
 foreach ($runId in $RunIds) {
-    $files = @(Get-ChildItem -LiteralPath $EvidenceDirectory -File -Filter "action-$runId-*.json" |
+    $files = @(foreach ($family in @('action', 'resume')) {
+        Get-ChildItem -LiteralPath $EvidenceDirectory -File -Filter "$family-$runId-*.json"
+    })
+    $files = @($files |
         Where-Object { $_.Name -match '-(commit-intent|bridge-response-(commit_[A-Za-z0-9_]+|get_action_result))\.json$' } |
         Sort-Object Name)
     if ($files.Count -eq 0) { throw "No commit/action receipts found for run $runId." }
     if ($files.Count -gt 4096 -or $readRecords + $files.Count -gt 4096) {
         throw 'Explicit evidence runs exceed the bounded 4096-receipt index budget.'
     }
+    # Each protected caller creates a unique run. Never pair an intent from one
+    # caller family with another family's response, even if ordinals coincide.
+    $families = @($files | ForEach-Object { $_.Name.Split('-')[0] } | Select-Object -Unique)
+    if ($families.Count -ne 1) { throw "Ambiguous receipt families for run $runId." }
+    $family = $families[0]
 
     $pendingIntent = $null
     foreach ($file in $files) {
         if ($file.Length -gt 2097152) { throw "An action receipt exceeds the 2 MiB index budget: $($file.Name)" }
         $record = Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json
         if ($record.runId -cne $runId -or $null -eq $record.payload -or
-            $file.Name -cne ('action-{0}-{1:D4}-{2}.json' -f $runId, [int]$record.ordinal, $record.recordType)) {
+            $file.Name -cne ('{0}-{1}-{2:D4}-{3}.json' -f $family, $runId, [int]$record.ordinal, $record.recordType)) {
             throw "Receipt identity or response is malformed: $($file.Name)"
         }
         $readRecords++
         if ($record.recordType -ceq 'commit-intent') {
-            if ($record.payload.method -notmatch '^commit_[A-Za-z0-9_]+$') { throw 'Malformed commit intent.' }
+            # ActionClient records `method`; the protected resume caller records
+            # `operation`. These are RPC names, not the descriptive actionKind.
+            $intentMethods = @(foreach ($field in @('method', 'operation')) {
+                $property = $record.payload.PSObject.Properties[$field]
+                if ($null -ne $property) { [string]$property.Value }
+            })
+            $intentMethods = @($intentMethods | Select-Object -Unique)
+            if ($intentMethods.Count -ne 1 -or $intentMethods[0] -cnotmatch '^commit_[A-Za-z0-9_]+$') {
+                throw 'Malformed commit intent.'
+            }
             if ($null -ne $pendingIntent) { $unresolvedIntents.Add($pendingIntent) }
-            $pendingIntent = [pscustomobject]@{runId=$runId;intentOrdinal=[int]$record.ordinal;commitKind=[string]$record.payload.method}
+            $pendingIntent = [pscustomobject]@{runId=$runId;intentOrdinal=[int]$record.ordinal;commitKind=$intentMethods[0]}
             continue
         }
         if ($null -eq $record.payload.PSObject.Properties['response']) { throw 'Receipt has no response field.' }

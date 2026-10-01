@@ -1,40 +1,24 @@
 # Spherewright 当前快照
 
-更新：2026-10-01（Asia/Singapore）。本文件是覆盖式摘要，不是机器状态源；session、accepted 计数和 action 终态以最新受保护回执为准。
+更新：2026-10-02（Asia/Singapore）。本文件是覆盖式摘要，不是机器状态源；状态以原始受保护回执和独立审计为准。当前唯一授权按序为 Gate 1（定位唯一直接根因、实施最小修复并取得稳定启动正例）、Gate 2（建设 1210 链）、Gate 3（之后才联合连续运行至少 36000 ticks 且两链均 ≥1/min）。Gate 3 的持续门不是 Gate 1 / Gate 2 的准入条件。
 
-## 当前配置与写窗口
+## 会话与写窗
 
-| 项 | 最近已核证值 | 边界 |
-|---|---|---|
-| 源码 / 安装 | 本阶段 pinned source `8c52d5424ae25009853c40de5581df52b7a0a459`；installed runtime `6bf35b7b81a2e50c8e9f42feebbc1f15552096de` | DSP 0.10.35.29104；既有安装228 files / 64 tools / 1 resource。root核对两版本 `src` 与 `tests` 无差异；未重新部署或重核安装哈希。 |
-| 游戏会话 | owned-world-001 / planet 104 / R7，最新 session 观察 tick 84484806，healthy | 最新正常保存 tick 84232813；最新 Journal J97 durable，与保存后逐条相同，不是同tick采集。额外player观察84484827；真实 restart/resume 尚未验证。 |
-| 科技 | 2104 于 tick 83027891 解锁；2904 于 tick 84027632 解锁；均 4/4 完成、队列空 | 两项进度均已由上述正常保存覆盖；不代表新燃料链或当前 Foundry 草案已施工。 |
-| 外部写窗口 | accepted **8/10 OPEN** | 本阶段新增0；17次成功只读，超过15次批准预算两次。writer已停止，无 unknown、无在途、无未核销写入；不替代 fresh 全厂 census。 |
+- Steam 于 2026-10-01 23:23:44.497 +08 启动一次；初期出现一次只读 `REQUEST_TIMEOUT`，同一进程随后正常恢复。没有第二次启动或因超时重放写入。
+- 受保护恢复 run `resume-73e809688e314e42a157641fd211d774`：ordinal 27 为 `resume-owned-game / completed / terminal / succeeded`。从原 primary 正常保存 tick 84232813 恢复后，session 为 R1、planet 104、DSP 0.10.35.29104、healthy；随后 native normal save 为 tick 84232844。Journal 97/97 durable，全部 entries 与既有 J97 基线一致。
+- 九写独立审计 **PASS**：9 accepted、9 successful terminal、0 replay、0 unknown、0 in-flight、0 unresolved commit。窗口按 9/10 **提前冻结**；恢复已正常保存，不为凑第十次而另发 Save。此审计通过不等于燃料门通过。
+- 阶段源码 pin 为 `07f246cd511d51c26bbc53c6543530491235832a`；installed runtime/cohort source 为 `6bf35b7b81a2e50c8e9f42feebbc1f15552096de`（DSP 0.10.35.29104）。Plugin 4 + MCP 224 共 228 文件与 manifest 哈希匹配，native 引用 2/2 一致；Plugin/MCP 源码未变。64 tools / 1 resource 是历史索引，不是本次新握手。本阶段未重新安装或部署。
 
-## 当前唯一阶段：紫糖源—路—端
+## 当前燃料读数
 
-`1402 → 4743 → 6004 → Lab84 → 2104` **未完成，停止于需求门**。Fresh runtime确认1402为粒子宽带、1303为处理器；4743有处理器6但粒子宽带0。源2255缺碳纳米管，向上追到861硫酸配方所需原石5/8；95原石0、石材2198不能代替。已有缓存定向路线连通，本批不再增加带、分拣器、电塔、仓储或旁路。
+只读 run `105ab304cd6f42ddbdfc25d0b3117848` 共 80 次 Bridge 读取、33.963 秒、0 写。完整快照为 54 页 / 5314 实体（tick 84306887）；prebuild 返回 0，收尾 tick 84308579，normal save 84232844，Journal 97/97。完整审计和来源见[本阶段证据](evidence/2026-10-02/fuel-startup-and-owned-resume.md)。
 
-2104已满300000/300000并解锁，科研队列空，Lab84无目标且停机；3051仍有1092紫糖，Lab84紫色缓存36000科研点=10件。600-tick窗口84484192–84484791中1005、1402、6004均0产/0耗，相关网络采样满供电。指定科研消费门不存在，因此未开始施工或A/B/C生产实验，不擅自改选科技。权威原回执、源—路—端表与计量见[本阶段证据](evidence/2026-10-01/purple-demand-gate-and-stone-shortfall.md)。
+在 tick 84307953–84308552 的 600-tick 窗口，native `get_overseer_production` 记录：石墨 1/1 件（6/6 件/min），精炼油 2/1（12/6 件/min），氢 4/12（24/72 件/min），重氢 0/0，item 1802 氘核燃料棒 0/0。前列是该窗口的件数（产/耗），括号为该短窗报告的速率；不能解释为持续生产，也不能由满供电推出燃料达标。Gate 1 仍未通过：唯一直接根因、最小修复及稳定启动正例尚未证明；该短窗不是 Gate 3 测试。
 
-## 燃料与石墨边界
+同一采样的 network 3 为 303250/303250 J/t、capacity 1894000 J/t、ratio 1；network 4 为 1800/1800 J/t、capacity 10000 J/t、ratio 1。该点样只能说明采样时负载获供，不证明燃料链或长期稳定。氢分配因果仍未定；对象 5187 / belt 3365 的竞争仍是假说，不能写成根因。
 
-唯一权威燃料记录为[燃料持续性就绪复核](evidence/2026-10-01/fuel-continuous-readiness-check.md)：预声明至少 1 棒/分钟未通过；重叠采样给出的速率上界为 0.794 棒/分钟，不能当作实际速率。氘供应/分配的物理修复未定位，不降低持续门。
+## 仍未证明
 
-本阶段只读诊断观察了石墨与氘/重氢设备的瞬时状态，不能据短窗宣布全厂停机或唯一长周期因果。复用的 5315 对象场景是缓存快照，不是 fresh 全厂预检；现有图上存在通向下游的 reciprocal 路径，但 5187 与其他石墨负载共用 belt 3365 是否造成竞争仍是假说。详见本阶段[Drive、存档与燃料/石墨边界](evidence/2026-10-01/drive-four-save-and-fuel-graphite-boundary.md)。
+原生只读诊断确认矿机 106 的 `resourceNodes` 从 `[312]` 变为 `[]`，同窗 native finding 为矿脉耗尽、剩余 0；这是相应静态差异的解释，不是燃料修复。对象 3074 的 storage `valid[]` 与 H/D 为 0；对象 3079 报告 `power-generation-current-tick=16122 J/t`，即使 `isWorking=false` 也不等于零发电。本地字段/方法/路径解析曾出错，精确总数未知，均未产生 Game/Bridge 调用；计量只采用 ordinal 233 的真实 `get_overseer_production` 回执，重复读取本地回执不计作额外 native 调用。
 
-## Foundry 只读草案
-
-Foundry 对 1210、目标 1/min 的深度 3 计划返回 `executable=false`：金刚石 4/min → 引力透镜 1/min → 空间翘曲器 1/min。依赖奇异物质 1127 的自动外供，尚未证明；物流、场地、库存预算和供电也未验证。建筑物品 2302×1、2303×2 不是实体 ID 或整链预算。该读取不是 native preflight、施工或持续产出证明，也不授权开始建造。
-
-## 回归与计量边界
-
-最近源码回归为2416个 Core/Contracts/MCP tests 全通过、完整 Release 构建0 warnings / 0 errors；实际pwsh及私有SDK8.0.424、先前启动失败与日志索引见[上一事件](evidence/2026-10-01/drive-four-save-and-fuel-graphite-boundary.md)。当前纯证据批未改代码，不重复无关全套本地构建。
-
-上一保存/燃料阶段的47次native calls及52.337分钟诊断→save间隔见其事件记录，不混入本批17次只读。当前批原响应跨度4.154秒；两次超预算读取、一次少报调用及root三次离线解析错误均已按原文件核销，未追加Game调用或重放。完整委派、文档/Git/CI和provider用量未知，不宣称整体提速。无新 Plugin/MCP surface、安装或部署变化。
-
-## 未完成目标与安全边界
-
-石墨/氘燃料仍未通过持续门；Foundry 的三级供应计划仍是不可执行只读草案，自动 Matter 外供及中途恢复未验证。紫糖 1402→4743→6004→Lab84 仍未端到端完成；2104 已由历史库存解锁，不得据此宣称紫糖路线通过或擅自改选目标。未证明持续燃料、Foundry 实体建设、真实重启或最终双包验收。
-
-只对精确核验的 owned identity 执行有界动作，遵守 fresh prepare、计划校验、唯一 commit、同 action terminal/readback 与 durable Journal。accepted 不因 revision、tick 或 Journal 变化清零；摘要异常或断线不授权重放。遇到 unknown、quarantine、身份/版本漂移或结果无法核销时冻结新写并交 root。凭据、token、真实存档名、绝对私有路径和 raw body 不入库。
+紫糖 `1402 → 4743 → 6004 → Lab84` 仍停在原需求门，见[紫糖阶段证据](evidence/2026-10-01/purple-demand-gate-and-stone-shortfall.md)；本阶段没有施工或改选目标。Gate 2 的 1210 建设尚未开始；Gate 3 的 ≥36000-tick 联合运行（两链均 ≥1/min）尚未执行。氢分配根因与 Gate 1 所需最小修复 / 稳定启动正例仍未证明。9/10 窗口冻结后，不自动重置 accepted 或开启新窗；须待本次文档单一目的 commit/push、对应 CI 绿色且 root 明确 handoff。较早燃料短窗仍按历史记录保留；本快照不把历史观测覆盖成当前结论。凭据、计划 token、真实存档名、绝对私有路径和 raw body 不入库。

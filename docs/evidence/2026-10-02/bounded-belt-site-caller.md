@@ -21,8 +21,8 @@ Invoke-SpherewrightBeltSiteQualification -ApprovedPlan $approvedPlan `
 ```
 
 The function dispatches only session/player/entity/Journal reads and
-`prepare_build`. Three or four explicit spans, one candidate per interface,
-14 requests maximum and a 180-second dispatch deadline checked between requests;
+`prepare_build`. Three, four or five explicit spans, one candidate per interface,
+16 requests maximum and a 180-second dispatch deadline checked between requests;
 each in-progress call retains the existing transport timeout. No commit, Move,
 save, exit, resume, fallback or retry. It binds actual entity IDs/slots, fresh player and endpoint hashes, native
 path/layer/material echoes, exact attachment results and contiguous returned
@@ -34,6 +34,13 @@ First failure stops subsequent prepares and performs bounded health-bound closin
 reads. A lost or invalid closure is reported separately, not converted to a pass.
 External accepted, revision, normal-save tick and Journal stay distinct. Site
 positives never prove the future actual-ID cover join or authorize construction.
+
+The fifth-span allowance is a narrow external-caller correction: a complete
+source-to-side-entry route can require three separate crossings between its two
+ramps, each still subject to the native 30 m chord and 64-point limit. The caller
+does not choose, split or generate that route. Six spans, insufficient closure
+budget and more than 16 requests fail before transport. This changes no Plugin
+tool, game permission, native geometry, ten-write boundary or lifecycle behavior.
 
 ## Verification boundary
 
@@ -93,3 +100,22 @@ explicit occupied-true variants are not separately covered. Fixtures do not
 prove real Bridge/native placement. Live qualification, continuous allocation,
 future actual-ID joins and the complete1210 chain remain separate acceptance
 work; no such result is claimed by this correction.
+
+The bounded five-span follow-up passed offline validation only:
+
+- `scripts/test-belt-site-qualification.ps1`: 80 checks, zero real game calls;
+  3.10 seconds.
+- `scripts/test-stage-tools.ps1`: 26 passed, zero game calls; storage 28,
+  material 41, successful fixture requests 14, material fixture requests 20;
+  2.77 seconds.
+- Both PowerShell files parsed with zero AST errors and no `Import-Module`
+  statements. These fixtures do not establish live/native qualification.
+
+The streaming Claude Code review terminated with `BLOCK` (`is_error=false`) in
+331.676 seconds. Its sole finding assumed the dispatched span order was
+`[A,H1,H2,H3,D]`; the fixture actually initializes `[D,A]` and appends
+`[H1,H2,H3]`, so prepare number three is `H1`, matching the assertion and the
+80-check result. Root independently checked that source order and classified
+the finding as based on a misread; this note does not recast the external
+review terminal as APPROVE. No game, Bridge, install, save, load or deployment
+operation was part of this offline change.

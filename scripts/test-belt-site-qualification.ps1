@@ -19,9 +19,14 @@ function Fixture-Plan([int]$Count=4,[switch]$VirtualEndpoints) {
         [pscustomobject]@{label='A';preferredPosition=$a;pathEnd=$b;beltStartAltitudeLevel=0;beltEndAltitudeLevel=3;endpointPreviewRole='source'})
     if ($Count -eq 3) {
         $spans += [pscustomobject]@{label='H';preferredPosition=$b;pathEnd=$c;beltStartAltitudeLevel=3;beltEndAltitudeLevel=3;endpointPreviewRole=$null}
-    } else {
+    } elseif ($Count -eq 4) {
         $spans += [pscustomobject]@{label='H1';preferredPosition=$b;pathEnd=$m;beltStartAltitudeLevel=3;beltEndAltitudeLevel=3;endpointPreviewRole=$null}
         $spans += [pscustomobject]@{label='H2';preferredPosition=$m;pathEnd=$c;beltStartAltitudeLevel=3;beltEndAltitudeLevel=3;endpointPreviewRole=$null}
+    } else {
+        $h1=Fixture-Vector 11.6666666667 204 0; $h2=Fixture-Vector 18.3333333333 204 0
+        $spans += [pscustomobject]@{label='H1';preferredPosition=$b;pathEnd=$h1;beltStartAltitudeLevel=3;beltEndAltitudeLevel=3;endpointPreviewRole=$null}
+        $spans += [pscustomobject]@{label='H2';preferredPosition=$h1;pathEnd=$h2;beltStartAltitudeLevel=3;beltEndAltitudeLevel=3;endpointPreviewRole=$null}
+        $spans += [pscustomobject]@{label='H3';preferredPosition=$h2;pathEnd=$c;beltStartAltitudeLevel=3;beltEndAltitudeLevel=3;endpointPreviewRole=$null}
     }
     $sourceEndpoint=[pscustomobject]@{existingObjectId=870;existingSlot=9;existingBeltQuarterTurns=0;plannedBeltQuarterTurns=1;expectedSlotPosition=(Fixture-Vector -1 200 0)}
     $destinationEndpoint=[pscustomobject]@{existingObjectId=5334;existingSlot=7;existingBeltQuarterTurns=0;plannedBeltQuarterTurns=0;expectedSlotPosition=(Fixture-Vector 31 200 0)}
@@ -84,7 +89,7 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
         prepare_build {
             $script:prepareCount++;$span=$script:plan.spans[$script:prepareCount-1]
             if ($script:methods[$script:methods.Count-2]-cne'get_player_state' -or $Payload.expectedPlayerStateHash-cne'fresh-player') { throw 'Not a fresh per-span player binding.' }
-            if ($script:mode-eq'bridge_error') { return [pscustomobject]@{success=$false;error=[pscustomobject]@{code='BUILD_LOCATION_INVALID';message='fixture planned point9 overlaps2459';retryable=$false;recovery='Do not retry same site.'}} }
+            if ($script:mode-eq'bridge_error' -or ($script:mode-eq'late_bridge_error' -and $script:prepareCount-eq3)) { return [pscustomobject]@{success=$false;error=[pscustomobject]@{code='BUILD_LOCATION_INVALID';message='fixture planned point9 overlaps2459';retryable=$false;recovery='Do not retry same site.'}} }
             $path=@($Payload.preferredPosition,(Fixture-Vector 8 204 0),(Fixture-Vector 20 204 0),$Payload.pathEnd)
             if ($script:mode-eq'polyline' -and $span.endpointPreviewRole-eq$null) { $path[1]=Fixture-Vector 5 224 0;$path[2]=Fixture-Vector 25 224 0 }
             if ($script:mode-eq'join' -and $span.label-eq'H2') { $path[0]=Fixture-Vector 15.03 204 0 }
@@ -121,7 +126,7 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
 function Run-Qualification([int]$Accepted=10) {
     Invoke-SpherewrightBeltSiteQualification -ApprovedPlan $script:plan -ExpectedRevision 7 -AcceptedBefore $Accepted -MinimumDurableSequence 1 -RecordEvidence {param($row)$script:evidence.Add($row)}
 }
-foreach($count in @(3,4)) {
+foreach($count in @(3,4,5)) {
     Reset-Qualification -Count $count
     $summary=Run-Qualification
     Assert-Qualification ($summary.result-ceq'qualified_sites_only' -and $summary.spans.Count-eq$count) "$count fixed spans work without rewriting a caller"
@@ -131,6 +136,13 @@ foreach($count in @(3,4)) {
     Assert-Qualification (-not$summary.futureActualIdJoinProven -and -not$summary.wholePlanExecutable -and $summary.doNotReplay) 'site previews never mean construction approval'
     Assert-Qualification (($summary|ConvertTo-Json -Depth 30)-notmatch'PRIVATE-FIXTURE-TOKEN' -and ($script:evidence|ConvertTo-Json -Depth 30)-notmatch'PRIVATE-FIXTURE-TOKEN') 'ordinary prepare tokens never enter returned or caller evidence'
 }
+Reset-Qualification -Mode late_bridge_error -Count 5
+$summary=Run-Qualification 3
+Assert-Qualification ($summary.result-ceq'stopped' -and $script:prepareCount-eq3 -and $summary.spans.Count-eq2 -and $summary.bridgeRequests-eq12) 'five-span failure stops the remaining two prepares and includes bounded closure'
+Assert-Qualification ($summary.failure.code-ceq'BUILD_LOCATION_INVALID' -and $summary.failure.stage-ceq'H1' -and $summary.acceptedDelta-eq0 -and $summary.acceptedAfter-eq3 -and $null-ne$summary.closure -and $summary.doNotReplay) 'five-span partial qualification retains failure identity, accepted and non-replay semantics'
+Reset-Qualification -Mode join -Count 5
+$summary=Run-Qualification
+Assert-Qualification ($summary.result-ceq'stopped' -and $script:prepareCount-eq5 -and $summary.bridgeRequests-eq16 -and $summary.failure.stage-ceq'contiguous_endpoints' -and $summary.acceptedDelta-eq0) 'five-span returned seam gap is not a qualification pass or retry'
 Reset-Qualification -Mode polyline -Count 3
 $summary=Run-Qualification
 Assert-Qualification ($summary.result-ceq'qualified_sites_only') 'native endpoint chord, not longer fixture polyline, is the30m bound'
@@ -185,14 +197,16 @@ foreach($mode in @('join','journal','revision','player_change')) {
     $summary=Run-Qualification
     Assert-Qualification ($summary.result-ceq'stopped' -and $script:prepareCount-eq4 -and $summary.acceptedDelta-eq0) "$mode does not turn readback problems into retries/writes"
 }
-foreach($caseName in @('too_many','write_allowed','unsupported_common','bad_vector','request_budget')) {
+foreach($caseName in @('too_many','write_allowed','unsupported_common','bad_vector','request_budget','five_request_budget','excess_request_budget')) {
     Reset-Qualification
     switch($caseName) {
-        too_many {$script:plan.spans+= $script:plan.spans[-1]}
+        too_many {$script:plan=Fixture-Plan -Count 5; $script:plan.spans+= $script:plan.spans[-1]}
         write_allowed {$script:plan.gameCommitAllowed=$true}
         unsupported_common {$script:plan.commonPayload|Add-Member -NotePropertyName forbiddenSourceObjectId -NotePropertyValue 123}
         bad_vector {$script:plan.spans[0].preferredPosition.x=$true}
         request_budget {$script:plan.maximumRequests=13}
+        five_request_budget {$script:plan=Fixture-Plan -Count 5; $script:plan.maximumRequests=15}
+        excess_request_budget {$script:plan.maximumRequests=17}
     }
     $caught=$false;try{Run-Qualification|Out-Null}catch{$caught=$true}
     Assert-Qualification ($caught -and $script:methods.Count-eq0) "$caseName rejects before runtime discovery or transport"

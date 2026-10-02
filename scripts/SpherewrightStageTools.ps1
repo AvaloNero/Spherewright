@@ -102,14 +102,14 @@ function Invoke-SpherewrightBeltSiteQualification {
         [Parameter(Mandatory)][scriptblock]$RecordEvidence
     )
 
-    # A fixed, root-approved 3/4-span READ-ONLY experiment, not a route planner
+    # A fixed, root-approved 3/4/5-span READ-ONLY experiment, not a route planner
     # or construction executor. It cannot dispatch a commit, save or lifecycle call.
     $spans = @(Get-SpherewrightStageField $ApprovedPlan 'spans')
     $maximumRequests = Get-SpherewrightStageField $ApprovedPlan 'maximumRequests'
     $maximumSeconds = Get-SpherewrightStageField $ApprovedPlan 'maximumWallSeconds'
     if ((Get-SpherewrightStageField $ApprovedPlan 'gameCommitAllowed') -ne $false -or
         (Get-SpherewrightStageField $ApprovedPlan 'candidateCountPerInterface') -ne 1 -or
-        $spans.Count -notin @(3,4) -or $maximumRequests -lt 6 + 2 * $spans.Count -or $maximumRequests -gt 14 -or
+        $spans.Count -notin @(3,4,5) -or $maximumRequests -lt 6 + 2 * $spans.Count -or $maximumRequests -gt 16 -or
         $maximumSeconds -lt 1 -or $maximumSeconds -gt 180) { throw 'A bounded, single-candidate, read-only approved plan is required.' }
     $sessionId = Get-SpherewrightStageField $ApprovedPlan 'expectedSessionId'
     $gameVersion = Get-SpherewrightStageField $ApprovedPlan 'expectedGameVersion'

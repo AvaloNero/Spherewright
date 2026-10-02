@@ -128,8 +128,13 @@ internal sealed partial class NormalGameActionCoordinator
                     snapshot.Blockers.Add("planned_endpoint_TooSkew:" + role);
             }
 
-            if (snapshot.Blockers.Count == 0 && !PreviewSortersHaveClearOccupancy(factory, sorters, belts))
+            var occupancyBlocker = snapshot.Blockers.Count == 0
+                ? PreviewSorterOccupancyBlocker(factory, sorters, belts) : null;
+            if (occupancyBlocker is not null)
+            {
                 snapshot.Blockers.Add("planned_endpoint_collision_or_prototype_unavailable");
+                snapshot.Blockers.Add(occupancyBlocker);
+            }
             // These are PRE-call guards: detecting a covered reference only after
             // native checking would be too late to prevent connection reservations.
             if (sorters.Any(p => !p.desc.isInserter || p.input is null || p.output is null)
@@ -213,39 +218,47 @@ internal sealed partial class NormalGameActionCoordinator
         }
     }
 
-    private static bool PreviewSortersHaveClearOccupancy(PlanetFactory factory,
+    private static string? PreviewSorterOccupancyBlocker(PlanetFactory factory,
         IReadOnlyList<BuildPreview> sorters, IReadOnlyList<BuildPreview> belts)
     {
         var volumes = sorters.Select(BlueprintPreviewColliders).ToArray();
         for (var i = 0; i < sorters.Count; i++)
         {
             for (var j = 0; j < i; j++)
-                if (BlueprintColliderSetsOverlap(volumes[i], volumes[j])) return false;
-            foreach (var belt in belts)
-                if (!BlueprintLinkedSorterPair(sorters[i], belt)
-                    && BlueprintColliderSetsOverlap(volumes[i], BlueprintPreviewColliders(belt))) return false;
+                if (BlueprintColliderSetsOverlap(volumes[i], volumes[j]))
+                    return $"planned_endpoint_sorter_overlap:sorter:{i}:sorter:{j}";
+            for (var j = 0; j < belts.Count; j++)
+                if (!BlueprintLinkedSorterPair(sorters[i], belts[j])
+                    && BlueprintColliderSetsOverlap(volumes[i], BlueprintPreviewColliders(belts[j])))
+                    return $"planned_endpoint_unlinked_belt_overlap:sorter:{i}:belt:{j}";
         }
         for (var id = 1; id < factory.entityCursor && id < factory.entityPool.Length; id++)
         {
             ref var entity = ref factory.entityPool[id];
-            if (entity.id == id && !Clear(id, entity.protoId, entity.pos, entity.rot)) return false;
+            if (entity.id != id) continue;
+            var blocker = ExistingBlocker(id, entity.protoId, entity.pos, entity.rot);
+            if (blocker is not null) return blocker;
         }
         for (var id = 1; id < factory.prebuildCursor && id < factory.prebuildPool.Length; id++)
         {
             ref var p = ref factory.prebuildPool[id];
-            if (p.id == id && !Clear(-id, p.protoId, p.pos, p.rot)) return false;
+            if (p.id != id) continue;
+            var blocker = ExistingBlocker(-id, p.protoId, p.pos, p.rot);
+            if (blocker is not null) return blocker;
         }
-        return true;
+        return null;
 
-        bool Clear(int id, int proto, Vector3 pos, Quaternion rot)
+        string? ExistingBlocker(int id, int proto, Vector3 pos, Quaternion rot)
         {
             var desc = LDB.items.Select(proto)?.prefabDesc;
-            if (desc is null) return false;
+            if (desc is null)
+                return $"planned_endpoint_prototype_unavailable:object:{id}:proto:{proto}";
             var existing = CreateWorldBuildColliders(desc, pos, rot);
             for (var i = 0; i < sorters.Count; i++)
                 if (sorters[i].inputObjId != id && sorters[i].outputObjId != id
-                    && BlueprintColliderSetsOverlap(volumes[i], existing)) return false;
-            return true;
+                    && BlueprintColliderSetsOverlap(volumes[i], existing))
+                    return $"planned_endpoint_existing_overlap:sorter:{i}:object:{id}";
+            return null;
         }
     }
 }

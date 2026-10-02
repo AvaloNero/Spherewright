@@ -330,6 +330,59 @@ public sealed class BeltEndpointPreviewPolicyTests
     }
 
     [Theory]
+    [InlineData("planned_endpoint_sorter_overlap:sorter:1:sorter:0")]
+    [InlineData("planned_endpoint_unlinked_belt_overlap:sorter:0:belt:1")]
+    [InlineData("planned_endpoint_existing_overlap:sorter:0:object:517")]
+    [InlineData("planned_endpoint_existing_overlap:sorter:0:object:-17")]
+    [InlineData("planned_endpoint_prototype_unavailable:object:517:proto:2001")]
+    public void PreciseOccupancyFailureRemainsNonNativeAndNeverExecutable(string blocker)
+    {
+        var request = Request();
+        var plan = Plan(request.BeltEndpointPreview!, nativePassed: false);
+        var preview = plan.BeltEndpointPreview!;
+        preview.NativeCheckPerformed = false;
+        preview.Blockers.Add("planned_endpoint_collision_or_prototype_unavailable");
+        preview.Blockers.Add(blocker);
+        foreach (var attachment in preview.Attachments)
+        {
+            attachment.NativeCondition = "not_checked";
+            attachment.NativeSpan = 0;
+        }
+
+        Assert.True(BeltEndpointPreviewPolicy.ConfirmsReadOnlyEcho(request, plan, "owned-session"));
+        Assert.False(plan.Prepared);
+        Assert.False(plan.CommitAllowedNow);
+        Assert.Empty(plan.PlanToken);
+        Assert.False(preview.Executable);
+
+        preview.NativeCheckPassed = true;
+        Assert.False(BeltEndpointPreviewPolicy.ConfirmsReadOnlyEcho(request, plan, "owned-session"));
+        preview.NativeCheckPassed = false;
+        plan.PlanToken = "unexpected-write-capability";
+        Assert.False(BeltEndpointPreviewPolicy.ConfirmsReadOnlyEcho(request, plan, "owned-session"));
+    }
+
+    [Theory]
+    [InlineData("oversized_detail")]
+    [InlineData("too_many_details")]
+    public void OccupancyFailureDetailsRetainTheExistingResponseBounds(string fault)
+    {
+        var request = Request();
+        var plan = Plan(request.BeltEndpointPreview!, nativePassed: false);
+        var preview = plan.BeltEndpointPreview!;
+        preview.NativeCheckPerformed = false;
+        foreach (var attachment in preview.Attachments)
+        {
+            attachment.NativeCondition = "not_checked";
+            attachment.NativeSpan = 0;
+        }
+        if (fault == "oversized_detail") preview.Blockers.Add(new string('x', 257));
+        else preview.Blockers.AddRange(Enumerable.Repeat("planned_endpoint_existing_overlap:sorter:0:object:517", 17));
+
+        Assert.False(BeltEndpointPreviewPolicy.ConfirmsReadOnlyEcho(request, plan, "owned-session"));
+    }
+
+    [Theory]
     [InlineData("device_in_virtual_belt_slot")]
     [InlineData("belt_in_device_slot")]
     public void RejectsEndpointItemTypeThatDoesNotMatchVirtualSlot(string fault)

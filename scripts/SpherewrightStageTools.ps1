@@ -92,6 +92,173 @@ function Get-SpherewrightDurableJournalBoundary($Journal, [string]$SessionId) {
     return $highest
 }
 
+function Invoke-SpherewrightBeltSiteQualification {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$ApprovedPlan,
+        [Parameter(Mandatory)][ValidateRange(0, [long]::MaxValue)][long]$ExpectedRevision,
+        [Parameter(Mandatory)][ValidateRange(0, 10)][int]$AcceptedBefore,
+        [Parameter(Mandatory)][ValidateRange(0, [long]::MaxValue)][long]$MinimumDurableSequence,
+        [Parameter(Mandatory)][scriptblock]$RecordEvidence
+    )
+
+    # A fixed, root-approved 3/4-span READ-ONLY experiment, not a route planner
+    # or construction executor. It cannot dispatch a commit, save or lifecycle call.
+    $spans = @(Get-SpherewrightStageField $ApprovedPlan 'spans')
+    $maximumRequests = Get-SpherewrightStageField $ApprovedPlan 'maximumRequests'
+    $maximumSeconds = Get-SpherewrightStageField $ApprovedPlan 'maximumWallSeconds'
+    if ((Get-SpherewrightStageField $ApprovedPlan 'gameCommitAllowed') -ne $false -or
+        (Get-SpherewrightStageField $ApprovedPlan 'candidateCountPerInterface') -ne 1 -or
+        $spans.Count -notin @(3,4) -or $maximumRequests -lt 6 + 2 * $spans.Count -or $maximumRequests -gt 14 -or
+        $maximumSeconds -lt 1 -or $maximumSeconds -gt 180) { throw 'A bounded, single-candidate, read-only approved plan is required.' }
+    $sessionId = Get-SpherewrightStageField $ApprovedPlan 'expectedSessionId'
+    $gameVersion = Get-SpherewrightStageField $ApprovedPlan 'expectedGameVersion'
+    $savedTick = Get-SpherewrightStageField $ApprovedPlan 'expectedSaveGameTick'
+    $common = Get-SpherewrightStageField $ApprovedPlan 'commonPayload'
+    $planetId = Get-SpherewrightStageField $common 'planetId'
+    if ([string]::IsNullOrWhiteSpace($sessionId) -or [string]::IsNullOrWhiteSpace($gameVersion) -or $planetId -le 0 -or
+        $common.buildingItemId -ne 2001 -or $common.beltPathMode -cne 'native_elevated_grid' -or $common.stateHashVersion -ne 1 -or
+        $ApprovedPlan.sorterItemId -ne 2011 -or $ApprovedPlan.filterItemId -le 0) { throw 'The fixed elevated2001/ordinary2011 subset is required.' }
+    if (@($common.PSObject.Properties.Name | Where-Object {$_ -cnotin @('planetId','buildingItemId','expectedPlayerStateHash','stateHashVersion','beltPathMode')}).Count) { throw 'Unsupported common request fields must not be silently discarded.' }
+    $distance = {
+        param($a,$b)
+        $sum = 0.0
+        foreach ($axis in @('x','y','z')) {
+            $u = Get-SpherewrightStageField $a $axis; $v = Get-SpherewrightStageField $b $axis
+            foreach ($value in @($u,$v)) {
+                if (($value -isnot [int] -and $value -isnot [long] -and $value -isnot [single] -and $value -isnot [double] -and $value -isnot [decimal]) -or [double]::IsNaN([double]$value) -or
+                    [double]::IsInfinity([double]$value) -or [math]::Abs([double]$value) -gt 10000) { throw 'Invalid fixed/native vector.' }
+            }
+            $sum += [math]::Pow(([double]$u - [double]$v),2)
+        }
+        [math]::Sqrt($sum)
+    }
+    $labels = @(); $roles = @()
+    foreach ($span in $spans) {
+        $label = Get-SpherewrightStageField $span 'label'; $role = Get-SpherewrightStageField $span 'endpointPreviewRole'
+        if ($label -notmatch '^[A-Za-z][A-Za-z0-9_-]{0,60}$' -or $label -in $labels -or
+            ($null -ne $role -and $role -cnotin @('source','destination')) -or
+            $span.beltStartAltitudeLevel -notin @(0,1,2,3) -or $span.beltEndAltitudeLevel -notin @(0,1,2,3)) { throw 'Invalid fixed span identity, role or layer.' }
+        $chord = & $distance $span.preferredPosition $span.pathEnd
+        if ($chord -lt 1.5 -or $chord -gt 30) { throw 'Fixed endpoint chord is outside the current1.5–30m subset.' }
+        $labels += $label; if ($null -ne $role) { $roles += $role }
+    }
+    if (@($roles | Where-Object {$_ -ceq 'source'}).Count -ne 1 -or
+        @($roles | Where-Object {$_ -ceq 'destination'}).Count -ne 1) { throw 'Exactly one fixed source and destination preview are required.' }
+
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    $meter = [pscustomobject]@{requests=0}
+    $read = {
+        param([string]$method,[hashtable]$payload)
+        if ($meter.requests -ge $maximumRequests -or $watch.Elapsed.TotalSeconds -ge $maximumSeconds) { throw 'Read-only request/time budget exhausted; no retry.' }
+        $null = & $RecordEvidence ([pscustomobject]@{phase='request';requestNumber=$meter.requests+1;method=$method;payload=$payload})
+        $meter.requests++
+        Read-SpherewrightStageResult $method $sessionId $payload
+    }
+    $completed = [Collections.Generic.List[object]]::new()
+    $paths = @{}; $entities = @{}; $failure = $null; $closureFailure = $null; $closure = $null
+    $baselinePlayer = $null; $ownedBoundary = $false; $phase = 'session'; $firstPrepareMs = $null
+    try {
+        $initial = & $read 'get_session_state' @{}
+        Assert-SpherewrightStageSession $initial $sessionId $planetId $gameVersion
+        if ($initial.lastOwnedSaveGameTick -ne $savedTick -or $initial.revision -ne $ExpectedRevision) { throw 'Approved revision/normal-save boundary changed.' }
+        $ownedBoundary = $true
+        foreach ($role in @('source','destination')) {
+            $phase = 'endpoint_' + $role
+            $binding = Get-SpherewrightStageField $ApprovedPlan ($role + 'Endpoint')
+            if ($binding.existingObjectId -le 0 -or $binding.existingSlot -lt 0 -or $binding.plannedBeltQuarterTurns -notin @(0,1,2,3)) { throw 'An explicit built-device slot is required.' }
+            $entity = & $read 'inspect_factory_entity' @{planetId=$planetId;objectId=$binding.existingObjectId}
+            $slot = @($entity.sorterEndpoints.endpoints | Where-Object {$_.slot -eq $binding.existingSlot})
+            if ($entity.sessionId -cne $sessionId -or $entity.planetId -ne $planetId -or $entity.objectId -ne $binding.existingObjectId -or
+                $slot.Count -ne 1 -or $slot[0].occupied -ne $false -or $slot[0].otherObjectId -ne 0 -or
+                [string]::IsNullOrWhiteSpace($entity.endpointStateHash) -or
+                (& $distance $slot[0].position $binding.expectedSlotPosition) -gt .02) { throw 'Exact current endpoint ID/slot/pose/hash is unproved.' }
+            $entities[$role] = $entity
+        }
+        foreach ($span in $spans) {
+            $phase = $span.label
+            $player = & $read 'get_player_state' @{planetId=$planetId}
+            if ($player.sessionId -cne $sessionId -or $player.planetId -ne $planetId -or [string]::IsNullOrWhiteSpace($player.stateHash) -or
+                $player.movementState -cne 'Walk' -or $player.speed -gt .1 -or $player.coreEnergy -lt 20000000) { throw 'Fresh settled player boundary failed.' }
+            if ($null -eq $baselinePlayer) { $baselinePlayer = $player }
+            $payload = @{planetId=$planetId;buildingItemId=2001;stateHashVersion=1;expectedPlayerStateHash=$player.stateHash;
+                beltPathMode='native_elevated_grid';preferredPosition=$span.preferredPosition;pathEnd=$span.pathEnd;
+                beltStartAltitudeLevel=$span.beltStartAltitudeLevel;beltEndAltitudeLevel=$span.beltEndAltitudeLevel}
+            $role = $span.endpointPreviewRole
+            if ($null -ne $role) {
+                $binding = $ApprovedPlan.($role + 'Endpoint')
+                $payload.beltEndpointPreview = @{sorterItemId=2011;filterItemId=$ApprovedPlan.filterItemId}
+                $payload.beltEndpointPreview[$role] = @{existingObjectId=$binding.existingObjectId;existingSlot=$binding.existingSlot;
+                    existingBeltQuarterTurns=$binding.existingBeltQuarterTurns;plannedBeltQuarterTurns=$binding.plannedBeltQuarterTurns;
+                    expectedEndpointStateHash=$entities[$role].endpointStateHash}
+            }
+            if ($null -eq $firstPrepareMs) { $firstPrepareMs = $watch.Elapsed.TotalMilliseconds }
+            $prepared = & $read 'prepare_build' $payload
+            $path = @($prepared.plannedPath); $echo = $prepared.plannedBeltPath
+            if ($path.Count -lt 4 -or $path.Count -gt 64 -or $echo.newObjectCount -ne $path.Count -or
+                $echo.nativeValidationMode -cne 'full_path_stage1' -or $echo.routingMode -cne 'native_elevated_grid' -or
+                $echo.startAltitudeLevel -ne $span.beltStartAltitudeLevel -or $echo.endAltitudeLevel -ne $span.beltEndAltitudeLevel) { throw 'Native full path/layer/count echo failed.' }
+            $chord = & $distance $path[0] $path[-1]
+            if ($chord -lt 1.5 -or $chord -gt 30) { throw 'Native endpoint chord failed; polyline length is not this bound.' }
+            $beltBudget = @($prepared.itemBudget | Where-Object {$_.itemId -eq 2001})
+            $expectedRows = if ($null -ne $role) {2} else {1}
+            if ($beltBudget.Count -ne 1 -or $beltBudget[0].count -ne $path.Count -or @($prepared.itemBudget).Count -ne $expectedRows) { throw 'Native belt material budget mismatch.' }
+            if ($null -ne $role) {
+                $preview = $prepared.beltEndpointPreview; $attachments = @($preview.attachments)
+                if ($preview.nativeCheckPerformed -ne $true -or $preview.nativeCheckPassed -ne $true -or @($preview.blockers).Count) {
+                    $failure = [pscustomobject]@{kind='endpoint_rejection';stage=$phase;code=$null;blockers=@($preview.blockers);nativeCheckPerformed=$preview.nativeCheckPerformed}
+                    throw 'Exact endpoint preview rejected; no further candidate or prepare.'
+                }
+                $sorterBudget = @($prepared.itemBudget | Where-Object {$_.itemId -eq 2011})
+                if ($prepared.prepared -ne $false -or $prepared.commitAllowedNow -ne $false -or $preview.executable -ne $false -or
+                    $attachments.Count -ne 1 -or $attachments[0].role -cne $role -or $attachments[0].existingObjectId -ne $binding.existingObjectId -or
+                    $attachments[0].endpointStateHash -cne $entities[$role].endpointStateHash -or $attachments[0].filterItemId -ne $ApprovedPlan.filterItemId -or
+                    $attachments[0].sorterItemId -ne 2011 -or $attachments[0].plannedBeltQuarterTurns -ne $binding.plannedBeltQuarterTurns -or
+                    $attachments[0].nativeCondition -cne 'Ok' -or $attachments[0].nativeSpan -ne 2 -or $sorterBudget.Count -ne 1 -or $sorterBudget[0].count -ne 1) { throw 'Native tokenless endpoint/budget binding echo failed.' }
+                $actualSlot = if ($role -ceq 'source') {$attachments[0].attachment.sourceSlot} else {$attachments[0].attachment.destinationSlot}
+                if ($actualSlot -ne $binding.existingSlot) { throw 'Native exact attachment slot mismatch.' }
+            } elseif ($prepared.prepared -ne $true -or $prepared.commitAllowedNow -ne $true -or @($prepared.commitBlockers).Count -or
+                [string]::IsNullOrWhiteSpace($prepared.planToken)) { throw 'Ordinary crossing site prepare failed; never commit its token.' }
+            $paths[$span.label] = $path
+            $completed.Add([pscustomobject]@{label=$span.label;role=$role;newPoints=$path.Count;endpointChordMetres=$chord;nativeValidationMode=$echo.nativeValidationMode})
+            $null = & $RecordEvidence ([pscustomobject]@{phase='qualified';span=$completed[$completed.Count-1]})
+        }
+        $phase = 'contiguous_endpoints'
+        $sourceSpan = @($spans | Where-Object {$_.endpointPreviewRole -ceq 'source'})[0]
+        $destinationSpan = @($spans | Where-Object {$_.endpointPreviewRole -ceq 'destination'})[0]
+        $last = $paths[$sourceSpan.label][-1]
+        foreach ($span in @($spans | Where-Object {$null -eq $_.endpointPreviewRole})) {
+            if ((& $distance $last $paths[$span.label][0]) -gt .02) { throw 'Native crossing endpoints do not coincide; no path/ID substitution.' }
+            $last = $paths[$span.label][-1]
+        }
+        if ((& $distance $last $paths[$destinationSpan.label][0]) -gt .02) { throw 'Native destination ramp endpoint does not coincide.' }
+    } catch {
+        if ($null -eq $failure) { $failure = [pscustomobject]@{kind='caller_or_bridge_rejection';stage=$phase;code=$_.Exception.Data['spherewrightBridgeCode'];message=$_.Exception.Message} }
+    }
+    # Only health-bound reads; no retry, token use, save, reload or action cleanup.
+    if ($ownedBoundary) {
+        try {
+            $state = & $read 'get_session_state' @{}
+            Assert-SpherewrightStageSession $state $sessionId $planetId $gameVersion
+            if ($state.revision -ne $initial.revision -or $state.lastOwnedSaveGameTick -ne $savedTick) { throw 'Read-only revision/save closure changed.' }
+            $player = & $read 'get_player_state' @{planetId=$planetId}
+            if ($player.sessionId -cne $sessionId -or $player.planetId -ne $planetId -or [string]::IsNullOrWhiteSpace($player.stateHash)) { throw 'Closing player identity/hash is unproved.' }
+            if ($null -ne $baselinePlayer -and ($player.stateHash -cne $baselinePlayer.stateHash -or
+                ($player.inventory | ConvertTo-Json -Depth 30 -Compress) -cne ($baselinePlayer.inventory | ConvertTo-Json -Depth 30 -Compress))) { throw 'Player/inventory closure changed.' }
+            $journal = & $read 'get_gameplay_journal' @{}
+            $durable = Get-SpherewrightDurableJournalBoundary $journal $sessionId
+            if ($durable -lt $MinimumDurableSequence) { throw 'Durable Journal floor regressed.' }
+            $closure = [pscustomobject]@{observedTick=$state.gameTick;savedTick=$state.lastOwnedSaveGameTick;revision=$state.revision;durableThroughSequence=$durable}
+        } catch { $closureFailure = [pscustomobject]@{code=$_.Exception.Data['spherewrightBridgeCode'];message=$_.Exception.Message} }
+    }
+    $summary = [pscustomobject]@{result=$(if ($null -eq $failure -and $null -ne $closure) {'qualified_sites_only'} else {'stopped'});
+        spans=$completed.ToArray();failure=$failure;closure=$closure;closureFailure=$closureFailure;bridgeRequests=$meter.requests;
+        acceptedDelta=0;acceptedAfter=$AcceptedBefore;doNotReplay=$true;futureActualIdJoinProven=$false;wholePlanExecutable=$false;
+        timingMs=[pscustomobject]@{entryToFirstPrepare=$firstPrepareMs;total=$watch.Elapsed.TotalMilliseconds};providerUsage=$null}
+    $null = & $RecordEvidence ([pscustomobject]@{phase='summary';summary=$summary})
+    return $summary
+}
+
 function Invoke-SpherewrightResearchAndSave {
     [CmdletBinding()]
     param(

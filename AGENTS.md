@@ -12,7 +12,7 @@ Spherewright 是《戴森球计划》的外部 Agent 控制层，不内置 LLM�
 
 ## 阶段规划与证据
 
-- 生产修复先从目标消费者反向核：runtime `itemId`/名称/配方、真实需求或堵塞、实际连接拓扑、旧设备槽位/带方向/跨接几何与下游容量；先证最难接口，再预算上游材料、供电、路线和顺序。阶段目标应是可验收的实际入料/加工，不是孤立铺一段带。未来实体尚不存在时只标“待现场原生预检”，可以批准最小接口验证片，不能提前宣称整链通过或囤短命 token。
+- 生产修复先从目标消费者反向核：runtime `itemId`/名称/配方、真实需求或堵塞、实际连接拓扑、旧设备槽位/带方向/跨接几何与下游容量；先证最难接口，再预算上游材料、供电、路线和顺序。阶段目标应是可验收的实际入料/加工，不是孤立铺一段带。未来实体尚不存在时只标“待现场原生预检”，不能提前宣称整链通过或囤短命 token。**当前 Gate 2 仅推进1210完整三级链**：下一永久施工前必须提供完整自动源—路—端、整链材料/场地/功率/物流预算及最难源端/跨接/最终输出端的 fresh native 正例；整案 `executable=false` 时只许只读/prepare-only，不许永久接口验证片、批量取材或手搓未来库存。保留5326–5334、既有输出线与石矿/酸/869链。结束门为自动供料→1210非零→正常保存→protected restart→恢复后再次非零；此前不进联合36000-tick、燃料长窗、远征或最终包。除十写冻结/必要最小代码修复外，本Gate只交一份阶段evidence commit，不拆材料/单机里程碑。
 - 现行 0.4 主线先完成已批准的供给/物流与持续产量、有限蓝图生命周期及 Governor 已声明实验，再补翘曲器/燃料/运输备料和最终包；已成功前缀不重做。非直接硬阻塞不增加通用工具/观察字段、建筑或蓝图类型、传送带升级、`2012→2013` 升级、任意布局或全厂整理。具体已过门与下一 blocker 以当前快照及 Roadmap 原证据为准，不因历史进度倒退施工。
 - 同一不可变完整快照可本地复用回答多个只读拓扑问题；涉及实时 buffer、写前授权、现场漂移时仍须 fresh 读取。静态配置与动态库存/功率分别比较，允许变化也须有明确规则与证据，不能粗暴忽略字段。
 - 每个阶段仅有一份脱敏事件事实与受保护原回执索引；`docs/current-status.md` 覆盖更新当前快照，存档日记只加短时间线/链接，Roadmap 只写验收门，经验账本仅记新增或修订的可复用结论。旧记录保留，不在多个文档复制整段流水。当前状态的权威数值来自 fresh session、durable Journal、原 action 回执和外部 accepted 台账；文档不是机器状态源。
@@ -29,14 +29,14 @@ Spherewright 是《戴森球计划》的外部 Agent 控制层，不内置 LLM�
 - ownership 只来自精确 `GameData` 与受保护登记/票据，不看文件名前缀或 Steam 账号。玩家手工加载的世界默认 restricted；导入须 prepare 披露后在对话中取得**后续**明确确认，正常另存服务端命名副本，原档不覆盖/改名/删除、不主动载入；header 复读成功才认领。导入 Journal 从导入点开始，绝不补造过去事件。普通保存只作用于当前 owned identity。
 - 健康重启默认 ticket-bound exact primary；用户已授权核验通过的当前 owned primary直接恢复，不重复问。受限 LastExit、固定 AutoSave0 和 expired-primary 仍各走受保护证据路径，不开放 save picker、任意路径或回档。有效健康票据的固定 AutoSave0 使用`reauthorize_fixed_autosave0`；明确授权已经匹配披露候选时，不再重复确认，fresh prepare、精确digest和commit授权字段仍保留。过期恢复/迁移继续遵守各自后续确认门，不能把泛泛“继续”扩大为另一候选授权。有界固定候选**只读**核验长期允许，但不自行扩大加载范围。旧票据一次性消费且留 durable tombstone；恢复核Journal/原生版本，旧session/cursor/plan失效；中断或unknown不得重放。见playbook/专题证据。飞行checkpoint成功保存后退役。
 - Codex/MCP Host 关闭、重启、断线、上下文压缩或本轮对话结束不触发 DSP 保存/退出/重启/重新载档。重新连接仍在运行的游戏时先 fresh 核 owned identity、session/revision、durable Journal、external accepted 和原 action 台账；健康且无未决动作就继续，不走 resume、不清零十写计数。断线或结果不确定只冻结新写并核同一 action，不重放；换 writer 仍须原执行者已停止、无在途/未核销结果及明确单写者交接。只有用户明确要求关闭游戏，或确有必要且已经获准的冷部署，才执行游戏关闭流程。
-- 确有必要且已获准的 DSP 冷部署/游戏重启先普通保存并核终态、正常关闭已确认的游戏进程，再安装同批 Plugin/MCP、核程序集哈希，按受保护票据启动和恢复；不热替换、不直接启动游戏 EXE、不并发重复启动。安装预检不等于事务升级或游戏实机通过。
+- 确有必要且已获准的 DSP 冷部署/游戏重启先普通保存并核终态、正常关闭已确认的游戏进程，再安装同批 Plugin/MCP、核程序集哈希，按受保护票据启动和恢复；不热替换、不直接启动游戏 EXE、不并发重复启动。安装预检不等于事务升级或游戏实机通过。2026-10-02 用户已明确允许 Gate 2 整案false期间为`3fe31d1`只读接口修复进行这一次保存、正常退出、同批冷部署和同一owned primary受保护恢复；旧十写门须先核销，维护accepted仍逐笔计数。此窄例外不授权施工、批量取材或手搓未来库存，恢复后先补整链prepare-only资格。
 - 凭据、plan token、真实存档名、用户绝对路径、原始存档、DLL、未脱敏日志和 runtime descriptor 不进 Git/对话。Named Pipe 当前用户 ACL、高熵认证、协议大小/队列/帧预算、MCP stdout 纯协议等安全边界不改。
 
 ## 十写门、验证与提交
 
 - accepted 是**外部审计计数**，含已接受但最终失败，不因游戏 revision/tick/Journal 变化归零；幂等回放不重复计。第10个 accepted 后冻结下一次游戏 commit：核十个原终态或唯一状态核销、owned/和平/实际沙盒/倍率/write health、玩家与 Journal durable/pending/error、单份完整工厂快照的 built/prebuild/拓扑/相关库存/供电、未解释增量与 unknown。与封存基线作确定性差异，主会话独立核关键原回执、覆盖和异常。审计、必要文档、单一目的 commit/push、绿 CI、主会话明确交接后才开新的外部计数窗口；不触碰游戏内计数。
 - 当前代码变动跑直接相关最小测试；离线维护 Luna 仅运行与本次维护直接相关的测试。日常只运行实际 `pwsh` 与直接相关 CI；执行入口/导入链变化还跑真实 `pwsh -File` 零游戏调用 smoke。仅涉及 Windows PowerShell 5.1 兼容、安装或最终包的变更才额外用 5.1 验证。版本完整回归按 Roadmap 跑 locked restore、Core/Contracts/MCP 测试、当前 DLL 完整 Release 构建和必要实机/包测试；离线、部署、实机、异机证据分开写，不冒充。DSP API 新路径先核本机 DLL 精确类型/签名/调用条件与 SHA，再测试和冷部署实测；不猜方法名。
-- 在 `main` 保留工作树已有修改。每个独立且可验证的代码修复、施工/保存阶段、明确 blocker 或十写审计，必要测试和 diff/status 后，由离线维护 Luna 在 root 确认阶段证据与提交范围后单一目的 commit 并 push，核对准确远端 SHA 并读取对应 CI；pending 不算通过，CI 红先修，不叠加无关工作。普通只读和私有参数准备不单独造里程碑。不 reset/clean/force push，不提交敏感或半成品。tag、GitHub Release、Thunderstore 发布均须用户单独审核授权；本轮流程优化不授权游戏施工、加载、部署或发行。
+- 在 `main` 保留工作树已有修改。每个独立且可验证的代码修复、施工/保存阶段、明确 blocker 或十写审计，必要测试和 diff/status 后，由离线维护 Luna 在 root 确认阶段证据与提交范围后单一目的 commit 并 push，核对准确远端 SHA 并读取对应 CI；pending 不算通过，CI 红先修，不叠加无关工作。普通只读和私有参数准备不单独造里程碑。不 reset/clean/force push，不提交敏感或半成品。tag、GitHub Release、Thunderstore 发布均须用户单独审核授权；游戏施工/加载/部署按当前明确授权和Gate 2资格门执行，不用已结束的流程优化任务扩大或缩小权限。
 - 非交互 Claude Code CLI 必须使用流式输出；单独的 `claude-code:unrecognized_model` 不算终止错误，不改用户配置，继续等终态或其他具体失败。外审无终态须如实标未完成，不能当通过。
 
 ## 按需索引

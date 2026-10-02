@@ -10,6 +10,7 @@ Version migration is not a default resume exception. The exact researched expire
 2. At the idle main menu, honor the user's intent and use only an advertised protected resume path or the normal new-world flow. Never guess, enumerate, or pass a save name.
 3. A world manually loaded by the player is restricted. The only adoption path is save-import prepare, showing its exact confirmation prompt, waiting for an explicit reply in a later user message, and then saving to an independent owned copy. Do not claim Journal history from before that boundary.
 4. If writes are disabled, the world is unowned, or write health is not healthy, remain read-only until the documented ownership or recovery flow succeeds.
+5. A Codex/MCP Host restart is not a game restart. Leave DSP running and follow the [running-game reconnect rules](#restart-and-interplanetary-flight); do not save, close, reload, clear the accepted count, or replay an unresolved action as Host cleanup.
 
 ## Expired planned-restart credential
 
@@ -236,6 +237,8 @@ In the currently verified native version, belt-to-belt sorters require both **5m
 ### One explicit elevated native belt span
 
 When the installed Plugin confirms `beltPathMode=native_elevated_grid`, ordinary2001 NEW belts may use explicit free start/end coordinates plus `beltStartAltitudeLevel` and `beltEndAltitudeLevel` (both0..3; at least one raised). Each native layer is1.3333333m above the normal belt base. This is one native grid call, not automatic bridge routing: no bound entity/resource, cover, concatenated spans, vertical lift or point deletion. Native-snapped endpoints must be1.5–30m apart, with4..64 complete unsaturated points, flat first/last pairs and native slope≤0.5. Complete NEW occupancy, technology/build-height, inventory, range and native stage1 checks still apply. A missing or different `plannedBeltPath.routingMode`, `startAltitudeLevel`, `endAltitudeLevel`, `full_path_stage1` or NEW budget means **no commit**; never use a legacy Plugin's silently flattened plan.
+
+The30m bound is the straight3D distance between the native-snapped endpoints, not the sum of grid-route segment lengths. Keep the separate64-point, per-segment, altitude and full native checks; do not invent a30m polyline limit. A local caller assertion is not a native rejection: preserve the original response, stop safely and independently check its exact fields before deciding whether another prepare is needed. A successful prepare is still not construction, delivery or permission to execute an unapproved whole-chain plan.
 
 An elevated belt span that passes its own native stage1 checks does not prove a sorter can attach across layers. In the checked `5205→5206` / filter6004 preview, geometry stopped at `no_facing_interpolated_pair` (`lastPreNativeRejection=TooSkew`, best facing20.704° versus required <11°); `nativeChecks=0` and `lastNativeRejection=none`, so the DSP placement validator did not run. Do not treat legal distance, moving an endpoint closer or loosening the angle as a pass. Fresh-prove each new ramp and each same-height or cross-layer sorter pair separately; a planned point/path is not attachment proof.
 

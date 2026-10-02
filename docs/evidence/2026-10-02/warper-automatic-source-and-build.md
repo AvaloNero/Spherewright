@@ -1,6 +1,6 @@
 # Warper 自动供料与建造准备
 
-记录：2026-10-02（Asia/Singapore）。本文保留前置入口/材料事实，并记录当前有限接口施工封窗；后者不是完整自动供料、整链产能或重启验收。
+记录：2026-10-02（Asia/Singapore）。本文保留前置入口/材料事实及有限接口施工记录，并记录当前输出端资格封窗；该阶段不是完整自动供料、整链产能或重启验收。
 
 ## 前置入口与材料窗口（历史封存）
 
@@ -18,20 +18,32 @@ Root 独立全图审计 PASS（26.61 s，0 Game）：proof `action-a3c3da97a4784
 
 这只证明一次有限的未来接口施工 qualification。**Gate 2 整体仍未完成**：完整 executable 方案、自动供料、整链供给/覆盖、持续产量、实际保存后 restart 及 Gate 3 连续 36000 ticks 均未证明；Gate 1 虽已有 native 启动正例，持续 ≥1/min 仍未证明。此前的 prepare-only 或 NativeOk 只说明对应查询/位置边界，不代表生产链已运行。
 
-## 石材来源、受保护恢复与当前封窗
+## 石材来源、受保护恢复与旧窗口（历史封存）
 
 本阶段在前一 owned-save 后完成一次中途受保护恢复及完整捕获；独立 proof `00ad7b5cfd7b4d629dbbc1879f402814` SHA-256 `16E3F627DCBC0163A34B453AC455937BFF55E9605051200BD5124275211423FA`。它只通过该次恢复子门，不代表最新 normal save 后已重启。首次恢复 prepare 因 `BRIDGE_NOT_READY` 停止、0 write，fresh 第二次成功。退役的 `SaveActionCache` 曾返回 `ACTION_NOT_FOUND`，随后按原 terminal 核销，没有重放。
 
-object 95 的 Brick/item 1108 库存原为3000（满格），随后出现 Stone→861 acid→869 Graph 堵塞。一次100件 transfer 已成功；之后 entity 96 的 sorter 很快回填1件石材，令精确储位 prepare 被本地守卫拒绝，未产生配置 commit；成功前缀不重做。之后仅对既有输入做限量 guard（不是冻结所有 I/O），再 fresh 执行 58-unit transfer、预留一格 item 1005、恢复 bans=0 并 normal-save。受保护索引确认 run `122321492928498ebe0f85cdea360609` 的后缀五个唯一 accepted 完成、无 replay/unknown/in-flight；连同先前成功的一项常规 action 与一次恢复，本窗口共7个 accepted（6常规+1恢复），外部 7/10、lifetime 50。normal save tick `84935126` / R10 / J97 覆盖本窗口7个写入；其后自动生产引起的全部动态 buffer 变化不因此视作已保存。
+object 95 的 Brick/item 1108 库存原为3000（满格），随后出现 Stone→861 acid→869 Graph 堵塞。一次100件 transfer 已成功；之后 sorter/entity 96 很快回填1件石砖（item 1108），令精确储位 prepare 被本地守卫拒绝，未产生配置 commit；成功前缀不重做。之后仅对既有输入做限量 guard（不是冻结所有 I/O），再 fresh 执行 58-unit transfer、预留一格 item 1005、恢复 bans=0 并 normal-save。受保护索引确认 run `122321492928498ebe0f85cdea360609` 的后缀五个唯一 accepted 完成、无 replay/unknown/in-flight；连同先前成功的一项常规 action 与一次恢复，本窗口共7个 accepted（6常规+1恢复），外部 7/10、lifetime 50。normal save tick `84935126` / R10 / J97 覆盖本窗口7个写入；其后自动生产引起的全部动态 buffer 变化不因此视作已保存。
 
 完整 capture `0f1600f4bbd64c57bcbe262555c5c257`：factory tick `84939047`、closing observation `84940013`、5331实体、0 prebuild。root 独立全图审计 PASS（12.448 s、0 Game calls）：proof `action-fd59544676c1441a9390c1f90c0a326f-0001-stone-source-window-independent-audit.json`，SHA-256 `AFC767A8D85ED6E9637818EAEB6B35FEBA97317D3E0658A2E56838EF2DB0BA5B`。除 object 95 获准的 `storageConfiguration` 变化外，所有静态配置相同；10386条边互逆且不变；原三条连接保持；每次配置的同步边界上 native ordered-buffer count/inc 保持；player Brick +158，其余 inventory count/inc 不变；供电拓扑与容量不变、consumer ratio=1；J97 identity及97条历史 entries 连续。
 
 直接采样 run `a3fedfa17f534abbb9364abda3a5a6f6` 的三个互不重叠600-game-tick窗口按窗计数（非速率）：planet 104 的 Stone/item 1005 产出 `5/5/5`、消耗 `0/0/8`；acid/item 1116 产出 `0/4/0`、消耗 `0/0/2`；Graph item 1123 产出 `0/0/4`、消耗 `0/0/0`。861 的 Stone 输入为 `7→5→2`、oil 为 `12→12→10`，miner 86 working、buffer `32/31/32`；object 95 的 Brick/item 1108 库存三窗均为2900。采样时869即时快照均为 `isWorking=false`、acid 0、Graph output 0；另一次同快照 detail 为 `isWorking=true` 且 acid input 1，这是不同tick的状态，不构成冲突。root随后用同R10/session的两项catalog只读记录与既有完整快照确认：runtime的1123输出配方31/32中，唯一实际 producer 为869/r31。归因 proof `action-c22be89a10a54788b8c58972aebcd3f6-0001-graphene-source-native-attribution.json`，SHA-256 `7F1E2768A62DF6FED1DEB5E878A1645526F026C0C5778ED47A912ED67FD5B135`（0额外 Game calls）。该采样62 requests、总墙钟284.370 s（scheduled wait 270 s、读操作13.884 s）；这是观察等待计时，不是持续产率证明。这只确认生产源，不证明自动送达883或完整自动供料。此前独立0产量负窗口不与这三个窗口拼接；以上不证明每窗非零、持续 ≥1/min 或稳定产率。
 
-当前窗口 **7/10 已冻结**，不补写剩余槽位。中途恢复成功不等于最新保存后 restart；Gate 1 持续产量、Gate 2 全链自动供料/供电与覆盖、Gate 3 连续36000 ticks 均未证明。只有本文与[当前快照](../../current-status.md)的单一文档提交对应远端 CI 通过、且 root 明确 handoff 后才能开新窗。审核基线 main `e7a1e6ef0b6e972b9c48139e9331b9b3c6d596a2`；本次提交只含文档。installed runtime/cohort source `6bf35b7b81a2e50c8e9f42feebbc1f15552096de`（DSP 0.10.35.29104，228 runtime files + 2 native hashes 匹配），未部署。
+该历史窗口当时 **7/10 冻结**，lifetime accepted 50；其后在 main 基线 `b7658e2` 的远端与 CI 均绿、并经 root 明确 handoff 后，才开启后续输出端窗口。中途恢复成功不等于最新保存后 restart；Gate 1 持续产量、Gate 2 全链自动供料/供电与覆盖、Gate 3 连续36000 ticks 均未证明。installed runtime/cohort source `6bf35b7b81a2e50c8e9f42feebbc1f15552096de`（DSP 0.10.35.29104，228 runtime files + 2 native hashes 匹配），未部署。
 
 ## 前置阶段调用方边界（历史）
 
 本次有两类本地调用方问题，不是游戏施工失败：一处递归 FunctionInfo 检查令流程在任何 Game 调用前停止（0 Game），随后固定为使用冻结 ScriptBlock；另一处错误要求 future recipe I/O budget 为空、且要求原生没有提供的 target ID 回显，导致 configure prepare falseguard，没有发出该配置 commit。原前两项 accepted 已核销，再由 fresh suffix 完成其余八项，无重放。18项离线 caller checks 覆盖原生 configure ordinal 315 正例。墙钟计量：prefix run 613.09 s（Craft action 终态 585.64 s、Collider 终态 20.99 s）；suffix 八项 149.71 s（委派入口至首个业务 prepare 4.15 s）；capture 26.81 s；root 独立 audit 26.61 s。各项为各自边界计时，不相加；provider usage unknown。上一材料阶段的 `DetailIds` 数组参数绑定与 `expectedStateHash` 字段修正见[材料储备阶段](warper-plan-material-reserve.md)。
 
-该历史窗口 **10/10 冻结**。当前源码与运行版本边界见本文最新阶段及[当前快照](../../current-status.md)。
+该有限接口窗口 **10/10 冻结**，lifetime accepted 43；后续输出端窗口事实见下节及[当前快照](../../current-status.md)。
+
+## Warper 输出端 29 带资格窗口（当前封窗）
+
+在 `b7658e2` 远端与 CI 绿且 root handoff 后，外部新窗从 0/10、lifetime 50 开始。run `0e6db795c3a14ca3ad41fb0f83885d1f` 完成7个唯一 accepted：Tesla object 5332；将 storage 884 的 filter grid 配成 item 1204 一格、item 1104 一格、其余28格 item 1123，原三条连接及每次配置的同步边界 buffer count/inc 保持；assembler 5333 配方101；furnace 5334 配方60及配置；并完成29条 belt。原 action `399b7870-4bbb-45a1-ba84-20f41777ecc6` 的300秒 caller wait 超时不是 action 失败或 unknown：同 action 后续只读核销 run `d9b3618319644cf09050c105774ca3a4` ordinal 2 得到成功 terminal tick 84997174、29个唯一目标实体ID，玩家 belt/item 2001 为611→582。中间只读 run `14a1769b` 观察14个 prebuild、3架 drone working；`2238ea1` 等待420秒到期；后续读回为0 prebuild、3架 idle，均未重放 action。
+
+原后缀入口的同名 dot-source 参数守卫在任何 Game call 前停止（0 Game writes）。修正 suffix root approval 后，run `ff9acd0ee05f47f6892d28a7877be6c0` 完成3个唯一 accepted：sorter 5364 filter=item 1210、连接 `5329.slot7→首条item 2001 belt`；sorter 5365 filter=item 1210、连接 `末条belt→5331.slot11`；最后 normal save。端点配置不证明货物流动。全窗合计10个唯一成功 completed action、0 replay/unknown/in-flight，external 10/10、lifetime 60；normal save tick 85002321 / R29 / durable J97 覆盖本窗写入。capture `6477dc98015f481a8e3e4f2c3925a07e` 为54页/5365实体/14项 detail/0 prebuild，factory tick 85002688、closing observed tick 85002847。该捕获有1架返航中非 idle drone、pendingBuildTargets=0、pendingRepairTargets=0；依既有 playbook 119–120，不将它视为未决写。
+
+root 独立审计 PASS（11.641 s、0 Game）：proof `action-118ef6e9bd954626953228451f8b1650-0001-warper-output-independent-audit.json`，SHA-256 `7B5444BDE3EA5FD201DF202703CD955F6275D73E726F6CF74EE624BCD7FC7FA0`。原5331实体与10386条互逆边保持；获准变化为 object 884 filter grid 配置及 object 5329/5331 新 sorter 端边；新增34个实体、64条有向互逆边，总10450条边均互逆，无删除、0 prebuild。net3 只增1 node和4 consumers，发电机/容量不变、ratio=1。玩家消耗 belt/item 2001×29、sorter/item 2011×2、Tesla/item 2201×1、assembler/item 2303×1、furnace×1；其余 inventory count/inc 不变。J97 identity 与已存历史连续。
+
+此前 `efc52def18934d92999bd4892fa3fa0d` 共15个只读/prepare调用，其中仅 ordinal 5/10/15 三个 prepare 被 native overlap 拒绝，未提交写入；不把它计作写入，也不盲目试第三条。计时分别为 suffix 120.77 s（首个业务 prepare 4.78 s）、capture 13.877 s；原29带 action 从 commit 到成功被观察为1204.489 s，包含 caller 等待/间隔，不是纯物理施工时长；provider usage unknown。
+
+当前输出端窗口 **10/10 冻结**，lifetime accepted 60，不填槽。有限接线不证明自动供料、Gate 2 完成、Gate 1 持续 ≥1/min、最新 normal save 后 restart、Gate 3 连续36000 ticks 或 final pack。下一唯一 blocker 为自动供料；只有本阶段两份文档提交对应 CI 绿、且 root 明确 handoff 后才可开启新窗。源码审核基线 main `b7658e2`；installed runtime/cohort source `6bf35b7b81a2e50c8e9f42feebbc1f15552096de`（DSP 0.10.35.29104）未变、未部署。

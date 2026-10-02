@@ -206,6 +206,142 @@ public sealed class SpherewrightToolsTests
     }
 
     [Fact]
+    public async Task BeltEndpointPreviewForwardsExactBindingsAndReturnsNoCommitAuthority()
+    {
+        var preview = EndpointPreviewRequest();
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            BeltEndpointPreviewPlan = EndpointPreviewPlan(preview),
+        };
+
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "owned-session", 104, 2001, "player",
+            preferredPositionX: 1, preferredPositionY: 199.9925f, preferredPositionZ: 2,
+            pathEndX: 11, pathEndY: 199.686f, pathEndZ: 2,
+            beltPathMode: BeltPathModes.NativeGrid, beltEndpointPreview: preview);
+
+        Assert.False(result.IsError);
+        var request = Assert.IsType<PrepareBuildRequest>(bridge.LastBuildRequest);
+        Assert.Equal("owned-session", bridge.LastSessionId);
+        Assert.Same(preview, request.BeltEndpointPreview);
+        Assert.Equal(2011, request.BeltEndpointPreview!.SorterItemId);
+        Assert.Equal(1109, request.BeltEndpointPreview.FilterItemId);
+        Assert.Equal(441, request.BeltEndpointPreview.Source!.ExistingObjectId);
+        Assert.Equal("endpoint-441", request.BeltEndpointPreview.Source.ExpectedEndpointStateHash);
+        Assert.Equal(3, request.BeltEndpointPreview.Source.ExistingSlot);
+        Assert.Equal(2, request.BeltEndpointPreview.Source.PlannedBeltQuarterTurns);
+        Assert.Equal(884, request.BeltEndpointPreview.Destination!.ExistingObjectId);
+        Assert.Equal(-1, request.BeltEndpointPreview.Destination.ExistingSlot);
+
+        var returned = result.StructuredContent!.Value.GetProperty("result");
+        Assert.False(returned.GetProperty("prepared").GetBoolean());
+        Assert.False(returned.GetProperty("commitAllowedNow").GetBoolean());
+        Assert.Equal(string.Empty, returned.GetProperty("planToken").GetString());
+        Assert.Equal("player", returned.GetProperty("expectedStateHash").GetString());
+        var echo = returned.GetProperty("beltEndpointPreview");
+        Assert.False(echo.GetProperty("executable").GetBoolean());
+        Assert.Equal("owned-session", echo.GetProperty("sessionId").GetString());
+        Assert.True(echo.GetProperty("nativeCheckPerformed").GetBoolean());
+        Assert.True(echo.GetProperty("nativeCheckPassed").GetBoolean());
+        Assert.Equal(2101, echo.GetProperty("attachments").EnumerateArray()
+            .Single(row => row.GetProperty("role").GetString() == "source")
+            .GetProperty("existingItemId").GetInt32());
+        Assert.Equal(2001, echo.GetProperty("attachments").EnumerateArray()
+            .Single(row => row.GetProperty("role").GetString() == "destination")
+            .GetProperty("existingItemId").GetInt32());
+        Assert.Equal(0, bridge.BuildCommitCalls);
+    }
+
+    [Fact]
+    public async Task MixedLegacyPluginNormalTokenIsWithheldForEndpointPreview()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult());
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "owned-session", 104, 2001, "player",
+            preferredPositionX: 1, preferredPositionY: 199.9925f, preferredPositionZ: 2,
+            pathEndX: 11, pathEndY: 199.686f, pathEndZ: 2,
+            beltPathMode: BeltPathModes.NativeGrid, beltEndpointPreview: EndpointPreviewRequest());
+
+        Assert.True(result.IsError);
+        var content = result.StructuredContent!.Value;
+        Assert.False(content.GetProperty("success").GetBoolean());
+        Assert.Equal(BridgeErrorCodes.BridgeNotReady, content.GetProperty("error").GetProperty("code").GetString());
+        Assert.Equal(JsonValueKind.Null, content.GetProperty("result").ValueKind);
+        Assert.DoesNotContain("planToken", content.GetRawText());
+        Assert.NotNull(bridge.LastBuildRequest);
+        Assert.Equal(0, bridge.BuildCommitCalls);
+    }
+
+    [Fact]
+    public async Task FailedNativeEndpointPreviewIsExplicitAndStillReadOnly()
+    {
+        var preview = EndpointPreviewRequest();
+        var bridge = new FakeBridgeClient(SuccessResult())
+        {
+            BeltEndpointPreviewPlan = EndpointPreviewPlan(preview, nativePassed: false),
+        };
+
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "owned-session", 104, 2001, "player",
+            preferredPositionX: 1, preferredPositionY: 199.9925f, preferredPositionZ: 2,
+            pathEndX: 11, pathEndY: 199.686f, pathEndZ: 2,
+            beltPathMode: BeltPathModes.NativeGrid, beltEndpointPreview: preview);
+
+        Assert.False(result.IsError);
+        var returned = result.StructuredContent!.Value.GetProperty("result");
+        Assert.False(returned.GetProperty("prepared").GetBoolean());
+        Assert.False(returned.GetProperty("commitAllowedNow").GetBoolean());
+        Assert.Equal(string.Empty, returned.GetProperty("planToken").GetString());
+        var echo = returned.GetProperty("beltEndpointPreview");
+        Assert.False(echo.GetProperty("executable").GetBoolean());
+        Assert.False(echo.GetProperty("nativeCheckPassed").GetBoolean());
+        Assert.NotEmpty(echo.GetProperty("blockers").EnumerateArray());
+        Assert.Equal(0, bridge.BuildCommitCalls);
+    }
+
+    [Theory]
+    [InlineData("missing_binding")]
+    [InlineData("bad_hash")]
+    [InlineData("unsupported_mode")]
+    public async Task MalformedEndpointPreviewNeverReachesBridge(string fault)
+    {
+        var preview = EndpointPreviewRequest();
+        var mode = BeltPathModes.NativeGrid;
+        switch (fault)
+        {
+            case "missing_binding": preview.Source = null; preview.Destination = null; break;
+            case "bad_hash": preview.Source!.ExpectedEndpointStateHash = " "; break;
+            case "unsupported_mode": mode = BeltPathModes.NativeGeodesic; break;
+        }
+        var bridge = new FakeBridgeClient(SuccessResult());
+
+        var result = await SpherewrightTools.PrepareBuildAsync(bridge, "owned-session", 104, 2001, "player",
+            preferredPositionX: 1, preferredPositionY: 199.9925f, preferredPositionZ: 2,
+            pathEndX: 11, pathEndY: 199.686f, pathEndZ: 2,
+            beltPathMode: mode, beltEndpointPreview: preview);
+
+        Assert.True(result.IsError);
+        Assert.Null(bridge.LastBuildRequest);
+        Assert.Equal(0, bridge.BuildCommitCalls);
+    }
+
+    [Fact]
+    public void EndpointPreviewIsAnOptionalFieldOnTheExistingPrepareToolOnly()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IBridgeClient>(new FakeBridgeClient(SuccessResult()));
+        services.AddMcpServer()
+            .WithToolsFromAssembly(typeof(SpherewrightTools).Assembly)
+            .WithResourcesFromAssembly(typeof(AgentPlaybookResources).Assembly);
+        using var provider = services.BuildServiceProvider();
+        var tools = provider.GetServices<McpServerTool>().ToArray();
+        var tool = Assert.Single(tools, value => value.ProtocolTool.Name == "spherewright_prepare_build").ProtocolTool;
+
+        Assert.Equal(64, tools.Length);
+        Assert.Single(provider.GetServices<McpServerResource>());
+        var properties = tool.InputSchema.GetProperty("properties");
+        Assert.True(properties.TryGetProperty("beltEndpointPreview", out var previewSchema));
+        Assert.Contains("READ-ONLY qualification", previewSchema.GetProperty("description").GetString());
+    }
+
+    [Fact]
     public async Task MainMenuResumeIsPreparedBeforeAnyOwnedWorldIsLoaded()
     {
         var bridge = new FakeBridgeClient(SuccessResult())
@@ -2435,6 +2571,122 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("never substitute a remembered generator rating", guide);
     }
 
+    private static BeltEndpointPreviewRequest EndpointPreviewRequest() => new()
+    {
+        SorterItemId = 2011,
+        FilterItemId = 1109,
+        Source = new PlannedBeltEndpointBinding
+        {
+            ExistingObjectId = 441,
+            ExpectedEndpointStateHash = "endpoint-441",
+            ExistingSlot = 3,
+            ExistingBeltQuarterTurns = 0,
+            PlannedBeltQuarterTurns = 2,
+        },
+        Destination = new PlannedBeltEndpointBinding
+        {
+            ExistingObjectId = 884,
+            ExpectedEndpointStateHash = "endpoint-884",
+            ExistingSlot = -1,
+            ExistingBeltQuarterTurns = 0,
+            PlannedBeltQuarterTurns = 1,
+        },
+    };
+
+    private static PreparedNormalAction EndpointPreviewPlan(BeltEndpointPreviewRequest request, bool nativePassed = true)
+    {
+        const int beltCount = 4;
+        var attachments = new List<PlannedBeltEndpointAttachment>();
+        Add(request.Source, "source", 0);
+        Add(request.Destination, "destination", beltCount - 1);
+        var result = new PreparedNormalAction
+        {
+            Prepared = false,
+            ActionKind = NormalActionKinds.Build,
+            PlanToken = string.Empty,
+            ExpectedStateHash = "player",
+            BuildKind = "belt_endpoint_preview",
+            BeltEndpointPreview = new BeltEndpointPreviewSnapshot
+            {
+                Phase = "read_only_belt_endpoint_preview",
+                SessionId = "owned-session",
+                PlanetId = 104,
+                Revision = 27,
+                CapturedAtGameTick = 8123,
+                NativeCheckPerformed = true,
+                NativeCheckPassed = nativePassed,
+                AssessmentHash = "assessment-hash",
+                Attachments = attachments,
+                Blockers = nativePassed ? new() : new() { "native_overlap" },
+            },
+            PlannedBeltPath = new BeltPathPlanSnapshot
+            {
+                NativeValidationMode = "full_path_stage1",
+                SourceBindingMode = "none",
+                DestinationBindingMode = "none",
+                NewObjectCount = beltCount,
+                RoutingMode = BeltPathModes.NativeGrid,
+            },
+        };
+        result.PlannedPath.AddRange(Enumerable.Range(0, beltCount).Select(EndpointPathPoint));
+        result.ItemBudget.Add(new ActionItemBudget
+        {
+            ItemId = 2001,
+            Count = beltCount,
+            Direction = "preview-construction-consumption",
+        });
+        result.ItemBudget.Add(new ActionItemBudget
+        {
+            ItemId = request.SorterItemId,
+            Count = attachments.Count,
+            Direction = "preview-construction-consumption",
+        });
+        return result;
+
+        void Add(PlannedBeltEndpointBinding? binding, string role, int beltIndex)
+        {
+            if (binding is null) return;
+            var source = role == "source";
+            attachments.Add(new PlannedBeltEndpointAttachment
+            {
+                Role = role,
+                ExistingObjectId = binding.ExistingObjectId,
+                EndpointStateHash = binding.ExpectedEndpointStateHash,
+                ExistingItemId = binding.ExistingSlot == -1 ? 2001 : 2101,
+                ObservedRecipeId = 58,
+                PlannedBeltIndex = beltIndex,
+                SorterItemId = request.SorterItemId,
+                FilterItemId = request.FilterItemId,
+                ExistingBeltQuarterTurns = binding.ExistingBeltQuarterTurns,
+                PlannedBeltQuarterTurns = binding.PlannedBeltQuarterTurns,
+                NativeCondition = nativePassed ? "Ok" : "Collision",
+                NativeSpan = nativePassed ? 2 : 0,
+                Attachment = new InserterAttachmentPlanSnapshot
+                {
+                    Mode = "read_only_planned_belt_exact_slots",
+                    SourceSlot = source ? binding.ExistingSlot : -1,
+                    DestinationSlot = source ? -1 : binding.ExistingSlot,
+                    SourcePosition = source ? EndpointSurfacePoint(2, 3) : EndpointPathPoint(beltIndex),
+                    DestinationPosition = source ? EndpointPathPoint(beltIndex) : EndpointSurfacePoint(3, 4),
+                },
+            });
+        }
+    }
+
+    private static Vector3Snapshot EndpointPathPoint(int index) => index switch
+    {
+        0 => EndpointSurfacePoint(1, 2),
+        3 => EndpointSurfacePoint(11, 2),
+        _ => EndpointSurfacePoint(1 + index * 3, 2 + index),
+    };
+
+    private static Vector3Snapshot EndpointSurfacePoint(float x, float z) => new()
+    {
+        X = x,
+        Y = (float)Math.Sqrt(200 * 200 - x * x - z * z),
+        Z = z,
+    };
+
     private sealed class FakeBridgeClient : IBridgeClient
     {
         public PrepareBlueprintBuildRequest? LastBlueprintBuildRequest { get; private set; }
@@ -2507,6 +2759,8 @@ public sealed class SpherewrightToolsTests
 
         public PrepareBuildRequest? LastBuildRequest { get; private set; }
         public BridgeError? BuildPrepareError { get; set; }
+        public PreparedNormalAction? BeltEndpointPreviewPlan { get; set; }
+        public int BuildCommitCalls { get; private set; }
         public bool OmitBuildFilterEcho { get; set; }
         public bool OmitBuildBeltEcho { get; set; }
         public string BuildBeltMode { get; set; } = "full_path_stage1";
@@ -2779,6 +3033,8 @@ public sealed class SpherewrightToolsTests
             LastSessionId = sessionId;
             if (BuildPrepareError is not null)
                 return Task.FromResult(BridgeCallResult<PreparedNormalAction>.Failed(BuildPrepareError));
+            if (request.BeltEndpointPreview is not null && BeltEndpointPreviewPlan is not null)
+                return Task.FromResult(BridgeCallResult<PreparedNormalAction>.Succeeded(BeltEndpointPreviewPlan));
             var prepared = new PreparedNormalAction
             {
                 Prepared = true, ActionKind = NormalActionKinds.Build, PlanToken = "plan",
@@ -2810,7 +3066,11 @@ public sealed class SpherewrightToolsTests
         public Task<BridgeCallResult<NormalActionCommitResult>> CommitBuildAsync(
             string sessionId,
             CommitNormalActionRequest request,
-            CancellationToken cancellationToken) => Committed(sessionId, request, NormalActionKinds.Build);
+            CancellationToken cancellationToken)
+        {
+            BuildCommitCalls++;
+            return Committed(sessionId, request, NormalActionKinds.Build);
+        }
 
         public Task<BridgeCallResult<PreparedNormalAction>> PrepareDismantleAsync(
             string sessionId,

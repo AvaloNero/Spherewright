@@ -520,6 +520,8 @@ public static partial class SpherewrightTools
         int? beltStartAltitudeLevel = null,
         [Description("Only with native_elevated_grid: explicit native end layer 0..3. One native span no longer than30m, gentle slope and flat ends; no automatic bridge, concatenation or existing-object reuse. Require matching endAltitudeLevel; complete route and later connections remain separately unproven.")]
         int? beltEndAltitudeLevel = null,
+        [Description("Optional READ-ONLY qualification: one explicit free-to-free NEW2001 native_grid/native_elevated_grid span and at most two exact existing entity/hash/slot bindings. Source feeds its first belt; last belt feeds Destination. Specify ordinary2011/2012 sorter and positive runtime filter, explicit existing/planned belt quarter-turns0..3; an existing belt uses virtual slot-1. Native path, angles, collision, whole NEW budget and technology are checked. Returns beltEndpointPreview with executable=false, no token/action/prebuild; it does NOT extend blueprint external matching or authorize construction. Native positive is not ongoing supply/power/whole-chain proof. Actual later construction still fresh-prepares each ordinary action. Mixed-cohort normal token responses are withheld.")]
+        BeltEndpointPreviewRequest? beltEndpointPreview = null,
         CancellationToken cancellationToken = default)
     {
         var request = new PrepareBuildRequest
@@ -543,7 +545,14 @@ public static partial class SpherewrightTools
                 BeltEndAltitudeLevel = beltEndAltitudeLevel,
                 ExpectedPlayerStateHash = expectedPlayerStateHash,
                 StateHashVersion = stateHashVersion,
+                BeltEndpointPreview = beltEndpointPreview,
             };
+        var previewError = Spherewright.Bridge.Core.Factory.BeltEndpointPreviewPolicy.ValidateRequest(request);
+        if (previewError is not null)
+            return ToToolResult(BridgeCallResult<PreparedNormalAction>.Failed(BridgeError.Create(
+                BridgeErrorCodes.InvalidRequest, previewError, false,
+                "Use an explicit NEW2001 span and exact existing endpoint bindings; no covers or implicit matching.")),
+                "No read-only endpoint qualification performed.");
         var routingError = Spherewright.Bridge.Core.Factory.BeltPathRoutingPolicy.ValidateRequest(request,
             buildingItemId >= 2001 && buildingItemId <= 2003);
         if (routingError is not null)
@@ -553,6 +562,14 @@ public static partial class SpherewrightTools
                     ? Spherewright.Bridge.Core.Factory.BeltElevationPolicy.Recovery
                     : Spherewright.Bridge.Core.Factory.BeltPathRoutingPolicy.Recovery)), "No construction plan prepared.");
         var result = await bridgeClient.PrepareBuildAsync(sessionId, request, cancellationToken).ConfigureAwait(false);
+        if (beltEndpointPreview is not null)
+        {
+            if (result.Success && !Spherewright.Bridge.Core.Factory.BeltEndpointPreviewPolicy.ConfirmsReadOnlyEcho(request, result.Value, sessionId))
+                result = BridgeCallResult<PreparedNormalAction>.Failed(BridgeError.Create(BridgeErrorCodes.BridgeNotReady,
+                    "The Plugin did not confirm the exact read-only endpoint qualification; no construction token is exposed.",
+                    false, "Use matching Plugin/MCP files; never commit a substituted regular plan."));
+            return ToToolResult(result, "Read-only route endpoint qualification; no token, action or construction. Check native flags and blockers.");
+        }
         // Mixed-cohort installs must not silently turn a requested filter into a
         // legacy unfiltered plan. Do not expose that plan's commit capability.
         if (initialSorterFilterItemId > 0 && result.Success

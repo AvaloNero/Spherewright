@@ -16,6 +16,8 @@ internal sealed partial class NormalGameActionCoordinator
         string? requestedSessionId,
         PrepareBuildRequest request)
     {
+        var endpointPreviewError = BeltEndpointPreviewPolicy.ValidateRequest(request);
+        if (endpointPreviewError is not null) return InvalidPlan(endpointPreviewError);
         var common = ValidatePrepareCommon(requestedSessionId, request.PlanetId, request.StateHashVersion);
         if (common.Error is not null)
         {
@@ -118,6 +120,11 @@ internal sealed partial class NormalGameActionCoordinator
                 true,
                 "Handcraft the exact missing building count through normal gameplay and prepare again."));
         }
+
+        // A qualification request must never fall through to AddPreparedPlan.
+        // Its NEW span has passed the same native path validation as ordinary builds.
+        if (request.BeltEndpointPreview is not null)
+            return PrepareBeltEndpointPreviewOnMainThread(request, preparation, playerResult.Value);
 
         var playerActionHash = CanonicalStateHash.PlayerAction(playerResult.Value);
         var buildFingerprint = BuildPlanFingerprint(preparation);

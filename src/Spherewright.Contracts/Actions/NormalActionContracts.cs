@@ -146,6 +146,9 @@ public sealed class PrepareSelectResearchRequest
 
 public sealed class PrepareBuildRequest
 {
+    /// <summary>Optional read-only qualification of exact existing endpoints against one NEW belt span. Never creates a commit capability.</summary>
+    public BeltEndpointPreviewRequest? BeltEndpointPreview { get; set; }
+
     public int PlanetId { get; set; }
 
     public int BuildingItemId { get; set; }
@@ -341,6 +344,8 @@ public sealed class CommitNormalActionRequest
 
 public sealed class PreparedNormalAction
 {
+    public BeltEndpointPreviewSnapshot? BeltEndpointPreview { get; set; }
+
     // Null on older plugins and non-Move plans; absence never means a dry/clear route.
     public MovementSurfacePreview? SurfacePreview { get; set; }
 

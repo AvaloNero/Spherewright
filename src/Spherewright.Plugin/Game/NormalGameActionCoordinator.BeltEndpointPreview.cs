@@ -1,0 +1,251 @@
+using Spherewright.Bridge.Core.Factory;
+using Spherewright.Bridge.Core.Safety;
+using Spherewright.Contracts.Actions;
+using Spherewright.Contracts.Errors;
+using Spherewright.Contracts.Factory;
+using Spherewright.Contracts.Players;
+using Spherewright.Contracts.Sessions;
+using UnityEngine;
+
+namespace Spherewright.Plugin.Game;
+
+internal sealed partial class NormalGameActionCoordinator
+{
+    private GameCallResult<PreparedNormalAction> PrepareBeltEndpointPreviewOnMainThread(
+        PrepareBuildRequest request, BuildPreparation preparation, PlayerStateSnapshot playerBefore)
+    {
+        var factory = GameMain.localPlanet!.factory;
+        var player = GameMain.mainPlayer;
+        var parameters = request.BeltEndpointPreview!;
+        if (!BuildUiIsIdle(player) || preparation.Kind != NormalBuildKinds.Belt
+            || preparation.Steps.Count < 2 || preparation.Steps.Count > BeltEndpointPreviewPolicy.MaximumBeltObjects
+            || preparation.Steps.Any(s => s.InputObjectId != 0 || s.OutputObjectId != 0
+                || s.SourceBeltAnchor is not null || s.DestinationBeltAnchor is not null)
+            || Vector3.Distance(preparation.Steps[0].Position, preparation.Steps[preparation.Steps.Count - 1].Position) > 30f
+            || factory.entityCursor > 131072 || factory.prebuildCursor > 131072)
+            return InvalidPlan("belt_endpoint_preview_span_or_factory_limit");
+        var sorter = LDB.items.Select(parameters.SorterItemId);
+        if (sorter?.prefabDesc is null || !sorter.prefabDesc.isInserter)
+            return InvalidPlan("belt_endpoint_preview_sorter_prototype_unavailable");
+        var filterError = ValidateInitialSorterFilter(sorter, parameters.FilterItemId);
+        if (filterError is not null) return GameCallResult<PreparedNormalAction>.Failed(filterError);
+        if (!GameMain.history.ItemUnlocked(sorter.ID))
+            return InvalidPlan("belt_endpoint_preview_sorter_technology_locked");
+        var count = (parameters.Source is null ? 0 : 1) + (parameters.Destination is null ? 0 : 1);
+        if (player.package.GetItemCount(sorter.ID) < count)
+            return GameCallResult<PreparedNormalAction>.Failed(BridgeError.Create(BridgeErrorCodes.InventoryInsufficient,
+                "The NEW route endpoint preview lacks its complete sorter budget. No joint native placement pass is claimed.",
+                true, "Supply the declared materials normally only after the whole stage is executable, then fresh-prepare."));
+
+        var snapshot = new BeltEndpointPreviewSnapshot
+        {
+            SessionId = _sessions.SessionId!, PlanetId = request.PlanetId, Revision = _sessions.Revision,
+            CapturedAtGameTick = GameMain.gameTick,
+        };
+        var response = new PreparedNormalAction
+        {
+            Prepared = false, CommitAllowedNow = false, PlanToken = string.Empty, ActionKind = NormalActionKinds.Build,
+            ExpectedStateHash = playerBefore.StateHash,
+            BuildKind = "belt_endpoint_preview", BeltEndpointPreview = snapshot,
+            PlannedPath = preparation.Steps.Select(s => Snapshot(s.Position)).ToList(),
+            PlannedBeltPath = new BeltPathPlanSnapshot
+            {
+                NativeValidationMode = "full_path_stage1", RoutingMode = request.BeltPathMode,
+                SourceBindingMode = "none", DestinationBindingMode = "none", NewObjectCount = preparation.Steps.Count,
+                StartAltitudeLevel = request.BeltPathMode == BeltPathModes.NativeElevatedGrid ? request.BeltStartAltitudeLevel : null,
+                EndAltitudeLevel = request.BeltPathMode == BeltPathModes.NativeElevatedGrid ? request.BeltEndAltitudeLevel : null,
+            },
+            CompletionCondition = "Read-only native qualification only: no prebuild, action, token or whole-chain production proof.",
+        };
+        response.ItemBudget.Add(new ActionItemBudget { ItemId = 2001, Count = preparation.Steps.Count,
+            Name = LDB.items.Select(2001).name, Direction = "preview-construction-consumption" });
+        response.ItemBudget.Add(new ActionItemBudget { ItemId = sorter.ID, Count = count, Name = sorter.name,
+            Direction = "preview-construction-consumption" });
+        var belts = CreateLinkedPreviews(preparation.Steps, LDB.items.Select(2001));
+        var sorters = new List<BuildPreview>();
+        var mirrors = new List<BuildPreview>();
+        var bindings = new List<(PlannedBeltEndpointBinding Binding, FactoryEntitySnapshot Existing)>();
+        var toolOwnsSorters = false;
+        try
+        {
+            foreach (var role in new[] { "source", "destination" })
+            {
+                var binding = role == "source" ? parameters.Source : parameters.Destination;
+                if (binding is null) continue;
+                if (!TryReadBuildEndpoint(request, binding.ExistingObjectId, binding.ExpectedEndpointStateHash,
+                        out var existing, out var error)
+                    || existing!.EndpointStateHash != binding.ExpectedEndpointStateHash)
+                    return StalePlan(error ?? "The exact existing endpoint hash changed.");
+                bindings.Add((binding, existing));
+                var points = GetInserterEndpointPoints(factory, existing);
+                var isBelt = factory.entityPool[existing.ObjectId].beltId > 0;
+                var selected = points.Where(p => p.Slot == binding.ExistingSlot).ToArray();
+                if ((isBelt && (binding.ExistingSlot != -1 || selected.Length != 4))
+                    || (!isBelt && (binding.ExistingSlot < 0 || selected.Length != 1)))
+                    return InvalidPlan("The specified existing slot is occupied, unavailable or of the wrong endpoint kind.");
+                var actual = selected[isBelt ? binding.ExistingBeltQuarterTurns : 0];
+                var source = role == "source";
+                var index = source ? 0 : belts.Count - 1;
+                var belt = belts[index];
+                var rotation = Quaternion.AngleAxis(belt.tilt, belt.lrot * Vector3.forward) * belt.lrot
+                    * Quaternion.Euler(0, binding.PlannedBeltQuarterTurns * 90f, 0);
+                var plannedPose = new Pose(belt.lpos, rotation);
+                var step = source
+                    ? BuildStepPlan.Inserter(sorter.ID, actual.Pose, plannedPose, existing.ObjectId, actual.Slot, 0, -1)
+                    : BuildStepPlan.Inserter(sorter.ID, plannedPose, actual.Pose, 0, -1, existing.ObjectId, actual.Slot);
+                step.FilterItemId = parameters.FilterItemId;
+                var preview = CreatePreview(step, sorter);
+                ref var entity = ref factory.entityPool[existing.ObjectId];
+                // Exact deep-copied reference to a REAL owned entity, outside bpPool.
+                // Zero cover flags are essential: no covering/reservation/write branch.
+                // Both references prevent native MatchInserter from replacing our binding.
+                var mirror = new BuildPreview
+                {
+                    objId = existing.ObjectId, item = LDB.items.Select(entity.protoId),
+                    desc = LDB.items.Select(entity.protoId).prefabDesc, lpos = entity.pos, lpos2 = entity.pos,
+                    lrot = entity.rot, lrot2 = entity.rot, tilt = entity.tilt, condition = EBuildCondition.Ok,
+                    needModel = false, isConnNode = isBelt,
+                };
+                mirrors.Add(mirror);
+                preview.input = source ? mirror : belt;
+                preview.output = source ? belt : mirror;
+                sorters.Add(preview);
+                snapshot.Attachments.Add(new PlannedBeltEndpointAttachment
+                {
+                    Role = role, ExistingObjectId = existing.ObjectId, EndpointStateHash = existing.EndpointStateHash,
+                    ExistingItemId = existing.ItemId, ObservedRecipeId = existing.RecipeId, PlannedBeltIndex = index,
+                    SorterItemId = sorter.ID, FilterItemId = parameters.FilterItemId,
+                    ExistingBeltQuarterTurns = binding.ExistingBeltQuarterTurns, PlannedBeltQuarterTurns = binding.PlannedBeltQuarterTurns,
+                    Attachment = new InserterAttachmentPlanSnapshot
+                    {
+                        Mode = "read_only_planned_belt_exact_slots", SourceSlot = step.InputFromSlot,
+                        DestinationSlot = step.OutputToSlot, SourcePosition = Snapshot(step.Position),
+                        DestinationPosition = Snapshot(step.Position2),
+                    },
+                });
+                if (!NativeInserterEndpointGeometry.AcceptsStraightPair(Snapshot(step.Position2 - step.Position),
+                    Snapshot(step.Rotation * Vector3.forward), Snapshot(step.Rotation2 * Vector3.back), true))
+                    snapshot.Blockers.Add("planned_endpoint_TooSkew:" + role);
+            }
+
+            if (snapshot.Blockers.Count == 0 && !PreviewSortersHaveClearOccupancy(factory, sorters, belts))
+                snapshot.Blockers.Add("planned_endpoint_collision_or_prototype_unavailable");
+            // These are PRE-call guards: detecting a covered reference only after
+            // native checking would be too late to prevent connection reservations.
+            if (sorters.Any(p => !p.desc.isInserter || p.input is null || p.output is null)
+                || sorters.Concat(mirrors).Concat(belts).Any(p => p.coverObjId != 0 || p.coverbp is not null
+                    || p.willRemoveCover || p.willReconstructCover))
+                snapshot.Blockers.Add("native_preview_cover_or_implicit_matching_forbidden");
+            if (snapshot.Blockers.Count == 0)
+            {
+                using var tool = new SpherewrightBlueprintBuildTool();
+                tool._Init(GameMain.data!);
+                tool.SetFactoryReferences();
+                if (!ReferenceEquals(tool.factory, factory)) return NotReadyPlan("Native linked preview factory mismatch.");
+                tool.SetReadOnlyLinkedSorters(sorters, belts.Count + sorters.Count);
+                toolOwnsSorters = true;
+                var exact = sorters.Select(p => (Input: p.input, Output: p.output,
+                    Rotation: p.lrot, Rotation2: p.lrot2, Tilt: p.tilt)).ToArray();
+                snapshot.NativeCheckPerformed = true;
+                var valid = tool.CheckNewObjects();
+                for (var i = 0; i < sorters.Count; i++)
+                {
+                    var p = sorters[i]; var a = snapshot.Attachments[i];
+                    a.NativeCondition = p.condition.ToString();
+                    a.NativeSpan = p.paramCount == 1 && p.parameters is { Length: > 0 } ? p.parameters[0] : 0;
+                    var source = a.Role == "source";
+                    if (p.input is null || p.output is null
+                        || !ReferenceEquals(p.input, exact[i].Input) || !ReferenceEquals(p.output, exact[i].Output)
+                        || p.inputObjId != (source ? a.ExistingObjectId : 0)
+                        || p.outputObjId != (source ? 0 : a.ExistingObjectId)
+                        || p.inputFromSlot != a.Attachment.SourceSlot || p.outputToSlot != a.Attachment.DestinationSlot
+                        || p.inputToSlot != 1 || p.outputFromSlot != 0
+                        || Quaternion.Angle(p.lrot, exact[i].Rotation) > .1f
+                        || Quaternion.Angle(p.lrot2, exact[i].Rotation2) > .1f
+                        || Math.Abs(p.tilt - exact[i].Tilt) > .001f
+                        || p.coverObjId != 0 || p.coverbp is not null || p.willRemoveCover || p.willReconstructCover
+                        || p.input.coverObjId != 0 || p.output.coverObjId != 0 || p.filterId != a.FilterItemId
+                        || p.inputOffset != 0 || p.outputOffset != 0
+                        || Vector3.Distance(p.lpos, ToVector(a.Attachment.SourcePosition)) > .001f
+                        || Vector3.Distance(p.lpos2, ToVector(a.Attachment.DestinationPosition)) > .001f
+                        || a.NativeSpan < 1 || a.NativeSpan > 3)
+                        snapshot.Blockers.Add("native_changed_exact_endpoint_binding:" + a.Role);
+                }
+                if (!valid || snapshot.Attachments.Any(a => a.NativeCondition != "Ok"))
+                    snapshot.Blockers.Add("native_planned_endpoint_rejected");
+                if (!PreviewsExactlyMatch(preparation.Steps, belts))
+                    snapshot.Blockers.Add("native_changed_prevalidated_belt_span");
+                for (var i = 0; i < mirrors.Count; i++)
+                {
+                    var p = mirrors[i];
+                    ref var entity = ref factory.entityPool[bindings[i].Existing.ObjectId];
+                    if (p.objId != entity.id || p.item.ID != entity.protoId
+                        || p.coverObjId != 0 || p.coverbp is not null || p.willRemoveCover || p.willReconstructCover
+                        || Vector3.Distance(p.lpos, entity.pos) > .001f || Vector3.Distance(p.lpos2, entity.pos) > .001f
+                        || Quaternion.Angle(p.lrot, entity.rot) > .1f || Quaternion.Angle(p.lrot2, entity.rot) > .1f
+                        || Math.Abs(p.tilt - entity.tilt) > .001f || p.condition != EBuildCondition.Ok)
+                        snapshot.Blockers.Add("native_changed_existing_endpoint_reference:" + snapshot.Attachments[i].Role);
+                }
+                snapshot.NativeCheckPassed = valid && snapshot.Blockers.Count == 0;
+            }
+            foreach (var b in bindings)
+                if (!TryReadBuildEndpoint(request, b.Binding.ExistingObjectId, b.Binding.ExpectedEndpointStateHash,
+                    out var after, out _) || after!.EndpointStateHash != b.Existing.EndpointStateHash)
+                    return StalePlan("The existing endpoint changed during read-only qualification; no native positive is returned.");
+            var playerAfter = _reader.GetPlayerStateOnMainThread(_sessions.SessionId,
+                new LocalPlanetRequest { PlanetId = request.PlanetId });
+            if (!playerAfter.Success || playerAfter.Value!.StateHash != playerBefore.StateHash)
+                return StalePlan("Player/inventory changed during read-only qualification; no native positive is returned.");
+            snapshot.AssessmentHash = CanonicalStateHash.Combine(BeltEndpointPreviewPolicy.Phase,
+                snapshot.SessionId, snapshot.PlanetId, snapshot.Revision, playerBefore.StateHash,
+                BuildPlanFingerprint(preparation), parameters.SorterItemId, parameters.FilterItemId,
+                string.Join(";", snapshot.Attachments.Select(a => a.Role + ":" + a.ExistingObjectId + ":" + a.EndpointStateHash
+                    + ":" + a.Attachment.SourceSlot + ":" + a.Attachment.DestinationSlot + ":" + a.ExistingBeltQuarterTurns
+                    + ":" + a.PlannedBeltQuarterTurns + ":" + a.NativeCondition + ":" + a.NativeSpan)),
+                snapshot.NativeCheckPerformed, snapshot.NativeCheckPassed, string.Join(";", snapshot.Blockers));
+            return GameCallResult<PreparedNormalAction>.Succeeded(response);
+        }
+        finally
+        {
+            if (!toolOwnsSorters) foreach (var p in sorters) p.Free();
+            foreach (var p in mirrors) p.Free();
+            foreach (var p in belts) p.Free();
+        }
+    }
+
+    private static bool PreviewSortersHaveClearOccupancy(PlanetFactory factory,
+        IReadOnlyList<BuildPreview> sorters, IReadOnlyList<BuildPreview> belts)
+    {
+        var volumes = sorters.Select(BlueprintPreviewColliders).ToArray();
+        for (var i = 0; i < sorters.Count; i++)
+        {
+            for (var j = 0; j < i; j++)
+                if (BlueprintColliderSetsOverlap(volumes[i], volumes[j])) return false;
+            foreach (var belt in belts)
+                if (!BlueprintLinkedSorterPair(sorters[i], belt)
+                    && BlueprintColliderSetsOverlap(volumes[i], BlueprintPreviewColliders(belt))) return false;
+        }
+        for (var id = 1; id < factory.entityCursor && id < factory.entityPool.Length; id++)
+        {
+            ref var entity = ref factory.entityPool[id];
+            if (entity.id == id && !Clear(id, entity.protoId, entity.pos, entity.rot)) return false;
+        }
+        for (var id = 1; id < factory.prebuildCursor && id < factory.prebuildPool.Length; id++)
+        {
+            ref var p = ref factory.prebuildPool[id];
+            if (p.id == id && !Clear(-id, p.protoId, p.pos, p.rot)) return false;
+        }
+        return true;
+
+        bool Clear(int id, int proto, Vector3 pos, Quaternion rot)
+        {
+            var desc = LDB.items.Select(proto)?.prefabDesc;
+            if (desc is null) return false;
+            var existing = CreateWorldBuildColliders(desc, pos, rot);
+            for (var i = 0; i < sorters.Count; i++)
+                if (sorters[i].inputObjId != id && sorters[i].outputObjId != id
+                    && BlueprintColliderSetsOverlap(volumes[i], existing)) return false;
+            return true;
+        }
+    }
+}

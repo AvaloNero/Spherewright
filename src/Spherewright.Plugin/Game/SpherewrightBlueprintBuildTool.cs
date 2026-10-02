@@ -61,5 +61,22 @@ internal sealed class SpherewrightBlueprintBuildTool : BuildTool_BlueprintPaste,
             return CheckBuildConditionsPrestage() && CheckBuildConditions();
     }
 
+    internal void SetReadOnlyLinkedSorters(IReadOnlyList<BuildPreview> sorters, int totalNewObjects)
+    {
+        // Only sorters enter the checked pool. Explicit existing endpoint references
+        // and the separately native-validated NEW belt poses are not covered objects.
+        // Metadata counts the ENTIRE NEW budget for the native technology gate.
+        blueprint = new BlueprintData
+        {
+            primaryAreaIdx = 0,
+            buildings = Enumerable.Range(0, totalNewObjects).Select(_ => new BlueprintBuilding()).ToArray(),
+            areas = new[] { new BlueprintArea() },
+            reformData = new BPReformData(),
+        };
+        bpPool = sorters.ToArray();
+        bpCursor = bpPool.Length;
+        gratBoxCursor = 0; // No translated blueprint area; one already validated normal belt span.
+    }
+
     public void Dispose() => _Free();
 }

@@ -166,11 +166,33 @@ function Invoke-SpherewrightBeltSiteQualification {
         foreach ($role in @('source','destination')) {
             $phase = 'endpoint_' + $role
             $binding = Get-SpherewrightStageField $ApprovedPlan ($role + 'Endpoint')
-            if ($binding.existingObjectId -le 0 -or $binding.existingSlot -lt 0 -or $binding.plannedBeltQuarterTurns -notin @(0,1,2,3)) { throw 'An explicit built-device slot is required.' }
+            if ($binding.existingObjectId -le 0 -or $binding.existingSlot -lt -1 -or $binding.existingSlot -gt 15 -or
+                $binding.existingBeltQuarterTurns -notin @(0,1,2,3) -or $binding.plannedBeltQuarterTurns -notin @(0,1,2,3) -or
+                ($binding.existingSlot -ne -1 -and $binding.existingBeltQuarterTurns -ne 0)) { throw 'An explicit built endpoint slot/direction is required.' }
             $entity = & $read 'inspect_factory_entity' @{planetId=$planetId;objectId=$binding.existingObjectId}
-            $slot = @($entity.sorterEndpoints.endpoints | Where-Object {$_.slot -eq $binding.existingSlot})
+            $virtualBelt = $binding.existingSlot -eq -1
+            if ($virtualBelt) {
+                # A belt's four directions all have slot=-1 and unknown occupancy.
+                # Never turn those nulls into a free-slot claim: the subsequent
+                # mandatory native preview checks the real belt connections.
+                $observation = $entity.sorterEndpoints
+                $points = @($observation.endpoints)
+                if ($entity.itemId -ne 2001 -or $observation.state -cne 'observed' -or $observation.kind -cne 'belt_virtual' -or
+                    $points.Count -ne 4 -or @($points | Select-Object -ExpandProperty index -Unique).Count -ne 4 -or
+                    @($points | Where-Object {$_.slot -ne -1 -or $_.index -notin @(0,1,2,3) -or
+                        $null -ne $_.occupied -or $null -ne $_.otherObjectId -or $null -ne $_.otherSlot}).Count) {
+                    throw 'Exact observed2001 virtual belt directions are unproved; unknown occupancy is not free.'
+                }
+                $slot = @($points | Where-Object {$_.index -eq $binding.existingBeltQuarterTurns})
+                if ((& $distance $entity.position $binding.expectedSlotPosition) -gt .02 -or
+                    @($points | Where-Object {(& $distance $_.position $entity.position) -gt .02}).Count) {
+                    throw 'Virtual belt pose/identity changed.'
+                }
+            } else {
+                $slot = @($entity.sorterEndpoints.endpoints | Where-Object {$_.slot -eq $binding.existingSlot})
+            }
             if ($entity.sessionId -cne $sessionId -or $entity.planetId -ne $planetId -or $entity.objectId -ne $binding.existingObjectId -or
-                $slot.Count -ne 1 -or $slot[0].occupied -ne $false -or $slot[0].otherObjectId -ne 0 -or
+                $slot.Count -ne 1 -or (-not $virtualBelt -and ($slot[0].occupied -ne $false -or $slot[0].otherObjectId -ne 0)) -or
                 [string]::IsNullOrWhiteSpace($entity.endpointStateHash) -or
                 (& $distance $slot[0].position $binding.expectedSlotPosition) -gt .02) { throw 'Exact current endpoint ID/slot/pose/hash is unproved.' }
             $entities[$role] = $entity
@@ -214,6 +236,8 @@ function Invoke-SpherewrightBeltSiteQualification {
                     $attachments.Count -ne 1 -or $attachments[0].role -cne $role -or $attachments[0].existingObjectId -ne $binding.existingObjectId -or
                     $attachments[0].endpointStateHash -cne $entities[$role].endpointStateHash -or $attachments[0].filterItemId -ne $ApprovedPlan.filterItemId -or
                     $attachments[0].sorterItemId -ne 2011 -or $attachments[0].plannedBeltQuarterTurns -ne $binding.plannedBeltQuarterTurns -or
+                    ($binding.existingSlot -eq -1 -and ($attachments[0].existingItemId -ne 2001 -or
+                        $attachments[0].existingBeltQuarterTurns -ne $binding.existingBeltQuarterTurns)) -or
                     $attachments[0].nativeCondition -cne 'Ok' -or $attachments[0].nativeSpan -ne 2 -or $sorterBudget.Count -ne 1 -or $sorterBudget[0].count -ne 1) { throw 'Native tokenless endpoint/budget binding echo failed.' }
                 $actualSlot = if ($role -ceq 'source') {$attachments[0].attachment.sourceSlot} else {$attachments[0].attachment.destinationSlot}
                 if ($actualSlot -ne $binding.existingSlot) { throw 'Native exact attachment slot mismatch.' }

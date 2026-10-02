@@ -37,7 +37,8 @@ positives never prove the future actual-ID cover join or authorize construction.
 
 ## Verification boundary
 
-Offline PowerShell validation completed with `pwsh -File`:
+The original three/four-span change passed offline PowerShell validation with
+`pwsh -File`:
 
 - `scripts/test-belt-site-qualification.ps1`: 40 checks passed, zero real game
   calls; 2.891 seconds.
@@ -55,3 +56,40 @@ request duration continues to rely on the existing transport timeout.
 These results cover offline fixtures only. This section does not assert a live
 qualification result, DSP placement, installed cohort, production, package or
 restart proof; live qualification evidence is tracked separately.
+
+## Narrow virtual-belt endpoint correction
+
+A fresh observation exposed a caller-only restriction: the installed native
+preview already supports a belt direction with `slot=-1`, but this shared caller
+accepted only nonnegative built-device slots. An existing automatic supply belt
+could therefore not be qualified through the normal shared entry point.
+
+The external helper now accepts exactly observed item2001 `belt_virtual` endpoints:
+four unique direction indices0–3, all with slot-1 and occupancy/connection fields
+still null. It selects the explicitly approved direction, checks every endpoint
+pose against the actual belt, and requires the native attachment echo to match
+item2001, direction, slot, hash, filter, material budget and `Ok`/span2. Null
+occupancy is **not** treated as free; a performed, positive native check remains
+mandatory. Ordinary built-device free-slot checks are retained. Missing or
+invalid explicit direction data fails closed; old device plans without the
+explicit zero `existingBeltQuarterTurns` must be prepared anew.
+
+No Plugin/MCP change, new building type, game write, retry, autonomous planning,
+save or lifecycle action was added. This does not require a DSP cold deployment.
+
+The directly related offline run passed:
+
+- `scripts/test-belt-site-qualification.ps1`: 69 checks, zero real game calls;
+  3.218 seconds. Covers both roles with nonzero virtual directions, rejected
+  identity/schema/pose/occupancy data, wrong native echoes and an unperformed
+  native check; original built-device checks remain.
+- `scripts/test-stage-tools.ps1`: 26 passed, zero game calls; 3.095 seconds.
+- Both edited PowerShell files: zero AST errors.
+
+The streaming Claude Code review reached `approve — no concrete blockers found`
+(`is_error=false`) in 331.774 seconds. Some virtual negative variants remain
+source-side only; destination rejection, nonselected-point displacement and
+explicit occupied-true variants are not separately covered. Fixtures do not
+prove real Bridge/native placement. Live qualification, continuous allocation,
+future actual-ID joins and the complete1210 chain remain separate acceptance
+work; no such result is claimed by this correction.

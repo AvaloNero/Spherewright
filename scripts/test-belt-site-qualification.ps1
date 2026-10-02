@@ -11,7 +11,7 @@ function Assert-Qualification([bool]$Condition,[string]$Name) {
     $script:checks++
 }
 function Fixture-Vector([double]$x,[double]$y,[double]$z) { [pscustomobject]@{x=$x;y=$y;z=$z} }
-function Fixture-Plan([int]$Count=4) {
+function Fixture-Plan([int]$Count=4,[switch]$VirtualEndpoints) {
     $a=Fixture-Vector 0 200 0; $b=Fixture-Vector 5 204 0
     $c=Fixture-Vector 25 204 0; $d=Fixture-Vector 30 200 0; $m=Fixture-Vector 15 204 0
     $spans=@(
@@ -23,16 +23,22 @@ function Fixture-Plan([int]$Count=4) {
         $spans += [pscustomobject]@{label='H1';preferredPosition=$b;pathEnd=$m;beltStartAltitudeLevel=3;beltEndAltitudeLevel=3;endpointPreviewRole=$null}
         $spans += [pscustomobject]@{label='H2';preferredPosition=$m;pathEnd=$c;beltStartAltitudeLevel=3;beltEndAltitudeLevel=3;endpointPreviewRole=$null}
     }
+    $sourceEndpoint=[pscustomobject]@{existingObjectId=870;existingSlot=9;existingBeltQuarterTurns=0;plannedBeltQuarterTurns=1;expectedSlotPosition=(Fixture-Vector -1 200 0)}
+    $destinationEndpoint=[pscustomobject]@{existingObjectId=5334;existingSlot=7;existingBeltQuarterTurns=0;plannedBeltQuarterTurns=0;expectedSlotPosition=(Fixture-Vector 31 200 0)}
+    if($VirtualEndpoints) {
+        $sourceEndpoint.existingSlot=-1;$sourceEndpoint.existingBeltQuarterTurns=1;$sourceEndpoint.plannedBeltQuarterTurns=2
+        $destinationEndpoint.existingSlot=-1;$destinationEndpoint.existingBeltQuarterTurns=3;$destinationEndpoint.plannedBeltQuarterTurns=1
+    }
     [pscustomobject]@{gameCommitAllowed=$false;candidateCountPerInterface=1;maximumRequests=(6+2*$Count);maximumWallSeconds=180;
         expectedSessionId='fixture-session';expectedGameVersion='fixture-version';expectedSaveGameTick=1000;sorterItemId=2011;filterItemId=1109;
         commonPayload=[pscustomobject]@{planetId=104;buildingItemId=2001;stateHashVersion=1;beltPathMode='native_elevated_grid';expectedPlayerStateHash='placeholder'};
-        sourceEndpoint=[pscustomobject]@{existingObjectId=870;existingSlot=9;existingBeltQuarterTurns=0;plannedBeltQuarterTurns=1;expectedSlotPosition=(Fixture-Vector -1 200 0)};
-        destinationEndpoint=[pscustomobject]@{existingObjectId=5334;existingSlot=7;existingBeltQuarterTurns=0;plannedBeltQuarterTurns=0;expectedSlotPosition=(Fixture-Vector 31 200 0)};
+        sourceEndpoint=$sourceEndpoint;destinationEndpoint=$destinationEndpoint;
         spans=$spans}
 }
-function Reset-Qualification([string]$Mode='',[int]$Count=4) {
+function Reset-Qualification([string]$Mode='',[int]$Count=4,[switch]$VirtualEndpoints) {
     $script:methods.Clear();$script:mode=$Mode;$script:prepareCount=0;$script:playerCount=0;$script:sessionCount=0
-    $script:plan=Fixture-Plan $Count;$script:evidence=[Collections.Generic.List[object]]::new()
+    $script:plan=Fixture-Plan -Count $Count -VirtualEndpoints:$VirtualEndpoints;$script:evidence=[Collections.Generic.List[object]]::new()
+    $script:virtualPreviewBindings=[Collections.Generic.List[object]]::new();$script:virtualPreviewEchoes=[Collections.Generic.List[object]]::new()
 }
 function Get-LiveSpherewrightDescriptor { throw 'Offline fixture must never discover a live descriptor.' }
 function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[hashtable]$Payload) {
@@ -55,8 +61,25 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
         }
         inspect_factory_entity {
             $role=if($Payload.objectId-eq870){'source'}else{'destination'};$binding=$script:plan.($role+'Endpoint')
-            [pscustomobject]@{sessionId=$SessionId;planetId=104;objectId=$(if($script:mode-eq'wrong_id'){999}else{$binding.existingObjectId});
-                endpointStateHash=('endpoint-'+$role);sorterEndpoints=[pscustomobject]@{endpoints=@([pscustomobject]@{slot=$binding.existingSlot;occupied=($script:mode-eq'occupied');otherObjectId=0;position=$binding.expectedSlotPosition})}}
+            if($binding.existingSlot -eq -1) {
+                $position=$binding.expectedSlotPosition
+                $points=@(0..3|ForEach-Object{[pscustomobject]@{index=$_;slot=-1;occupied=$null;otherObjectId=$null;otherSlot=$null;position=$position}})
+                switch($script:mode) {
+                    virtual_missing_direction {$points=@($points|Select-Object -First 3)}
+                    virtual_duplicate_direction {$points[3]=$points[2]}
+                    virtual_fake_free {$points[$binding.existingBeltQuarterTurns].occupied=$false;$points[$binding.existingBeltQuarterTurns].otherObjectId=0;$points[$binding.existingBeltQuarterTurns].otherSlot=0}
+                    virtual_pose_change {$points[$binding.existingBeltQuarterTurns].position=Fixture-Vector ($position.x+.1) $position.y $position.z}
+                }
+                $observationKind=if($script:mode-eq'virtual_wrong_kind'){'sorter_slots'}else{'belt_virtual'}
+                $observedItemId=if($script:mode-eq'virtual_wrong_item'){2011}else{2001}
+                $sorterEndpoints=[pscustomobject]@{state='observed';kind=$observationKind;endpoints=$points}
+            } else {
+                $position=$binding.expectedSlotPosition;$observedItemId=2011
+                $sorterEndpoints=[pscustomobject]@{endpoints=@([pscustomobject]@{slot=$binding.existingSlot;occupied=($script:mode-eq'occupied');otherObjectId=0;position=$binding.expectedSlotPosition})}
+            }
+            $observedObjectId=if($script:mode-eq'wrong_id'-or$script:mode-eq'virtual_wrong_id'){999}else{$binding.existingObjectId}
+            [pscustomobject]@{sessionId=$SessionId;objectKind='entity';planetId=104;objectId=$observedObjectId;itemId=$observedItemId;position=$position;
+                endpointStateHash=('endpoint-'+$role);sorterEndpoints=$sorterEndpoints}
         }
         prepare_build {
             $script:prepareCount++;$span=$script:plan.spans[$script:prepareCount-1]
@@ -70,13 +93,20 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
             $role=$span.endpointPreviewRole
             if($null-ne$role) {
                 $binding=$script:plan.($role+'Endpoint');$requestBinding=$Payload.beltEndpointPreview[$role]
-                if($requestBinding.existingObjectId-ne$binding.existingObjectId -or $requestBinding.expectedEndpointStateHash-cne('endpoint-'+$role)) { throw 'Wrong role/hash binding.' }
-                $attachment=[pscustomobject]@{role=$role;existingObjectId=$binding.existingObjectId;endpointStateHash=$(if($script:mode-eq'endpoint_hash'){'wrong'}else{'endpoint-'+$role});
+                if($requestBinding.existingObjectId-ne$binding.existingObjectId -or $requestBinding.existingSlot-ne$binding.existingSlot -or
+                    $requestBinding.existingBeltQuarterTurns-ne$binding.existingBeltQuarterTurns -or $requestBinding.plannedBeltQuarterTurns-ne$binding.plannedBeltQuarterTurns -or
+                    $requestBinding.expectedEndpointStateHash-cne('endpoint-'+$role)) { throw 'Wrong role/ID/slot/direction/hash binding.' }
+                if($binding.existingSlot-eq-1) {$script:virtualPreviewBindings.Add([pscustomobject]@{role=$role;existingObjectId=$requestBinding.existingObjectId;existingSlot=$requestBinding.existingSlot;existingBeltQuarterTurns=$requestBinding.existingBeltQuarterTurns;plannedBeltQuarterTurns=$requestBinding.plannedBeltQuarterTurns})}
+                $echoExistingItemId=if($binding.existingSlot-eq-1 -and $script:mode-eq'virtual_echo_item_mismatch'){2011}elseif($binding.existingSlot-eq-1){2001}else{$null}
+                $echoExistingTurn=if($binding.existingSlot-eq-1 -and $script:mode-eq'virtual_echo_turn_mismatch'){($binding.existingBeltQuarterTurns+1)%4}elseif($binding.existingSlot-eq-1){$binding.existingBeltQuarterTurns}else{$null}
+                $echoHash=if($script:mode-eq'endpoint_hash'-or$script:mode-eq'virtual_echo_hash_mismatch'){'wrong'}else{'endpoint-'+$role}
+                $attachment=[pscustomobject]@{role=$role;existingObjectId=$binding.existingObjectId;existingItemId=$echoExistingItemId;existingBeltQuarterTurns=$echoExistingTurn;endpointStateHash=$echoHash;
                     filterItemId=1109;sorterItemId=2011;plannedBeltQuarterTurns=$binding.plannedBeltQuarterTurns;nativeCondition='Ok';nativeSpan=2;
                     attachment=[pscustomobject]@{sourceSlot=$(if($role-eq'source'){$binding.existingSlot}else{-1});destinationSlot=$(if($role-eq'destination'){$binding.existingSlot}else{-1})}}
-                $blocked=$script:mode-eq'endpoint_blocker'
-                $preview=[pscustomobject]@{nativeCheckPerformed=(-not$blocked);nativeCheckPassed=(-not$blocked);executable=$false;
-                    blockers=$(if($blocked){@('planned_endpoint_collision_or_prototype_unavailable')}else{@()});attachments=@($attachment)}
+                if($binding.existingSlot-eq-1) {$script:virtualPreviewEchoes.Add($attachment)}
+                $blocked=$script:mode-eq'endpoint_blocker';$nativeNotRun=$script:mode-eq'virtual_native_not_run';$nativePerformed=(-not($blocked-or$nativeNotRun))
+                $preview=[pscustomobject]@{nativeCheckPerformed=$nativePerformed;nativeCheckPassed=$nativePerformed;executable=$false;
+                    blockers=$(if($blocked){@('planned_endpoint_collision_or_prototype_unavailable')}elseif($nativeNotRun){@('native_check_not_performed')}else{@()});attachments=@($attachment)}
                 $prepared=$false;$token='';$budget+=[pscustomobject]@{itemId=2011;count=1}
             }
             [pscustomobject]@{prepared=$prepared;commitAllowedNow=$prepared;planToken=$token;commitBlockers=@();plannedPath=$path;itemBudget=$budget;beltEndpointPreview=$preview;
@@ -104,6 +134,38 @@ foreach($count in @(3,4)) {
 Reset-Qualification -Mode polyline -Count 3
 $summary=Run-Qualification
 Assert-Qualification ($summary.result-ceq'qualified_sites_only') 'native endpoint chord, not longer fixture polyline, is the30m bound'
+Reset-Qualification -Count 4 -VirtualEndpoints
+$summary=Run-Qualification
+$virtualSource=@($script:virtualPreviewBindings|Where-Object{$_.role-ceq'source'})[0];$virtualDestination=@($script:virtualPreviewBindings|Where-Object{$_.role-ceq'destination'})[0]
+$virtualSourceEcho=@($script:virtualPreviewEchoes|Where-Object{$_.role-ceq'source'})[0];$virtualDestinationEcho=@($script:virtualPreviewEchoes|Where-Object{$_.role-ceq'destination'})[0]
+Assert-Qualification ($summary.result-ceq'qualified_sites_only' -and $summary.spans.Count-eq4 -and $summary.bridgeRequests-eq14 -and $script:prepareCount-eq4) 'source and destination virtual belts pass all four bounded spans'
+Assert-Qualification ($virtualSource.existingObjectId-eq870 -and $virtualSource.existingSlot-eq-1 -and $virtualSource.existingBeltQuarterTurns-eq1 -and $virtualSource.plannedBeltQuarterTurns-eq2 -and
+    $virtualDestination.existingObjectId-eq5334 -and $virtualDestination.existingSlot-eq-1 -and $virtualDestination.existingBeltQuarterTurns-eq3 -and $virtualDestination.plannedBeltQuarterTurns-eq1) 'requests bind exact source/destination IDs and nonzero observed directions'
+Assert-Qualification ($virtualSourceEcho.existingItemId-eq2001 -and $virtualSourceEcho.existingBeltQuarterTurns-eq1 -and $virtualSourceEcho.attachment.sourceSlot-eq-1 -and
+    $virtualDestinationEcho.existingItemId-eq2001 -and $virtualDestinationEcho.existingBeltQuarterTurns-eq3 -and $virtualDestinationEcho.attachment.destinationSlot-eq-1) 'native echoes exact virtual item, direction and slot=-1'
+Assert-Qualification ($summary.acceptedDelta-eq0 -and $summary.acceptedAfter-eq10 -and $summary.closure.revision-eq7 -and $summary.closure.savedTick-eq1000 -and
+    -not$summary.futureActualIdJoinProven -and -not$summary.wholePlanExecutable -and $summary.doNotReplay) 'virtual site qualification preserves write freeze, closure and non-executable result'
+foreach($caseName in @('virtual_wrong_item','virtual_wrong_kind','virtual_missing_direction','virtual_duplicate_direction','virtual_fake_free','virtual_pose_change','virtual_wrong_id')) {
+    Reset-Qualification -Mode $caseName -Count 4 -VirtualEndpoints
+    $summary=Run-Qualification 6
+    Assert-Qualification ($summary.result-ceq'stopped' -and $script:prepareCount-eq0 -and $summary.spans.Count-eq0) "$caseName rejects before every prepare"
+    Assert-Qualification ($summary.failure.stage-ceq'endpoint_source' -and $summary.bridgeRequests-eq5 -and $null-ne$summary.closure -and $summary.doNotReplay -and $summary.acceptedDelta-eq0 -and $summary.acceptedAfter-eq6) "$caseName stops and closes read-only without replay"
+}
+Reset-Qualification -Count 4 -VirtualEndpoints
+$script:plan.sourceEndpoint.existingBeltQuarterTurns=4
+$summary=Run-Qualification 6
+Assert-Qualification ($summary.result-ceq'stopped' -and $script:prepareCount-eq0 -and $summary.failure.stage-ceq'endpoint_source' -and $summary.bridgeRequests-eq4 -and $null-ne$summary.closure -and $summary.doNotReplay) 'out-of-range virtual direction rejects before entity inspection or prepare and closes read-only'
+Reset-Qualification -Count 4
+$script:plan.sourceEndpoint.existingBeltQuarterTurns=1
+$summary=Run-Qualification 6
+Assert-Qualification ($summary.result-ceq'stopped' -and $script:prepareCount-eq0 -and $summary.failure.stage-ceq'endpoint_source' -and $summary.bridgeRequests-eq4 -and $null-ne$summary.closure -and $summary.doNotReplay) 'built device with nonzero existing quarter-turn rejects before entity inspection or prepare and closes read-only'
+foreach($caseName in @('virtual_native_not_run','virtual_echo_item_mismatch','virtual_echo_turn_mismatch','virtual_echo_hash_mismatch')) {
+    Reset-Qualification -Mode $caseName -Count 4 -VirtualEndpoints
+    $summary=Run-Qualification 6
+    Assert-Qualification ($summary.result-ceq'stopped' -and $script:prepareCount-eq1 -and $summary.bridgeRequests-eq8 -and $summary.spans.Count-eq0) "$caseName fails first preview and does not prepare later spans"
+    Assert-Qualification ($summary.failure.stage-ceq'D' -and $null-ne$summary.closure -and $summary.doNotReplay -and $summary.acceptedDelta-eq0 -and $summary.acceptedAfter-eq6) "$caseName performs only proved read-only closure and never replays"
+    if($caseName-eq'virtual_native_not_run'){Assert-Qualification ($summary.failure.kind-ceq'endpoint_rejection' -and -not$summary.failure.nativeCheckPerformed) 'unperformed native check is not a pass'}
+}
 foreach($mode in @('endpoint_blocker','bridge_error','endpoint_hash','budget')) {
     Reset-Qualification -Mode $mode
     $summary=Run-Qualification 3

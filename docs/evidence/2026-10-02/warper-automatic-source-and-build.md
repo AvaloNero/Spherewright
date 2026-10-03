@@ -476,3 +476,35 @@ root直接核原件并与`3bf6a4…`完整基线比对：只增78条带/4sorter�
 效率边界：五段带入口→首prepare **0.99–1.34s**；prepare＋精确校验＋commit合计 **2.23s**，同action终态观察合计 **1620.61s**，五段完整执行 **1637.49s**；三只sorter阶段含末次save **122.66s**。主要等待在原生无人机施工/同action轮询，不能把全部观察墙钟当纯模拟或纯模型用时。Luna两次零accepted调用方错误（Journal摘要字段、Hashtable参数绑定）均从原数据修正；原生拒绝0、无额外commit。0Game真实pwsh smoke通过、sorter-tap AST离线正负例 **9/9**，不冒充native验收。无每动作文档/Git/CI、没有新的模型逐窗采样；root＋Luna provider token/完整委派与GitCI墙钟仍unknown。外审若无terminal仍未完成，不记通过。
 
 整案已施工供料141带/5sorter，预测剩413带/15sorter/2塔；尚须Fe/D/1206/Graphite→Diamond→Lens及1127→Lens→1210实际连接、现场供电和真实产出。完整Gate结束仍为自动供料→1210非零→normalSave→protected restart→恢复后再次非零；本窗docs/push/准确SHA绿CI/root交接之前保持external10冻结，DSP保持运行。
+
+### 2026-10-03：Graphite→Diamond自动接口保存、独立审计与实际启动（无重启）
+
+source main **deb6394ad472bd2f3de0bf69d2ce25246c19e733**，准确SHA的Windows Core CI **37085219613 success** 后root仅重开外部审计计数0/lifetime80；没有重置Game revision/tick/J或identity。installed仍 **3fe31d1**、DSP **0.10.35.29104**，同一owned session/原DSP进程。施工仅属已批准完整1210案：五段Graphite带、正常手搓两塔、固定位置建一塔、两端分拣器及normalSave；**0→10冻结 / lifetime80→90**。没有Move、拆除、注入、旁路、部署或关游戏。
+
+| 原run（唯一commit / 同action终态） | 实际结果 | external |
+|---|---|---|
+| `eb5530dd87bb4b4ab560fd2b3547f981:9/89` | A12，首5523/末5512；2001 441→429 | 0→1 |
+| `95a89e7bcbf64752ae0e765dfc5d46d8:9/66` | D12，首5524/末5535；429→417 | 1→2 |
+| `07e0d87e376749b29623c817c6925fe3:9/52` | H2 19，首5538/末5554；417→398 | 2→3 |
+| `899ce4188177437888140c44989d6c8a:11/72` | H1 21 NEW，5512→5538双cover；398→377 | 3→4 |
+| `8724993f686b4add95c971044d9efc52:11/21` | H3 3 NEW，5554→5524双cover；377→374 | 4→5 |
+| `d042133e9eca44068b84296f274f59b0:7/13` | recipe8/count2正常递归手搓：Fe−4、磁铁−2、Cu−1、2201+2 | 5→6 |
+| 同run`:25/37;38` | 唯一5579/item2201，扣塔1，精确pose `(-110.404633,5.03104544,-166.929764)` | 6→7 |
+| `c20c36977f5d4baa86da833ecaf60c16:8/20` | 5535.actual4→5580→5334.slot7，filter1109；2011 23→22 | 7→8 |
+| `3a2403b63fd0464ebcce6b885be803f9:9/26;35/36` | 5187.slot4→5581→5523.actual4，filter1109；2011 22→21；随后normalSave | 8→9→10 |
+
+完整有向路 **A→H1→H2→H3→D / 67条NEW2001**，实际ID/方向来自原计划和完成实体，不按ID排序。两次cover仅续接明确空的成功端点、保留其配置与旧边；每笔fresh原生prepare、精确预算/坐标/高度/绑定校验、唯一commit、同action终态、材料和实际双边slot读回。新sorter均N3/serve1；normalSave原action **4d7cb2ae-60d9-4e7e-a989-6c448959d309** 成功于 **86883661**，覆盖全部本窗施工，签发最新protected resume能力，**未restart**。
+
+仅一次完整capture **8b3a9202460242179005c87381f00b17:2–57**：56页/5581唯一built/同snapshot tick **86884221**；`:58` P、`:59` J、`:60` power、`:61` 0prebuild、`:62–69` 八个固定detail，`:70` closing S **86884471/R52/healthy owned/saved**。root复用这一不可变图，与`3e64a1…`完整基线逐对象比较；十笔原accepted均成功/无replay或未知，仅增67带/2sorter/1塔，无删除、未解释静态变化或整图重放，**10888边唯一互逆**。净料2001−67/2011−2/2201+1/Fe−4/磁铁−2/Cu−1，其它库存、增产点数、玩家位置守恒；J97原97条durable连续、pendingfalse/errornull，空队列/0pending drones。N3节点210→211、consumer523→525、gen127/cap1894000不变，required=served236694/ratio1；N4静态不变且满供电。
+
+独立证明 **8ba5bed2ca774de79f51361af3852412:1**，SHA-256 **FB3137C4EFB439DFCF2DB20988AE22C14167E1185DDAA048846C747AC5C5DE05**，**24.25s / 0新Game调用**。审计复用既有实现，仅参数化基线、路径、单塔/手搓净料和save所属run；原件权威、不是执行者口头通过。配置fixture11/11、实际AST有序扁平路径fixture1/1，均零Game，不冒充live。
+
+初次封窗`:64`的5334/r60仍为石墨input0/金刚石output0，不能据此宣布送达或稳定。唯一后续有界启动探针 **56f2a4a0250f4ba3875100a7f65745be:1–5** 首点立即得到正例，未使用等待或第二组实体调用：`:2` tick **86891785**，5334/r60 **isWorking=true / 1109 input2 / 1112 output55 / progress500000 / N3 serve1**；`:3` 5187/r17 **isWorking=true / coal4 / graphite output51**，原旧边保留，新增slot4→5581；`:4` N3 required=served286821/ratio1；`:5` closing **86892637/R52/save86883661/healthy owned**。5334只有本窗新输入5580；root直接核原DTO与完整有向路，确认真实Graphite送达及Diamond生产。该后续动态库存不声称已被之前save覆盖；本点不是重复600-tick产率窗或持续供给，continuous credit仍0。
+
+调用方经验与边界：5187实际上是item2302/r17生产设备，不是storage。既有共享caller的薄sorter入口增加显式生产输出绑定，精确检查proto/recipe/runtime目录/输出buffer和单位，移除只适用于仓库的重复守卫；默认storage及既有belt tap保护保持。实际AST/live guard正负例 **16/16**、tap **9/9** 零Game通过。电塔5579的entity.powerNetworkId为**不可观测/null**，旧5327同样null；现行CapturePower仅给consumer/generator填该字段。错误caller在原生成功后要求N3而停止；没有把成功判未执行，也未重建。仅fresh readback **f78e7a5098394472963e32f432b28c51:1–10** 核唯一N3节点+1/其它网络与旧配置不变/扣料后剩塔1，root原件比对通过后才续接；相应node语义实际AST **37/37** 零Game通过，不向Plugin新增观察字段或工具。
+
+三个实机调用方故障分别是上述post-terminal node字段、只读摘要访问不存在的Payload.objectId、启动摘要误用`working`而非实际`isWorking`。均保留原accepted和已保护的响应，未重放任何commit或重复已完成请求；**原生拒绝0、unknown/quarantine0**。不要为摘要再造reader/label；共享read caller已经保存原回执。离线审计的recipe单位/扁平路径错误在执行原审计前修正，不计作游戏故障，也没有新Game采集。
+
+效率原件：五段带入口→首业务prepare **1.04–1.31s**；prepare＋精确plan校验＋commit合计 **2.23s**，同action终态观察 **490.23s**，五段总执行 **507.37s**。两塔native prefix **28.13s**（6.58s手搓/18.63s施工终态观察），两只sorter含save **52.72s**；读回故障处84秒间隙和额外主会话处理不隐去。主要施工观察、调用方故障、独立审计与文档/Git/CI不可混算；root＋Luna完整委派/模型调用量/provider token仍unknown，不给出同类任务提速比例。本窗不逐动作提交/等待CI，不重采全图、不在生产循环唤醒模型。
+
+自动供料累计 **208带/7sorter/1塔**，整案预测剩 **346带/13sorter/1塔**，背包374带/21sorter/1塔。Diamond→Lens及Fe/D/1206→1127→Lens→1210未完成，未证明全链1210、持续供给或restart。docs/push/准确SHA绿CI/root交接前external10冻结；后续仍同一1210全案，不进燃料、远征或双包支线。DSP保持原进程；**Codex/Host结束不触发游戏关闭、重载或外部计数清零**，真实Codex关闭试验未做。

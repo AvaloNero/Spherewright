@@ -530,3 +530,21 @@ Graphite阶段`f3b001a88a4179a7334770fc77a64c448f1782b7`已push、准确Windows 
 恢复后固定8次只读 **e6e12b97d9c3496fae365f99b2806d33:1–8 / 2.9s**：S/P/J、5579/5580/5581/5334、closing S；latest **86902474/R1/save86883692/healthy owned**，J97 durable/pendingfalse/errornull，97条原entries与退出前`004586…:2`完全相同。玩家Walk/速度0/3无人机idle/0 pending与手搓队列；材料374带/21sorter/1塔不变。5579仍2201且network null不可观测；5580为5535.slot4→5334.slot7、5581为5187.slot4→5523.slot4，filter1109/N3/serve1。5334/r60输入1109=2、输出1112=100、isWorking=false；未接完的下游不算持续产量，本次关键节点检查也不是十写完整工厂审计。
 
 root直接核上述原回执、唯一commit/同action终态、97条日记、静止玩家/材料与新健康票据，证明 **d32f1abd12e149a896b1da3e235c7a10:1**，SHA-256 **E06DE14B16A889D9D95A82CE1C1E3F250DB79B761EF14D7A608EBB39A1AA9589**，**0新Game调用**。旧宿主退出的确切终止原因、真实Codex退出存活仍未证明；用户明确无需专门做该关闭测试，不把它设为主线门或主动关闭游戏。保持同一已恢复DSP运行，下一Fe/D计划须使用新session并扣除本次恢复accepted、保留save槽；完整1210/nonzero/save/protected restart/恢复后nonzero要求不变。
+
+### 2026-10-03：Fe A-H-D施工与保存审计（D及1210整链未完成）
+
+本窗只继续同一Gate 2有限计划；DSP保持运行，未关闭、重载或部署。root以capture **`3fce122b339f46d19dd966388f699e2e:1–82`**独立审计完整封窗：**57页 / 5684 built / 0 prebuild / 11090唯一互逆边**，与基线`8b3a9202460242179005c87381f00b17`相比只新增101条带和2个分拣器，无实体删除或未解释静态配置变化。独立proof **`44dbb59cb37a4e639fe86d784a1c6f03:1`**，SHA-256 **`31D65C76DFD511CCD8136BFFA8333265DA5A0F0BD0485455F55439EA1383DA16`**；root审计34.98s、0新Game调用。材料净额2001 −101、2011 −2；增产点数、其它背包数量和玩家位置守恒。N3为211节点/527消费者/127发电机/1,894,000 J/t，required=served 410,992 J/t、ratio 1。closing为tick **87125503 / R18**，正常save为tick **87119420**，J97 durable/pending=false/error=null；本十笔窗口10/10 accepted均completed/succeeded，0 replay、unknown、在途或未决，external10/lifetime100冻结。
+
+代码与运行库边界：source HEAD `ac0e434`；installed `3fe31d1`沿用此前已验证的同批构建，64 tools/1 resource资格引用既有原件，本窗没有部署。十个accepted原run（按业务类别）为：resume `5e9e2203413b4ac9a5fca38314b1b7e3`；Fe A/D/H `2cd145bea1ab4cf4899adfb77ee82f83` / `752d8873308848d8904ecd42e512546c` / `2c64d12fd6054e0b976cc5b2941e7894`；Fe destination/source sorter `bf124624ddb84b50ba7373dd30773f22` / `b39d01864dcc4bee868c7210f66dd76a`；D A/D/H2 `8f9cbe4818a1429097e88a57c4d0395a` / `4d9af32afc474105be4a269bafb22e04` / `88e21aa69ce745c48a4329e3400b30c8`；normalSave `2d908a1c143c42eaa6fb04826c23ca59`，action `4af5d821-2953-4c6f-ac60-ae4b47ad2515`成功终结于tick **87119420**。
+
+Fe当前A-H-D实际路径为52条带，过滤物品1101，两端分拣器均N3/serve ratio 1：源`1511.slot0 → 5635 → 5593.actual4`；末端`5605.actual4 → 5634 → 5326.slot6`，slot7仍空。新鲜detail在`:63–64/:68–69`；source 1511铁缓冲2884。5326/r104当时真实收到1101输入4，但1206/1121输入均0、1127输出0、`isWorking=false`；接入铁块不等于持续生产。capture`:79`中的883/r99是生产设备，working=true且各输入为4；capture`:80`中的885是r0仓库，持有915个1206，未连接5326。不得把885库存说成r99运行或送达该consumer。
+
+D仍仅有DA20、DD20、DH2 free 9段；DH1/H3和D两端分拣器未建，不宣称自动D恢复。当前累计309带/9 sorter/1 tower；余量245带/11 sorter/1 tower是计划预测。1210非零、完整自动供料和连续产率均未证明；本窗没有restart，也没有把快照验收说成protected恢复或持续率测试。
+
+本窗调用方曾遇到若干commit前问题。无效Hashtable绑定在任何Bridge调用前失败；旧SID guard不是“过期票据”：run `4477…:1`有1次successful `get_session_state`，`:2`的fresh_reads guard随后拒绝，没有prepare、commit-intent或commit。另一次原生prepare为`prepared/commitAllowed`；调用方原来要求历史slot 7，但fresh native prepare选择slot 6，严格校验因此在commit前拒绝0 commit（`ce641661024d43cfac009bfa4b6ae81d:6`）。root核当前slot 6为空且没有D4/Container5冲突后，才更新到slot 6并继续严格匹配，未移动目标或放宽matcher。D-A请求另因嵌套PowerShell参数展开在Bridge前停止，之后改为同一PowerShell进程内显式splat。原生拒绝0、重放0；不能将这些已说明的调用方问题写成票据过期、游戏漂移、隔离或unknown。
+
+可复用结论：历史原生资格固定的是几何和历史上下文，不是当前运行时session或实际端口绑定；施工前仍要把同一session的新鲜原生计划、当前空槽与端点读回逐项对应。复杂PowerShell参数不要经嵌套shell二次展开。D前缀、Fe实际入料和保存审计仍不等于Gate完成：完整D链/未来actual-ID联合预检仍待fresh证明，且本窗0 restart；全链自动供料→1210非零→正常保存→protected restart→恢复后再次非零继续保留为结束门。
+
+冻结后只读诊断`234c5f7bc1cd46cba5b50913459b6896:1–5`另有一个本地读回包装问题：3074的`inspect_factory_entity`原响应`success=true/error=null`，H20/D580只是该时点库存。把整数objectId `3074`用于`[ordered]`字典下标赋值时，被当成位置索引而抛`ArgumentOutOfRange`，因此没有继续读完其余对象或取得closing S。它不是Bridge/native/版本/隔离失败；不得重做已经成功并持久化的3074读取。root的零Game fixture重现此异常，普通Hashtable的9个integer key通过；随后授权仅续未读对象与closing S，external10继续冻结。
+
+续读run `03e7d55ef141412387e1c51a9871c3fb:1–9`返回其余8个对象和closing S：tick **87204103 / R18 / save87119420 / healthy owned**，0 prepare/commit。它复用首run已成功的3074与catalog读数，但两run不是同一快照。续读run的九条native响应（8个对象＋closing S）均已保存；随后仅摘要因从`sorterEndpoints`而非entity顶层读取`filterItemId`失败，无需重读。3073读数为H20、D输出99，3403为D40；这些仅是时点库存，不证明长期供给、精确buffer容量或停机原因。该续读不是完整工厂审计，不改变本窗capture **3fce122b…** 的审计数字或closing tick。

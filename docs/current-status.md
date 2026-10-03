@@ -1,15 +1,15 @@
 # Spherewright 当前快照
 
-更新：2026-10-04（Asia/Singapore）。本阶段原件与审计边界见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
+更新：2026-10-04（Asia/Singapore）。本阶段原件与边界见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
 
 ## 当前已核状态
 
-- 本轮执行源码 `386feb63e7328b43948ef3a10eb1344877743812`；installed `3fe31d1`、DSP native `29104`及64 tools / 1 resource沿用已核能力，本阶段未部署。当前owned primary正常保存 **89850963 / R9 / J100**，最新只读closing观察 **89867928**。本次升级后尚未protected restart验收，不撤销此前恢复输出正例；Steam/DSP保持运行，未做Codex关闭存活测试。
-- 最终连续采样run `db555450498b4ed79a316dd465950ed1`已结束：97样本、3054 sampler reads、3058 native请求、墙钟2177207ms。一次sample-gap后重置，最终有效连续段为**89799586–89835686，36101 ticks**。1210非重叠新产量保守下界17，高于该时段至少1件/分钟所需的11；不是精确总量。PC全实验库存2685→2678，连续有效段2686→2678，下降8；因此全源供料与Gate 2仍未通过。
-- 正常保存run `cf93e8dde9dc4a859df5f5ad561e9222`覆盖全部10个accepted：external **10** / lifetime **140**；十写冻结。独立完整capture为60页、5945 built、0 prebuild、22对象细节、11620互逆边；除已批准1512升级与矿机1496移除矿点48的有界例外，其余静态配置一致。最后只读包仍为R9/save89850963/J100，无unknown、inflight或replay。root审计proof `5f6adea51edd4a41a6f2d590f3004db2:1`，SHA-256 `09C7FED9838B2F6683EA8075A69006A8A260784F2522A041F3CF6BAD16787F3F`，0 Game调用。
-- 唯一批准的升级是1512从2011至2012；`progressRequired`由600000降至300000是原生运输周期参数，不是功率。现有铁输送仍待预算与fresh资格核验，不能归因于某一个分拣器。矿机1496覆盖读数8→7；node48返回原生`INVALID_ENTITY`证明该对象不存在，不是amount=0。node44还有17939铁矿，矿机继续产矿；当前DLL的耗尽回调解释有界覆盖变化，但没有观测精确耗尽瞬间。
-- 十写原审计及全capture通过不等于完整自动供料：采样的PC库存净下降，1210下界也不是产量总数。详细窗口、动作、保存和原件索引见阶段证据。
+- 本阶段执行source HEAD `036611f6471d71e3c79abb3d77b2a45ae4cc9b7d`；installed `3fe31d1`、DSP native `29104`及64 tools / 1 resource能力不变，未部署。当前owned primary仍为 **89919581 / R18 / J100**，最新只读closing观察 **89976016**；Steam/DSP保持运行，本阶段没有restart。此前恢复后输出正例仍有效；本次Codex退出测试已取消。
+- 本阶段两次手搓、两次原生设备升级及一次正常保存，共5个unique accepted；计数 **external 5 / lifetime 145**，无unknown、inflight或未保存结果。
+- 净库存变化仅item1101（Fe）−3与item1202（coil）−1，其余包括basic和fast项保持不变；r97使用的是既有coil，不能套用旧的零coil补料差量。1535和2317本次均由2011升级到2012，native cargo、循环进度比例、filter（0/1101）、peer互逆连接和其余配置保持；读回ID仍为1535/2317，但后续不得依赖升级后ID恒定。
+- 三个独立600-tick只读窗run `4617f3783f314703b433e80c82c264cf`已由root核验：82 native请求、125.206秒、0 writes；窗为89928880–89929479、89929516–89930115、89930228–89930827，间隔36/112 ticks。它们是独立样本，不能拼接或累计连续信用。PC885为2660→2661→2660、Warper5331为734→735→735、Fe1511为2990→2990→2988；虽723的Fe缓冲三窗均为0，724输入与生产证明有实际供应，不能按空缓冲认定未运输。单窗零产出不直接判长周期失败，短窗也不构成持续率验收。
+- 三窗内采样到的N3动态ratio均为1；另行核对的16个实体（含设备grade）静态配置一致；声明峰值容量预算亦单独核对满足。这些检查不证明完整来源配平或持续供给。此前有界run `db555450498b4ed79a316dd465950ed1`信用不复用。新预声明只读连续run `64251c2a8f0a419e97b5f0d59e6c2f46`已完成：覆盖 **89940003–89976009（36007 ticks）**，87个有效样本、0次重置，3008 sampler native reads，墙钟1988.885秒；合并开闭请求后原件共3012 native请求。1210非重叠产量保守下界17，高于最低1件/分钟所需的11，但不是精确产量；Warper5331库存739→756，PC885库存2662→2665。此为连续产出与PC净库存正例，不证明Governor、全源归因或排除全部上游有限库存；full-source、sourceSupply、finiteBufferExclusion及protected restart仍未通过。
 
 ## 尚未闭合的边界
 
-下一阻塞是现有铁链`1511→1535→2317→2351→723/724`的供给与分配：1511累积、723铁空，Motor缺铁并传导至Turbo与粒子容器缺供。先完成整路端到端预算和fresh native资格；尚未唯一定位单个分拣器，不扩建旁路。新upgrade尚无protected restart验收；全源供料配平、缓冲排除和Gate 2保持false。当前不做施工、部署或发布；external10 / lifetime140冻结，需root后续明确交接。
+当前没有新protected restart验收；这不撤销之前已经通过的恢复后输出正例。原87样本窗口未采870石墨/酸库存、5187石墨上游库存或3343上游氢库存，有限上游库存排除仍缺原证据；这是未覆盖而非发现停产。本阶段不施工、不重启、不部署或发布，等待root明确后续交接。

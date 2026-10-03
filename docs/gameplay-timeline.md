@@ -5875,3 +5875,4 @@ factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembl
 - 2026-10-03：Tail增加两端分拣器并保存；必要normal restart后healthy owned primary恢复、Journal连续，恢复后三个600-tick窗口均观察到1210非零产出，完整快照独立核验通过。保存→protected restart→恢复后首次非零的垂直生命周期门已闭合，但消费仍为0、来源间歇，短窗不代表持续自动供料或Gate 2全通过；真实Codex关闭存活测试未做。详见[本阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
 - 2026-10-03：恢复档独立连续采样覆盖36,161 game ticks且无gap，1210非重叠产量下界16件，高于每分钟至少1件在该窗口所需的11件；不等于精确总量或Gate 2通过。详见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
 - 2026-10-04：1210只读采样最终取得36,101连续ticks、17件非重叠产量保守下界；粒子容器库存仍净降8，故供料/配平未闭合。正常保存至89850963/R9/J100并通过十写审计与完整快照核验；铁链分配仍待预算和fresh native资格。详见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
+- 2026-10-04：既有peer升级与正常保存后，预声明只读连续run覆盖36,007 ticks，1210非重叠产量下界17，PC库存净增3；原窗口未采870石墨/酸、5187上游石墨或3343上游氢库存，有限库存排除仍缺证据（不表示停产），不代表Governor或全链供给通过。详见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。

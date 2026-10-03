@@ -671,3 +671,27 @@ root静态读回proof `8fb811c0a9bb4a2b86c2dca088835743:1`，SHA-256 **`FB5F6D47
 最终正常保存原件 `cf93e8dde9dc4a859df5f5ad561e9222:1–11`：prepare `:4`、commit `:6`、terminal `:7`；覆盖全部10个实际accepted。保存 **89850963 / R9 / J100**，external **10** / lifetime **140**，十写冻结。其后完整capture `44ff771d072a46e4bf3b16e56bd26d64:1–89`为60页 / 5945 built / 0 prebuild / 22项details / 11620互逆边，snapshot tick **89851206**、capture close **89851625**；全厂其他静态配置一致。root十写审计proof `5f6adea51edd4a41a6f2d590f3004db2:1`，SHA-256 `09C7FED9838B2F6683EA8075A69006A8A260784F2522A041F3CF6BAD16787F3F`，0新Game调用。206项动态buffer差异保留在原审计，不在此逐项列出。最新只读run `9de2b23384f24bc6bf8d358565fc85f8:1–7`于89867928闭合，仍为R9/save89850963/J100，无unknown、inflight或replay。
 
 本窗唯一批准的设备升级是1512从2011到2012；`progressRequired` 600000→300000是原生运输周期参数，不是功率。1535/5635分支保留未变。铁链问题仍以`1511→1535→2317→2351→723/724`为待核路段：1511在累积、723铁块库存为空、Motor缺铁并传导至Turbo/粒子容器缺供；现有证据没有唯一指向某个分拣器，不授权旁路扩建。矿机1496覆盖由8变7；node48的原生`INVALID_ENTITY`证明对象不存在，不能记作amount=0；node44仍有17939铁矿且矿机继续生产。当前DLL的`MinerComponent`在amount≤0时调用`RemoveVeinWithComponents` / `NotifyVeinExhausted`，可解释这项有界耗尽变化，但没有观测精确耗尽瞬间。本次upgrade尚无protected restart验收，DSP/Steam保持运行；专门Codex关闭存活测试已取消。本阶段继续冻结，须另经root交接后才开始后续工作。
+
+### 2026-10-04：既有peer升级、独立短窗与连续采样核验
+
+源码HEAD `036611f6471d71e3c79abb3d77b2a45ae4cc9b7d`；installed `3fe31d1`与DSP native `29104`不变，64 tools / 1 resource能力沿用已核版本，本阶段未部署。DSP与Steam保持运行，没有关闭、重启或加载；Codex退出存活专项测试已取消。
+
+原件 `fc8f0f0e907d4f51a50b6e1ddde97332:1–73`记录两次手搓（recipe r97/r88各1）、1535与2317各一次2011→2012原生升级、以及正常保存，共5个unique accepted；五动作执行入口耗时15.159秒。root proof `b0eb2e90939b4469a132d061e9722fa6:1`，SHA-256 `C23368E9698C27BDA55A6C008ED378D18F2826112AC08EE263EA40D2F7F0CE54`，独立审计3.906秒、0次Game调用。后续连续采样耗时另列，不计入该五动作入口耗时。
+
+净库存变化仅Fe/item1101 −3、coil/item1202 −1，其余物品不变（包括basic、fast）。r97使用了已有coil，不能套用旧的“零coil补料”差量。两项升级的native cargo、循环进度比例、filter 0/1101、peer双向连接与全配置均保留；本次返回的object ID仍是1535/2317，但不将ID恒定作为保证。原动作索引无build commit，本阶段也未批准新增实体；这里是目标与peer读回，不冒充完整全厂快照。
+
+正常保存为 **89919581 / R18 / J100**，保存后观察 **89919585**；后续三窗closing观察 **89930835**，仍为同一save/Journal。external **5** / lifetime **145**，无unknown、inflight或未保存结果。三窗只读run `4617f3783f314703b433e80c82c264cf`含82 native请求、125.206秒、0 writes。root proof `70009949864a4fdd862b961f036447db:1`，SHA-256 `58FDF17441C1992AA6EED7F50E99759D2D32F04CF325DADBDAF8FBDFD5164EFF`，0 Game调用。
+
+三个彼此不重叠的600-tick窗口为：89928880–89929479、89929516–89930115、89930228–89930827，间隔36与112 ticks。这是独立样本模式，不累计连续信用；这些间隔也不能拼接成连续实验。按窗口读到的生产/消费（P/C）值如下；单窗正值、P/C相等或短周期波动均不是持续供给通过，单窗零产出也不直接判长周期失败：
+
+| Game tick窗口 | Motor 1203 P/C | Turbo 1204 P/C | 粒子容器 1206 P/C | Warper 1210 P/C | D 1121 P/C | Graphene 1123 P/C |
+|---|---:|---:|---:|---:|---:|---:|
+| 89928880–89929479 | 2/2 | 1/2 | 0/0 | 1/0 | 5/0 | 2/2 |
+| 89929516–89930115 | 3/2 | 1/0 | 1/0 | 0/0 | 0/0 | 0/0 |
+| 89930228–89930827 | 3/2 | 2/2 | 1/2 | 0/0 | 5/10 | 0/2 |
+
+同三窗buffer序列：PC885 2660→2661→2660，Warper5331 734→735→735，Fe1511 2990→2990→2988。723的Fe读数三窗均为0，但724输入与生产有实读，因此不能以仓缓冲为空认定没有铁运输。N3每窗采样ratio=1；另行核对的16个实体静态配置（含grade）一致；声明峰值容量预算是独立核对项，结果满足。以上只支持这些短窗时点事实，不能外推整链供给或长期比例；首次离线摘取误用了不存在的`cargoItemId`投影，移除无用投影后从同一已持久化原件完成核验，没有重读Game、重放或新写。
+
+此前有界连续run `db555450498b4ed79a316dd465950ed1`的信用不复用于后续实验。新只读连续run `64251c2a8f0a419e97b5f0d59e6c2f46`按声明原件`:3`、UUID `a0797419-b49e-4997-b5ad-f5cefeef1f43`运行：25实体/12物料，cadence 330、native窗口600，目标至少36000 ticks，最多120样本/4096 native请求/3300秒，poll间隔3秒，0 writes。终态覆盖 **89940003–89976009（36007 ticks）**，87个有效样本、0次重置；sampler读取3008 native requests，墙钟1988.885秒。root汇总的原始请求（含开、闭各两次）共3012 native；原件proof `ff639bc12b774b248eacf60ea4a8200d:1`，SHA-256 `635C6056B926EDD8F2DCBCD432A7B05831ED3F838E0C33AF462748BBE9F52D1C`，离线审计40.748秒、0 Game调用。连续模式按`covered`判完成；`qualifyingWindows=0`仅是独立样本模式计数，不是本次连续实验失败。此87样本窗口未采870石墨/酸库存、5187石墨上游库存或3343上游氢库存，因此有限上游库存排除仍缺原证据；这是证据未覆盖，不表示这些节点停产。
+
+按非重叠区间计算的1210新产量保守下界为17，超过该窗口按最低1件/分钟所需的11；17不是精确总产量。Warper5331库存739→756，PC885库存2662→2665（净增3）。这是连续产出及PC净库存正例，不证明Governor、全源供料归因或已排除所有上游有限库存；不把PC库存短窗增量解释为全链配平。root仍需核sourceSupply与finiteBufferExclusion的上游证据。窗口结束观察为 **89976016**，save仍为 **89919581 / R18 / J100**，external **5** / lifetime **145**，0 writes；无新restart。之前独立通过的恢复后输出正例仍有效，但本阶段sourceSupply、finiteBufferExclusion、full-source与protected restart均未通过。

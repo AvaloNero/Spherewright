@@ -566,3 +566,28 @@ proof原生旋转索引中的四项exact pre/post均由installed native校验通
 随后只读source pack `750912e47def4d14a1951025cee12c59`：S1；inspect 3083/3084/3308/3309/3399/3123/3122/3098/3096 为ord2–10；Power11；closing S12为 **87565358 / R37 / save87389880**。root零Game source proof `faaac627dedd41c9adfd823a449c2ff1:1`，SHA-256 `1DA933FB5470B09E333217859586AE69D112E6A46FE338ECFC0F134972483197`，核实原件与native29104哈希。runtime catalog的r58配方输入oil1/H2、输出H3/graphite1；3083、3084均有oil2/H4、progress complete、serve1、working=false，graphite output=0而H output分别60/59。按当前DLL中的Assembler Refine guard条件`produced[j] > productCounts[j] * 19`，这两个读数均超过57，满足原生输出阻塞条件；本窗没有instrumented函数返回trace。该条件与观测状态说明当前两处r58石墨输出受氢输出门阻挡，但不能据此确定发电机capacity/fuel根因、下游氢sink根因或声称修复已完成。immutable graph确认输入sorter3308/3309/3399回接r58 refinery3083/3084，尚无超出这些局部读数的全链结论。该source pack仅为局部只读诊断，不改变capture `b0a67d710c744189a0db205a22372361`的closing、save或图统计；N3 +1 node与两端实际D sorter full serve可按原件引用，但不外推全部20个计划sorter覆盖。
 
 两次本地formatter问题发生在原响应已保存后：full-pack缺少`session.inFlightActionIds`字段；成功的generator inspect134随后因摘要读取不存在的`connection.filterItemId`而出错。均非Game/native失败，没有写入或重放；保护原件已恢复，仅续读尚未取得的对象。写门仍关闭，external10/lifetime110冻结；不宣称全1210、粒子容器完整供料、持续功率或保存后restart已通过。
+
+### 2026-10-03：粒子容器路线、Diamond地面前缀与风力预算（整链仍未完成）
+
+source HEAD `776fee1`；installed `3fe31d1`、native `29104`未变，未部署。root完整capture `682d8ec634ae45389ecfcf15e94098ad`的open/pages/P/J/Power/prebuild/details/closing依次为`:1`, `:2–60`, `:61`, `:62`, `:63`, `:64`, `:65–86`, `:87`；共**59页 / 5879 built / 0 prebuild / 11478互逆边**，closing tick **88288293**，不是新保存。root proof `2ec425408a624395a19f65100e0d79f6:1`，SHA-256 **`D42B8AB445F8DA4289A772CC6539F63BDC5AE4EFA1EDBE838038ACF713C82677`**，独立审计35.406秒、0新Game调用。相对上一完整capture `b0a67d710c744189a0db205a22372361`，只新增36条带、2个分拣器和4台风力涡轮机，无删除或未解释静态漂移；仅两项保留cover旋转（5794、5773）获精确原生核验。
+
+本十动作窗口的protected原始记录按动作顺序索引如下；每组均为唯一accepted、同action completed/succeeded、replay=false。序号表示prepare/commit/terminal原件ordinal，动作游戏tick取startedAtGameTick→completedAtGameTick：
+
+| 原始run | 原件序号 | 动作与结果 | terminal游戏tick |
+|---|---|---|---|
+| `d82636fa9adf4b319b4a05adb0679071` | `:5 / :7 / :14` | recipe7手搓×2，实际产出item2203×2；铁−14、磁铁−6、铜−3 | 88129816→88130336 |
+| 同上 | `:20 / :22 / :29` | 风机5838建成 | 88130406→88130889 |
+| `5e20d699281441b985e6176f1f090734` | `:9 / :11 / :17` | 风机5839建成 | 88220084→88220448 |
+| 同上 | `:32 / :34 / :42` | 风机5840建成 | 88220829→88221398 |
+| 同上 | `:62 / :64 / :71` | 风机5841建成 | 88222005→88222465 |
+| `b94394a9728d41aa891b9dc04d9b6b76` | `:7 / :9 / :59` | PCH3新增31带，实际有序目标从5843、5842开始，随后5844–5872 | 88253848→88259702 |
+| `63c216c7125843ae8eecb7a89e74c58d` | `:6 / :8 / :14` | 粒子容器目的端分拣器5873 | 88265406→88265734 |
+| `4f855e8eb00e414da00f5a2acb454ba0` | `:6 / :8 / :18` | 粒子容器源端分拣器5874 | 88268309→88269131 |
+| `8b710be45c77475dbdb2732d86565fa3` | `:3 / :5 / :17` | Diamond地面带5875–5879，共5带；尚未接入端点 | 88271739→88272844 |
+| `8e8653b0b5ac4f2c86002179643443ae` | `:4 / :6 / :7` | 正常保存，action `b7a9e58b-d792-4c64-986a-d662eb9312d7` | 88283027→88283027 |
+
+保存点为 **88283027 / R56 / J98**；root核十个动作均成功终结、无replay/unknown/在途，external **10/10**、lifetime **120**仍冻结。全窗净变化为铁−14、磁铁−6、铜−3、风机−2（手搓2、建造4）、带−36、分拣器−2；其余库存及玩家位置保持。没有重启、重载或部署；Steam/DSP仍运行。
+
+粒子容器的132带有向路`5760→5761`及两端均由capture核实：`885.slot2 → 5874 → 5760`与`5761 → 5873 → 5326.slot5`，过滤item1206、N3、full serve。5326 detail`:68`当帧output1127=20；这只是capture时点读数，不证明持续供给。J98在`:62`记录一条`production_line_item_first`：item1127/奇异物质，gameTick **88272996**，actualTime **2026-10-03T17:23:54.7304524+08:00**；这证明一次首次自动产出事件，不是持续产率。Diamond带5875–5879仍是地面前缀。5333 detail`:69`未见Diamond/Strange且Lens输出为0；5334 detail`:70`读到Graphite 2、Diamond 100。最近Lens/Strange端点记录仅是tokenless preview，须fresh取得实际ID并走正常原生资格，不能把旧preview当成可提交计划。
+
+N3读数为216 nodes、531 consumers、131 generators，动态capacity **1,806,000 J/t**、required=served **227,586 J/t**、ratio 1。四台风机带来的实际wind credit为**20,000 J/t**，不是铭牌或持续供电。相对声明的整案峰值**1,803,800 J/t**，该帧只有**+2,200 J/t条件余量**；这既不证明长时余量，也不证明1210已产出。Gate 2仍未完成：Diamond/Strange/Lens/Graphite剩余接口、完整1210自动供料、持续窗口及保存后protected restart尚待证明。

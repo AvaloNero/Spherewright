@@ -97,6 +97,29 @@ $slowResult=Invoke-SpherewrightProductionExperiment @slow
 Assert-Sampling ($slowResult.result -ceq 'sampling_completed' -and $slowResult.samples -eq 3 -and $slowResult.requests -lt 90 -and $slowResult.timingMs.total -le 180000) 'five-second default completes at 15fps within unchanged time/read caps'
 Assert-Sampling ($script:records[0].pollSeconds -eq 5 -and $slowResult.gameWrites -eq 0 -and $slowResult.modelDecisionsInsideLoop -eq 0) 'cadence is declared before reads with no model loop or writes'
 
+# Identical15fps virtual-clock fixtures: a30-minute cap cannot cover ten
+# game minutes. Declare a finite45-minute task BEFORE it starts, not a retry
+# or extension of any live experiment. Existing sample/read caps stay bounded.
+$slowContinuous=@{};foreach($key in $arguments.Keys){$slowContinuous[$key]=$arguments[$key]}
+$slowContinuous.EntityIds=@(1..15);$slowContinuous.Mode='continuous';$slowContinuous.MaximumSamples=120
+$slowContinuous.RequiredContinuousGameTicks=36000;$slowContinuous.IntervalGameTicks=330
+$slowContinuous.PollSeconds=2;$slowContinuous.MaximumRequests=4096;$slowContinuous.TimeoutSeconds=1800
+Reset-Sampling @(600) '15fps'
+$slowContinuousError=$null;try{Invoke-SpherewrightProductionExperiment @slowContinuous|Out-Null}catch{$slowContinuousError=$_}
+$slowContinuousFailure=@($script:records|Where-Object event -EQ 'production-experiment-failed')
+Assert-Sampling ($null -ne $slowContinuousError -and $slowContinuousError.Exception.Data['spherewrightSamplingFailureKind'] -in @('deadline_exhausted','read_crossed_deadline')) '15fps36000-tick task stops at its original1800-second deadline'
+Assert-Sampling ($slowContinuousFailure.Count -eq 1 -and -not $slowContinuousFailure[0].automaticRestart) 'slow continuous deadline failure is retained without extending or replaying it'
+$slowContinuous.TimeoutSeconds=2700
+Reset-Sampling @(600) '15fps'
+$slowContinuousResult=Invoke-SpherewrightProductionExperiment @slowContinuous
+Assert-Sampling ($slowContinuousResult.result -ceq 'sampling_completed' -and $slowContinuousResult.coveredGameTicks -ge 36000 -and $slowContinuousResult.resetCount -eq 0) 'predeclared2700-second finite task covers36000 contiguous ticks at15fps'
+Assert-Sampling ($slowContinuousResult.timingMs.total -ge 2400000 -and $slowContinuousResult.timingMs.total -le 2700000 -and $slowContinuousResult.requests -le 4096 -and $slowContinuousResult.samples -le 120) 'slow continuous fixture obeys initial wall/read/sample bounds'
+Assert-Sampling ($slowContinuousResult.gameWrites -eq 0 -and $slowContinuousResult.modelDecisionsInsideLoop -eq 0 -and -not $slowContinuousResult.governorAcceptance) 'longer initial budget grants no mutations,model loop or production sign-off'
+Reset-Sampling @(600)
+$tooLong=@{};foreach($key in $arguments.Keys){$tooLong[$key]=$arguments[$key]};$tooLong.TimeoutSeconds=3601
+$tooLongError=$null;try{Invoke-SpherewrightProductionExperiment @tooLong|Out-Null}catch{$tooLongError=$_}
+Assert-Sampling ($null -ne $tooLongError -and $script:calls.Count -eq 0) 'over3600-second declaration rejects before any request'
+
 $continuous=@{};foreach($key in $arguments.Keys){$continuous[$key]=$arguments[$key]};$continuous.Mode='continuous';$continuous.IntervalGameTicks=600;$continuous.MaximumSamples=60;$continuous.MaximumRequests=300
 Reset-Sampling @(1..60|ForEach-Object {$_*600})
 $result=Invoke-SpherewrightProductionExperiment @continuous

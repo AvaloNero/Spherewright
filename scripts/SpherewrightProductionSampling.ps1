@@ -21,7 +21,10 @@ function Invoke-SpherewrightProductionExperiment {
         [ValidateRange(1,3600)][int]$IntervalGameTicks=606,
         [ValidateSet(600)][int]$WindowGameTicks=600,
         [ValidateRange(36000,360000)][int]$RequiredContinuousGameTicks=36000,
-        [ValidateRange(1,1800)][int]$TimeoutSeconds=180,
+        # At15 game ticks/second,36000 ticks require2400 wall seconds.
+        # Only the initial finite declaration may use this larger bound; a
+        # running experiment's original deadline is never extended or replayed.
+        [ValidateRange(1,3600)][int]$TimeoutSeconds=180,
         [ValidateRange(1,4096)][int]$MaximumRequests=90,
         [ValidateRange(1,10)][int]$PollSeconds=5
     )

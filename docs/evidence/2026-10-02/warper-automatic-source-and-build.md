@@ -431,3 +431,48 @@ whole actual有向空路径为A→left→middle→right→D→5429→884；**871
 离线Luna最小Release测试59/59＋8/8已通过；本地共享caller薄入口0Game smoke及18个schema正负例通过，不冒充native验收。各entry到首次prepare约1.1s，后四段和目标/save的caller时间主要为上述物理等待；不据此编造相对旧流程提速比例。完整root/Luna模型调用、缓存/非缓存token、文档/Git/CI阶段墙钟尚缺provider数据，均unknown。本窗只形成同一Gate事件/封窗交付，不给每一段另造commit；无tag/release/Thunderstore发布。
 
 本次流式外审在有界期限内未产生terminal，故记录为未完成而非通过；依据可见轮询估计会话约220秒，准确启动时间未保留，达到预算后停止。未因`unrecognized_model`重试或更改模型/API/baseURL。root另行核验了四份文档的事实与提交范围，但该独立核验不等同于外审通过。
+
+### 同一运行现场续接：源端5430与1206启动（当时未正常保存；后由下节覆盖）
+
+封窗单目的commit **dfc28df9880799ec61b1ab6a6989ef86bd6cf6a3** 已push，远端main匹配，精确Windows Core CI **37079721645 completed/success**。root确认上一writer停止、无未核销或在途后仅重开external0/lifetime70，未改游戏R/tick/J，也未保存、关闭、重载或部署DSP。游戏由Steam持有，不以Codex/Host生命周期作为退出或恢复触发。
+
+普通共享caller的同一薄入口新增方向参数与可省略阶段save，0Game的两个真实pwsh smoke、24个真实ValidatePrepared回调schema正负例通过；这些不是native验收。实际源端run `f926d832bf364d74b5f33180170a3946`：prepare`:6`为exact_slots/source871.slot8/destination5366.virtual−1/filter1123/2011×1，唯一commit`:8` acceptedtrue/replayfalse，action **e1bc59cf-8e1b-4805-b6ed-ced2aa4a324a**，同action终态`:25`成功，tick86765754→86766249、target **5430**、2011 **27→26**。`:26–29`核实际`871.slot8→5430.input1 / 5430.output0→5366.slot4`、N3/serve1、旧边/静态/玩家与其余库存不变；closing S/J`:31–32`为tick86766258/R16/save86729135、J采集86766259/durable97/无pending/error、无在途。root独立证明 `134623e16abe4cd2ac716b1592152d3f:1`，SHA **7B263C5249D878AE47E709F58192191F6DBA436828445177E5A894ED66863BB7**，0新Game调用。
+
+预声明有界采样复用 `Invoke-SpherewrightProductionExperiment`，entities871/869/5366/884/883/885/5388/5429，items1123/1206，3个独立600-tick窗、interval606、max3samples/100requests/300s。run `1be51a62796b42d48816babe486970b9`，事件`:21/40/59`分别索引原响应`:10–20/29–39/48–58`：
+
+| window ticks | 1123 produced/consumed | 1206 produced/consumed | 1206实测/min | 885库存 |
+|---|---|---|---|---|
+| 86768567–86769166 | 0/4 | 2/0 | 12 | 4 |
+| 86769203–86769802 | 2/4 | 2/0 | 12 | 6 |
+| 86769822–86770421 | 2/4 | 2/0 | 12 | 7 |
+
+runtime身份为 **1206/粒子容器**，883/item2303/r99三次均working、N3/serve1，1204/1104/1123输入均正。不能把口头误称“碳纳米管”当作物品身份；实际动作一直按上述native ID/recipe执行。原`:61`记录56请求、110.160s（读取4.371s、预定等待105s）、循环内0模型决策；`:60` closing S为86770423/R16/save86729135/healthy owned。root独立核所有三窗原生产响应、selected实体、输入与功率，证明 `67ca019cf6be4bb9aa8b1eb1f4dd6734:1`，SHA **CF132B3A21A33410F376BB86D8A96003D1E531384DB8D6BC29166524D5B050BB**。一次本地审计排序表达式解析错误从同一原件修正，0额外Game调用、0重放，不是native blocker。
+
+当前external **1/10**、lifetime **71**，成功源端5430 **尚未被正常save覆盖**，无unknown/在途。三窗有间隔，continuous credit **0**，只证明1206启动和重复活动；未证明完整自动供给余量、1210、restart或36000ticks，也未由这些样本定位唯一缺料。下一阶段仍是整案内剩余自动源—路—端与必要供电，不为单对象另commit，不重放5430或63条带。DSP保持运行；正式Gate重启留到全链输出与正常保存之后。
+
+### 2026-10-03：Cu/Turbo自动接口完整施工窗保存并独立核销（无游戏重启）
+
+source main **dfc28df**、installed **3fe31d1**、DSP **0.10.35.29104**，同一owned session。延续已批准的完整1210全案，上一源端5430占external1，本批只增加五段Cu带、两端Cu分拣器、既有涡轮带取料分拣器和正常save：**1→10冻结 / lifetime71→80**。没有Move、取材、手搓、拆改、旁路、部署或关闭游戏；Codex/Host重启仍不触发DSP退出、重载或计数归零。
+
+| 原run（唯一commit / 同action终态） | 实际结果 | 背包2001 / external |
+|---|---|---|
+| `bd1bafbe5a3947bdaf8048ee14011343:9/124` | A12，首5431/末5442 | 519→507 / 1→2 |
+| `32cbee1ca51740b5a5c56a7401c4a218` | D13，首5452/末5455 | 507→494 / 2→3 |
+| `b06811f317e54f0188bd1ab7e4bb50fd:9/155` | middle18，首5467/末5473 | 494→476 / 3→4 |
+| `1b3529f65ece45a5bb036731991e86f7` | left9，5442→5467双cover | 476→467 / 4→5 |
+| `588ba6d4e61645ec8f140abb243af532:11/295` | right26，5473→5452双cover | 467→441 / 5→6 |
+| `0aaa334c7acb4d078a76a7b5752a658f:8/32` | 5455.actual4→5509→884.11，filter1104 | 2011 26→25 / 6→7 |
+| `da0f7a29a3a14f2698e5339bf176a5a2:8/26` | 562.8→5510→5431.actual4，filter1104 | 2011 25→24 / 7→8 |
+| `b0fb9c1ed8454769b6e49a8d42dd5112:8/31;40/41` | 3467.actual4→5511→884.1，filter1204；随后fresh normalSave | 2011 24→23 / 8→9→10 |
+
+每个路径fresh原生计划与固定资格坐标/数量/高度/cover保留模式核验，唯一commit、原action终态、材料和actual有序实体/双向连接读回。完整有向Cu路A→left→middle→right→D **78个NEW2001**；不按ID大小排序，不重放成功前缀。3467旧边、884原输入slot10/输出和过滤配置保留，四只新sorter（含5430）均N3/serve1。
+
+正常save原action `3526b3d5-673d-4120-b144-67399fb25d80`终态成功，tick **86835012**，覆盖本窗及先前5430。一次封窗capture **3e64a18b990147b89410d31d000dc6d6:2–57** 为56页/5511唯一built/tick86836183；`:61`证明0prebuild，`:62–70`为相关端点detail，`:71` closing S **86836420/R33/healthy owned/saved/resumeAvailable**，durableJ97/pendingfalse/errornull。十笔原accepted全部同action成功，原索引无replay、unknown、未决或在途。
+
+root直接核原件并与`3bf6a4…`完整基线比对：只增78条带/4sorter，背包2001 **519→441**、2011 **27→23**，增产点数及其它库存不变，玩家位置不变；**10748边唯一互逆**，旧实体无删改或未解释静态漂移，J97原97条连续，N3 required=served **467265 J/t / ratio1**。独立证明 **44306845f3d14191aa140f85d26c6cf7:1**，SHA-256 **D49AF63FF468B24C5317FA28B7D878B70272AAD57D001668AE9827B7671B37F2**，21.04s、0新Game调用。审计本地一次缺少Hashtable键检查在同一原件上修正；不是游戏失败，也未重采或重放。
+
+封窗`:65–66`为瞬时点证据：883/r99 working，1204/1104/1123各3、1206输出0；885库存1206/粒子容器12。`:68–69`两只Cu sorter实际持铜；这不是额外采样窗、稳定供给或1210非零证明。先前三个600-tick启动窗仍仅短窗，continuous credit0；本窗保存已证明，**restart未做**。
+
+效率边界：五段带入口→首prepare **0.99–1.34s**；prepare＋精确校验＋commit合计 **2.23s**，同action终态观察合计 **1620.61s**，五段完整执行 **1637.49s**；三只sorter阶段含末次save **122.66s**。主要等待在原生无人机施工/同action轮询，不能把全部观察墙钟当纯模拟或纯模型用时。Luna两次零accepted调用方错误（Journal摘要字段、Hashtable参数绑定）均从原数据修正；原生拒绝0、无额外commit。0Game真实pwsh smoke通过、sorter-tap AST离线正负例 **9/9**，不冒充native验收。无每动作文档/Git/CI、没有新的模型逐窗采样；root＋Luna provider token/完整委派与GitCI墙钟仍unknown。外审若无terminal仍未完成，不记通过。
+
+整案已施工供料141带/5sorter，预测剩413带/15sorter/2塔；尚须Fe/D/1206/Graphite→Diamond→Lens及1127→Lens→1210实际连接、现场供电和真实产出。完整Gate结束仍为自动供料→1210非零→normalSave→protected restart→恢复后再次非零；本窗docs/push/准确SHA绿CI/root交接之前保持external10冻结，DSP保持运行。

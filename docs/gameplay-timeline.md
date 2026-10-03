@@ -5873,3 +5873,4 @@ factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembl
 - 2026-10-03：粒子容器132带有向路及两端全serve已核，J98记录一次首次item1127自动产出事件（非持续）；Diamond仅完成五条未接地面带。新增四台风机后当前N3预算只有条件余量，整条1210、持续功率及restart仍未验收。详见[本阶段原件与边界](evidence/2026-10-02/warper-automatic-source-and-build.md)。
 - 2026-10-03：Diamond、Strange与Lens本窗新增59条带和5个分拣器并保存至R75/J99；J99记录Lens item1209首次自动产出，完整capture审计通过，但1210、持续产率与restart仍未完成。详见[Gate 2阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
 - 2026-10-03：Tail增加两端分拣器并保存；必要normal restart后healthy owned primary恢复、Journal连续，恢复后三个600-tick窗口均观察到1210非零产出，完整快照独立核验通过。保存→protected restart→恢复后首次非零的垂直生命周期门已闭合，但消费仍为0、来源间歇，短窗不代表持续自动供料或Gate 2全通过；真实Codex关闭存活测试未做。详见[本阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
+- 2026-10-03：恢复档独立连续采样覆盖36,161 game ticks且无gap，1210非重叠产量下界16件，高于每分钟至少1件在该窗口所需的11件；不等于精确总量或Gate 2通过。详见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。

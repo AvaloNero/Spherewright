@@ -636,4 +636,18 @@ Cover save原件`54797e750c1f4d41b5f8bec457284591:4–10`对应action `5375d5ba-
 
 恢复后完整capture `a0a3ce0a2351425ca68142a88c0a07a5`：open `:1`、pages `:2–61`、P `:62`、J `:63`、Power `:64`、prebuild `:65`、details `:66–88`、closing S `:89`、summary `:90`；共 **60页 / 5945 built / 0 prebuild / 11620互逆边**，factory tick **88831552**、观察 **88833228**，R1/save **88808747**、J100、external5/lifetime135。N3为216 nodes / 538 consumers / 131 generators，capacity **1,914,000 J/t**、ratio 1；5331库存254。root独立proof `53d4bb2b10134bf395f5e6adfa52a487:1`，SHA-256 `8944A575EB057597A147BD19F36653538FE94F30651749CE408FFFB6FC121C8F`，审计26.282秒、0次新Game调用：5945项旧pose/config/IDs/连接无漂移，inventory/J连续，无duplicate、unknown、inflight或replay。
 
-至此，normal save → necessary protected restart → healthy owned-primary恢复 → 恢复后1210实际非零产出的垂直生命周期门已闭合；不等于完整持续自动供料或Gate 2完成。三窗均消费0、没有continuous credit，883/r99仍间歇；还需厘清持续来源/库存供料，并完成至少1分钟/36,000-tick验收。真实Codex关闭后游戏存活测试仍取消、未证明；下一工作仍限定在1210，不转向燃料、远征或最终包。
+至此，normal save → necessary protected restart → healthy owned-primary恢复 → 恢复后1210实际非零产出的垂直生命周期门已闭合；不等于完整持续自动供料或Gate 2完成。三窗均消费0、没有continuous credit，883/r99仍间歇；还需厘清持续来源/库存供料，并按每分钟至少1件、连续36,000 game ticks验收。真实Codex关闭后游戏存活测试仍取消、未证明；下一工作仍限定在1210，不转向燃料、远征或最终包。
+
+### 2026-10-03：恢复档连续1210窗口的非重叠产量下界
+
+本次只读实验沿用源码HEAD `5917b13`、installed `3fe31d1`与DSP native `29104`，未部署；primary save仍为**88808747 / R1 / J100**，最新观察tick **89381782**。Steam与DSP保持运行，用户取消了Codex关闭存活测试；本阶段不作该项声明。external **5** / lifetime **135**维持，有限阶段结束后写入门被阻止（不同于旧十项冻结）。
+
+前一次独立连续尝试 `20e7a8696036493fa9892ab5f293b2f5` 的第41样本遇到347-tick缺口，重置后结束只有33,924 ticks信用，未达连续门；其信用未与本次拼接。旧root proof为 `8ddaef91f2ad45f3968b299e1003e744:1`。本次固定声明 `1e7be92b`对应一次93样本实验，包含1498 sampler reads、共1502次native请求，耗时605.75秒。完整合格连续段为 game ticks **89345606–89381766（36,161 ticks，reset=0）**。run `a109041db94d4e05948b1b1fde4dd060`原件：首末sample `:26/:1594`、production `:25/:1593`、N3 `:24/:1592`、experiment result `:1596`、closing S/J `:1597/:1598`、summary `:1599`。root proof `ed6bab599099432b8bc3f8e68bafaf00:1`，SHA-256 **`0DFD09DCCD2C8B39A43B9D2E4CBF0F25DBCA14D8D3F2952E669D53592D642D0F`**；独立核验19.840秒、0次新Game调用。
+
+同一连续段内，对1210的非重叠闭区间计算给出**16件保守下界**，而“每分钟至少1件”在36,161 ticks上要求至少`ceil(36161/3600)=11`件。该16件是下界、不是精确总量。12种被查询物料均在本实验窗口内出现新产出；item1121即使首末读数都为0，非重叠下界仍为**160**，故不得用端点快照判成整段氘产出为0。粒子容器相关缓冲读数885为**2782→2777**，Warper 5331为**469→485**；N3采样ratio为1/full-serve、动态capacity **1,914,000 J/t**。这些同窗数据不能单独排除库存缓冲影响，也不证明供需配平或无界持续供给。
+
+完整静态capture仍沿用旧原件 `a0a3ce0a2351425ca68142a88c0a07a5:1–90`（60页 / 5945 built / 0 prebuild / 11620互逆边），并非新连续实验快照。对应采样实现的35项PowerShell检查及commit `5917b13` 的Windows Core CI `37131314183`已通过；46项私有算术fixture只验证区间计算，不是Game证据。保存/恢复后的启动、连续覆盖和最低新产量分别已证明；全链供料配平、缓冲排除和Gate 2均未通过。
+
+同一阶段随后完成固定14实体Fe→Motor→Turbo→粒子容器来源包 `38d23ac9043744d1ab4e24d9006b09cb`，20次只读请求、4.11秒：opening S/J/catalog/power `:2–5`，14详情 `:6–19`，closing S/J `:20–21`，summary `:22`。闭合**89481382 / R1 / save88808747 / durableJ100 / external5 / lifetime135**；N3 required=served210045、capacity1914000、ratio1。1500/r1当帧铁矿4、铁块输出100、notWorking；1511铁1820、723铁0、Motor727与Turbo827为空、PC885为2754；814/r98和883/r99当帧Motor/Turbo输入为0但正在加工，不能把单帧零buffer等同不生产。此读数不证明哪条分支正在抢料、唯一传输瓶颈或升级收益。
+
+root静态读回proof `8fb811c0a9bb4a2b86c2dca088835743:1`，SHA-256 **`FB5F6D47B0E4CFDE90939A30238686AB67F9334DC65B7FD3158AA0E9B376DA3C`**，14对象旧配置/连接一致；边界proof `57d0ffcbc7364d7c84892fcb03f6e2f3:1`，SHA-256 **`8B229858A77FD86E4B3F17D5988F361AB6B5A76F00B2EA48943D324EA53B291B`**，独立核20原始响应/owned身份/Journal与功率，均0次Game调用。源包开头一次非终止调用方错误未阻止原响应落盘，没有重发；root首次离线摘要误读不存在的嵌套inserter字段，修正后仅复用原件，没有新Game读取。另修私有dot-source helper的同名load-only参数覆盖，避免主审计提前零证据返回；不是native失败或游戏unknown。下一项只核现有1512/1535/2317铁输送实际容量及分支分配，先完整预算和fresh native资格；未批准新施工、升级、材料准备或重复长实验，不转向其他Gate。

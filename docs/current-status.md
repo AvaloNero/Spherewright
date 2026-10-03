@@ -1,15 +1,18 @@
 # Spherewright 当前快照
 
-更新：2026-10-03（Asia/Singapore）。阶段原件索引见[Gate 2证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
+更新：2026-10-04（Asia/Singapore；实机事件为10月3日晚）。本阶段原件与计算边界见[Gate 2阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
 
 ## 当前已核状态
 
-- Source HEAD `d8c4fdb`；installed `3fe31d1`、native `29104`，现有同批MCP能力为64 tools / 1 resource；本阶段未部署。必要normal restart后恢复到healthy owned primary，Steam保持开启，旧DSP结束后由Steam启动了新DSP；228项文件哈希匹配。
-- Tail后正常保存为 **88629662 / R80 / J99**；随后cover save为 **88808715 / R81 / J100**、观察tick **88808731**。恢复后的owned保存为 **88808747 / R1 / J100**、恢复观察tick **88808759**。实际Codex关闭存活测试已取消，不能声称通过。
-- 当前计数 **external 5 / lifetime 135**；恢复动作无unknown、重放或在途。阶段已停止且新写入被阻止（不是十项冻结），没有新施工授权。
-- 恢复后sampler原件 `599570b88f2549919f5fee21d45f6fb9`记录三个独立600-tick窗口，每窗1210 produced/consumed=1/0，N3 ratio 1、capacity 1,914,000 J/t；5331库存依次248/249/250。读取耗时37.717秒，共41 sampler reads、46次只读读取；continuous credit为0。
-- 最新完整capture `a0a3ce0a2351425ca68142a88c0a07a5:1–90`为 **60页 / 5945 built / 0 prebuild / 11620互逆边**，factory tick **88831552**、closing observation **88833228**。root审计proof `53d4bb2b10134bf395f5e6adfa52a487:1`，SHA-256 `8944A575EB057597A147BD19F36653538FE94F30651749CE408FFFB6FC121C8F`；审计26.282秒、0次新Game调用。快照与5945实体的既有pose/config/ID/连接无漂移，inventory与J连续，无duplicate、unknown、inflight或replay。N3为216 nodes / 538 consumers / 131 generators，ratio 1、capacity 1,914,000 J/t；5331库存254。
+- 代码/实验基线 `5917b13`；installed `3fe31d1`、DSP native `29104`，沿用已验证的MCP能力64 tools / 1 resource；本阶段未部署。当前正常owned primary保存点为**88808747 / R1 / J100**，最新观察tick **89481382**。Steam和DSP保持运行；Codex关闭存活测试已取消，没有声称通过。
+- 计数为**external 5 / lifetime 135**。当前阶段写入被阻止（不是十项冻结）；本次没有新accepted动作，也没有获批的新施工。前一连续尝试第41样本出现347-tick缺口，重置后的结束信用只有33924 ticks；本次使用新的独立声明，不拼接前次信用。
+- 新只读采样声明 `1e7be92b` 单次运行：93个600-tick native窗口、1498 sampler reads、共1502次native请求，耗时605.75秒。合格连续段为**89345606–89381766，36161 game ticks，reset=0**。对1210的非重叠区间并集下界为**16件**，高于该时段按每分钟至少1件的最低需求 **ceil(36161/3600)=11件**；这是保守下界，不是精确总量。12种观察物料均有窗口内新产出；item1121即使首末样本点均为0，同一连续段下界仍为160，不能按两个端点推断整段为零。
+- 同一段中，粒子容器储量读数从2782降至2777，Warper储量从469升至485。N3采样时ratio=1/full-serve，动态capacity为**1,914,000 J/t**。这些窗口与储量变化不单独证明来源配平、缓冲排空排除或未来负载下完整供给。
+- 相交窗口不直接相加；16件采用互不重叠的原生窗口作保守下界。`reset=0`表示预声明观察段内合格窗口连续，不推导采样段以外的供料、具体来源贡献或全工厂长期稳定。
+- 完整静态参考仍是既有capture `a0a3ce0a2351425ca68142a88c0a07a5:1–90`（60页 / 5945 built / 0 prebuild / 11620互逆边），不是本次新快照。连续窗口审计proof `ed6bab599099432b8bc3f8e68bafaf00:1`，SHA-256 `0DFD09DCCD2C8B39A43B9D2E4CBF0F25DBCA14D8D3F2952E669D53592D642D0F`；独立核验19.840秒、0次Game调用。
+- 对应只读采样实现的35项PowerShell检查已通过，commit `5917b13` 的Windows Core CI `37131314183`已成功。私有区间算术fixture是纯离线计算测试，不计作Game证据。
+- 随后的固定14实体来源包读取20次、4.11秒，闭合89481382/R1/J100。Fe1500当帧输出100、未工作；1511铁库存1820，723铁0、Motor727与Turbo827为空，PC885为2754；883与814当帧分别缺Turbo/Motor。14项旧配置/连接独立读回一致。上述是有限时点证据，尚未定量证明1512/1535/2317中哪一接口、分支或容量导致库存净下降，不能据此直接升级。
 
 ## 尚未闭合的边界
 
-normal save → protected restart → 恢复后1210实际非零产出的垂直生命周期门已闭合；这不代表持续供料、36,000-tick验收或Gate 2全链通过。883/r99仍间歇，恢复后短窗PC读数为0/1/0，1210每窗虽产出1但消费为0；下一工作仍是1210持续供给归因与至少1分钟/36,000-tick验收，不转向燃料、远征或最终包。详见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
+保存→protected restart→恢复后1210非零已通过，本次又关闭连续覆盖及最低新产量门；完整自动供料配平/缓冲排除仍未证明，Gate 2不宣布完成。下一步仅核现有铁输送接口的实际容量与分支分配，形成完整1210修复预算及fresh native资格；未批准升级、扩建或材料准备，不转向燃料/远征/最终包。本阶段没有新保存、重启、重载或部署；无unknown、在途或重放，external5 / lifetime135不清零。旧完整capture仍只是静态参考。

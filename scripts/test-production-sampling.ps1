@@ -54,8 +54,26 @@ Assert-Sampling ($wideResult.result -ceq 'sampling_completed' -and $wideResult.s
 Assert-Sampling ($wideQueriesValid -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -eq 12 }).Count -eq 3) 'all three reads request the complete twelve-item set and retain every returned rate'
 Assert-Sampling ($wideResult.gameWrites -eq 0 -and $script:calls.Count -eq 14 -and @($script:calls|Where-Object {$_ -like 'prepare_*' -or $_ -like 'commit_*'}).Count -eq 0) 'twelve-item observation stays read-only within fourteen requests'
 
+$chainIds=@(1101..1115)
+$chain=@{};foreach($key in $arguments.Keys){$chain[$key]=$arguments[$key]};$chain.EntityIds=@(1..32);$chain.ItemIds=$chainIds;$chain.RequiredWindows=1;$chain.MaximumSamples=1;$chain.MaximumRequests=40
+Reset-Sampling @(600) '' $chainIds
+$chainResult=Invoke-SpherewrightProductionExperiment @chain
+$chainProductionCalls=@($script:payloads|Where-Object method -CEQ 'get_overseer_production')
+$chainEntityCalls=@($script:payloads|Where-Object method -CEQ 'inspect_factory_entity')
+$chainIntent=@($script:records|Where-Object event -EQ 'production-experiment-intent')
+Assert-Sampling ($chainResult.result -ceq 'sampling_completed' -and $chainResult.samples -eq 1 -and $chainResult.qualifyingWindows -eq 1 -and $chainResult.requests -eq 37 -and $chainIntent.Count -eq 1 -and $chainIntent[0].maximumRequests -eq 40) 'fifteen items and thirty-two entities fit one window within the explicit forty-request budget'
+Assert-Sampling ($chainEntityCalls.Count -eq 32 -and $chainProductionCalls.Count -eq 1 -and (@($chainProductionCalls[0].payload.itemIds|Sort-Object) -join ',') -ceq (@($chainIds|Sort-Object) -join ',') -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -eq 15 }).Count -eq 1) 'full fixed entity/item scope is covered in one complete fifteen-item response'
+Assert-Sampling ($chainResult.gameWrites -eq 0 -and $chainResult.modelDecisionsInsideLoop -eq 0 -and @($script:calls|Where-Object {$_ -like 'prepare_*' -or $_ -like 'commit_*'}).Count -eq 0) 'bounded thirty-seven-request fixture remains read-only with no model loop'
+
+$boundaryIds=@(1101..1116)
+$boundary=@{};foreach($key in $arguments.Keys){$boundary[$key]=$arguments[$key]};$boundary.ItemIds=$boundaryIds;$boundary.RequiredWindows=1;$boundary.MaximumSamples=1
+Reset-Sampling @(600) '' $boundaryIds
+$boundaryResult=Invoke-SpherewrightProductionExperiment @boundary
+$boundaryProduction=@($script:payloads|Where-Object method -CEQ 'get_overseer_production')
+Assert-Sampling ($boundaryResult.result -ceq 'sampling_completed' -and $boundaryResult.samples -eq 1 -and $boundaryResult.requests -eq 6 -and $boundaryProduction.Count -eq 1 -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -eq 16 }).Count -eq 1) 'sixteen-item caller boundary succeeds as one complete source-item response'
+
 foreach($scopeCase in @(
-    [pscustomobject]@{name='thirteen items';ids=[int[]](1101..1113)},
+    [pscustomobject]@{name='seventeen items';ids=[int[]](1101..1117)},
     [pscustomobject]@{name='duplicate item id';ids=[int[]]@(1109,1109)},
     [pscustomobject]@{name='nonpositive item id';ids=[int[]]@(0)}
 )){
@@ -65,11 +83,16 @@ foreach($scopeCase in @(
     Assert-Sampling ($null -ne $scopeError -and $script:calls.Count -eq 0) "$($scopeCase.name) rejects before any request"
 }
 
-Reset-Sampling @(600,1206,1812) 'incompleteProduction' $wideIds
-$incomplete=@{};foreach($key in $wide.Keys){$incomplete[$key]=$wide[$key]};$incomplete.ValidateObservation={param($sample) $true}
+Reset-Sampling @(600) '' @(1109)
+$tooManyEntities=@{};foreach($key in $arguments.Keys){$tooManyEntities[$key]=$arguments[$key]};$tooManyEntities.EntityIds=@(1..33)
+$entityScopeError=$null;try{Invoke-SpherewrightProductionExperiment @tooManyEntities|Out-Null}catch{$entityScopeError=$_}
+Assert-Sampling ($null -ne $entityScopeError -and $script:calls.Count -eq 0) 'thirty-three entity scope rejects before any request'
+
+$incomplete=@{};foreach($key in $arguments.Keys){$incomplete[$key]=$arguments[$key]};$incomplete.ItemIds=$chainIds;$incomplete.RequiredWindows=1;$incomplete.MaximumSamples=1;$incomplete.MaximumRequests=40;$incomplete.ValidateObservation={param($sample) $true}
+Reset-Sampling @(600) 'incompleteProduction' $chainIds
 $incompleteError=$null;try{Invoke-SpherewrightProductionExperiment @incomplete|Out-Null}catch{$incompleteError=$_}
 $incompleteFailures=@($script:records|Where-Object event -EQ 'production-experiment-failed')
-Assert-Sampling ($null -ne $incompleteError -and $incompleteError.Exception.Data['spherewrightSamplingSamples'] -eq 0 -and $incompleteError.Exception.Data['spherewrightSamplingRequests'] -eq 5) 'incomplete twelve-item response fails without sample credit'
+Assert-Sampling ($null -ne $incompleteError -and $incompleteError.Exception.Data['spherewrightSamplingSamples'] -eq 0 -and $incompleteError.Exception.Data['spherewrightSamplingRequests'] -eq 5) 'incomplete fifteen-item response fails without sample credit'
 Assert-Sampling (@($script:records|Where-Object event -EQ 'production-sample').Count -eq 0 -and $incompleteFailures.Count -eq 1 -and $incompleteFailures[0].samples -eq 0 -and $incompleteFailures[0].qualifyingWindows -eq 0) 'incomplete source-item coverage cannot advance samples or qualification'
 
 # Same three native-window fixtures, split into three scheduler entries. This is

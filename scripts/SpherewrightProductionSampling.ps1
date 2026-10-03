@@ -10,8 +10,9 @@ function Invoke-SpherewrightProductionExperiment {
         [Parameter(Mandatory)][string]$GameVersion,
         [Parameter(Mandatory)][ValidateCount(1,32)][int[]]$EntityIds,
         # One bounded native query can cover a complete supply chain; the bridge
-        # already permits64 IDs. Keep this caller deliberately smaller.
-        [Parameter(Mandatory)][ValidateCount(1,12)][int[]]$ItemIds,
+        # already permits64 IDs. Keep this caller deliberately smaller at16,
+        # so graphite/acid/hydrogen attribution fits in the SAME native window.
+        [Parameter(Mandatory)][ValidateCount(1,16)][int[]]$ItemIds,
         [Parameter(Mandatory)][scriptblock]$ValidateObservation,
         [Parameter(Mandatory)][scriptblock]$ReceiptMarker,
         [Parameter(Mandatory)][scriptblock]$RecordEvidence,

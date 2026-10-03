@@ -4,10 +4,10 @@
 
 ## 运行与保存边界
 
-- **DSP 保持同一进程运行。** Codex/Host 退出、重启、断线、压缩或回合结束不触发保存、关游戏、重载或 accepted 清零。重连 fresh 核 owned identity、session/revision、durable J、外部台账与原 action；健康、无未决就续接。真实 Codex 退出测试未做；已核 MCP 退出代码无游戏关闭路径，DSP 的父进程是 Steam。
+- **DSP/Steam 当前已退出，新施工冻结。** 10:16:28–29最后7个原读取仍健康；10:24:58 OS确认两进程不存在，宿主新进程10:19:42启动，精确退出时刻/旧Job归属未取得。本窗未发新prepare/commit/intent，无在途。原规则只禁止主动关闭，未证明启动脱离宿主清理；“父进程是Steam”不能证明独立。原件与改进见[同一Gate证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
 - 本窗 source main **deb6394**，其准确 SHA 的 Windows Core CI **37085219613 success**；当前 Git HEAD/远端以 Git 为准。installed **3fe31d1**、DSP **0.10.35.29104**；此前4 Plugin＋224 MCP＋2 native哈希、64 tools/1 resource匹配。本窗无部署或游戏重启。
 - 最近正常保存 **86883661**，覆盖本窗67条石墨带、供电塔5579和分拣器5580/5581。封窗完整 S **86884471 / R52 / healthy / owned / unrestricted**；durable **J97 / pendingfalse / errornull**。后续启动探针`56f2a4…:1–5` closing **86892637/R52**，生产点tick **86891785**；不能把后续生产库存说成已被该save覆盖。
-- external **10/10冻结**、lifetime **90**，十个唯一原accepted均同action终态成功，**无unknown、在途或未保存施工**。root独立全窗审计与启动原件核验通过；本次阶段docs/push/准确SHA绿CI及root明确交接仍待，不能先清零或新写。重连核原intent/response/action与身份；本摘要不是实时计数器。
+- 上一窗十个accepted均成功并saved/audited；`f3b001a`远端匹配、CI **37088675397 success**后root仅重开external0/lifetime90。新Fe/D批准尚未执行，**当前external0冻结、无unknown/在途/未保存施工**。宿主退出不自行清零、重放或恢复；重新启动仍须fresh protected-owned核验，不能把历史R52/healthy当在线状态。
 
 ## 唯一目标与完成事实
 
@@ -22,8 +22,8 @@
 
 最新完整图`8b3a92…:2–57`：**56页 / 5581 built / 0 prebuild / 10888唯一互逆边**。与`3e64a1…`完整基线确定性比对，只增67带/2sorter/1塔，无删改、未解释静态漂移或整图重放。root证明`8ba5be…:1`（逐件索引与SHA见阶段证据），0新Game调用、24.25s；正常save覆盖已核，**未restart**。
 
-本窗净料：2001 **441→374**、2011 **23→21**；手搓2塔的原生递归净Fe−4/磁铁−2/Cu−1，建1塔后背包剩 **1个2201**。其余库存/增产点数及玩家位置守恒；N3节点211/consumer525/gen127/cap1894000，满供电。电塔network缺失和两处摘要字段错误均从原件核销，native拒绝0、无重放；不得把调用方失败判成未执行。
+本窗净料2001 **441→374**、2011 **23→21**；2塔原生递归净Fe−4/磁铁−2/Cu−1，建1后剩 **1个2201**。其余库存/inc/位置守恒；最后N3节点211/consumer525/gen127/cap1894000满供电。字段错误均从原件核销，无native拒绝/重放。退出前`004586…:1–7`再核R52/save86883661/J97、库存不变、1511铁3000/空slot0、5326空slot7；3074当帧空仓，不证明持续分配。
 
-整案预测554、硬上限571带/20sorter/2塔；自动供料已用 **208带/7sorter/1塔**，预测余 **346带/13sorter/1塔**，库存374带/21sorter/1塔，后续仍按fresh原生预算核。下一阶段在docs/push/绿CI/root交接后，继续**同一完整1210全案的剩余自动供料、必要供电与输入输出连接**；不另造支线、重建前缀或为单对象发提交。
+整案预测554、硬上限571带/20sorter/2塔；已用 **208带/7sorter/1塔**，预测余 **346带/13sorter/1塔**，库存374/21/1，后续按fresh预算核。先独立启动并protected-owned恢复，再继续**同一1210全案**；已批准Fe52带/两端及D部分前缀仍为未执行，不能拿旧token或假称完整D供给。桌面broker无害进程已证明不同于托管命令的KillOnJobClose；真实Steam启动/Codex退出复测尚未做。
 
 Gate结束仍须 **全链自动供料→1210非零→正常保存→protected restart→恢复后再次非零**；此前不进联合36000-tick、燃料长窗、远征或最终包。获准的Gate验收重启不等于Codex退出清理。模型用量和完整端到端提速比例仍unknown；未tag/release/Thunderstore。

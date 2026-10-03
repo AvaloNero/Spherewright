@@ -508,3 +508,15 @@ source main **deb6394ad472bd2f3de0bf69d2ce25246c19e733**，准确SHA的Windows C
 效率原件：五段带入口→首业务prepare **1.04–1.31s**；prepare＋精确plan校验＋commit合计 **2.23s**，同action终态观察 **490.23s**，五段总执行 **507.37s**。两塔native prefix **28.13s**（6.58s手搓/18.63s施工终态观察），两只sorter含save **52.72s**；读回故障处84秒间隙和额外主会话处理不隐去。主要施工观察、调用方故障、独立审计与文档/Git/CI不可混算；root＋Luna完整委派/模型调用量/provider token仍unknown，不给出同类任务提速比例。本窗不逐动作提交/等待CI，不重采全图、不在生产循环唤醒模型。
 
 自动供料累计 **208带/7sorter/1塔**，整案预测剩 **346带/13sorter/1塔**，背包374带/21sorter/1塔。Diamond→Lens及Fe/D/1206→1127→Lens→1210未完成，未证明全链1210、持续供给或restart。docs/push/准确SHA绿CI/root交接前external10冻结；后续仍同一1210全案，不进燃料、远征或双包支线。DSP保持原进程；**Codex/Host结束不触发游戏关闭、重载或外部计数清零**，真实Codex关闭试验未做。
+
+### 2026-10-03 宿主重启后Steam/DSP消失：独立启动资格，不冒充修复闭环
+
+Graphite阶段`f3b001a88a4179a7334770fc77a64c448f1782b7`已push、准确Windows Core CI **37088675397 success**，root仅重开external0/lifetime90。接续只读组 **0045868420fd4333912884533c3ab682:1–7** 在10:16:28–29完成：same owned/healthy、tick86913712/R52/save86883661、J97durable/pendingfalse/errornull、库存374/21/1、1511铁3000/空slot0、5326空slot7/N3满供；3074当帧空仓。批准Fe全路与D部分前缀，但执行者随后明确确认**尚无本轮Game请求/prepare/commit意图/accepted/在途**。
+
+用户报告关闭后，root在10:24:58以OS核Steam及DSP均不存在；新宿主进程10:19:42启动。退出精确时刻未捕获，Windows未得相关崩溃/终止事件，Steam没有新增本次正常退出记录。最后正常save86883661已覆盖全部67带/5579/5580/5581；后续生产buffer仍不冒充已保存。external保持0/lifetime90但冻结，新Fe/D未施工，不重放任何已保存前缀。当前健康恢复票据仍为minimum86883661/planet104/J97、非quarantine且未过期；只作离线凭据检查，不是恢复通过。
+
+根因边界：当前托管命令的原生Windows Job查询为 **0x2800 / KillOnJobClose=true / BreakawayAllowed=true**；旧本地启动方式使用普通Start-Process，父进程是Steam不能证明脱离宿主。该机制与宿主重启后双进程消失高度一致，**旧Steam/DSP已经退出，不能声称直接读到了其旧Job归属或已取得确切终止原因**。前次工作规则/代码检查没有完成真实Codex退出存活实验，旧“独立运行”判断必须撤回。
+
+有界无害资格：现有Explorer桌面dispatch启动45秒测试进程，原生成结果 **912db2b4a0654a71bda7c2cfb6f86a70**，SHA **AD8BE6014178FEE2266A9CC99C4A4B8C1B0DA86E427F5E045FB75EF9C5D898A0**；父进程确为启动于宿主之前的Explorer、相同交互session，子进程自身Job **0x1800 / KillOnJobClose=false**。它仍属于非清理Job，不能把`inJob=true`误当失败。普通Shell.Application进程内dispatch仍落入托管清理Job，不能替代获取既有desktop.Document.Application。探针无Game/Steam启动/读写，自动到期，无改Codex配置或安全设置。
+
+已补本地固定Steam app1366540的一次桌面broker入口：现有Steam/DSP拒绝重发、唯一incident先记intent、响应不确定只核销、不退回托管Start-Process；不保存/载入/关闭/部署。真实pwsh smoke **0Game/0启动**、三份入口parse通过。**实际Steam启动、真实Codex退出后游戏存活、同档protected resume仍待**，不宣布完整修好或恢复生产；主线仍完整1210与原0.4验收门。

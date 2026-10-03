@@ -520,3 +520,13 @@ Graphite阶段`f3b001a88a4179a7334770fc77a64c448f1782b7`已push、准确Windows 
 有界无害资格：现有Explorer桌面dispatch启动45秒测试进程，原生成结果 **912db2b4a0654a71bda7c2cfb6f86a70**，SHA **AD8BE6014178FEE2266A9CC99C4A4B8C1B0DA86E427F5E045FB75EF9C5D898A0**；父进程确为启动于宿主之前的Explorer、相同交互session，子进程自身Job **0x1800 / KillOnJobClose=false**。它仍属于非清理Job，不能把`inJob=true`误当失败。普通Shell.Application进程内dispatch仍落入托管清理Job，不能替代获取既有desktop.Document.Application。探针无Game/Steam启动/读写，自动到期，无改Codex配置或安全设置。
 
 已补本地固定Steam app1366540的一次桌面broker入口：现有Steam/DSP拒绝重发、唯一incident先记intent、响应不确定只核销、不退回托管Start-Process；不保存/载入/关闭/部署。真实pwsh smoke **0Game/0启动**、三份入口parse通过。**实际Steam启动、真实Codex退出后游戏存活、同档protected resume仍待**，不宣布完整修好或恢复生产；主线仍完整1210与原0.4验收门。
+
+### 同次独立启动与主档恢复已核销（2026-10-03）
+
+上述“仍待”为启动前证据边界，后续只派发一次incident `9c57185688594a77ab6734f2ade6498f`：Steam由既有Explorer启动、DSP由该Steam启动，两者不在当前命令的KillOnJobClose组。fresh菜单native29104/healthy；root再核既有`450b1bc7…:5`完整cohort的4 Plugin/224 MCP/2 native均一致，未部署。第一准备资格窗结束时确实0prepare/commit/在途，不拿超时当重发许可；之后直接复用已审`resume-safe-runner`，没有重写执行器。
+
+恢复原件 **5e9e2203413b4ac9a5fca38314b1b7e3**：`:3` fresh healthy/default exact-primary prepare，`:4–5`唯一commit意图/响应，`:7–23`全核同action，`:23`成功终态（action **7d5118c6-d9d0-49aa-943a-a64c523e345d**），`:24–26` S/J/P，`:27`完成。source/target **0.10.35.29104**、planet104、minimum86883661、无blocker/另行确认模式；default计划的candidate/identity-preview字段不作为额外身份正例。最终owned adoption、正常保存 **86883692/R1**与J97连续性才是恢复证据。action终态tick为null，不能写成save tick。无重放/新施工/额外save；恢复仅 **1 accepted，external1/lifetime91**，未重开或清零窗口。
+
+恢复后固定8次只读 **e6e12b97d9c3496fae365f99b2806d33:1–8 / 2.9s**：S/P/J、5579/5580/5581/5334、closing S；latest **86902474/R1/save86883692/healthy owned**，J97 durable/pendingfalse/errornull，97条原entries与退出前`004586…:2`完全相同。玩家Walk/速度0/3无人机idle/0 pending与手搓队列；材料374带/21sorter/1塔不变。5579仍2201且network null不可观测；5580为5535.slot4→5334.slot7、5581为5187.slot4→5523.slot4，filter1109/N3/serve1。5334/r60输入1109=2、输出1112=100、isWorking=false；未接完的下游不算持续产量，本次关键节点检查也不是十写完整工厂审计。
+
+root直接核上述原回执、唯一commit/同action终态、97条日记、静止玩家/材料与新健康票据，证明 **d32f1abd12e149a896b1da3e235c7a10:1**，SHA-256 **E06DE14B16A889D9D95A82CE1C1E3F250DB79B761EF14D7A608EBB39A1AA9589**，**0新Game调用**。旧宿主退出的确切终止原因、真实Codex退出存活仍未证明；用户明确无需专门做该关闭测试，不把它设为主线门或主动关闭游戏。保持同一已恢复DSP运行，下一Fe/D计划须使用新session并扣除本次恢复accepted、保留save槽；完整1210/nonzero/save/protected restart/恢复后nonzero要求不变。

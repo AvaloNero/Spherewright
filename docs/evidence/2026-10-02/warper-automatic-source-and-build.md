@@ -607,3 +607,33 @@ J99记录`production_line_item_first`，item1209 / **引力透镜**、observed 1
 N3当帧216 nodes、536 consumers、131 generators，capacity **1,806,000 J/t**，required=served、ratio 1；相对声明峰值的**+2,200 J/t**只是条件余量，不证明持续供电。剩余施工仅Lens源端和已批准的Graphite并行出口；现有输出→5331路线已完成，无需新增1210下游施工。1210启动正例、正常保存与protected restart后恢复输出仍待验证；本阶段不宣称全链或持续产率通过。
 
 调用经验：固定参数入口完成6次普通prepare/22次请求用时3.58秒，另3次tokenless endpoint preview用时2.575秒；preview不可提交。按原值分别处理`commitAllowedNow`与缺失的`commitAllowed`，从真实Journal/session DTO字段核对，不依赖摘要器猜字段。native终态后施工无人机返航不意味着动作未执行；在下一个prepare前做有界只读idle等待。若终态后的formatter失败，只续读原件缺项，不把accepted重解释为未执行、不重放。
+
+### 2026-10-03：Tail连接、恢复前启动短窗与快照审计
+
+本段只记录有限tail、三个独立启动短窗及其后完整快照，不把短窗当作持续供料/36,000-tick验收或完整自动链。Source HEAD `d8c4fdb`；installed `3fe31d1` / native `29104`及既有64 tools / 1 resource同批能力未变，本阶段未部署。
+
+Tail窗口3个accepted后计数为lifetime133；新增分拣器5944（`5333.slot1 → 5937`，filter1209）和5945（`870.slot6 → 869.slot2`，filter1109），root按原件核实了四端点双向关系及精确2×2011材料变化。tail原件/审计为`698173615fec40c5b3f186f52b385545:1`，SHA-256 `3D72E2BEBCE45FE185DA219C12628F775D20BEC8450DE824FD0947DFF3F75F05`。tail正常保存为 **88629662 / R80 / J99**；cover save后为第4个accepted、lifetime134。
+
+恢复前独立启动run `4fdf834e19bf4a2c9b064e9850759a76`包含三个互相独立的600-tick观察窗；每窗1210 P/C=1/0，5331读数分别为158、159、160，N3 full-serve。startup原件/审计为`1e04fa36c3bd476ab4d6f6d30c3279d8:1`，SHA-256 `F23E897E2A24A8699287C70B917F03C5909B6528F4BCFCBDD267D25C1C844CBC`。这些观察不替代36,000-tick持续验收。
+
+Cover save原件`54797e750c1f4d41b5f8bec457284591:4–10`对应action `5375d5ba-2712-4b32-8f4d-be23a2a5a5a2`，正常保存 **88808715 / R81 / J100**，观察tick **88808731**。其后完整capture `46df142f70ae4fdaa6b1dc11e02db445:1–90`为 **60页 / 5945 built / 0 prebuild / 11620互逆边**，closing observation **88828682**；root审计proof `e497ddfafb35462bb051870945187d1e:1`，SHA-256 `DB14E40E9D5DEDCBF0CD7B9D909B3161FAD0A9485A451D016C54B788C96EB050`，审计25.951秒、0次新Game调用。当前计数external **4** / lifetime **134**，已接受业务动作无unknown、重放或在途，新施工未授权。
+
+当时保存后的protected restart/recovery结果尚未提供；后续核验见下节。最新capture closing是观察值而非新保存；本阶段未部署。完整自动链及36,000-tick持续验收仍未由这些短窗证明。
+
+### 2026-10-03：必要normal restart与healthy owned-primary恢复
+
+必要Gate 2 normal restart原件 `fa50732eff79462fa24e6fc56882d8ad:4–5`记录一次Explorer桌面broker dispatch；既有Steam未关闭，旧DSP进程结束后由Steam启动了新DSP。228项文件哈希全部匹配，没有部署。首次菜单轮询 `239acb6d88b44b5797dd7526738b978d`显示unloaded/unowned ready；随后只恢复已验证的healthy default primary。
+
+恢复原件 `fd917799f37048eea17532e717a14bdc`：prepare `:3`、commit `:5`、terminal `:21`、S/J/P `:22–24`、complete `:25`；action `790e74da-f674-4382-86bf-7f98dc0ecb8f`。恢复保存为 **88808747 / R1 / J100**，观察tick **88808759**。root独立审计 `c810269cb2ee4623be7071c03f920631:1`，SHA-256 `8E98F8E531BD566F516D966C151F49DAB20DF4D68024562B212D581DAE60BE68`，1.055秒、0次新Game调用：确认唯一healthy default primary terminal、Journal身份与条目连续、玩家/库存/位置守恒，无unknown、在途或重放；不记录恢复会话ID。
+
+这证明上述必要normal restart后的owned主档恢复，不证明真实Codex关闭后游戏存活；该专门测试已取消，未做。恢复后1210短窗及完整快照当时尚待采集。当前external **5** / lifetime **135**，无unknown或inflight；新写入因有限阶段停止而被阻止，并非旧十项冻结门。
+
+调用方另曾因包含仅BeltEndpointPreview碰撞诊断文字差异的source-hash mismatch，在任何Game/Bridge之前误拦；root核对228项live文件哈希匹配后改为固定reviewed HEAD与文件哈希权威，保留native版本及全部transaction guards（0 Game/Bridge效果、0 accepted；这是调用方拒绝，不是native拒绝或游戏unknown）。
+
+### 2026-10-03：恢复后1210短窗与完整快照审计
+
+恢复后只读sampler原件 `599570b88f2549919f5fee21d45f6fb9:1–53`：S/J/catalog为`:1–3`，三窗事件为`:20/:34/:48`，对应读取范围`:6–19/:21–33/:35–47`，结果`:50`、closing S/J `:51–52`、summary `:53`。三窗分别为 **88828149–88828748、88828844–88829443、88829528–88830127**；每窗1210 produced/consumed=**1/0**，5331库存 **248/249/250**，N3 full ratio 1、capacity **1,914,000 J/t**。sampler耗时37.717秒，41 sampler reads、46次只读读取；continuous credit为0。原件中的PC三窗读数为 **0/1/0**；883/r99仍为间歇运行，不能据此声称来源稳定或持续供料。
+
+恢复后完整capture `a0a3ce0a2351425ca68142a88c0a07a5`：open `:1`、pages `:2–61`、P `:62`、J `:63`、Power `:64`、prebuild `:65`、details `:66–88`、closing S `:89`、summary `:90`；共 **60页 / 5945 built / 0 prebuild / 11620互逆边**，factory tick **88831552**、观察 **88833228**，R1/save **88808747**、J100、external5/lifetime135。N3为216 nodes / 538 consumers / 131 generators，capacity **1,914,000 J/t**、ratio 1；5331库存254。root独立proof `53d4bb2b10134bf395f5e6adfa52a487:1`，SHA-256 `8944A575EB057597A147BD19F36653538FE94F30651749CE408FFFB6FC121C8F`，审计26.282秒、0次新Game调用：5945项旧pose/config/IDs/连接无漂移，inventory/J连续，无duplicate、unknown、inflight或replay。
+
+至此，normal save → necessary protected restart → healthy owned-primary恢复 → 恢复后1210实际非零产出的垂直生命周期门已闭合；不等于完整持续自动供料或Gate 2完成。三窗均消费0、没有continuous credit，883/r99仍间歇；还需厘清持续来源/库存供料，并完成至少1分钟/36,000-tick验收。真实Codex关闭后游戏存活测试仍取消、未证明；下一工作仍限定在1210，不转向燃料、远征或最终包。

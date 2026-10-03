@@ -591,3 +591,19 @@ source HEAD `776fee1`；installed `3fe31d1`、native `29104`未变，未部署�
 粒子容器的132带有向路`5760→5761`及两端均由capture核实：`885.slot2 → 5874 → 5760`与`5761 → 5873 → 5326.slot5`，过滤item1206、N3、full serve。5326 detail`:68`当帧output1127=20；这只是capture时点读数，不证明持续供给。J98在`:62`记录一条`production_line_item_first`：item1127/奇异物质，gameTick **88272996**，actualTime **2026-10-03T17:23:54.7304524+08:00**；这证明一次首次自动产出事件，不是持续产率。Diamond带5875–5879仍是地面前缀。5333 detail`:69`未见Diamond/Strange且Lens输出为0；5334 detail`:70`读到Graphite 2、Diamond 100。最近Lens/Strange端点记录仅是tokenless preview，须fresh取得实际ID并走正常原生资格，不能把旧preview当成可提交计划。
 
 N3读数为216 nodes、531 consumers、131 generators，动态capacity **1,806,000 J/t**、required=served **227,586 J/t**、ratio 1。四台风机带来的实际wind credit为**20,000 J/t**，不是铭牌或持续供电。相对声明的整案峰值**1,803,800 J/t**，该帧只有**+2,200 J/t条件余量**；这既不证明长时余量，也不证明1210已产出。Gate 2仍未完成：Diamond/Strange/Lens/Graphite剩余接口、完整1210自动供料、持续窗口及保存后protected restart尚待证明。
+
+### 2026-10-03：Diamond、Strange与Lens有限前缀保存并独立审计
+
+本阶段source HEAD **`69c157ccc488c10b8fecac582ee6ae1bcf851937`**，installed `3fe31d1` / DSP `0.10.35.29104`保持不变，未部署。
+
+root核验的窗口汇总 `134d02c3c37444a1a53803dd5ee36698` 完成10个accepted步骤，耗时233.021秒；正常保存为**88501586 / R75 / J99**，capture closing observation **88516528**，不是新保存。external 10/10、lifetime 130维持冻结；10项均无重放、unknown或在途，本阶段没有关闭、重启、重载或部署。
+
+新增59条带、5个分拣器：Diamond两端为`5880: 5879→5333.slot10`及`5881: 5334.slot4→5875`；Strange A段`5893→5882`新增12带、D段`5894→5905`新增12带、H段`5882→5894`新增27带，NEW对象5906–5932，另有`5933: 5905→5333.slot11`及`5934: 5326.slot8→5893`；Lens地面8带按`5937, 5935, 5936, 5938–5942`铺设，末端`5943: 5942→5329.slot8`。
+
+完整capture `02a5c9f4867840228a29fdcc645cb35f`原件索引为open `:1`、pages `:2–61`、P `:62`、J `:63`、Power `:64`、prebuild `:65`、details `:66–90`、closing `:91`、summary `:92`，共**60页 / 5943 built / 0 prebuild / 11612互逆边**。root proof `3bffcf5f6c6d4fd79a17ae2670abcfde:1`，SHA-256 **`243CF3A6385910EE31E7A1D6074A112B749BFE4813CC87A67D0107055288655A`**，独立审计33.621秒、0次新Game调用；相对前图只有59带和5个分拣器的预期增量，无删除或未解释旧配置漂移。5项旧设备姿态补核见proof `78f528489e254d2da4060f1f12d197f4:1`，SHA-256 **`A8480435EAF3815A9554E7CA3CAAF15E40410A8422A8CB28CDB7C351A2254E78`**。
+
+J99记录`production_line_item_first`，item1209 / **引力透镜**、observed 1、source `factory-production-register`，gameTick **88500867**、gameTime **017d01:43:34**、actualTime **2026-10-03T18:27:51.7537198+08:00**；名称取原DTO的`.name`字段。这是首次自动产出事件，不是持续产率。详情`5333/r101`为Diamond输入8、Strange输入2、Lens输出10且因输出满notWorking；`5329/r78`的Lens/1210输出为0；`5326/r104`的PC/Fe/D输入为4/4/6、Strange输出0。869/r31当帧Graphite 0、acid 2、output1123=0、working=true；870储仓acid 100、Graphite 0。不要把capture时点存量外推为持续供给。
+
+N3当帧216 nodes、536 consumers、131 generators，capacity **1,806,000 J/t**，required=served、ratio 1；相对声明峰值的**+2,200 J/t**只是条件余量，不证明持续供电。剩余施工仅Lens源端和已批准的Graphite并行出口；现有输出→5331路线已完成，无需新增1210下游施工。1210启动正例、正常保存与protected restart后恢复输出仍待验证；本阶段不宣称全链或持续产率通过。
+
+调用经验：固定参数入口完成6次普通prepare/22次请求用时3.58秒，另3次tokenless endpoint preview用时2.575秒；preview不可提交。按原值分别处理`commitAllowedNow`与缺失的`commitAllowed`，从真实Journal/session DTO字段核对，不依赖摘要器猜字段。native终态后施工无人机返航不意味着动作未执行；在下一个prepare前做有界只读idle等待。若终态后的formatter失败，只续读原件缺项，不把accepted重解释为未执行、不重放。

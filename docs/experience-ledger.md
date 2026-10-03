@@ -1,6 +1,12 @@
 # Spherewright experience ledger
 
-更新时间：2026-10-01（Asia/Singapore）
+更新时间：2026-10-03（Asia/Singapore）
+
+## EXP-340 — 固定调用、终态与摘要字段保持各自边界
+
+- 状态：`observed`，2026-10-03。
+- 可复用规则：固定参数入口可在有限请求预算内完成多次普通prepare；tokenless endpoint preview不是可提交计划。按实际字段读取`commitAllowedNow`，不能把缺失的`commitAllowed`当成等价值；会话和Journal取真实DTO字段，不依赖展示摘要猜形状。动作已有原生终态而施工无人机正在返航时，不能重做动作；下个prepare前先做有界只读idle等待。终态后的formatter错误不改变accepted事实，不重解释或重放已成功请求，只从原件续读缺项。
+- 本阶段入口执行6次普通prepare/22次请求，3.58秒；3次tokenless endpoint preview，2.575秒。性能数字仅描述该次调用，不证明全链或持续产率。见[Gate 2阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
 
 ## EXP-339 — 十写审计保留调用参数边界并用精确原生后态核销朝向差异
 

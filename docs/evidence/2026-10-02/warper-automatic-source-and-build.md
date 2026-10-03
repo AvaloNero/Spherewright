@@ -651,3 +651,23 @@ Cover save原件`54797e750c1f4d41b5f8bec457284591:4–10`对应action `5375d5ba-
 同一阶段随后完成固定14实体Fe→Motor→Turbo→粒子容器来源包 `38d23ac9043744d1ab4e24d9006b09cb`，20次只读请求、4.11秒：opening S/J/catalog/power `:2–5`，14详情 `:6–19`，closing S/J `:20–21`，summary `:22`。闭合**89481382 / R1 / save88808747 / durableJ100 / external5 / lifetime135**；N3 required=served210045、capacity1914000、ratio1。1500/r1当帧铁矿4、铁块输出100、notWorking；1511铁1820、723铁0、Motor727与Turbo827为空、PC885为2754；814/r98和883/r99当帧Motor/Turbo输入为0但正在加工，不能把单帧零buffer等同不生产。此读数不证明哪条分支正在抢料、唯一传输瓶颈或升级收益。
 
 root静态读回proof `8fb811c0a9bb4a2b86c2dca088835743:1`，SHA-256 **`FB5F6D47B0E4CFDE90939A30238686AB67F9334DC65B7FD3158AA0E9B376DA3C`**，14对象旧配置/连接一致；边界proof `57d0ffcbc7364d7c84892fcb03f6e2f3:1`，SHA-256 **`8B229858A77FD86E4B3F17D5988F361AB6B5A76F00B2EA48943D324EA53B291B`**，独立核20原始响应/owned身份/Journal与功率，均0次Game调用。源包开头一次非终止调用方错误未阻止原响应落盘，没有重发；root首次离线摘要误读不存在的嵌套inserter字段，修正后仅复用原件，没有新Game读取。另修私有dot-source helper的同名load-only参数覆盖，避免主审计提前零证据返回；不是native失败或游戏unknown。下一项只核现有1512/1535/2317铁输送实际容量及分支分配，先完整预算和fresh native资格；未批准新施工、升级、材料准备或重复长实验，不转向其他Gate。
+
+### 2026-10-04：铁线原生升级、连续采样结束与十写封窗
+
+源码HEAD `386feb63e7328b43948ef3a10eb1344877743812`；installed `3fe31d1`、DSP native `29104`与既有64 tools / 1 resource保持不变，未部署。Steam/DSP保持运行，本阶段没有关闭、重启或重载。
+
+两次手搓原件 `3d5ae9e670554d8984cd6dd48163b9bb`：recipe r97×1、r88×1，耗时16.6秒；递归库存核对为Fe−3、Mag−2、Cu−1、Coil+1、basic−2、fast+2，Motor最终0。proof `0420f16838484126b456ccf5af897a10:1`，SHA-256 `617AEF3C50AAB78B8B7BD4D594801C6F99A774CD717AD76E5092F08BB817BD60`。
+
+原生升级run `fb1291322f394076a20a9768882576fb`：prepare `:8`、commit `:10`、terminal `:11`、readback `:12–15`，action `b56c3d79-1f0e-4452-9670-ae225e76137c`。entity 1512从proto 2011升级至2012，原生循环时序参数`progressRequired`由600000降至300000（不是功率）；循环进度比例、货物与过滤保留。既有1500.slot1→1512→1511.slot2与1535/5635分支不变。材料fast−1/basic+1；没有新增实体、带或移动库存。整段调用与读回4.638秒；prepare→终态调用666.535ms（不是纯游戏等待）。proof `22a281654b634ee08c44742bf967872c:1`，SHA-256 `35C198D8C7EAB704715C6363198073B29A6E64B5EF79DEF346668B338959958D`。
+
+升级后只读三窗原件 `0fb3f2d350114f1ba54a6619cfee8221`，样本范围`:14–28 / :37–51 / :60–74`、窗事件`:29 / :52 / :75`，68 sampler reads、73次native请求，118.274秒。窗口分别为89736674–89737273、89737321–89737920、89737963–89738562，中间缺口48与43 ticks，因此continuous credit=0。Fe1511库存1660/1665/1669，PC885为2700/2700/2699，1210产出0/0/1，Warper 5331库存647/647/647，N3 ratio=1。proof `caae1e84eae349598deb2b1868cd6285:1`，SHA-256 `27A8CA73C8AA29F2097E130F8A47AA214BA14AD7762CFEF46D216B9A411D6F15`。这些短窗不证明升级提高持续供料、Warper已送入库存或全链配平。
+
+正常保存run `842bb0bd052447b7956510ac4c28a153`：prepare `:4`、commit `:6`、terminal `:7`、S/P/J `:8–10`，action `a660a977-367b-4521-8950-829616bf5849`，保存 **89785733 / R8 / J100**，最新独立观察 **89785736**。external **9** / lifetime **139**；保存覆盖9个accepted，全部已核销，无unknown、在途或重放，保护票据可用。root proof `c30822c984b047dba5aeb929f079cdae:1`，SHA-256 `0982B16CEA9F57A1727317DA9A5CA2B033F0517EC34F7F859A40448B800469E1`。
+
+采样预算修复位于commit `386feb63`：初始单次timeout上限为3600秒，以覆盖约15–17 ticks/s下36000 ticks约需的40分钟；原180秒默认、12物料、120样本、4096请求、600-tick窗口与只读约束不变，运行后不得续期或重放。41项离线检查通过，Windows Core CI `37146080169`成功；这不是长窗通过证据。
+
+只读采样run `db555450498b4ed79a316dd465950ed1`已终态：97样本、3054 sampler reads、3058次native请求、墙钟2177207ms。第8个样本触发sample_gap重置，最终有效连续段为 **89799586–89835686 / 36101 ticks**。按非重叠区间核出的1210新产量下界为17，超过该窗口按每分钟至少1件所需的11；17是保守下界，不是精确总数。PC库存全程2685→2678，有效连续段内2686→2678，故该窗仍净降8。root原件proof `4fde41bf31b742fb8601fc86d98dda01:1`，SHA-256 `96FF13817F977027BAA1A216DBC220EDC2D733795EE4A0BC235C3CFB13F0A60D`。此结果不证明来源配平或完整供料，Gate 2保持false。
+
+最终正常保存原件 `cf93e8dde9dc4a859df5f5ad561e9222:1–11`：prepare `:4`、commit `:6`、terminal `:7`；覆盖全部10个实际accepted。保存 **89850963 / R9 / J100**，external **10** / lifetime **140**，十写冻结。其后完整capture `44ff771d072a46e4bf3b16e56bd26d64:1–89`为60页 / 5945 built / 0 prebuild / 22项details / 11620互逆边，snapshot tick **89851206**、capture close **89851625**；全厂其他静态配置一致。root十写审计proof `5f6adea51edd4a41a6f2d590f3004db2:1`，SHA-256 `09C7FED9838B2F6683EA8075A69006A8A260784F2522A041F3CF6BAD16787F3F`，0新Game调用。206项动态buffer差异保留在原审计，不在此逐项列出。最新只读run `9de2b23384f24bc6bf8d358565fc85f8:1–7`于89867928闭合，仍为R9/save89850963/J100，无unknown、inflight或replay。
+
+本窗唯一批准的设备升级是1512从2011到2012；`progressRequired` 600000→300000是原生运输周期参数，不是功率。1535/5635分支保留未变。铁链问题仍以`1511→1535→2317→2351→723/724`为待核路段：1511在累积、723铁块库存为空、Motor缺铁并传导至Turbo/粒子容器缺供；现有证据没有唯一指向某个分拣器，不授权旁路扩建。矿机1496覆盖由8变7；node48的原生`INVALID_ENTITY`证明对象不存在，不能记作amount=0；node44仍有17939铁矿且矿机继续生产。当前DLL的`MinerComponent`在amount≤0时调用`RemoveVeinWithComponents` / `NotifyVeinExhausted`，可解释这项有界耗尽变化，但没有观测精确耗尽瞬间。本次upgrade尚无protected restart验收，DSP/Steam保持运行；专门Codex关闭存活测试已取消。本阶段继续冻结，须另经root交接后才开始后续工作。

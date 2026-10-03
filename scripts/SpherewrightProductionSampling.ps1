@@ -9,7 +9,9 @@ function Invoke-SpherewrightProductionExperiment {
         [Parameter(Mandatory)][ValidateRange(1,[int]::MaxValue)][int]$PlanetId,
         [Parameter(Mandatory)][string]$GameVersion,
         [Parameter(Mandatory)][ValidateCount(1,32)][int[]]$EntityIds,
-        [Parameter(Mandatory)][ValidateCount(1,8)][int[]]$ItemIds,
+        # One bounded native query can cover a complete supply chain; the bridge
+        # already permits64 IDs. Keep this caller deliberately smaller.
+        [Parameter(Mandatory)][ValidateCount(1,12)][int[]]$ItemIds,
         [Parameter(Mandatory)][scriptblock]$ValidateObservation,
         [Parameter(Mandatory)][scriptblock]$ReceiptMarker,
         [Parameter(Mandatory)][scriptblock]$RecordEvidence,

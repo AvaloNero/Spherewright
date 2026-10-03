@@ -4,13 +4,14 @@ $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'SpherewrightProductionSampling.ps1')
 $script:checks=0
 function Assert-Sampling([bool]$Condition,[string]$Name){if(-not $Condition){throw "Sampling regression: $Name"};$script:checks++}
-function Reset-Sampling([long[]]$Ends,[string]$Fault=''){
-    $script:ends=$Ends;$script:sampleIndex=0;$script:fault=$Fault;$script:entryBoundaryPending=$false;$script:calls=[Collections.Generic.List[string]]::new();$script:records=[Collections.Generic.List[object]]::new();$script:now=[datetime]'2026-09-30T00:00:00Z';$script:startTime=$script:now
+function Reset-Sampling([long[]]$Ends,[string]$Fault='',[int[]]$ItemIds=@(1109)){
+    $script:ends=$Ends;$script:sampleIndex=0;$script:fault=$Fault;$script:itemIds=@($ItemIds);$script:entryBoundaryPending=$false;$script:calls=[Collections.Generic.List[string]]::new();$script:payloads=[Collections.Generic.List[object]]::new();$script:records=[Collections.Generic.List[object]]::new();$script:now=[datetime]'2026-09-30T00:00:00Z';$script:startTime=$script:now
 }
 function Get-Date{$script:now}
 function Start-Sleep([int]$Milliseconds){$script:now=$script:now.AddMilliseconds($Milliseconds)}
 function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[hashtable]$Payload){
     $script:calls.Add($Method)
+    $script:payloads.Add([pscustomobject]@{method=$Method;payload=$Payload})
     if($Method -like 'prepare_*' -or $Method -like 'commit_*'){throw 'A read-only sampler attempted a write'}
     $index=[math]::Min($script:sampleIndex,$script:ends.Count-1);$tick=$script:ends[$index]
     if($script:fault -ceq '15fps'){$tick=[long](($script:now-$script:startTime).TotalSeconds*15)}
@@ -26,7 +27,10 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
             if($script:fault -ceq 'deadline'){$script:now=$script:now.AddSeconds(200)}
             $script:sampleIndex++
             $state=if($script:fault -ceq 'warming' -and $index -eq 0){'warming_up'}else{'ready'}
-            [pscustomobject]@{sessionId=$SessionId;capturedAtGameTick=$tick;totalFactoryCount=1;returnedFactoryCount=1;requestedItemIds=@(1109);nextCursor=$(if($script:fault -ceq 'cursor'){'unread-page'}else{$null});window=[pscustomobject]@{state=$state;startGameTick=$tick-599;endGameTick=$tick;elapsedGameTicks=600;crossedSessionBoundary=$false};planets=@(if($script:fault -cne 'localCoverage'){[pscustomobject]@{planetId=104;production=@([pscustomobject]@{itemId=1109;itemName='fixture graphite';producedCount=5;consumedCount=4;actualProductionPerMinute=30.0;actualConsumptionPerMinute=24.0})}})}
+            $returnedItemIds=@($script:itemIds)
+            if($script:fault -ceq 'incompleteProduction'){$returnedItemIds=@($returnedItemIds|Select-Object -First ($returnedItemIds.Count-1))}
+            $productionRows=@(foreach($itemId in $returnedItemIds){[pscustomobject]@{itemId=$itemId;itemName="fixture item $itemId";producedCount=5;consumedCount=4;actualProductionPerMinute=30.0;actualConsumptionPerMinute=24.0}})
+            [pscustomobject]@{sessionId=$SessionId;capturedAtGameTick=$tick;totalFactoryCount=1;returnedFactoryCount=1;requestedItemIds=@($script:itemIds);nextCursor=$(if($script:fault -ceq 'cursor'){'unread-page'}else{$null});window=[pscustomobject]@{state=$state;startGameTick=$tick-599;endGameTick=$tick;elapsedGameTicks=600;crossedSessionBoundary=$false};planets=@(if($script:fault -cne 'localCoverage'){[pscustomobject]@{planetId=104;production=$productionRows}})}
         }
         default{throw "Unexpected read $Method"}
     }
@@ -39,6 +43,35 @@ Assert-Sampling ($result.result -ceq 'sampling_completed' -and $result.qualifyin
 Assert-Sampling ($result.gameWrites -eq 0 -and $result.modelDecisionsInsideLoop -eq 0 -and -not $result.governorAcceptance) 'no writes or in-loop model decisions, no Governor sign-off'
 Assert-Sampling (@($script:records|Where-Object event -EQ 'production-sample').Count -eq 3 -and $script:records[1].firstOrdinal -eq 2 -and $script:records[1].lastOrdinal -eq 5) 'all samples link to original read ranges'
 $batchedWindows=@($script:records|Where-Object event -EQ 'production-sample'|ForEach-Object { $_.window|ConvertTo-Json -Compress })
+
+$wideIds=@(1101..1112)
+$wide=@{};foreach($key in $arguments.Keys){$wide[$key]=$arguments[$key]};$wide.ItemIds=$wideIds
+Reset-Sampling @(600,1206,1812) '' $wideIds
+$wideResult=Invoke-SpherewrightProductionExperiment @wide
+$wideProductionCalls=@($script:payloads|Where-Object method -CEQ 'get_overseer_production')
+$wideQueriesValid=$wideProductionCalls.Count -eq 3 -and @($wideProductionCalls|Where-Object { $_.payload.limit -ne 8 -or (@($_.payload.itemIds|Sort-Object) -join ',') -cne (@($wideIds|Sort-Object) -join ',') }).Count -eq 0
+Assert-Sampling ($wideResult.result -ceq 'sampling_completed' -and $wideResult.samples -eq 3 -and $wideResult.qualifyingWindows -eq 3 -and $wideResult.requests -eq 14) 'twelve source items qualify across three native windows with the unchanged request budget'
+Assert-Sampling ($wideQueriesValid -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -eq 12 }).Count -eq 3) 'all three reads request the complete twelve-item set and retain every returned rate'
+Assert-Sampling ($wideResult.gameWrites -eq 0 -and $script:calls.Count -eq 14 -and @($script:calls|Where-Object {$_ -like 'prepare_*' -or $_ -like 'commit_*'}).Count -eq 0) 'twelve-item observation stays read-only within fourteen requests'
+
+foreach($scopeCase in @(
+    [pscustomobject]@{name='thirteen items';ids=[int[]](1101..1113)},
+    [pscustomobject]@{name='duplicate item id';ids=[int[]]@(1109,1109)},
+    [pscustomobject]@{name='nonpositive item id';ids=[int[]]@(0)}
+)){
+    Reset-Sampling @(600,1206,1812) '' $scopeCase.ids
+    $badScope=@{};foreach($key in $arguments.Keys){$badScope[$key]=$arguments[$key]};$badScope.ItemIds=$scopeCase.ids
+    $scopeError=$null;try{Invoke-SpherewrightProductionExperiment @badScope|Out-Null}catch{$scopeError=$_}
+    Assert-Sampling ($null -ne $scopeError -and $script:calls.Count -eq 0) "$($scopeCase.name) rejects before any request"
+}
+
+Reset-Sampling @(600,1206,1812) 'incompleteProduction' $wideIds
+$incomplete=@{};foreach($key in $wide.Keys){$incomplete[$key]=$wide[$key]};$incomplete.ValidateObservation={param($sample) $true}
+$incompleteError=$null;try{Invoke-SpherewrightProductionExperiment @incomplete|Out-Null}catch{$incompleteError=$_}
+$incompleteFailures=@($script:records|Where-Object event -EQ 'production-experiment-failed')
+Assert-Sampling ($null -ne $incompleteError -and $incompleteError.Exception.Data['spherewrightSamplingSamples'] -eq 0 -and $incompleteError.Exception.Data['spherewrightSamplingRequests'] -eq 5) 'incomplete twelve-item response fails without sample credit'
+Assert-Sampling (@($script:records|Where-Object event -EQ 'production-sample').Count -eq 0 -and $incompleteFailures.Count -eq 1 -and $incompleteFailures[0].samples -eq 0 -and $incompleteFailures[0].qualifyingWindows -eq 0) 'incomplete source-item coverage cannot advance samples or qualification'
+
 # Same three native-window fixtures, split into three scheduler entries. This is
 # an offline caller comparison, NOT three measured model calls or token savings.
 Reset-Sampling @(600,1206,1812)

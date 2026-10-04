@@ -137,10 +137,21 @@ public static class BeltCargoObservationPolicy
 
     public static bool TrySummarize(IReadOnlyList<BeltCargoReference>? references,
         IReadOnlyList<BeltCargoSample>? samples, out List<BeltCargoItemSnapshot> items, out string? reason)
+        => TrySummarizeCore(references, samples, MaximumCargoStacks, out items, out reason);
+
+    // Only after the existing whole-path decoder; default segment limit stays64.
+    public static bool TrySummarizePath(IReadOnlyList<BeltCargoReference>? references,
+        IReadOnlyList<BeltCargoSample>? samples, out List<BeltCargoItemSnapshot> items, out string? reason)
+        => TrySummarizeCore(references, samples,
+            BeltUpgradePathPolicy.MaximumPathCells / CargoCellLength + 1, out items, out reason);
+
+    private static bool TrySummarizeCore(IReadOnlyList<BeltCargoReference>? references,
+        IReadOnlyList<BeltCargoSample>? samples, int maximumStacks,
+        out List<BeltCargoItemSnapshot> items, out string? reason)
     {
         items = new List<BeltCargoItemSnapshot>();
         reason = "cargo_readback_incomplete";
-        if (references is null || samples is null || references.Count > MaximumCargoStacks
+        if (references is null || samples is null || references.Count > maximumStacks
             || samples.Count != references.Count) return false;
         var wanted = new HashSet<int>();
         foreach (var reference in references)

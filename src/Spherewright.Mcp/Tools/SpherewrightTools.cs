@@ -282,11 +282,13 @@ public static partial class SpherewrightTools
         [Description("Current session ID returned by spherewright_get_session_state.")] string sessionId,
         [Description("Current local planet ID returned by spherewright_get_session_state.")] int planetId,
         [Description("Required nonzero positive entity ID or negative prebuild ID returned by spherewright_list_factory_entities. This read's Bridge field is objectId, not entityId; a first page lacking an ID does not prove absence.")] int objectId,
+        [Description("Optional explicit material cut: at most256 unique positive built-object IDs in this owned local factory. Omit for the ordinary single-object read. Captures selected stock buffers and each selected belt's ENTIRE native cargo path once at the same game tick, at most64 paths / 32768 total cells / 4096 path members. No traversal or automatic selection. Require materialInventoryCut.state=observed; missing/unavailable is unknown, not zero. Inspect all returned path members: counts may include belts outside the selection; never prorate or sum again per belt. A stock cut is not production, flow, source allocation or sustained supply.")] int[]? materialInventoryObjectIds = null,
         [Description("Cancellation token supplied by the MCP host.")] CancellationToken cancellationToken = default)
     {
         var result = await bridgeClient.InspectFactoryEntityAsync(
             sessionId,
-            new InspectFactoryEntityRequest { PlanetId = planetId, ObjectId = objectId },
+            new InspectFactoryEntityRequest
+            { PlanetId = planetId, ObjectId = objectId, MaterialInventoryObjectIds = materialInventoryObjectIds?.ToList() ?? new List<int>() },
             cancellationToken).ConfigureAwait(false);
         return ToToolResult(result, "Live factory object captured from the owned ordinary world.");
     }

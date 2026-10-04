@@ -45,6 +45,9 @@ public sealed class InspectFactoryEntityRequest
     public int PlanetId { get; set; }
 
     public int ObjectId { get; set; }
+
+    // Opt-in explicit selection. Empty keeps the existing single-object read.
+    public List<int> MaterialInventoryObjectIds { get; set; } = new List<int>();
 }
 
 public sealed class FactoryEntitySnapshot
@@ -97,6 +100,9 @@ public sealed class FactoryEntitySnapshot
     // Detail-only observation, separate from device buffers and action hashes.
     // Null (including list snapshots) means not observed, never an empty belt.
     public BeltCargoSnapshot? BeltCargo { get; set; }
+
+    // Detail-only, opt-in and same-tick. Null/partial is not an empty material cut.
+    public MaterialInventoryCutSnapshot? MaterialInventoryCut { get; set; }
 
     // Optional detail-only geometry. Null/unknown never means no possible endpoint.
     public SorterEndpointObservation? SorterEndpoints { get; set; }

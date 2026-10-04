@@ -637,6 +637,8 @@ internal sealed partial class GameStateReader
         // invalid request, not evidence that a previously observed building vanished.
         var idError = FactoryObjectReadPolicy.ValidateObjectId(request.ObjectId);
         if (idError is not null) return GameCallResult<FactoryEntitySnapshot>.Failed(idError);
+        var selectionError = MaterialInventoryCutPolicy.ValidateSelection(request.MaterialInventoryObjectIds);
+        if (selectionError is not null) return GameCallResult<FactoryEntitySnapshot>.Failed(selectionError);
 
         FactoryEntitySnapshot? snapshot = null;
         if (request.ObjectId > 0 && request.ObjectId < factory!.entityCursor)
@@ -651,6 +653,9 @@ internal sealed partial class GameStateReader
         {
             snapshot = TryCapturePrebuild(factory, -request.ObjectId);
         }
+
+        if (snapshot is not null && request.MaterialInventoryObjectIds?.Count > 0)
+            snapshot.MaterialInventoryCut = CaptureMaterialInventoryCut(factory!, request.MaterialInventoryObjectIds);
 
         return snapshot is null
             ? InvalidFactoryEntity("The requested factory object no longer exists in the local factory.")

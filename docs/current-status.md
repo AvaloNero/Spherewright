@@ -1,17 +1,27 @@
 # Spherewright 当前快照
 
-更新：2026-10-04（Asia/Singapore）。本阶段权威事实见[材料库存与恢复证据](evidence/2026-10-04/material-inventory-cuts.md)。
+更新：2026-10-05（Asia/Singapore）。阶段原件与独立验收统一见[材料库存与恢复证据](evidence/2026-10-04/material-inventory-cuts.md)，本文件覆盖更新，不作历史日记。
 
-## 当前状态
+## 身份、安装与保存
 
-- 当前已验证并安装的代码 cohort 来自 `b1557bb`，Windows Core CI 37206538632 已成功。此提交的隔离 cohort 完成 locked restore、Release build、测试与 MCP publish：2551/2551 通过，4 个 Plugin 文件和224个 MCP 文件、64 tools/1 resource，playbook匹配；受保护回执 2ed96cf586834604b91ad1fd066f67a2:1 / 11725B3778E2365B9839F8F7CF211E141F95C7E803642EAFC869CBDBAD4066A9。该离线 cohort 随后经必要冷事务安装并核228文件同批匹配；当前 DSP 使用本阶段构建，native 0.10.35.29104。Steam保持运行；未做专门Host关闭存活测试，用户已取消此测试。
-- 重启前正常保存为 tick92128707 / R2 / J100，external8 / lifetime148；必要冷事务保留Steam并启动新的DSP实例。随后受保护默认primary恢复到同一owned世界，新存档 tick92128739 / R1 / J100，external9 / lifetime149；inventory、手持和100条Journal连续。恢复准备阶段的exactEmbeddedIdentityVerified为false，因此不声称加载前已完全读回；native terminal adoption/readback确认后才核实同一primary。保存约2.73秒、恢复约9.5秒。
-- 此前恢复/采样阶段的完整工厂捕获为60页、5945 built、0 prebuild、17 details、11620互逆边，无实体增删；这是905…阶段的既有证据，不是92128739这次恢复后重新采集。1535和2317保留2011→2012升级；1512在相应基线已为2012。唯一允许的资源节点差异为已核实耗尽的2440/node168；198项动态buffer差异单独保留，不泛化忽略。root proof d7fc1a41af3a4e67a06e5e259c618d34:1 / 64D0B819291E6E69BEED440DACD10D8443C9812A9C974878B13E60B7C7105B0C。
-- 此前阶段的六个分离600-tick观察窗中，1210仅见1件原生生产，其余窗为0；coveredContinuousTicks=0，不计长窗信用。1210库存1011→1013含窗间未采样生产，不当作六窗3件实产。N3各窗full-serve，容量1878000–1914000 J/t，高于当时声明峰值1804700 J/t。这些窗口不是92128739恢复后的新采样。原件 c2c6ae9c3199460380d5b6a359ac79f4:1–143；独立核验45a1756ad0844cb2b93e172832a77837:1 / AF988AC6A02B44EA05AA32C705793F609A35B173A6487AC0F0A4E465F2443713。
+- main/source `4ac502c`，Windows Core CI 37213851353 success；安装仍为 `b1557bb` 同批 cohort：4 Plugin +224 MCP 文件匹配、64 tools/1 resource、playbook匹配，native `0.10.35.29104`。该 cohort 的2551/2551离线测试及必要冷部署已核实；脚本提交不等于游戏程序集重新安装。
+- 当前同一 owned primary/session：最后正常保存 `92128739/R1`，最后独立观察 `93031047/R1`；durable Journal `100`、pending=false/error=null；external accepted `9` / lifetime `149`。外部计数不等于revision或Journal，未清零；第10写门仍保留。
+- 所有原执行句柄已终态，无unknown、写入在途或未核销accepted；当前新写仍blocked。没有未保存的accepted游戏动作，但保存点后的自然生产不是已保存证据。Steam/DSP保持运行；用户取消的专门Host退出存活测试未做，也不会为Codex重启或对话结束关游戏。
 
-## 尚未闭合
+## 已完成与证据边界
 
-- 既有连续采样只通过声明的最低产率门：1210非重叠产量下界18≥需求11，PC2832→2835；旧材料union仅给计数区间，不能证明来源已配平。有限缓存排除、全源归因、Governor与完整Gate2仍未通过。
-- 14项、0写入的材料 cut 点读已完成并由 root 核验：run `095da7e9b72e4c1ebb14d989c3b16093`，耗时7.6554198秒，proof `7430a5fd350347cfb15d3bc9b98d34c5:1` / `C725958C50E94FF46E2551FE8809A11FFF4D3F74A481B98EB823DF66E66BDE3F`。7个 cut 均在各自同一 tick 观测；不同 cut 的库存不可拼接或相加。已观测 item 1209/1112/1127/1206/1121/1101/1210 的库存分别为0/118/0/3264/10/3446/1762。该点读不证明来源已配平、持续供给或 finite-buffer 排除；下一项是基于已核完整 native 路径制定前瞻来源/有限缓存核验，而非重复全厂 cut。最新观察为 `S92211338/R1`；正常保存仍为 `92128739/J100`，external9/lifetime149，无unknown、inflight或未核销accepted动作，未新增保存。Game writes保持blocked，未开启其它施工或再加载。
+- 1210三级链的既有施工、启动非零、正常保存、protected restart及恢复后再次输出正例已完成，不重做5326–5334、石矿/酸/869或输出线路。保存与恢复的身份和Journal连续性见阶段证据；这不是全源配平/有限缓存排除通过。
+- 既有完整工厂基线是60页、5945 built、0 prebuild、11620互逆边，capture tick90521995；不是此次恢复后的新捕获。资源耗尽差异保留独立证明，1213/node42已核销；不把矿点减少当整台矿机失效。
+- 上一只读实验 `f19264fa…:1–2526` / root `c5df8553…:1`：2396读/0写，末段27378连续ticks，1210原生精确产出4，低于该时长最低要求8；有155tick缺口，未达36000门。氢、重氢各自库存区间净降48/6，不能拼成同步计数，也不能把氢循环毛产量当净供给。Source allocation、finite-buffer exclusion及完整Gate2仍false，不重复长窗。
 
-历史十写外部计数按已核动作连续累计；本阶段当前为external9 / lifetime149。正常保存与恢复事实、完整快照和短窗边界见阶段证据；未把过去信用重置或与后续窗口拼接。
+## 当前唯一 blocker
+
+- 最新 `14da0b2f…:1–11` 完成9读/0写；独立root `f2cfd9fb…:1` 核原件、身份/S/J、配置、完整native货物路径和功率。受保护执行2993.7943ms、root离线验收约1055ms，未关闭/加载/保存游戏。旧4165出口的静态追踪覆盖100对象；fresh验证限12对象cut、3台火电及3条完整native路径，不能称100对象均已fresh预检。
+- 石墨3965→4185→4165经4190/4191送往火电3058/3060/3062及超级磁场环3404。3965仍idle、石墨输出20；六只出口/火电入口分拣器各持料1。3404/r103输入均非零、输出1205为10且idle；三台火电实际产生3651/3959/3944 J/t，`isWorking=false`不是停止发电证据。N3 full-serve、generatorRatio约0.109；燃料库存未观察，不能把J/t计成件数。
+- 石墨native路径92/140/142分别存113/77/65件，均不在上一70条主链候选路径选择中。旧cut仍是其明确范围的完整观察，不是全厂/全部副产物覆盖；空scope-gap列表不能证明未选择的支路。氢源受石墨下游需求/积压限制的线索已成立，尚未证明一种可持续去路或完整修复方案。
+
+## 下一阶段与禁止重放
+
+root先用既有拓扑、runtime配方及真实终端需求，为石墨副产物选择直接服务1210的最小去路，重新核整链供需、氢净供给、材料/功率预算及最难接口；必要时只读/prepare-only。整案未重新取得可执行资格前，不施工、批量搬料/手搓、清仓制造短暂吞吐或转入其他Gate。
+
+已闭合的库存预览、连续实验和边界读取均已消费，不复用旧声明、token或句柄，不自动延长/重放；无待执行动作。只读正例、短窗、连续信用、保存及真实恢复分别记证据，不宣布0.4完成或打包通过。

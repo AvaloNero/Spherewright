@@ -231,5 +231,231 @@ stdout/stderr receipt `derived-cc-material-cut-e83e2184e8514e98b2be4af7fafd87ee.
 has SHA-256 `9D144894052DAD65EB8E639DAB2340CBBD883A0C6F7AB84E23BEEAA0F13D39BD`.
 That review preceded two final fixture-only assertions (coverage-token rejection)
 and the message-spacing correction; the runtime implementation did not change.
-The current 120-check result includes those assertions. Nothing here claims live
-validation of the optional sampler field.
+The current 120-check result includes those assertions. This offline review did
+not claim live validation of the optional sampler field; the later local result
+is separated below.
+
+## 2026-10-05: full declared stock-cut preview, not supply acceptance
+
+Source HEAD is `4ac502c`, with the already installed `b1557bb` Plugin/MCP cohort
+and native `0.10.35.29104`; this caller-only work required no further deployment.
+Steam and DSP stayed in their existing processes. The user-cancelled dedicated
+Host-close survival test was not performed. No new game writes, construction,
+material transfers, save, exit, or load occurred in these checks.
+
+Path mapping originals `49fa1127a3f44f24b07bff7fbb2a28c0:1–16` contain fourteen
+reads, ten cuts, sixty newly observed paths and 1,634 full members, covering the
+remaining 1,514 declared candidate belts. Protected elapsed time is
+8,702.4752 ms. Independent root proof `0877b77248b947ee96bc77fd374222d5:1`,
+SHA-256 `41AE15B4C211D1AFD833E353176E65C46E63D788182A863902D0831EBFB09111`,
+checks original hashes, exact selection and native bounds, member uniqueness,
+path metadata, owned boundaries and Journal. Together with the prior ten paths,
+all seventy relevant paths are assigned to explicit commodity cuts; their
+42,758 cells exceed one aggregate native cut, so they are not joined into one
+synchronous stock observation.
+
+The fixed optional shared-sampler selections include the existing forty-eight
+frontier objects, eight raw sources and all 137 candidate inserters. Each of
+twenty-four commodity cuts adds one representative per complete required native
+path, including outside-winning-route candidates. The largest cut has 210
+explicit objects and 8,244 cells; existing public limits are unchanged.
+
+An initial private call used independent mode with `EntitySampleEvery=2`, which
+the unchanged shared caller correctly rejected. Originals
+`f4ea74e63ad748f286c4a693bfd164e0:1–4` contain **two** successful outer S/J reads
+before that sampler rejection, not zero Bridge requests. No stock cut or game
+write occurred. The old declaration was consumed, the private cadence parameter
+was corrected to one, and a distinct finite declaration was used. This is a
+caller failure, not a native factory rejection or a replayed accepted action.
+Offline parameter preparation also exceeded its budget and was interrupted;
+this is not evidence of workflow speedup.
+
+Local preview originals `48333a5c8dfb436683dd3e8e9ad2cfd9:1–41` contain 36 native
+reads and 24 observed stock cuts. The protected summary time is 42,624.0774 ms;
+the caller's later stdout timing was 42,702.5974 ms. Its sampler accounts for
+27,886.53 ms of native read wall time and 12,000 ms scheduled waiting. One
+600-tick window qualifies, but continuous credit is zero. Root stock-cut proof
+`f724d6a44f3247c085fb89d31cce6f12:1`, SHA-256
+`C42195D84929536F36C7BF782ACB48941A97D9C7DD30CEA6B4A96AF2018490D9`, independently
+checks the exact object sets, units and stock sums, complete path metadata and
+same-tick capture **within** every cut. No observed declared commodity was
+found outside its assigned path set; that is not proof about unobserved future
+traffic. Cut timestamps and stocks are never added across commodities or joined
+to the rolling production window as if synchronous.
+
+One static delta remains explicitly unproved: miner 1213's resource list changed
+from `36,37,43,35,42` to `36,37,43,35`. All other compared configuration fields
+match. The proof retains this exception rather than calling it natural depletion
+or complete static acceptance; node 42 absence still requires a bounded native
+read. No permission to change the factory follows from this observation.
+
+Latest observed tick is **92676847**, revision **1**, normal saved tick
+**92128739**, durable Journal **100**, external accepted **9**, lifetime **149**.
+Both workers stopped; their read declarations were consumed. There is no unknown
+or in-flight accepted action. Full source allocation, finite-buffer exclusion,
+continuous supply, Governor and complete Gate 2 remain **unproved**. The next
+step at that point was node 42 reconciliation, then a prospectively declared full-source
+experiment, not another lifecycle test, permanent construction or blind replay.
+This read-only preparation is not a new milestone commit or a release claim.
+
+### Resource 42 reconciliation and bounded source experiment
+
+The later fixed native read run `b90e6e7f9fb4404f933ae6b7e651a268:1–12`
+completed ten reads and zero writes. Node42 returned the predeclared exact
+`INVALID_ENTITY` / “The requested resource node no longer exists in the local
+factory.” negative. Iron nodes35/36/37/43 still held2120/18993/20706/8006 units
+at their own read ticks; miner1213 retained `36,37,43,35`. The protected result
+wall was1873.651ms; the caller's later stdout timer was1982.46ms. Independent
+root proof `c357c076448e49ceaa26602af4ce0486:1`, SHA-256
+`3AF494F9E48580471AAC8F25DE238CFD23620F23EAAAA188C7B8C4752475E43F`,
+checks all12 original hashes, exact ten-method order, owned/session/save/R and
+unchanged durable Journal entries. Closing observation92784601/R1,
+save92128739/J100, external9/lifetime149. Only that resource-list delta is
+reconciled; its historical depletion actor is not attributed. The older stock
+audit's then-unproved exception remains in its immutable original.
+
+An intervening invocation of the already-consumed preview entry stopped before
+any Bridge call at its unused-authority guard. It had zero native reads/writes
+and is distinct from the earlier cadence caller error that already read S/J.
+Neither is evidence of a native factory rejection or an accepted action.
+
+The next declaration uses the existing shared sampler:24 complete commodity
+cuts at the opening and closing only, with24 lighter producer/store observations
+in between. It declares390tick intervals,600tick native windows, every-second
+entity sampling, at least36000 uninterrupted qualifying ticks,120 samples,
+4096 total reads and3600 whole wall seconds (3300 for the continuous substage).
+No prior credit is reused. Different cut timestamps are not joined or treated
+as rolling flow. Source allocation and finite-buffer exclusion require root's
+original-evidence review, not the sampler's `sampling_completed` label. This
+experiment ran under original handle8899; its later terminal is below. It does
+not authorize construction, material movement,
+save/restart, another Gate or the user's cancelled Host-lifetime test.
+
+The original run `f19264fac7ec4b88ad5de631a25c80e3:1–2526` ended normally,
+with2396 native reads,120 samples and zero writes. Terminal original SHA-256
+`7E05B8244D10726D627F337A97604C5622FCBF379DB1DAB38A970E10E7D41EA6`;
+protected whole wall1005274.057ms (later stdout1005360.08ms). Opening/continuous/
+closing sampler totals were49973.1001/903840.2579/48868.5901ms. Independent
+root proof `c5df85532fc641c6bf85eff3a4d5554a:1`, SHA-256
+`57F0FE52E2F278F85480C27E7410372B6F84F94EA822CE75CB30240B3A5A14C6`,
+checks all2526 original hashes,48 complete stock cuts, configurations, native
+path memberships,60 actual observations per declared entity, power, unchanged
+S/J boundaries and exact native interval arithmetic. One root offline parser
+error on ordinary inspect's absent optional material cut was corrected using
+the same originals; no Game call or accepted action resulted.
+
+Sample54 had a155tick uncovered gap; its two session receipts were12seconds
+apart while native ticks advanced720. This records a caller-observation gap,
+not a stopped factory or proof of its wall-delay cause. The original120-sample
+cap ended the experiment; it was not extended or replayed. Final continuous
+credit is27378, below36000. Native equality/union bounds make1210 production
+in that credited segment exactly4, consumption0; the declared minimum requires
+`ceil(27378/3600)=8`. This is **not_proven**, not a passed lower-rate experiment.
+
+Independent opening/closing inventory cuts retained their own timestamps.
+Hydrogen1120 changed10333→10285 over92822712–92874823, deuterium1121
+11→5 over92822770–92874892, PC1206 remained3292 at its distinct endpoints,
+and1210 changed1913→1920 over92823248–92875465. The seven-stock increase
+is not the four-item credited native count, nor synchronized flow. Several
+other raw/intermediate stocks also declined; none was ignored as a generic
+buffer tolerance. Observed commodity/path scope gaps remained empty, without
+a claim about unobserved future traffic.
+
+Recipe40 requires hydrogen10→deuterium5. Collider3073's first/last light
+observations had hydrogen8/5 and were idle; strange-matter5326 had PC4/iron4
+but deuterium1/9, also idle. Cracker3965 did not work in any of60 observations,
+its progress stayed2400000 and graphite output stayed20. These observations
+bound the next source investigation, not a completed routing diagnosis:
+fresh native reads of3073/3075/3965/4182/4185 only, bracketed by S/J,
+maximum9 reads/60seconds/zero writes. No repeat long experiment or expansion
+is authorized by this result.
+
+Closing observation92876167/R1, save92128739/J100, external9/lifetime149.
+Handle8899 is terminal, its declaration consumed; no unknown, in-flight write
+or unsaved accepted action. Source allocation, finite-buffer exclusion and
+Gate2 remain false. Steam/DSP were not closed and the cancelled Host-lifetime
+test was not performed. This remains one authoritative pending Gate2 phase
+document, not a per-read milestone, new release or publication.
+
+The follow-up fixed `-File` read run `adbafb5c18204b75a81e93f9c110f4d8:1–11`
+completed9 reads/zero writes in about2779.37ms. Original terminal SHA-256
+`AB9E5544F56BCE776EAE92F883C3C00CEBEA1DF0AC1D3A5320F9FE01D4E41713`;
+independent root proof `049359d4c4ae4fa1a76c3da1f85dde01:1` / SHA-256
+`209BC264814A2C36E57F893504DFB4F96E43E102A53AD6E0AE62C8E9D1EAFF56`.
+It checks eleven original hashes, five explicit object identities, unchanged
+S/J, filters, directed targets and three reciprocal device/sorter ends:
+hydrogen3074→3075→3073, hydrogen3965→4182→4089,
+graphite3965→4185→4165. Sorter4185 held one graphite; cracker3965 still
+had output20 and was idle. This is not proof of the remaining4165 downstream
+route or a uniquely attributed blockage. Collider3073 was working with input0
+on this fresh frame; zero input cannot retrospectively mean it stopped.
+Latest92960129/R1/save92128739/J100/external9/lifetime149, no in-flight writer.
+Only offline tracing of the existing graphite outlet is next; no new long
+experiment, source construction or lifetime test follows automatically.
+
+Before this fixed entry, a child `pwsh -Command -` stdin invocation exited0
+with no stdout/index; absolute UTC times were not captured. Exit0 alone is not
+proof that its requested reads happened. The newest inspected factory receipts
+still belonged to the preceding f192 run; no accepted write was possible in the
+declared read-only snippet. The fixed file entry is independently evidenced
+above. No uncertain commit was reclassified, retried or replayed.
+
+### Existing graphite outlet: bounded trace and current terminal demand
+
+The existing outlet4165 was followed offline using seven explicitly selected
+pages of immutable snapshot `183568336ec7495d87fe7c0137873b70`, tick90521995.
+The directed/reciprocal trace visits100 objects and reaches generators3058,
+3060,3062, assembler3404/r103 and the open belt end3427. Graphite passes
+through4190 (4171→4179) and4191 (4173→3375); terminal sorter4403 feeds3058,
+3401 feeds3060,3400 feeds3062, and3436 feeds3404. This reuses the old complete
+topology, not a claim that100 current objects received fresh native preflight.
+
+Luna executed the separately bounded fixed `-File` entry once:
+`14da0b2f85444475a4c3306a7e0503e6:1–11`, terminal SHA-256
+`A830B517680291ECC1A8A98C6902F0863B2506478C8B533301797DC2EEF0015C`.
+Nine native reads/zero writes, no remaining handle; protected terminal wall
+2993.7943ms (stdout elapsed3075.84ms is a distinct later measurement).
+The same-tick cut at93030997 selected12 explicit supported objects plus the
+three complete native cargo paths. It used the existing caller, transport and
+material-cut API; actual `pwsh -File` smoke sent zero Game requests.
+
+Independent root proof `f2cfd9fba1a8462c9b6bbc44fce5f403:1`, SHA-256
+`0042CC09FE4A1B3DA0050A6BB03FBDEFB1C48D531BD61E443BCB278B98D5029A`,
+checks all eleven original hashes, seven snapshot-page hashes, exact method
+scope, unchanged owned/S/J, the selected static configurations, item units,
+full-path cargo totals, three graphite-burning generators and current power.
+Its offline wall was1055.3298ms; no Game calls or writes.
+
+3965 remains idle atprogress2400000 with graphite output20. Outlet4185,
+4190,4191 and three generator-input sorters each hold one graphite. Assembler
+3404/r103 is idle with turbo1204=4, magnet1102=6, graphite1109=2 and super
+magnetic-ring1205 output10. No missing input is inferred from its older frame.
+The native graphite path inventories are92:113,140:77,142:65 items; these are
+same-tick stock, not throughput or proof of physical path storage capacity.
+
+Generators3058/3060/3062 use graphite and generate3651/3959/3944 J/t on
+their individual fresh frames. N3 is full-served, demand/generated197506 J/t,
+capacity1806000 J/t and generatorRatio0.109361 at93031039. Generator
+`isWorking=false` is not an authoritative stopped-generator field in the
+current reader; joules_per_tick is never fuel inventory. Fuel stock is still
+unobserved. Current low load is not spare *rated* budget for new construction.
+
+All three paths92/140/142 are outside the prior graphite selection. The older
+70-path cuts remain complete for their declared source-route candidate set,
+not all coupled byproducts or every factory graphite stock. Their empty
+observed-scope-gap list cannot detect an unselected path. This qualification
+does not rewrite the old receipts or turn any experiment into a passed Gate.
+
+This narrows the hydrogen-source investigation to graphite downstream
+demand/backpressure, not a broken device-end connection or a powerless
+generator. It does not yet prove one sustainable repair or exact current
+allocation. Next: use existing topology/runtime recipes to qualify a minimal
+graphite destination serving1210, account for hydrogen recycling and actual
+consumer demand, then verify the complete budget and hardest interfaces.
+No extra tank, blind upstream expansion, repeated long experiment or Game
+write follows from this read-only result. Source/finite-buffer/Gate2 remain false.
+
+Closing93031047/R1, normal save92128739/J100, external9/lifetime149 unchanged.
+No new accepted, unknown, in-flight or unsaved accepted action. Steam/DSP stay
+running; the cancelled special Codex-exit test was not performed. Natural
+production after the saved tick is not silently counted as saved progress.

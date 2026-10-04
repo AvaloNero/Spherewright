@@ -5876,3 +5876,4 @@ factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembl
 - 2026-10-03：恢复档独立连续采样覆盖36,161 game ticks且无gap，1210非重叠产量下界16件，高于每分钟至少1件在该窗口所需的11件；不等于精确总量或Gate 2通过。详见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
 - 2026-10-04：1210只读采样最终取得36,101连续ticks、17件非重叠产量保守下界；粒子容器库存仍净降8，故供料/配平未闭合。正常保存至89850963/R9/J100并通过十写审计与完整快照核验；铁链分配仍待预算和fresh native资格。详见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
 - 2026-10-04：既有peer升级与正常保存后，预声明只读连续run覆盖36,007 ticks，1210非重叠产量下界17，PC库存净增3；原窗口未采870石墨/酸、5187上游石墨或3343上游氢库存，有限库存排除仍缺证据（不表示停产），不代表Governor或全链供给通过。详见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
+- 2026-10-04：固定32实体/15物料的连续只读采样覆盖36,125 ticks，1210非重叠产量下界16；随后22项runtime source-point reads纠正了163/784的当时库存标签（氢而非油）。原静态filter=1114路径是物料一致的候选，不证明实际油流或持续来源；有限缓存排除仍未证明。save维持89919581/R18/J100、最新观察90141554、0写入。详见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。

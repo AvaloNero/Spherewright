@@ -695,3 +695,27 @@ root静态读回proof `8fb811c0a9bb4a2b86c2dca088835743:1`，SHA-256 **`FB5F6D47
 此前有界连续run `db555450498b4ed79a316dd465950ed1`的信用不复用于后续实验。新只读连续run `64251c2a8f0a419e97b5f0d59e6c2f46`按声明原件`:3`、UUID `a0797419-b49e-4997-b5ad-f5cefeef1f43`运行：25实体/12物料，cadence 330、native窗口600，目标至少36000 ticks，最多120样本/4096 native请求/3300秒，poll间隔3秒，0 writes。终态覆盖 **89940003–89976009（36007 ticks）**，87个有效样本、0次重置；sampler读取3008 native requests，墙钟1988.885秒。root汇总的原始请求（含开、闭各两次）共3012 native；原件proof `ff639bc12b774b248eacf60ea4a8200d:1`，SHA-256 `635C6056B926EDD8F2DCBCD432A7B05831ED3F838E0C33AF462748BBE9F52D1C`，离线审计40.748秒、0 Game调用。连续模式按`covered`判完成；`qualifyingWindows=0`仅是独立样本模式计数，不是本次连续实验失败。此87样本窗口未采870石墨/酸库存、5187石墨上游库存或3343上游氢库存，因此有限上游库存排除仍缺原证据；这是证据未覆盖，不表示这些节点停产。
 
 按非重叠区间计算的1210新产量保守下界为17，超过该窗口按最低1件/分钟所需的11；17不是精确总产量。Warper5331库存739→756，PC885库存2662→2665（净增3）。这是连续产出及PC净库存正例，不证明Governor、全源供料归因或已排除所有上游有限库存；不把PC库存短窗增量解释为全链配平。root仍需核sourceSupply与finiteBufferExclusion的上游证据。窗口结束观察为 **89976016**，save仍为 **89919581 / R18 / J100**，external **5** / lifetime **145**，0 writes；无新restart。之前独立通过的恢复后输出正例仍有效，但本阶段sourceSupply、finiteBufferExclusion、full-source与protected restart均未通过。
+
+### 2026-10-04：32实体范围的连续1210采样与来源归因边界
+
+本阶段sampler source HEAD `9be6b5fa5355162dcd2496a6539e07a88f983f22`包含只读采样caller物料范围修复：唯一`ItemIds`参数上限由12改为16；原生600-tick窗口、120样本/4096请求及只读/停止规则不变。对应`test-production-sampling.ps1` 46项与`ProductionWindowGuidanceTests` 2项离线测试通过，0 Game调用；Windows Core CI `37161579848`针对该SHA成功。采样helper改动没有部署；运行中的DSP仍是installed `3fe31d1` / native `29104`，64 tools / 1 resource。以上为代码与离线验证，不是游戏采样结论。
+
+此前caller尝试`3cb0eaac:1–4`仅成功读取开场S/J两个响应，采样尚未开始；原声明35实体、15物料超过当时32实体、12物料的caller边界。该尝试是2次native读取，不是零Game请求；无样本、accepted、write或可复用的连续信用。新实验使用固定32实体/15物料范围，所有预算在开始前声明。
+
+连续只读run `0ec62d89ef9d410bb468d5c08c492ea3`：声明`:3`、结果`:3502`；82个样本、reset=0，覆盖 **90066166–90102290（36125 ticks）**；3412 sampler reads、3416 native请求，墙钟2075.794秒（非纯等待时间）。root proof `2abcbc714cd94daebf69bdb636f17634:1`，SHA-256 **`8F75A06F027BF82F9F55EBB778B5DE724BBD5F91CACBFDA859491464254EF2A8`**，离线审计94.7935023秒、0 Game调用。该段1210非重叠新产量保守下界为**16**，超过最低1件/分钟在36125 ticks内所需的`ceil(36125/3600)=11`；16不是精确产量。Warper 5331库存798→814，PC 885为2677→2680；N3采样满供且容量满足本次声明。
+
+此连续段还观察到：870石墨端点库存0→0、酸100→100，863酸600→600，3348氢0→0，3074氢/氘0→0；Fe 1511为3000→2999（段内最小2998、最大3000）。这些是有限采样窗口的端点/区间读数；其他上游生产buffer可周期波动，不能据此认定没有流量或完成来源归因，也不能证明已排除有限上游库存。窗口closing观察 **90102297**，当前save仍为 **89919581 / R18 / J100**，external **5** / lifetime **145**；无Game写入、unknown或inflight。Steam/DSP保持运行，本轮没有restart，专门Codex退出存活测试已取消。
+
+随后以原完整静态snapshot核对既有source候选：catalog中Acid 861、Graphene 869、D 3073、PC 883等各自唯一。fresh只读原件`65e83ad530dd42f98ea3950e1a4f7635:1–7`显示707/r16单帧氢output=20、oil=0且`isWorking=false`；163/784当次点读只观察到item1120氢库存（296/130），未见精炼油库存。这只纠正当时库存标签，不否定候选输油配置或油曾经流经该处的可能，也不证明707持续停产。原完整静态snapshot中，709/906所在以及784→3715/3125候选路径上的所有分拣器均filter=1114；3964→4188→3966候选链也全部filter=1114。因此这些静态候选在过滤物料上与精炼油item1114一致，但不证明实际流量或持续率。93/r4输出石材，26是混料仓，不能按未核物品的BFS认定它们是所需原料来源。fresh partial proof `8dd872d6e1d04729be7db80b1045d8d8:1`，SHA-256 **`DD89CCC5792F2808C5659732FECA0FD38112F5F08E5EA4FAE3177F0192CD3F4C`**，0 Game调用；仅证明当次点读，后文静态filter结论来自原完整snapshot，不属于该point proof；不代表实际供给通过。
+
+连续原生计数的unionCountBounds（不把重叠窗口相加）为Acid P44–68、Graphene P80–136、D P165–230、PC P37–50、1210 P16–23；这些是非精确边界，不等于产量分配。油、氢与石墨均有多个producer，氢还包含r58回用。本窗没有记录Oil 163/784及旧支路95/862/753的动态趋势，因此仍不能排除有限上游库存或定位停产原因。来源proof `07902087fae1435485f52c1b5985e2d7:1`，SHA-256 **`313803B9B355B396DEB0D28794F6726887725B565DAE57B0BFED4C38335874D5`**，0 Game调用。
+
+因此`sourceSupply`、`finiteBufferExclusion`与Governor验收仍为false；静态路径与本窗buffer边界不足以证明完整供料归属或有限库存排除。此段不构成完整供料配平、无界持续率或protected restart通过。此处记录的partial原件当时仅含7个native响应；后续只读续读及source-point结果见下段，不将两个原件误称同一快照。
+
+#### 2026-10-04 来源点包续读与实物过滤边界
+
+root独立核验的point proof `015fec99132443baab4a9ebf412851a0:1`，SHA-256 **`7140FDA76DA4511928AC4B86AA2A1FAB3BE673D8F39B7C8D12E42DFD13D1577A`**，0 Game调用。原partial `65e83ad530dd42f98ea3950e1a4f7635:1–7`后，续读run `ae9a2db302924e95b32d178d47872592:1–15`只读尚未读取的对象；两份原件合计22 native响应、14个唯一实体。所有只读审批均关闭，0 native拒绝、0 writes、无unknown/inflight；一次本地摘要字段失败未影响原生响应，不作重读或重放。closing **90141554 / R18 / save89919581 / J100**，external **5** / lifetime **145**；本续读没有新长窗或restart。
+
+逐项runtime库存纠正了静态BFS物料假设：163的item1120氢库存296、784的item1120氢库存130；862有item1005石矿3000；95有item1005石矿100及item1108石材2900；753有item1000水600；26有item1104铜100、item1102磁铁2400、item1301电路板3000、item6001蓝矩阵400。六个采集器86石矿、752水、2802原油、5171煤、1496铁、2440铜在各自点读时均`isWorking`且输出非零，节点数依序为1/0/1/6/7/8；这是瞬时状态，不是持续供给验证。水泵读到空的离散节点列表不等于缺水。1496的缺失矿点48与旧十写proof `5f6adea51edd4a41a6f2d590f3004db2`所证自然耗尽相符，其余配置严格比较无新增变化。
+
+因此应将结论限定为：163/784的当时库存标签为氢而非油，既有filter=1114的静态路径候选物料一致，但实际油流、持续来源和上游有限缓存排除仍未证明。油的零端点和707单帧idle都不能证明没有油流或持续停产。下一项仅按过滤方向和runtime输出核验真实精炼油到861/3084，并排除上游有限缓存。point结果不使`sourceSupply`、`finiteBufferExclusion`、Governor或grade restart验收通过；不得据此推进Gate 2。

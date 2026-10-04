@@ -102,6 +102,34 @@ public sealed class MaterialInventoryCutPolicyTests
     }
 
     [Fact]
+    public void SameCargoOnDifferentPathsRejectsInsteadOfDoubleCounting()
+    {
+        var budget = new MaterialInventoryCutPolicy();
+        Assert.True(budget.TryReserveCargo(new[] { new BeltCargoReference(1, 5) }));
+        Assert.False(budget.TryReserveCargo(new[] { new BeltCargoReference(2, 5), new BeltCargoReference(1, 15) }));
+        Assert.True(budget.TryReserveCargo(new[] { new BeltCargoReference(2, 5) }));
+    }
+
+    [Fact]
+    public void MissingInvalidOrRepeatedCargoDoesNotReservePartialEvidence()
+    {
+        var budget = new MaterialInventoryCutPolicy();
+        Assert.False(budget.TryReserveCargo(null));
+        Assert.False(budget.TryReserveCargo(new[] { new BeltCargoReference(-1, 5) }));
+        Assert.False(budget.TryReserveCargo(new[] { new BeltCargoReference(1, 5), new BeltCargoReference(1, 15) }));
+        Assert.True(budget.TryReserveCargo(new[] { new BeltCargoReference(1, 5) }));
+        Assert.True(budget.TryReserveCargo(Array.Empty<BeltCargoReference>()));
+    }
+
+    [Fact]
+    public void CrossPathCargoReservationKeepsTheNativePathBound()
+    {
+        var budget = new MaterialInventoryCutPolicy();
+        Assert.False(budget.TryReserveCargo(Enumerable.Range(0, 821).Select(id => new BeltCargoReference(id, id * 10)).ToArray()));
+        Assert.True(budget.TryReserveCargo(Enumerable.Range(0, 820).Select(id => new BeltCargoReference(id, id * 10)).ToArray()));
+    }
+
+    [Fact]
     public void OptionalObservationDoesNotChangeExistingActionBindingHashes()
     {
         var entity = new FactoryEntitySnapshot { ObjectId = 1, ItemId = 2001,

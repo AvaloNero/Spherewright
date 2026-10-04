@@ -160,6 +160,8 @@ internal sealed partial class GameStateReader
                 { CargoId = nativeId, ItemId = cargo.item, StackCount = cargo.stack, Inc = cargo.inc });
             }
             if (!BeltCargoObservationPolicy.TrySummarizePath(references, samples, out var items, out reason)) return false;
+            if (!budget.TryReserveCargo(references))
+            { reason = "material_cargo_duplicate_or_invalid_across_paths"; return false; }
             foreach (var item in items) item.Name = GetItemName(item.ItemId);
             captured.Add(decoded.Id, new MaterialCargoPathSnapshot
             {

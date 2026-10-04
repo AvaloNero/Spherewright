@@ -29,14 +29,18 @@ function Invoke-SpherewrightProductionExperiment {
         # running experiment's original deadline is never extended or replayed.
         [ValidateRange(1,3600)][int]$TimeoutSeconds=180,
         [ValidateRange(1,4096)][int]$MaximumRequests=90,
-        [ValidateRange(1,10)][int]$PollSeconds=5
+        [ValidateRange(1,10)][int]$PollSeconds=5,
+        # Explicit continuous-mode observation cadence, not cached entity data.
+        # The default still fresh-reads every declared entity in every sample.
+        [ValidateRange(1,4)][int]$EntitySampleEvery=1
     )
     if (@($EntityIds|Where-Object {$_ -le 0}).Count -or @($ItemIds|Where-Object {$_ -le 0}).Count -or
         @($EntityIds|Sort-Object -Unique).Count -ne $EntityIds.Count -or @($ItemIds|Sort-Object -Unique).Count -ne $ItemIds.Count -or
         ($Mode -ceq 'independent' -and $MaximumSamples -lt $RequiredWindows) -or
+        ($Mode -ceq 'independent' -and $EntitySampleEvery -ne 1) -or
         ($Mode -ceq 'continuous' -and $IntervalGameTicks -gt $WindowGameTicks)) { throw 'Invalid fixed scope/cadence/budget; no request sent.' }
     $started=Get-Date; $deadline=$started.AddSeconds($TimeoutSeconds)
-    $experiment=[pscustomobject]@{requests=0;lastMethod=$null;readWallMs=0.0;pollWaitMs=0.0;samples=0;qualifying=0;resets=0;covered=0;startTick=$null;endTick=$null;lastWindowEnd=$null;lastSessionTick=$null;nextTick=0;firstTick=$null;lastTick=$null;lastRates=@()}
+    $experiment=[pscustomobject]@{requests=0;lastMethod=$null;readWallMs=0.0;pollWaitMs=0.0;samples=0;entitySamples=0;qualifying=0;resets=0;covered=0;startTick=$null;endTick=$null;lastWindowEnd=$null;lastSessionTick=$null;nextTick=0;firstTick=$null;lastTick=$null;lastRates=@()}
     $read = {
         param([string]$Method,[hashtable]$Payload)
         $experiment.lastMethod=$Method
@@ -57,7 +61,15 @@ function Invoke-SpherewrightProductionExperiment {
         }
         return $value
     }
-    $null = & $RecordEvidence ([pscustomobject]@{event='production-experiment-intent';mode=$Mode;entityIds=$EntityIds;itemIds=$ItemIds;intervalGameTicks=$IntervalGameTicks;windowGameTicks=$WindowGameTicks;pollSeconds=$PollSeconds;requiredWindows=$RequiredWindows;requiredContinuousGameTicks=$RequiredContinuousGameTicks;maximumSamples=$MaximumSamples;maximumRequests=$MaximumRequests;deadlineUtc=$deadline.ToUniversalTime().ToString('o');gameWrites=0})
+    $readEntities={
+        foreach($id in $EntityIds){
+            $detail=& $read inspect_factory_entity @{planetId=$PlanetId;objectId=$id}
+            if ($detail.sessionId -cne $SessionId -or $detail.planetId -ne $PlanetId -or $detail.objectId -ne $id) { throw 'Selected entity identity changed.' }
+            $detail
+        }
+    }
+    $entityObservationTiming=if($EntitySampleEvery -eq 1){'at_native_sample'}else{'between_native_samples_after_first'}
+    $null = & $RecordEvidence ([pscustomobject]@{event='production-experiment-intent';mode=$Mode;entityIds=$EntityIds;itemIds=$ItemIds;entitySampleEvery=$EntitySampleEvery;entityObservationTiming=$entityObservationTiming;intervalGameTicks=$IntervalGameTicks;windowGameTicks=$WindowGameTicks;pollSeconds=$PollSeconds;requiredWindows=$RequiredWindows;requiredContinuousGameTicks=$RequiredContinuousGameTicks;maximumSamples=$MaximumSamples;maximumRequests=$MaximumRequests;deadlineUtc=$deadline.ToUniversalTime().ToString('o');gameWrites=0})
     try {
         $initial=& $read get_session_state @{}
         Assert-SpherewrightStageSession $initial $SessionId $PlanetId $GameVersion
@@ -70,17 +82,33 @@ function Invoke-SpherewrightProductionExperiment {
             Assert-SpherewrightStageSession $state $SessionId $PlanetId $GameVersion
             if ($state.revision -ne $initial.revision -or ($null -ne $experiment.lastSessionTick -and $state.gameTick -lt $experiment.lastSessionTick)) { throw 'Read-only experiment revision/tick changed; stop for review.' }
             $experiment.lastSessionTick=[long]$state.gameTick
-            if ($state.gameTick -lt $experiment.nextTick) {
+            $entityObservationPerformed=($experiment.samples % $EntitySampleEvery) -eq 0
+            $earlyEntityObservation=$EntitySampleEvery -gt 1 -and $experiment.samples -gt 0 -and $entityObservationPerformed
+            $details=@()
+            # Use the waiting interval, rather than adding48 serial reads AFTER
+            # the next counter is due. The first full observation still waits
+            # for a wholly post-start native window. Entity timestamps remain
+            # their actual earlier read times, never the counter timestamp.
+            if ($earlyEntityObservation) {
+                $details=@(& $readEntities)
+                $state=& $read get_session_state @{}
+                Assert-SpherewrightStageSession $state $SessionId $PlanetId $GameVersion
+                if ($state.revision -ne $initial.revision -or $state.gameTick -lt $experiment.lastSessionTick) { throw 'Read-only experiment revision/tick changed; stop for review.' }
+                $experiment.lastSessionTick=[long]$state.gameTick
+            }
+            while ($state.gameTick -lt $experiment.nextTick) {
                 $remaining=($deadline-(Get-Date)).TotalMilliseconds
                 if ($remaining -le 0) { throw 'Finite sampling deadline reached.' }
                 $sleepMs=[int][math]::Min($PollSeconds*1000,$remaining)
-                Start-Sleep -Milliseconds $sleepMs; $experiment.pollWaitMs+=$sleepMs; continue
+                Start-Sleep -Milliseconds $sleepMs; $experiment.pollWaitMs+=$sleepMs
+                if ($EntitySampleEvery -eq 1) { break }
+                $state=& $read get_session_state @{}
+                Assert-SpherewrightStageSession $state $SessionId $PlanetId $GameVersion
+                if ($state.revision -ne $initial.revision -or $state.gameTick -lt $experiment.lastSessionTick) { throw 'Read-only experiment revision/tick changed; stop for review.' }
+                $experiment.lastSessionTick=[long]$state.gameTick
             }
-            $details=@(foreach($id in $EntityIds){
-                $detail=& $read inspect_factory_entity @{planetId=$PlanetId;objectId=$id}
-                if ($detail.sessionId -cne $SessionId -or $detail.planetId -ne $PlanetId -or $detail.objectId -ne $id) { throw 'Selected entity identity changed.' }
-                $detail
-            })
+            if ($EntitySampleEvery -eq 1 -and $state.gameTick -lt $experiment.nextTick) { continue }
+            if ($entityObservationPerformed -and -not $earlyEntityObservation) { $details=@(& $readEntities) }
             $power=& $read get_power_summary @{planetId=$PlanetId}
             if ($power.sessionId -cne $SessionId -or $power.planetId -ne $PlanetId) { throw 'Power observation identity changed.' }
             $production=& $read get_overseer_production @{itemIds=$ItemIds;limit=8}
@@ -91,7 +119,10 @@ function Invoke-SpherewrightProductionExperiment {
             foreach($field in @('state','startGameTick','endGameTick','elapsedGameTicks','crossedSessionBoundary')){$null=Get-SpherewrightStageField $window $field}
             $endMarker=& $ReceiptMarker
             if ($beginMarker.runId -notmatch '^[0-9a-f]{32}$' -or $endMarker.runId -cne $beginMarker.runId -or $endMarker.ordinal -le $beginMarker.ordinal) { throw 'Original sample receipt range unproved.' }
-            $sample=[pscustomobject]@{state=$state;entities=$details;power=$power;production=$production}
+            # Never give the validator the previous sample's buffers/config as
+            # fresh observations. A counter-only sample has an explicit empty
+            # entity list; its callback must deliberately handle that scope.
+            $sample=[pscustomobject]@{state=$state;entities=$details;entityObservationPerformed=$entityObservationPerformed;entitySampleEvery=$EntitySampleEvery;entityObservationTiming=$entityObservationTiming;power=$power;production=$production}
             $approval=@(& $ValidateObservation $sample)
             if ($approval.Count -ne 1 -or $approval[0] -isnot [bool]) { throw 'Observation validator must return exactly one Boolean; retain evidence.' }
             $valid=$approval[0] -and $window.state -ceq 'ready' -and $window.crossedSessionBoundary -eq $false
@@ -120,18 +151,19 @@ function Invoke-SpherewrightProductionExperiment {
                 $experiment.covered=0;$experiment.startTick=$null;$experiment.endTick=$null
             }
             $experiment.samples++
+            if ($entityObservationPerformed) { $experiment.entitySamples++ }
             $experiment.lastWindowEnd=[long]$window.endGameTick
             $experiment.nextTick=[long]$window.endGameTick+$IntervalGameTicks
             if ($null -eq $experiment.firstTick) { $experiment.firstTick=$production.capturedAtGameTick }
             $experiment.lastTick=$production.capturedAtGameTick
-            $null=& $RecordEvidence ([pscustomobject]@{event='production-sample';index=$experiment.samples;runId=$beginMarker.runId;firstOrdinal=$beginMarker.ordinal+1;lastOrdinal=$endMarker.ordinal;window=$window;valid=$valid;resetReason=$resetReason;coveredGameTicks=$experiment.covered;rates=$experiment.lastRates;healthScope='sampled_only'})
+            $null=& $RecordEvidence ([pscustomobject]@{event='production-sample';index=$experiment.samples;runId=$beginMarker.runId;firstOrdinal=$beginMarker.ordinal+1;lastOrdinal=$endMarker.ordinal;entityObservationPerformed=$entityObservationPerformed;entityCount=$details.Count;entityObservationTiming=$entityObservationTiming;observationKind=$(if($entityObservationPerformed){'entities_power_production'}else{'power_production_only'});window=$window;valid=$valid;resetReason=$resetReason;coveredGameTicks=$experiment.covered;rates=$experiment.lastRates;healthScope='sampled_only'})
             if (($Mode -ceq 'independent' -and $experiment.qualifying -ge $RequiredWindows) -or ($Mode -ceq 'continuous' -and $experiment.covered -ge $RequiredContinuousGameTicks)) { break }
         }
         $final=& $read get_session_state @{}
         Assert-SpherewrightStageSession $final $SessionId $PlanetId $GameVersion
         if ($final.revision -ne $initial.revision -or $final.gameTick -lt $experiment.lastTick) { throw 'Final experiment identity/revision/tick boundary changed.' }
         $completed=($Mode -ceq 'independent' -and $experiment.qualifying -ge $RequiredWindows) -or ($Mode -ceq 'continuous' -and $experiment.covered -ge $RequiredContinuousGameTicks)
-        $summary=[pscustomobject]@{event='production-experiment-result';result=$(if($completed){'sampling_completed'}else{'not_proven'});samples=$experiment.samples;qualifyingWindows=$experiment.qualifying;coveredGameTicks=$experiment.covered;resetCount=$experiment.resets;requests=$experiment.requests;firstObservedTick=$experiment.firstTick;lastObservedTick=$experiment.lastTick;lastRates=$experiment.lastRates;gameWrites=0;modelDecisionsInsideLoop=0;governorAcceptance=$false;healthScope='sampled_only';timingMs=@{reads=[math]::Round($experiment.readWallMs,3);scheduledWait=$experiment.pollWaitMs;total=((Get-Date)-$started).TotalMilliseconds}}
+        $summary=[pscustomobject]@{event='production-experiment-result';result=$(if($completed){'sampling_completed'}else{'not_proven'});samples=$experiment.samples;entitySamples=$experiment.entitySamples;entitySampleEvery=$EntitySampleEvery;qualifyingWindows=$experiment.qualifying;coveredGameTicks=$experiment.covered;resetCount=$experiment.resets;requests=$experiment.requests;firstObservedTick=$experiment.firstTick;lastObservedTick=$experiment.lastTick;lastRates=$experiment.lastRates;gameWrites=0;modelDecisionsInsideLoop=0;governorAcceptance=$false;healthScope='sampled_only';timingMs=@{reads=[math]::Round($experiment.readWallMs,3);scheduledWait=$experiment.pollWaitMs;total=((Get-Date)-$started).TotalMilliseconds}}
         $null=& $RecordEvidence $summary
         return $summary
     } catch {
@@ -146,7 +178,7 @@ function Invoke-SpherewrightProductionExperiment {
         # Keep completed sample receipts even when a later read fails. Failure is
         # not a production verdict, and never starts another experiment/worker.
         try {
-            $null=& $RecordEvidence ([pscustomobject]@{event='production-experiment-failed';result='not_proven';failureKind=$failureKind;method=$experiment.lastMethod;message=$samplingError.Exception.Message;samples=$experiment.samples;qualifyingWindows=$experiment.qualifying;requests=$experiment.requests;maximumRequests=$MaximumRequests;lastObservedTick=$experiment.lastTick;coveredGameTicks=$experiment.covered;deadlineUtc=$deadline.ToUniversalTime().ToString('o');gameWrites=0;governorAcceptance=$false;automaticRestart=$false;timingMs=@{reads=[math]::Round($experiment.readWallMs,3);scheduledWait=$experiment.pollWaitMs;total=((Get-Date)-$started).TotalMilliseconds}})
+            $null=& $RecordEvidence ([pscustomobject]@{event='production-experiment-failed';result='not_proven';failureKind=$failureKind;method=$experiment.lastMethod;message=$samplingError.Exception.Message;samples=$experiment.samples;entitySamples=$experiment.entitySamples;entitySampleEvery=$EntitySampleEvery;qualifyingWindows=$experiment.qualifying;requests=$experiment.requests;maximumRequests=$MaximumRequests;lastObservedTick=$experiment.lastTick;coveredGameTicks=$experiment.covered;deadlineUtc=$deadline.ToUniversalTime().ToString('o');gameWrites=0;governorAcceptance=$false;automaticRestart=$false;timingMs=@{reads=[math]::Round($experiment.readWallMs,3);scheduledWait=$experiment.pollWaitMs;total=((Get-Date)-$started).TotalMilliseconds}})
         } catch {
             $samplingError.Exception.Data['spherewrightFailureEvidenceError']=$_.Exception.Message
         }

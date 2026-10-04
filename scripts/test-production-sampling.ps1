@@ -5,7 +5,7 @@ $ErrorActionPreference='Stop'
 $script:checks=0
 function Assert-Sampling([bool]$Condition,[string]$Name){if(-not $Condition){throw "Sampling regression: $Name"};$script:checks++}
 function Reset-Sampling([long[]]$Ends,[string]$Fault='',[int[]]$ItemIds=@(1109)){
-    $script:ends=$Ends;$script:sampleIndex=0;$script:fault=$Fault;$script:itemIds=@($ItemIds);$script:entryBoundaryPending=$false;$script:calls=[Collections.Generic.List[string]]::new();$script:payloads=[Collections.Generic.List[object]]::new();$script:records=[Collections.Generic.List[object]]::new();$script:now=[datetime]'2026-09-30T00:00:00Z';$script:startTime=$script:now
+    $script:ends=$Ends;$script:sampleIndex=0;$script:fault=$Fault;$script:itemIds=@($ItemIds);$script:entryBoundaryPending=$false;$script:calls=[Collections.Generic.List[string]]::new();$script:payloads=[Collections.Generic.List[object]]::new();$script:records=[Collections.Generic.List[object]]::new();$script:entityTimingWitnesses=[Collections.Generic.List[object]]::new();$script:now=[datetime]'2026-09-30T00:00:00Z';$script:startTime=$script:now
 }
 function Get-Date{$script:now}
 function Start-Sleep([int]$Milliseconds){$script:now=$script:now.AddMilliseconds($Milliseconds)}
@@ -14,15 +14,21 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
     $script:payloads.Add([pscustomobject]@{method=$Method;payload=$Payload})
     if($Method -like 'prepare_*' -or $Method -like 'commit_*'){throw 'A read-only sampler attempted a write'}
     if($script:fault -in @('source15fps','source20fps')){$script:now=$script:now.AddMilliseconds(130)}
+    if($script:fault -in @('jitter15fps','jitter20fps')){
+        # Alternate normal native reads and slower responses; do not assume
+        # constant transport latency when declaring a full-source experiment.
+        $latency=if(($script:calls.Count % 9) -eq 0){650}else{130}
+        $script:now=$script:now.AddMilliseconds($latency)
+    }
     $index=[math]::Min($script:sampleIndex,$script:ends.Count-1);$tick=$script:ends[$index]
-    if($script:fault -in @('15fps','source15fps','source20fps')){$ticksPerSecond=if($script:fault -ceq 'source20fps'){20}else{15};$tick=[long](($script:now-$script:startTime).TotalSeconds*$ticksPerSecond)}
+    if($script:fault -in @('15fps','source15fps','source20fps','jitter15fps','jitter20fps')){$ticksPerSecond=if($script:fault -in @('source20fps','jitter20fps')){20}else{15};$tick=[long](($script:now-$script:startTime).TotalSeconds*$ticksPerSecond)}
     $result=switch($Method){
         get_session_state {
-            if($script:entryBoundaryPending){if($script:fault -notin @('15fps','source15fps','source20fps')){$tick=if($script:sampleIndex -eq 0){0}else{$script:ends[$script:sampleIndex-1]}};$script:entryBoundaryPending=$false}
+            if($script:entryBoundaryPending){if($script:fault -notin @('15fps','source15fps','source20fps','jitter15fps','jitter20fps')){$tick=if($script:sampleIndex -eq 0){0}else{$script:ends[$script:sampleIndex-1]}};$script:entryBoundaryPending=$false}
             if($script:fault -ceq 'paused' -and $index -gt 0){$tick=$script:ends[0]}
-            [pscustomobject]@{sessionId=$SessionId;localPlanetId=104;gameVersion=$(if($script:fault -ceq 'version'){'other'}else{'fixture'});gameLoaded=$true;ownedBySpherewright=$true;accessRestricted=$false;writeHealth=$(if($script:fault -ceq 'quarantine'){'quarantined'}else{'healthy'});writeBlockers=@();gameTick=$tick;revision=22}
+            [pscustomobject]@{sessionId=$SessionId;localPlanetId=104;gameVersion=$(if($script:fault -ceq 'version'){'other'}else{'fixture'});gameLoaded=$true;ownedBySpherewright=$true;accessRestricted=$false;writeHealth=$(if($script:fault -ceq 'quarantine'){'quarantined'}else{'healthy'});writeBlockers=@();gameTick=$tick;revision=$(if($script:fault -ceq 'revision' -and $script:sampleIndex -gt 0){23}else{22})}
         }
-        inspect_factory_entity {[pscustomobject]@{sessionId=$SessionId;planetId=104;objectId=$Payload.objectId;recipeId=17;buffers=@([pscustomobject]@{role='input';itemId=1006;count=4})}}
+        inspect_factory_entity {[pscustomobject]@{sessionId=$SessionId;planetId=104;objectId=$Payload.objectId;recipeId=17;capturedAtGameTick=$tick;buffers=@([pscustomobject]@{role='input';itemId=1006;count=4})}}
         get_power_summary {[pscustomobject]@{sessionId=$SessionId;planetId=104;networks=@([pscustomobject]@{consumerRatio=$(if($script:fault -ceq 'power' -and $index -eq 1){0.5}else{1.0})})}}
         get_overseer_production {
             if($script:fault -ceq 'deadline'){$script:now=$script:now.AddSeconds(200)}
@@ -80,7 +86,7 @@ $complete=@{};foreach($key in $arguments.Keys){$complete[$key]=$arguments[$key]}
 Reset-Sampling @(600) '' $completeItems
 $completeResult=Invoke-SpherewrightProductionExperiment @complete
 $completeQueries=@($script:payloads|Where-Object method -CEQ 'get_overseer_production')
-Assert-Sampling ($completeEntities.Count -eq 48 -and $completeItems.Count -eq 22 -and $completeResult.result -ceq 'sampling_completed' -and $completeResult.requests -eq 53 -and @($script:payloads|Where-Object method -CEQ 'inspect_factory_entity').Count -eq 48) 'complete forty-eight-entity chain fits its declared fifty-three reads'
+Assert-Sampling ($completeEntities.Count -eq 48 -and $completeItems.Count -eq 22 -and $completeResult.result -ceq 'sampling_completed' -and $completeResult.requests -eq 53 -and $completeResult.entitySampleEvery -eq 1 -and $completeResult.entitySamples -eq 1 -and @($script:payloads|Where-Object method -CEQ 'inspect_factory_entity').Count -eq 48) 'default complete forty-eight-entity chain still fresh-reads all entities in fifty-three requests'
 Assert-Sampling ($completeQueries.Count -eq 1 -and (@($completeQueries[0].payload.itemIds|Sort-Object) -join ',') -ceq (@($completeItems|Sort-Object) -join ',') -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -eq 22 }).Count -eq 1 -and $completeResult.gameWrites -eq 0) 'all twenty-two source items are read once in the same native window'
 
 $maximum=@{};foreach($key in $complete.Keys){$maximum[$key]=$complete[$key]};$maximum.EntityIds=@(1..48);$maximum.ItemIds=@(1101..1124);$maximum.MaximumRequests=60
@@ -103,6 +109,71 @@ foreach($sourceClock in @('source15fps','source20fps')){
     Assert-Sampling ($completeContinuousResult.result -ceq 'sampling_completed' -and $completeContinuousResult.coveredGameTicks -ge 36000 -and $completeContinuousResult.resetCount -eq 0 -and $completeContinuousResult.requests -le 4090 -and $completeContinuousResult.samples -le 120 -and $completeContinuousResult.timingMs.total -lt 3290000) "$sourceClock exact complete scope covers36000ticks within initial sample/read/wall caps"
     Assert-Sampling ($completeContinuousResult.gameWrites -eq 0 -and $completeContinuousResult.modelDecisionsInsideLoop -eq 0 -and -not $completeContinuousResult.governorAcceptance -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -ne 22 }).Count -eq 0) "$sourceClock complete source coverage grants no mutation or automatic supply sign-off"
 }
+
+# An explicitly declared second cadence separates expensive full inventory
+# observations from fresh native counters/power. Empty means unobserved, not a
+# cached inventory snapshot. Defaults and independent windows are unchanged.
+$interleaved=@{};foreach($key in $complete.Keys){$interleaved[$key]=$complete[$key]}
+$interleaved.Mode='continuous';$interleaved.EntitySampleEvery=2;$interleaved.IntervalGameTicks=390
+$interleaved.MaximumSamples=120;$interleaved.MaximumRequests=4090;$interleaved.TimeoutSeconds=3290;$interleaved.PollSeconds=4
+$interleaved.ValidateObservation={param($s)
+    if($s.entityObservationPerformed){
+        if($s.entities.Count -ne 48 -or @($s.entities|Where-Object recipeId -NE 17).Count){throw 'Full entity scope changed'}
+        $script:entityTimingWitnesses.Add([pscustomobject]@{sample=$script:sampleIndex;lastEntityTick=$s.entities[-1].capturedAtGameTick;freshStateTick=$s.state.gameTick;counterTick=$s.production.window.endGameTick})
+    }elseif($s.entities.Count -ne 0){throw 'Counter-only sample reused inventory data'}
+    [bool]($s.power.networks[0].consumerRatio -eq 1)
+}
+$jitterBefore=@{};foreach($key in $interleaved.Keys){$jitterBefore[$key]=$interleaved[$key]}
+$jitterBefore.EntitySampleEvery=1;$jitterBefore.IntervalGameTicks=390
+Reset-Sampling @(600) 'jitter20fps' $completeItems
+$jitterBeforeError=$null;try{Invoke-SpherewrightProductionExperiment @jitterBefore|Out-Null}catch{$jitterBeforeError=$_}
+$jitterBeforeFailure=@($script:records|Where-Object event -CEQ 'production-experiment-failed')
+Assert-Sampling ($null -ne $jitterBeforeError -and $jitterBeforeFailure.Count -eq 1 -and $jitterBeforeFailure[0].failureKind -ceq 'request_budget_exhausted' -and $jitterBeforeFailure[0].requests -eq 4090 -and $jitterBeforeFailure[0].samples -gt 0 -and @($script:records|Where-Object {$_.event -ceq 'production-sample' -and $_.resetReason -ceq 'sample_gap'}).Count -gt 0 -and -not $jitterBeforeFailure[0].automaticRestart) 'latency jitter reproduces the all-entity390-tick caller budget/gap failure without a production verdict'
+foreach($jitterClock in @('jitter15fps','jitter20fps')){
+    Reset-Sampling @(600) $jitterClock $completeItems
+    $interleavedResult=Invoke-SpherewrightProductionExperiment @interleaved
+    $interleavedSamples=@($script:records|Where-Object event -CEQ 'production-sample')
+    $fullSamples=@($interleavedSamples|Where-Object entityObservationPerformed -EQ $true)
+    $counterSamples=@($interleavedSamples|Where-Object entityObservationPerformed -EQ $false)
+    Assert-Sampling ($interleavedResult.result -ceq 'sampling_completed' -and $interleavedResult.coveredGameTicks -ge 36000 -and $interleavedResult.resetCount -eq 0 -and $interleavedResult.requests -le 4090 -and $interleavedResult.timingMs.total -lt 3290000) "$jitterClock declared dual cadence completes inside unchanged sample/read/wall limits"
+    Assert-Sampling ($fullSamples.Count -eq $interleavedResult.entitySamples -and $fullSamples.Count -eq [math]::Ceiling($interleavedSamples.Count/2.0) -and @($fullSamples|Where-Object {$_.entityCount -ne 48 -or $_.observationKind -cne 'entities_power_production'}).Count -eq 0 -and $counterSamples.Count -gt 0 -and @($counterSamples|Where-Object {$_.entityCount -ne 0 -or $_.observationKind -cne 'power_production_only'}).Count -eq 0) "$jitterClock explicitly marks full versus unobserved inventory scope"
+    Assert-Sampling (@($script:payloads|Where-Object method -CEQ 'inspect_factory_entity').Count -eq 48*$fullSamples.Count -and @($script:payloads|Where-Object method -CEQ 'get_power_summary').Count -eq $interleavedSamples.Count -and @($script:payloads|Where-Object method -CEQ 'get_overseer_production').Count -eq $interleavedSamples.Count -and @($interleavedSamples|Where-Object {$_.rates.Count -ne 22}).Count -eq 0) "$jitterClock every sample still has fresh power and the same complete twenty-two-item native window"
+    Assert-Sampling ($script:records[0].entitySampleEvery -eq 2 -and $script:records[0].entityObservationTiming -ceq 'between_native_samples_after_first' -and $interleavedResult.gameWrites -eq 0 -and $interleavedResult.modelDecisionsInsideLoop -eq 0 -and -not $interleavedResult.governorAcceptance) "$jitterClock inventory timing/cadence is declared before execution and grants no production sign-off or writes"
+    Assert-Sampling (@($script:entityTimingWitnesses|Where-Object {$_.sample -gt 1 -and $_.lastEntityTick -lt $_.freshStateTick}).Count -gt 0 -and @($script:entityTimingWitnesses|Where-Object {$_.lastEntityTick -gt $_.counterTick}).Count -eq 0) "$jitterClock early entity timestamps are retained and the post-wait session is fresh"
+    if($jitterClock -ceq 'jitter20fps'){$jitterAfterResult=$interleavedResult}
+}
+$interleavedShort=@{};foreach($key in $interleaved.Keys){$interleavedShort[$key]=$interleaved[$key]};$interleavedShort.MaximumSamples=3
+foreach($interleavedFault in @('gap','power','revision','budget')){
+    Reset-Sampling $(if($interleavedFault -ceq 'gap'){@(600,1300,1900)}else{@(600,1200,1800)}) $(if($interleavedFault -in @('gap','budget')){''}else{$interleavedFault}) $completeItems
+    $boundedInterleaved=@{};foreach($key in $interleavedShort.Keys){$boundedInterleaved[$key]=$interleavedShort[$key]}
+    if($interleavedFault -ceq 'budget'){$boundedInterleaved.MaximumRequests=56}
+    $interleavedFaultError=$null;$interleavedFaultResult=$null
+    try{$interleavedFaultResult=Invoke-SpherewrightProductionExperiment @boundedInterleaved}catch{$interleavedFaultError=$_}
+    if($interleavedFault -in @('gap','power')){
+        $expectedCredit=if($interleavedFault -ceq 'gap'){1200}else{600}
+        Assert-Sampling ($null -eq $interleavedFaultError -and $interleavedFaultResult.result -ceq 'not_proven' -and $interleavedFaultResult.resetCount -eq 1 -and $interleavedFaultResult.coveredGameTicks -eq $expectedCredit -and $interleavedFaultResult.entitySamples -eq 2) "$interleavedFault on counter-only sampling still resets continuity with no fabricated inventories"
+    }else{
+        $expectedSamples=if($interleavedFault -ceq 'revision'){1}else{2}
+        $retainedSamples=@($script:records|Where-Object event -CEQ 'production-sample')
+        Assert-Sampling ($null -ne $interleavedFaultError -and $interleavedFaultError.Exception.Data['spherewrightSamplingSamples'] -eq $expectedSamples -and $retainedSamples.Count -eq $expectedSamples -and @($script:calls|Where-Object {$_ -like 'prepare_*' -or $_ -like 'commit_*'}).Count -eq 0) "$interleavedFault stops once and preserves only completed native windows"
+    }
+}
+Reset-Sampling @(600,1200,1800) '' $completeItems
+$unsafeEntityCallback=@{};foreach($key in $interleavedShort.Keys){$unsafeEntityCallback[$key]=$interleavedShort[$key]}
+$unsafeEntityCallback.ValidateObservation={param($s) if($s.entities.Count -ne 48){throw 'Expected fresh entity evidence'};[bool]($s.entities[0].recipeId -eq 17)}
+$unsafeEntityCallbackError=$null;try{Invoke-SpherewrightProductionExperiment @unsafeEntityCallback|Out-Null}catch{$unsafeEntityCallbackError=$_}
+Assert-Sampling ($null -ne $unsafeEntityCallbackError -and $unsafeEntityCallbackError.Exception.Data['spherewrightSamplingSamples'] -eq 1 -and @($script:payloads|Where-Object method -CEQ 'inspect_factory_entity').Count -eq 48) 'unadapted full-entity validator fails closed instead of receiving cached inventory on a counter-only sample'
+Reset-Sampling @(600,1200,1800)
+$badInterleaving=@{};foreach($key in $arguments.Keys){$badInterleaving[$key]=$arguments[$key]};$badInterleaving.EntitySampleEvery=2
+$badInterleavingError=$null;try{Invoke-SpherewrightProductionExperiment @badInterleaving|Out-Null}catch{$badInterleavingError=$_}
+Assert-Sampling ($null -ne $badInterleavingError -and $script:calls.Count -eq 0) 'independent inventory windows cannot silently become counter-only observations'
+foreach($badEvery in @(0,5)){
+    Reset-Sampling @(600)
+    $invalidEvery=@{};foreach($key in $interleaved.Keys){$invalidEvery[$key]=$interleaved[$key]};$invalidEvery.EntitySampleEvery=$badEvery
+    $everyError=$null;try{Invoke-SpherewrightProductionExperiment @invalidEvery|Out-Null}catch{$everyError=$_}
+    Assert-Sampling ($null -ne $everyError -and $script:calls.Count -eq 0) 'invalid entity cadence rejects before any request'
+}
+
 
 foreach($scopeCase in @(
     [pscustomobject]@{name='twenty-five items';ids=[int[]](1101..1125)},
@@ -215,4 +286,4 @@ Reset-Sampling @(600,1206,1812)
 $bad=@{};foreach($key in $arguments.Keys){$bad[$key]=$arguments[$key]};$bad.EntityIds=@(3404,3404)
 try{Invoke-SpherewrightProductionExperiment @bad|Out-Null}catch{}
 Assert-Sampling ($script:calls.Count -eq 0) 'invalid scope rejects before the first request'
-[pscustomobject]@{passed=$script:checks;gameCalls=0;independentFixtureRequestsBefore=$splitRequests;independentFixtureRequestsAfter=14;entryInvocationsBefore=3;entryInvocationsAfter=1;slowFixtureRequestsBefore=90;slowFixtureCompletedBefore=$false;slowFixtureRequestsAfter=$slowResult.requests;slowFixtureWallMsAfter=$slowResult.timingMs.total;slowFixtureCompletedAfter=$true;continuousFixtureRequests=242;continuousFixtureTicks=36000;providerUsage=$null}|ConvertTo-Json -Compress
+[pscustomobject]@{passed=$script:checks;gameCalls=0;independentFixtureRequestsBefore=$splitRequests;independentFixtureRequestsAfter=14;entryInvocationsBefore=3;entryInvocationsAfter=1;slowFixtureRequestsBefore=90;slowFixtureCompletedBefore=$false;slowFixtureRequestsAfter=$slowResult.requests;slowFixtureWallMsAfter=$slowResult.timingMs.total;slowFixtureCompletedAfter=$true;continuousFixtureRequests=242;continuousFixtureTicks=36000;dualCadenceJitterFixture=[pscustomobject]@{ticksPerSecond=20;intervalGameTicks=390;maximumRequests=4090;maximumWallSeconds=3290;beforeRequests=$jitterBeforeFailure[0].requests;beforeCoveredTicks=$jitterBeforeFailure[0].coveredGameTicks;beforeCompleted=$false;beforeVirtualWallMs=$jitterBeforeFailure[0].timingMs.total;afterRequests=$jitterAfterResult.requests;afterCoveredTicks=$jitterAfterResult.coveredGameTicks;afterResets=$jitterAfterResult.resetCount;afterEntitySamples=$jitterAfterResult.entitySamples;afterCompleted=$true;afterVirtualWallMs=$jitterAfterResult.timingMs.total;liveValidation=$false};providerUsage=$null}|ConvertTo-Json -Depth 4 -Compress

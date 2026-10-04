@@ -1,19 +1,17 @@
 # Spherewright 当前快照
 
-更新：2026-10-04（Asia/Singapore）。原件与边界见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
+更新：2026-10-04（Asia/Singapore）。本阶段权威事实见[材料库存与恢复证据](evidence/2026-10-04/material-inventory-cuts.md)。
 
 ## 当前状态
 
-- 源码 `ff362e0` 已push且Windows Core CI `37195880987`通过；共享caller按实测tick速度缩短临近目标的等待，默认cadence1/independent、原预算与gap/reset不变。离线85项及MCP指南2项通过。运行Plugin/MCP未更换，仍为installed `3fe31d1` / native `0.10.35.29104`（64 tools / 1 resource），未部署。
-- 本阶段连续采样 `8d3f2a538b5b40119f64ded602b95b61`覆盖36391 ticks、85样本、43次完整实体观察、reset0、2820 native；root proof `e6eab6f392014500ae82b3fa49fa45da:1` / `DFB7E4FA8AF6CFC1A5333C7E4B63F4C2ECB9E2E2ED2AF60A305F83F1886FF1EB`。最低来源资格proof `44c6537a889a44888de962e3a262d898:1` / `0F665EE1B5AE9C085F973CDB6386EA9B972BEF07F1F649CC9AE0CA613210C58C`：1210保守下界16≥需求11，PC 2711→2716、Warper 950→966、净氢下界290≥需求220；仅最低1件/分钟门，不是全源配平或有限缓存排除。
-- 最近正常保存 **90474698 / R19 / J100** 后，必要DSP重启与healthy owned-primary恢复已完成；保存点 **90474729 / R1 / J100**，最新观察 **S91501262**，external **7** / lifetime **147**（未达十写冻结）。本次只读观察无新save/restart；最新生产进度不能称作已保存覆盖。Steam/DSP保持运行，既有228项安装文件核验不作本次重新部署。prepare的`exactEmbeddedIdentityVerified=false`，故只在native terminal adoption/readback之后核实同一primary；恢复库存、手持物及位置守恒，Y差1微米在既有1毫米容差内，不推断原因。
-- 重启后完整capture为 **60页 / 5945 built / 0 prebuild / 17 details / 11620互逆边**，无新增/删除实体；本阶段将1535、2317从2011升级至2012，既有1512在baseline已为2012并保持；仅2440/node168耗尽差异许可，其余静态配置一致。Gate2垂直门“正常保存→必要受保护重启→恢复同一healthy primary→再次出现1210非零实产”通过。专门Codex退出存活测试已由用户取消，未执行。
-- 恢复后六个分离600-tick只读窗仅有1件1210原生实产；`coveredContinuousTicks=0`，不计连续信用。1210库存1011→1013含窗间未采样生产，不能按六窗实产3件解释。N3各窗full-serve，容量1878000–1914000 J/t，高于声明峰值1804700 J/t。
+- 当前已验证并安装的代码 cohort 来自 `b1557bb`，Windows Core CI 37206538632 已成功。此提交的隔离 cohort 完成 locked restore、Release build、测试与 MCP publish：2551/2551 通过，4 个 Plugin 文件和224个 MCP 文件、64 tools/1 resource，playbook匹配；受保护回执 2ed96cf586834604b91ad1fd066f67a2:1 / 11725B3778E2365B9839F8F7CF211E141F95C7E803642EAFC869CBDBAD4066A9。该离线 cohort 随后经必要冷事务安装并核228文件同批匹配；当前 DSP 使用本阶段构建，native 0.10.35.29104。Steam保持运行；未做专门Host关闭存活测试，用户已取消此测试。
+- 重启前正常保存为 tick92128707 / R2 / J100，external8 / lifetime148；必要冷事务保留Steam并启动新的DSP实例。随后受保护默认primary恢复到同一owned世界，新存档 tick92128739 / R1 / J100，external9 / lifetime149；inventory、手持和100条Journal连续。恢复准备阶段的exactEmbeddedIdentityVerified为false，因此不声称加载前已完全读回；native terminal adoption/readback确认后才核实同一primary。保存约2.73秒、恢复约9.5秒。
+- 此前恢复/采样阶段的完整工厂捕获为60页、5945 built、0 prebuild、17 details、11620互逆边，无实体增删；这是905…阶段的既有证据，不是92128739这次恢复后重新采集。1535和2317保留2011→2012升级；1512在相应基线已为2012。唯一允许的资源节点差异为已核实耗尽的2440/node168；198项动态buffer差异单独保留，不泛化忽略。root proof d7fc1a41af3a4e67a06e5e259c618d34:1 / 64D0B819291E6E69BEED440DACD10D8443C9812A9C974878B13E60B7C7105B0C。
+- 此前阶段的六个分离600-tick观察窗中，1210仅见1件原生生产，其余窗为0；coveredContinuousTicks=0，不计长窗信用。1210库存1011→1013含窗间未采样生产，不当作六窗3件实产。N3各窗full-serve，容量1878000–1914000 J/t，高于当时声明峰值1804700 J/t。这些窗口不是92128739恢复后的新采样。原件 c2c6ae9c3199460380d5b6a359ac79f4:1–143；独立核验45a1756ad0844cb2b93e172832a77837:1 / AF988AC6A02B44EA05AA32C705793F609A35B173A6487AC0F0A4E465F2443713。
 
 ## 尚未闭合
 
-旧`53ed`120样本的42次重置全是粗等待造成的`sample_gap`，不是产线健康检查失败。新`5e1cf80452674139b528c67cf47b30ef`已结束：89样本/45次48对象完整观察、24物料、8来源开闭见证、2786 native，619332.6737 ms，**91464990–91501193 / 36204连续ticks / reset0**。root proof `ad89fb2801274af68d9d520014afac1a:1` / `A6B7024893380D21501888BD026422743B85E39AF2430FA0AF4835B228909DEC`：新鲜1210非重叠下界18≥需求11，PC2832→2835；只证明声明的最低持续率。旧实验信用未复用。
+- 既有连续采样只通过声明的最低产率门：1210非重叠产量下界18≥需求11，PC2832→2835；旧材料union仅给计数区间，不能证明来源已配平。有限缓存排除、全源归因、Governor与完整Gate2仍未通过。
+- 14项、0写入的材料 cut 点读已完成并由 root 核验：run `095da7e9b72e4c1ebb14d989c3b16093`，耗时7.6554198秒，proof `7430a5fd350347cfb15d3bc9b98d34c5:1` / `C725958C50E94FF46E2551FE8809A11FFF4D3F74A481B98EB823DF66E66BDE3F`。7个 cut 均在各自同一 tick 观测；不同 cut 的库存不可拼接或相加。已观测 item 1209/1112/1127/1206/1121/1101/1210 的库存分别为0/118/0/3264/10/3446/1762。该点读不证明来源已配平、持续供给或 finite-buffer 排除；下一项是基于已核完整 native 路径制定前瞻来源/有限缓存核验，而非重复全厂 cut。最新观察为 `S92211338/R1`；正常保存仍为 `92128739/J100`，external9/lifetime149，无unknown、inflight或未核销accepted动作，未新增保存。Game writes保持blocked，未开启其它施工或再加载。
 
-141/707等关键生产buffer已纳入本次45次实际观察；所有选定库存无首末净下降。material union proof `9802245ba8aa4c7d850bc2258fd87ce3:1` / `D25577742F382097E4E621E25DBFBA130F1259366463714629094B3D02CEBDAD`保留24项native计数区间；不少净量区间跨零，不能推断已配平或缺供。`finiteBufferExclusion`、完整sourceSupply、Gate2和Governor仍false：未界定在途有限物料及完整来源归因。库存观察与native窗不同步，不能用库存增量当精确实产。
-
-当前无unknown、inflight或未核销accepted动作；只读worker已停止、审批已消费，禁止重放；Game writes仍blocked。下一唯一边界是设计最小在途/物料cut的有界核验，复用既有观察能力，不盲目再跑整厂长窗、不扩建、不进其它Gate。用户取消的Codex退出存活专项测试不做，游戏保持运行。
+历史十写外部计数按已核动作连续累计；本阶段当前为external9 / lifetime149。正常保存与恢复事实、完整快照和短窗边界见阶段证据；未把过去信用重置或与后续窗口拼接。

@@ -459,3 +459,62 @@ Closing93031047/R1, normal save92128739/J100, external9/lifetime149 unchanged.
 No new accepted, unknown, in-flight or unsaved accepted action. Steam/DSP stay
 running; the cancelled special Codex-exit test was not performed. Natural
 production after the saved tick is not silently counted as saved progress.
+
+### Deuterium shared-store and fuel-path boundary
+
+The immutable old-factory trace `175e8b8a13af4b618f269ddeec7c9ae2:1` (SHA-256
+`40540701ADC2A9400812920A14EBFD155FB936848ECE9D03593138A7D5ED7C76`)
+shows `3073→3076→3074` reaching the shared store, with candidate branches via
+sorter3405 to fuel-rod assembler3403/r41 and via5736 plus existing transport
+to5326. Sorter3405 is not a fuel device. This is static topology from the old
+5945-object snapshot, not a fresh whole-path qualification.
+
+The fresh same-tick cut `5ec5e4c6f3d448ca9e68bdc1e6122a47:1–11` completed
+9 reads/0 writes in4262.5862ms; terminal SHA-256
+`F7D4263F56391B0F37016549FE802212B46FD48252CD56FC397040C0DEDC6A12`.
+At tick93285636 it covered24 explicitly selected objects:3073 had hydrogen5
+versus the10 threshold;5326 had heavy hydrogen5 versus10;3403 had heavy
+hydrogen8 versus20. These endpoints were idle at full power, while r41's
+other two inputs were nonzero. This does not establish the exact shared-store
+allocation or single-machine cause.
+
+One native600-tick window observed hydrogen P/C=11/6 including recycling,
+heavy hydrogen0/0, fuel1802 0/0, and1210 1/0. It is a single window, not sustained
+production or proof of net hydrogen supply. Hydrogen-fueled thermal power
+generator2516 observed3932J/t, but fuel inventory is unknown; N3 was full-served with capacity
+1,806,000J/t and demand196,774J/t. Power output is not a fuel-stock measure.
+
+The first4171→5523 candidate was rejected with
+`BUILD_LOCATION_INVALID`, `belt_destination_cover_unsupported`, and
+`belt_join_requires_empty_open_independent_path` (`0a6545d62c1a422b84937965b630987a:1–13`, 11 requests/0 writes; terminal SHA-256
+`BB355672CE4D6278E50AACD532F02B788558F3D23906BE1E0EC538155FB7D4B3`).
+This is not a geometric or distance finding. Native and closing receipts
+completed before a caller-side `$Error` summary failure; root verified the
+refusal and zero-write result were unchanged, with no replay. Combined proof
+`264f2437d0e547c7a9d81d409105b551:1` has SHA-256
+`2BC7B8DD130A8E2BE3ADB20128369385AF90ECB11FB3AD3EEC99EA3F51318FB4`.
+
+The second use of the shared three-span qualifier
+`54572388f4884d46a81663c78d47892b:1–17` completed8 requests/0 writes. Its A
+preview ended at `planned_endpoint_TooSkew:source` with
+`nativeCheckPerformed=false`; H/D were not prepared. Terminal SHA-256
+`A0333993BC410B3C7332D509DF6EC5D7216C3BFDAB5AF0DF31B15CD23CC668A7`,
+entry-to-first-prepare1106.9593ms and total2434.6775ms. Root proof
+`61e01870b1b041058289663567ea5512:1`, SHA-256
+`D8B5D644538178BE55981B8CEFA4886B772F91D6DDC6255C13319F5608C34FC3`,
+verified the method allowlist and preview boundary offline. Protected storage
+redacts an empty planToken too, so its placeholder does not establish a token
+value; this was not an unknown result. BuildStepPlan.Belt uses
+`Maths.SphericalRotation(position,0)`; completed belt rotation is redirected
+by native cargo path. The planned source orientation failed qualification;
+this neither identifies a Plugin defect nor qualifies another orientation.
+
+All executions are terminal; latest observation93424297/R1, saved
+92128739/J100, external9/lifetime149, with no unaccounted accepted action.
+Writes remain blocked. Full source allocation, finite-buffer exclusion and
+Gate2 remain false. The declared targets (1210≥1/min, deuterium10/min,
+hydrogen20/min) are goals, not measured supply; fuel1802's actual demand rate
+is unknown. Hydrogen recycling gross output is not net supply. Next is only
+root review of shared H/D allocation, actual source budgets and source-end
+native direction before considering a minimal repair; neither negative
+preview authorizes construction, same-candidate adjustment or replay.

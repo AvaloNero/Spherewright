@@ -54,13 +54,34 @@ function Invoke-SpherewrightProductionExperiment {
         [ValidateRange(1,10)][int]$PollSeconds=5,
         # Explicit continuous-mode observation cadence, not cached entity data.
         # The default still fresh-reads every declared entity in every sample.
-        [ValidateRange(1,4)][int]$EntitySampleEvery=1
+        [ValidateRange(1,4)][int]$EntitySampleEvery=1,
+        # Optional explicit stock cuts piggyback on existing entity reads. They
+        # retain their own native timestamps, never the production-window time.
+        [ValidateNotNull()][hashtable]$MaterialInventorySelections=@{}
     )
     if (@($EntityIds|Where-Object {$_ -le 0}).Count -or @($ItemIds|Where-Object {$_ -le 0}).Count -or
         @($EntityIds|Sort-Object -Unique).Count -ne $EntityIds.Count -or @($ItemIds|Sort-Object -Unique).Count -ne $ItemIds.Count -or
         ($Mode -ceq 'independent' -and $MaximumSamples -lt $RequiredWindows) -or
         ($Mode -ceq 'independent' -and $EntitySampleEvery -ne 1) -or
         ($Mode -ceq 'continuous' -and $IntervalGameTicks -gt $WindowGameTicks)) { throw 'Invalid fixed scope/cadence/budget; no request sent.' }
+    $materialSelections=@{}
+    foreach($key in $MaterialInventorySelections.Keys){
+        $anchor=0
+        if(-not [int]::TryParse([string]$key,[ref]$anchor) -or $anchor -notin $EntityIds -or $materialSelections.ContainsKey($anchor)){
+            throw 'Material cut anchor must be a unique declared entity; no request sent.'
+        }
+        $selection=@($MaterialInventorySelections[$key])
+        if($selection.Count -lt 1 -or $selection.Count -gt 256){throw 'Material cut must select 1..256 explicit objects; no request sent.'}
+        $ids=[Collections.Generic.List[int]]::new()
+        foreach($value in $selection){
+            $id=0
+            if(-not [int]::TryParse([string]$value,[ref]$id) -or $id -le 0 -or $ids.Contains($id)){
+                throw 'Material cut object IDs must be positive unique integers; no request sent.'
+            }
+            $ids.Add($id)
+        }
+        $materialSelections[$anchor]=$ids.ToArray()
+    }
     $started=Get-Date; $deadline=$started.AddSeconds($TimeoutSeconds)
     $experiment=[pscustomobject]@{requests=0;lastMethod=$null;readWallMs=0.0;pollWaitMs=0.0;samples=0;entitySamples=0;qualifying=0;resets=0;covered=0;startTick=$null;endTick=$null;lastWindowEnd=$null;lastSessionTick=$null;nextTick=0;firstTick=$null;lastTick=$null;lastRates=@();rateClockTick=$null;rateClockMs=$null;observedTicksPerSecond=0.0}
     $read = {
@@ -96,13 +117,34 @@ function Invoke-SpherewrightProductionExperiment {
     }
     $readEntities={
         foreach($id in $EntityIds){
-            $detail=& $read inspect_factory_entity @{planetId=$PlanetId;objectId=$id}
+            $payload=@{planetId=$PlanetId;objectId=$id}
+            if($materialSelections.ContainsKey($id)){$payload.materialInventoryObjectIds=$materialSelections[$id].Clone()}
+            $detail=& $read inspect_factory_entity $payload
             if ($detail.sessionId -cne $SessionId -or $detail.planetId -ne $PlanetId -or $detail.objectId -ne $id) { throw 'Selected entity identity changed.' }
+            if($materialSelections.ContainsKey($id)){
+                $cut=Get-SpherewrightStageField $detail 'materialInventoryCut'
+                if($null -eq $cut -or $cut.state -cne 'observed'){
+                    $failure=[InvalidOperationException]::new('Declared material inventory cut is unavailable; retain the original receipt, do not retry.')
+                    $failure.Data['spherewrightSamplingFailureKind']='material_inventory_cut_unavailable'
+                    if($null -ne $cut -and $null -ne $cut.PSObject.Properties['reasonCode']){$failure.Data['spherewrightMaterialInventoryReasonCode']=$cut.reasonCode}
+                    throw $failure
+                }
+                $expected=@($materialSelections[$id]|Sort-Object)
+                if($cut.sessionId -cne $SessionId -or $cut.planetId -ne $PlanetId -or
+                    $cut.capturedAtGameTick -ne $detail.capturedAtGameTick -or
+                    $cut.coverage -cne 'explicit_objects_and_complete_native_cargo_paths' -or
+                    (@($cut.requestedObjectIds|Sort-Object)-join ',') -cne ($expected-join ',') -or
+                    (@($cut.objects.objectId|Sort-Object)-join ',') -cne ($expected-join ',') -or
+                    @($cut.objects|Where-Object {$_.sessionId -cne $SessionId -or $_.planetId -ne $PlanetId -or $_.capturedAtGameTick -ne $cut.capturedAtGameTick}).Count -or
+                    @($cut.cargoPaths|Where-Object {$_.capturedAtGameTick -ne $cut.capturedAtGameTick}).Count){
+                    throw 'Declared material inventory identity/selection/same-tick coverage changed.'
+                }
+            }
             $detail
         }
     }
     $entityObservationTiming=if($EntitySampleEvery -eq 1){'at_native_sample'}else{'between_native_samples_after_first'}
-    $null = & $RecordEvidence ([pscustomobject]@{event='production-experiment-intent';mode=$Mode;entityIds=$EntityIds;itemIds=$ItemIds;entitySampleEvery=$EntitySampleEvery;entityObservationTiming=$entityObservationTiming;intervalGameTicks=$IntervalGameTicks;windowGameTicks=$WindowGameTicks;pollSeconds=$PollSeconds;requiredWindows=$RequiredWindows;requiredContinuousGameTicks=$RequiredContinuousGameTicks;maximumSamples=$MaximumSamples;maximumRequests=$MaximumRequests;deadlineUtc=$deadline.ToUniversalTime().ToString('o');gameWrites=0})
+    $null = & $RecordEvidence ([pscustomobject]@{event='production-experiment-intent';mode=$Mode;entityIds=$EntityIds;itemIds=$ItemIds;materialInventorySelections=$materialSelections;entitySampleEvery=$EntitySampleEvery;entityObservationTiming=$entityObservationTiming;intervalGameTicks=$IntervalGameTicks;windowGameTicks=$WindowGameTicks;pollSeconds=$PollSeconds;requiredWindows=$RequiredWindows;requiredContinuousGameTicks=$RequiredContinuousGameTicks;maximumSamples=$MaximumSamples;maximumRequests=$MaximumRequests;deadlineUtc=$deadline.ToUniversalTime().ToString('o');gameWrites=0})
     try {
         $initial=& $read get_session_state @{}
         Assert-SpherewrightStageSession $initial $SessionId $PlanetId $GameVersion
@@ -214,7 +256,7 @@ function Invoke-SpherewrightProductionExperiment {
         # Keep completed sample receipts even when a later read fails. Failure is
         # not a production verdict, and never starts another experiment/worker.
         try {
-            $null=& $RecordEvidence ([pscustomobject]@{event='production-experiment-failed';result='not_proven';failureKind=$failureKind;method=$experiment.lastMethod;message=$samplingError.Exception.Message;samples=$experiment.samples;entitySamples=$experiment.entitySamples;entitySampleEvery=$EntitySampleEvery;qualifyingWindows=$experiment.qualifying;requests=$experiment.requests;maximumRequests=$MaximumRequests;lastObservedTick=$experiment.lastTick;coveredGameTicks=$experiment.covered;deadlineUtc=$deadline.ToUniversalTime().ToString('o');gameWrites=0;governorAcceptance=$false;automaticRestart=$false;timingMs=@{reads=[math]::Round($experiment.readWallMs,3);scheduledWait=$experiment.pollWaitMs;total=((Get-Date)-$started).TotalMilliseconds}})
+            $null=& $RecordEvidence ([pscustomobject]@{event='production-experiment-failed';result='not_proven';failureKind=$failureKind;method=$experiment.lastMethod;materialInventoryReasonCode=$samplingError.Exception.Data['spherewrightMaterialInventoryReasonCode'];message=$samplingError.Exception.Message;samples=$experiment.samples;entitySamples=$experiment.entitySamples;entitySampleEvery=$EntitySampleEvery;qualifyingWindows=$experiment.qualifying;requests=$experiment.requests;maximumRequests=$MaximumRequests;lastObservedTick=$experiment.lastTick;coveredGameTicks=$experiment.covered;deadlineUtc=$deadline.ToUniversalTime().ToString('o');gameWrites=0;governorAcceptance=$false;automaticRestart=$false;timingMs=@{reads=[math]::Round($experiment.readWallMs,3);scheduledWait=$experiment.pollWaitMs;total=((Get-Date)-$started).TotalMilliseconds}})
         } catch {
             $samplingError.Exception.Data['spherewrightFailureEvidenceError']=$_.Exception.Message
         }

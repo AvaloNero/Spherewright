@@ -30,7 +30,26 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
             if($script:fault -ceq 'paused' -and $index -gt 0){$tick=$script:ends[0]}
             [pscustomobject]@{sessionId=$SessionId;localPlanetId=104;gameVersion=$(if($script:fault -ceq 'version'){'other'}else{'fixture'});gameLoaded=$true;ownedBySpherewright=$true;accessRestricted=$false;writeHealth=$(if($script:fault -ceq 'quarantine'){'quarantined'}else{'healthy'});writeBlockers=@();gameTick=$tick;revision=$(if($script:fault -ceq 'revision' -and $script:sampleIndex -gt 0){23}else{22})}
         }
-        inspect_factory_entity {[pscustomobject]@{sessionId=$SessionId;planetId=104;objectId=$Payload.objectId;recipeId=17;capturedAtGameTick=$tick;buffers=@([pscustomobject]@{role='input';itemId=1006;count=4})}}
+        inspect_factory_entity {
+            $detail=[pscustomobject]@{sessionId=$SessionId;planetId=104;objectId=$Payload.objectId;recipeId=17;capturedAtGameTick=$tick;buffers=@([pscustomobject]@{role='input';itemId=1006;count=4})}
+            if($Payload.ContainsKey('materialInventoryObjectIds') -and $script:fault -cne 'cutMissing'){
+                $cutObjects=@(foreach($selected in $Payload.materialInventoryObjectIds){[pscustomobject]@{sessionId=$SessionId;planetId=104;objectId=$selected;capturedAtGameTick=$tick;buffers=@()}})
+                $cut=[pscustomobject]@{state='observed';reasonCode=$null;coverage='explicit_objects_and_complete_native_cargo_paths';sessionId=$SessionId;planetId=104;capturedAtGameTick=$tick;requestedObjectIds=$Payload.materialInventoryObjectIds.Clone();objects=$cutObjects;cargoPaths=@([pscustomobject]@{pathId=7;capturedAtGameTick=$tick;beltObjectIds=@(3405)})}
+                switch($script:fault){
+                    cutUnavailable {$cut.state='unavailable';$cut.reasonCode='fixture_cut_unavailable'}
+                    cutSession {$cut.sessionId='other-session'}
+                    cutPlanet {$cut.planetId=105}
+                    cutCoverage {$cut.coverage='partial_paths'}
+                    cutTick {$cut.capturedAtGameTick=$tick-1}
+                    cutSelection {$cut.requestedObjectIds=@(3404)}
+                    cutObjects {$cut.objects=@($cutObjects|Select-Object -First 1)}
+                    cutObjectTick {$cut.objects[0].capturedAtGameTick=$tick-1}
+                    cutPathTick {$cut.cargoPaths[0].capturedAtGameTick=$tick-1}
+                }
+                $detail|Add-Member -NotePropertyName materialInventoryCut -NotePropertyValue $cut
+            }
+            $detail
+        }
         get_power_summary {[pscustomobject]@{sessionId=$SessionId;planetId=104;networks=@([pscustomobject]@{consumerRatio=$(if($script:fault -ceq 'power' -and $index -eq 1){0.5}else{1.0})})}}
         get_overseer_production {
             if($script:fault -ceq 'deadline'){$script:now=$script:now.AddSeconds(200)}
@@ -319,4 +338,48 @@ Reset-Sampling @(600,1206,1812)
 $bad=@{};foreach($key in $arguments.Keys){$bad[$key]=$arguments[$key]};$bad.EntityIds=@(3404,3404)
 try{Invoke-SpherewrightProductionExperiment @bad|Out-Null}catch{}
 Assert-Sampling ($script:calls.Count -eq 0) 'invalid scope rejects before the first request'
+
+# Stock cuts use the same existing inspect requests, not another sampling loop.
+$withCut=@{};foreach($key in $arguments.Keys){$withCut[$key]=$arguments[$key]}
+$withCut.MaterialInventorySelections=@{3404=@(3404,3405)}
+$withCut.ValidateObservation={param($sample) $sample.entities[0].materialInventoryCut.state -ceq 'observed'}
+Reset-Sampling @(600,1206,1812)
+$cutResult=Invoke-SpherewrightProductionExperiment @withCut
+$cutReads=@($script:payloads|Where-Object method -CEQ 'inspect_factory_entity')
+Assert-Sampling ($cutResult.result -ceq 'sampling_completed' -and $cutResult.requests -eq 14 -and $cutReads.Count -eq 3) 'explicit material cuts add no requests to the same three-window fixture'
+Assert-Sampling (@($cutReads|Where-Object {($_.payload.materialInventoryObjectIds -join ',') -cne '3404,3405'}).Count -eq 0 -and $script:records[0].materialInventorySelections.Count -eq 1) 'fixed cut scope is recorded before reads and forwarded unchanged every observation'
+Assert-Sampling ($cutResult.gameWrites -eq 0 -and -not $cutResult.governorAcceptance) 'stock observation grants no writes or production sign-off'
+
+$aliasCut=[hashtable]::new();$aliasCut.Add([int]3404,@(3404));$aliasCut.Add([string]'3404',@(3405))
+$invalidCuts=@(
+    @{3406=@(3404)},
+    @{3404=@()},
+    @{3404=@(1..257)},
+    @{3404=@(3404,3404)},
+    @{3404=@(0)},
+    @{3404=@(-1)},
+    @{3404=@('not-an-id')},
+    @{3404=@(1.5)},
+    @{3404=@(2147483648L)},
+    $aliasCut
+)
+foreach($invalidCut in $invalidCuts){
+    Reset-Sampling @(600)
+    $invalidCutArgs=@{};foreach($key in $withCut.Keys){$invalidCutArgs[$key]=$withCut[$key]};$invalidCutArgs.MaterialInventorySelections=$invalidCut
+    $cutError=$null;try{Invoke-SpherewrightProductionExperiment @invalidCutArgs|Out-Null}catch{$cutError=$_}
+    Assert-Sampling ($null -ne $cutError -and $script:calls.Count -eq 0) 'invalid cut anchor/selection rejects before any native request'
+}
+foreach($cutFault in @('cutMissing','cutUnavailable','cutSession','cutPlanet','cutCoverage','cutTick','cutSelection','cutObjects','cutObjectTick','cutPathTick')){
+    Reset-Sampling @(600,1206,1812) $cutFault
+    $cutError=$null;try{Invoke-SpherewrightProductionExperiment @withCut|Out-Null}catch{$cutError=$_}
+    $cutFailures=@($script:records|Where-Object event -CEQ 'production-experiment-failed')
+    Assert-Sampling ($null -ne $cutError -and $cutFailures.Count -eq 1 -and $cutFailures[0].samples -eq 0 -and @($script:calls|Where-Object {$_ -ceq 'get_overseer_production'}).Count -eq 0) "$cutFault cannot silently qualify a sample or retry"
+    Assert-Sampling (@($script:calls|Where-Object {$_ -ceq 'inspect_factory_entity'}).Count -eq 1 -and @($script:calls|Where-Object {$_ -like 'prepare_*' -or $_ -like 'commit_*'}).Count -eq 0) "$cutFault preserves the single failed read without actions"
+    if($cutFault -ceq 'cutUnavailable'){
+        Assert-Sampling ($cutError.Exception.Data['spherewrightSamplingFailureKind'] -ceq 'material_inventory_cut_unavailable' -and $cutError.Exception.Data['spherewrightMaterialInventoryReasonCode'] -ceq 'fixture_cut_unavailable' -and $cutFailures[0].materialInventoryReasonCode -ceq 'fixture_cut_unavailable') 'unavailable cut retains structured reason in exception and evidence'
+    }
+}
+Reset-Sampling @(600,1206,1812)
+$null=Invoke-SpherewrightProductionExperiment @arguments
+Assert-Sampling (@($script:payloads|Where-Object {$_.method -ceq 'inspect_factory_entity' -and $_.payload.ContainsKey('materialInventoryObjectIds')}).Count -eq 0) 'default inspection payload is unchanged when no cut is declared'
 [pscustomobject]@{passed=$script:checks;gameCalls=0;independentFixtureRequestsBefore=$splitRequests;independentFixtureRequestsAfter=14;entryInvocationsBefore=3;entryInvocationsAfter=1;slowFixtureRequestsBefore=90;slowFixtureCompletedBefore=$false;slowFixtureRequestsAfter=$slowResult.requests;slowFixtureWallMsAfter=$slowResult.timingMs.total;slowFixtureCompletedAfter=$true;continuousFixtureRequests=242;continuousFixtureTicks=36000;dualCadenceJitterFixture=[pscustomobject]@{ticksPerSecond=20;intervalGameTicks=390;maximumRequests=4090;maximumWallSeconds=3290;beforeRequests=$jitterBeforeFailure[0].requests;beforeCoveredTicks=$jitterBeforeFailure[0].coveredGameTicks;beforeCompleted=$false;beforeVirtualWallMs=$jitterBeforeFailure[0].timingMs.total;afterRequests=$jitterAfterResult.requests;afterCoveredTicks=$jitterAfterResult.coveredGameTicks;afterResets=$jitterAfterResult.resetCount;afterEntitySamples=$jitterAfterResult.entitySamples;afterCompleted=$true;afterVirtualWallMs=$jitterAfterResult.timingMs.total;liveValidation=$false};providerUsage=$null}|ConvertTo-Json -Depth 4 -Compress

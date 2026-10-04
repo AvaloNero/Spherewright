@@ -203,3 +203,33 @@ allocation, sustained supply, or finite-buffer exclusion. The next bounded work
 is to plan source/finite-buffer checks using the validated native paths; it is not
 a reason to merge stocks across cuts. Game writes remain blocked pending that
 source evidence.
+
+## Optional cuts on existing sampling reads (offline caller validation)
+
+`MaterialInventorySelections` optionally attaches fixed material-cut IDs to the
+existing `inspect_factory_entity` payload. With no cuts declared, the default
+payload is unchanged; declared cuts add no native requests. Each cut retains its
+own `capturedAtGameTick` and is checked against its enclosing entity read, not
+the production-window timestamp. Missing, unavailable or mismatched cut data
+fails the sample and preserves its reason; the caller does not retry, count
+production or grant acceptance credit.
+
+The actual PowerShell 7 `-File scripts/test-production-sampling.ps1` fixture
+passed 120/120 assertions with `gameCalls=0`; both changed scripts parsed without
+AST errors and `git diff --check` passed. This is offline caller evidence only,
+not a live inventory observation. An earlier fixture invocation stopped at parse
+time because a hashtable literal repeated normalized key `3404`; root changed
+that alias case to typed `Hashtable.Add` construction. No fixture or Game/Bridge
+request ran in that failed invocation.
+
+The first non-interactive CC invocation exited 1 without a terminal; its specific
+CLI error was not retained and it is not a review result. A later invocation with
+corrected prompt/variadic-option placement reached terminal `APPROVE`,
+`is_error=false`, session `6fbaf0d0-81f6-406c-babc-c6a671359379`; one
+`unrecognized_model` stream event was nonterminal and consumed. Protected full
+stdout/stderr receipt `derived-cc-material-cut-e83e2184e8514e98b2be4af7fafd87ee.json`
+has SHA-256 `9D144894052DAD65EB8E639DAB2340CBBD883A0C6F7AB84E23BEEAA0F13D39BD`.
+That review preceded two final fixture-only assertions (coverage-token rejection)
+and the message-spacing correction; the runtime implementation did not change.
+The current 120-check result includes those assertions. Nothing here claims live
+validation of the optional sampler field.

@@ -116,9 +116,11 @@ function Invoke-SpherewrightBeltSiteQualification {
     $savedTick = Get-SpherewrightStageField $ApprovedPlan 'expectedSaveGameTick'
     $common = Get-SpherewrightStageField $ApprovedPlan 'commonPayload'
     $planetId = Get-SpherewrightStageField $common 'planetId'
+    $routingMode = Get-SpherewrightStageField $common 'beltPathMode'
+    $elevated = $routingMode -ceq 'native_elevated_grid'
     if ([string]::IsNullOrWhiteSpace($sessionId) -or [string]::IsNullOrWhiteSpace($gameVersion) -or $planetId -le 0 -or
-        $common.buildingItemId -ne 2001 -or $common.beltPathMode -cne 'native_elevated_grid' -or $common.stateHashVersion -ne 1 -or
-        $ApprovedPlan.sorterItemId -ne 2011 -or $ApprovedPlan.filterItemId -le 0) { throw 'The fixed elevated2001/ordinary2011 subset is required.' }
+        $common.buildingItemId -ne 2001 -or $routingMode -cnotin @('native_grid','native_elevated_grid') -or $common.stateHashVersion -ne 1 -or
+        $ApprovedPlan.sorterItemId -ne 2011 -or $ApprovedPlan.filterItemId -le 0) { throw 'The fixed native2001/ordinary2011 subset is required.' }
     if (@($common.PSObject.Properties.Name | Where-Object {$_ -cnotin @('planetId','buildingItemId','expectedPlayerStateHash','stateHashVersion','beltPathMode')}).Count) { throw 'Unsupported common request fields must not be silently discarded.' }
     $distance = {
         param($a,$b)
@@ -137,8 +139,17 @@ function Invoke-SpherewrightBeltSiteQualification {
     foreach ($span in $spans) {
         $label = Get-SpherewrightStageField $span 'label'; $role = Get-SpherewrightStageField $span 'endpointPreviewRole'
         if ($label -notmatch '^[A-Za-z][A-Za-z0-9_-]{0,60}$' -or $label -in $labels -or
-            ($null -ne $role -and $role -cnotin @('source','destination')) -or
-            $span.beltStartAltitudeLevel -notin @(0,1,2,3) -or $span.beltEndAltitudeLevel -notin @(0,1,2,3)) { throw 'Invalid fixed span identity, role or layer.' }
+            ($null -ne $role -and $role -cnotin @('source','destination'))) { throw 'Invalid fixed span identity or role.' }
+        $startLayer = $span.PSObject.Properties['beltStartAltitudeLevel']
+        $endLayer = $span.PSObject.Properties['beltEndAltitudeLevel']
+        if ($elevated) {
+            if ($null -eq $startLayer -or $null -eq $endLayer -or
+                $startLayer.Value -notin @(0,1,2,3) -or $endLayer.Value -notin @(0,1,2,3) -or
+                ($startLayer.Value -eq 0 -and $endLayer.Value -eq 0)) { throw 'Explicit supported elevated layers are required.' }
+        } elseif (($null -ne $startLayer -and $null -ne $startLayer.Value) -or ($null -ne $endLayer -and $null -ne $endLayer.Value)) {
+            # Native ground routing requires absent/null layers, NOT explicit zero.
+            throw 'Ground native_grid must not carry altitude levels.'
+        }
         $chord = & $distance $span.preferredPosition $span.pathEnd
         if ($chord -lt 1.5 -or $chord -gt 30) { throw 'Fixed endpoint chord is outside the current1.5–30m subset.' }
         $labels += $label; if ($null -ne $role) { $roles += $role }
@@ -204,8 +215,11 @@ function Invoke-SpherewrightBeltSiteQualification {
                 $player.movementState -cne 'Walk' -or $player.speed -gt .1 -or $player.coreEnergy -lt 20000000) { throw 'Fresh settled player boundary failed.' }
             if ($null -eq $baselinePlayer) { $baselinePlayer = $player }
             $payload = @{planetId=$planetId;buildingItemId=2001;stateHashVersion=1;expectedPlayerStateHash=$player.stateHash;
-                beltPathMode='native_elevated_grid';preferredPosition=$span.preferredPosition;pathEnd=$span.pathEnd;
-                beltStartAltitudeLevel=$span.beltStartAltitudeLevel;beltEndAltitudeLevel=$span.beltEndAltitudeLevel}
+                beltPathMode=$routingMode;preferredPosition=$span.preferredPosition;pathEnd=$span.pathEnd}
+            if ($elevated) {
+                $payload.beltStartAltitudeLevel = $span.beltStartAltitudeLevel
+                $payload.beltEndAltitudeLevel = $span.beltEndAltitudeLevel
+            }
             $role = $span.endpointPreviewRole
             if ($null -ne $role) {
                 $binding = $ApprovedPlan.($role + 'Endpoint')
@@ -218,8 +232,9 @@ function Invoke-SpherewrightBeltSiteQualification {
             $prepared = & $read 'prepare_build' $payload
             $path = @($prepared.plannedPath); $echo = $prepared.plannedBeltPath
             if ($path.Count -lt 4 -or $path.Count -gt 64 -or $echo.newObjectCount -ne $path.Count -or
-                $echo.nativeValidationMode -cne 'full_path_stage1' -or $echo.routingMode -cne 'native_elevated_grid' -or
-                $echo.startAltitudeLevel -ne $span.beltStartAltitudeLevel -or $echo.endAltitudeLevel -ne $span.beltEndAltitudeLevel) { throw 'Native full path/layer/count echo failed.' }
+                $echo.nativeValidationMode -cne 'full_path_stage1' -or $echo.routingMode -cne $routingMode -or
+                ($elevated -and ($echo.startAltitudeLevel -ne $span.beltStartAltitudeLevel -or $echo.endAltitudeLevel -ne $span.beltEndAltitudeLevel)) -or
+                (-not $elevated -and ($null -ne $echo.startAltitudeLevel -or $null -ne $echo.endAltitudeLevel))) { throw 'Native full path/layer/count echo failed.' }
             $chord = & $distance $path[0] $path[-1]
             if ($chord -lt 1.5 -or $chord -gt 30) { throw 'Native endpoint chord failed; polyline length is not this bound.' }
             $beltBudget = @($prepared.itemBudget | Where-Object {$_.itemId -eq 2001})

@@ -11,7 +11,7 @@ function Assert-Qualification([bool]$Condition,[string]$Name) {
     $script:checks++
 }
 function Fixture-Vector([double]$x,[double]$y,[double]$z) { [pscustomobject]@{x=$x;y=$y;z=$z} }
-function Fixture-Plan([int]$Count=4,[switch]$VirtualEndpoints) {
+function Fixture-Plan([int]$Count=4,[switch]$VirtualEndpoints,[switch]$Ground) {
     $a=Fixture-Vector 0 200 0; $b=Fixture-Vector 5 204 0
     $c=Fixture-Vector 25 204 0; $d=Fixture-Vector 30 200 0; $m=Fixture-Vector 15 204 0
     $spans=@(
@@ -28,6 +28,12 @@ function Fixture-Plan([int]$Count=4,[switch]$VirtualEndpoints) {
         $spans += [pscustomobject]@{label='H2';preferredPosition=$h1;pathEnd=$h2;beltStartAltitudeLevel=3;beltEndAltitudeLevel=3;endpointPreviewRole=$null}
         $spans += [pscustomobject]@{label='H3';preferredPosition=$h2;pathEnd=$c;beltStartAltitudeLevel=3;beltEndAltitudeLevel=3;endpointPreviewRole=$null}
     }
+    if ($Ground) {
+        foreach ($span in $spans) {
+            $span.PSObject.Properties.Remove('beltStartAltitudeLevel')
+            $span.PSObject.Properties.Remove('beltEndAltitudeLevel')
+        }
+    }
     $sourceEndpoint=[pscustomobject]@{existingObjectId=870;existingSlot=9;existingBeltQuarterTurns=0;plannedBeltQuarterTurns=1;expectedSlotPosition=(Fixture-Vector -1 200 0)}
     $destinationEndpoint=[pscustomobject]@{existingObjectId=5334;existingSlot=7;existingBeltQuarterTurns=0;plannedBeltQuarterTurns=0;expectedSlotPosition=(Fixture-Vector 31 200 0)}
     if($VirtualEndpoints) {
@@ -36,13 +42,13 @@ function Fixture-Plan([int]$Count=4,[switch]$VirtualEndpoints) {
     }
     [pscustomobject]@{gameCommitAllowed=$false;candidateCountPerInterface=1;maximumRequests=(6+2*$Count);maximumWallSeconds=180;
         expectedSessionId='fixture-session';expectedGameVersion='fixture-version';expectedSaveGameTick=1000;sorterItemId=2011;filterItemId=1109;
-        commonPayload=[pscustomobject]@{planetId=104;buildingItemId=2001;stateHashVersion=1;beltPathMode='native_elevated_grid';expectedPlayerStateHash='placeholder'};
+        commonPayload=[pscustomobject]@{planetId=104;buildingItemId=2001;stateHashVersion=1;beltPathMode=$(if($Ground){'native_grid'}else{'native_elevated_grid'});expectedPlayerStateHash='placeholder'};
         sourceEndpoint=$sourceEndpoint;destinationEndpoint=$destinationEndpoint;
         spans=$spans}
 }
-function Reset-Qualification([string]$Mode='',[int]$Count=4,[switch]$VirtualEndpoints) {
+function Reset-Qualification([string]$Mode='',[int]$Count=4,[switch]$VirtualEndpoints,[switch]$Ground) {
     $script:methods.Clear();$script:mode=$Mode;$script:prepareCount=0;$script:playerCount=0;$script:sessionCount=0
-    $script:plan=Fixture-Plan -Count $Count -VirtualEndpoints:$VirtualEndpoints;$script:evidence=[Collections.Generic.List[object]]::new()
+    $script:plan=Fixture-Plan -Count $Count -VirtualEndpoints:$VirtualEndpoints -Ground:$Ground;$script:evidence=[Collections.Generic.List[object]]::new()
     $script:virtualPreviewBindings=[Collections.Generic.List[object]]::new();$script:virtualPreviewEchoes=[Collections.Generic.List[object]]::new()
 }
 function Get-LiveSpherewrightDescriptor { throw 'Offline fixture must never discover a live descriptor.' }
@@ -88,6 +94,12 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
         }
         prepare_build {
             $script:prepareCount++;$span=$script:plan.spans[$script:prepareCount-1]
+            if ($Payload.beltPathMode -cne $script:plan.commonPayload.beltPathMode) { throw 'Approved routing mode changed.' }
+            if ($Payload.beltPathMode -ceq 'native_grid') {
+                if ($Payload.ContainsKey('beltStartAltitudeLevel') -or $Payload.ContainsKey('beltEndAltitudeLevel')) { throw 'Ground request serialized altitude fields.' }
+            } elseif ($Payload.beltStartAltitudeLevel -ne $span.beltStartAltitudeLevel -or $Payload.beltEndAltitudeLevel -ne $span.beltEndAltitudeLevel) {
+                throw 'Approved elevated layers changed.'
+            }
             if ($script:methods[$script:methods.Count-2]-cne'get_player_state' -or $Payload.expectedPlayerStateHash-cne'fresh-player') { throw 'Not a fresh per-span player binding.' }
             if ($script:mode-eq'bridge_error' -or ($script:mode-eq'late_bridge_error' -and $script:prepareCount-eq3)) { return [pscustomobject]@{success=$false;error=[pscustomobject]@{code='BUILD_LOCATION_INVALID';message='fixture planned point9 overlaps2459';retryable=$false;recovery='Do not retry same site.'}} }
             $path=@($Payload.preferredPosition,(Fixture-Vector 8 204 0),(Fixture-Vector 20 204 0),$Payload.pathEnd)
@@ -115,7 +127,8 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
                 $prepared=$false;$token='';$budget+=[pscustomobject]@{itemId=2011;count=1}
             }
             [pscustomobject]@{prepared=$prepared;commitAllowedNow=$prepared;planToken=$token;commitBlockers=@();plannedPath=$path;itemBudget=$budget;beltEndpointPreview=$preview;
-                plannedBeltPath=[pscustomobject]@{newObjectCount=4;nativeValidationMode='full_path_stage1';routingMode='native_elevated_grid';startAltitudeLevel=$span.beltStartAltitudeLevel;endAltitudeLevel=$span.beltEndAltitudeLevel}}
+                plannedBeltPath=[pscustomobject]@{newObjectCount=4;nativeValidationMode='full_path_stage1';routingMode=$(if($script:mode-eq'routing_echo'){'geodesic'}else{$Payload.beltPathMode});
+                    startAltitudeLevel=$(if($script:mode-eq'ground_layer_echo'){0}else{$Payload['beltStartAltitudeLevel']});endAltitudeLevel=$Payload['beltEndAltitudeLevel']}}
         }
         get_gameplay_journal {
             [pscustomobject]@{sessionId=$SessionId;entries=@([pscustomobject]@{sequence=1});durableThroughSequence=1;persistencePending=($script:mode-eq'journal');persistenceError=$null}
@@ -135,6 +148,28 @@ foreach($count in @(3,4,5)) {
     Assert-Qualification ($summary.acceptedDelta-eq0 -and $summary.acceptedAfter-eq10 -and $summary.closure.revision-eq7 -and $summary.closure.savedTick-eq1000) 'preserves ten-write freeze, revision and save'
     Assert-Qualification (-not$summary.futureActualIdJoinProven -and -not$summary.wholePlanExecutable -and $summary.doNotReplay) 'site previews never mean construction approval'
     Assert-Qualification (($summary|ConvertTo-Json -Depth 30)-notmatch'PRIVATE-FIXTURE-TOKEN' -and ($script:evidence|ConvertTo-Json -Depth 30)-notmatch'PRIVATE-FIXTURE-TOKEN') 'ordinary prepare tokens never enter returned or caller evidence'
+}
+foreach($count in @(3,4,5)) {
+    Reset-Qualification -Count $count -Ground
+    $summary=Run-Qualification 9
+    Assert-Qualification ($summary.result-ceq'qualified_sites_only' -and $summary.spans.Count-eq$count -and $summary.bridgeRequests-eq(6+2*$count)) "$count ground spans use the same bounded caller with no altitude fields"
+    Assert-Qualification ($summary.acceptedAfter-eq9 -and $summary.acceptedDelta-eq0 -and -not$summary.wholePlanExecutable -and -not$summary.futureActualIdJoinProven -and $summary.doNotReplay) 'ground qualification neither grants construction nor consumes a write slot'
+    Assert-Qualification (($summary|ConvertTo-Json -Depth 30)-notmatch'PRIVATE-FIXTURE-TOKEN' -and ($script:evidence|ConvertTo-Json -Depth 30)-notmatch'PRIVATE-FIXTURE-TOKEN') 'ground ordinary tokens remain private and unused'
+}
+Reset-Qualification -Count 3 -Ground -VirtualEndpoints
+$summary=Run-Qualification 9
+Assert-Qualification ($summary.result-ceq'qualified_sites_only' -and $script:virtualPreviewBindings.Count-eq2 -and $summary.acceptedDelta-eq0) 'ground virtual endpoints retain exact native preview binding'
+Reset-Qualification -Count 3 -Ground
+foreach($span in $script:plan.spans) {
+    $span|Add-Member -NotePropertyName beltStartAltitudeLevel -NotePropertyValue $null
+    $span|Add-Member -NotePropertyName beltEndAltitudeLevel -NotePropertyValue $null
+}
+$summary=Run-Qualification 9
+Assert-Qualification ($summary.result-ceq'qualified_sites_only') 'explicit null ground layers are omitted rather than coerced to zero'
+foreach($mode in @('routing_echo','ground_layer_echo','bridge_error','endpoint_blocker')) {
+    Reset-Qualification -Mode $mode -Count 3 -Ground
+    $summary=Run-Qualification 9
+    Assert-Qualification ($summary.result-ceq'stopped' -and $script:prepareCount-eq1 -and $summary.bridgeRequests-eq8 -and $null-ne$summary.closure -and $summary.acceptedDelta-eq0 -and $summary.doNotReplay) "$mode ground failure stops without retry and retains read-only closure"
 }
 Reset-Qualification -Mode late_bridge_error -Count 5
 $summary=Run-Qualification 3
@@ -197,7 +232,7 @@ foreach($mode in @('join','journal','revision','player_change')) {
     $summary=Run-Qualification
     Assert-Qualification ($summary.result-ceq'stopped' -and $script:prepareCount-eq4 -and $summary.acceptedDelta-eq0) "$mode does not turn readback problems into retries/writes"
 }
-foreach($caseName in @('too_many','write_allowed','unsupported_common','bad_vector','request_budget','five_request_budget','excess_request_budget')) {
+foreach($caseName in @('too_many','write_allowed','unsupported_common','bad_vector','request_budget','five_request_budget','excess_request_budget','unsupported_mode','ground_zero','ground_elevated','missing_layer','flat_elevated')) {
     Reset-Qualification
     switch($caseName) {
         too_many {$script:plan=Fixture-Plan -Count 5; $script:plan.spans+= $script:plan.spans[-1]}
@@ -207,6 +242,11 @@ foreach($caseName in @('too_many','write_allowed','unsupported_common','bad_vect
         request_budget {$script:plan.maximumRequests=13}
         five_request_budget {$script:plan=Fixture-Plan -Count 5; $script:plan.maximumRequests=15}
         excess_request_budget {$script:plan.maximumRequests=17}
+        unsupported_mode {$script:plan.commonPayload.beltPathMode='geodesic'}
+        ground_zero {$script:plan=Fixture-Plan -Count 3 -Ground; $script:plan.spans[0]|Add-Member -NotePropertyName beltStartAltitudeLevel -NotePropertyValue 0}
+        ground_elevated {$script:plan.commonPayload.beltPathMode='native_grid'}
+        missing_layer {$script:plan.spans[0].beltStartAltitudeLevel=$null}
+        flat_elevated {$script:plan.spans[0].beltStartAltitudeLevel=0; $script:plan.spans[0].beltEndAltitudeLevel=0}
     }
     $caught=$false;try{Run-Qualification|Out-Null}catch{$caught=$true}
     Assert-Qualification ($caught -and $script:methods.Count-eq0) "$caseName rejects before runtime discovery or transport"

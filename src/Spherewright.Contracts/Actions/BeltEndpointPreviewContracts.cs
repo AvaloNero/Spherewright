@@ -18,6 +18,9 @@ public sealed class PlannedBeltEndpointBinding
     public int ExistingSlot { get; set; }
     // For an existing belt only: its virtual slot is -1, with one explicit orientation.
     public int ExistingBeltQuarterTurns { get; set; }
+    // Outward slot orientation of the NEW belt pose, before the inserter's
+    // destination-end 180-degree transform. Source role faces the existing
+    // source; destination role faces the existing destination.
     public int PlannedBeltQuarterTurns { get; set; }
 }
 

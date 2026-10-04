@@ -8,11 +8,13 @@ function Invoke-SpherewrightProductionExperiment {
         [Parameter(Mandatory)][string]$SessionId,
         [Parameter(Mandatory)][ValidateRange(1,[int]::MaxValue)][int]$PlanetId,
         [Parameter(Mandatory)][string]$GameVersion,
-        [Parameter(Mandatory)][ValidateCount(1,32)][int[]]$EntityIds,
-        # One bounded native query can cover a complete supply chain; the bridge
-        # already permits64 IDs. Keep this caller deliberately smaller at16,
-        # so graphite/acid/hydrogen attribution fits in the SAME native window.
-        [Parameter(Mandatory)][ValidateCount(1,16)][int[]]$ItemIds,
+        # Include raw sources, upstream stores and consumers in one declared
+        # experiment. These read-only bounds do not change construction limits,
+        # native600-tick windows, request caps or the original wall deadline.
+        [Parameter(Mandatory)][ValidateCount(1,48)][int[]]$EntityIds,
+        # The native query already permits64 IDs; keep this caller at24 so the
+        # complete22-item chain fits in the SAME response, without split credit.
+        [Parameter(Mandatory)][ValidateCount(1,24)][int[]]$ItemIds,
         [Parameter(Mandatory)][scriptblock]$ValidateObservation,
         [Parameter(Mandatory)][scriptblock]$ReceiptMarker,
         [Parameter(Mandatory)][scriptblock]$RecordEvidence,

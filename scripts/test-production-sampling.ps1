@@ -13,11 +13,12 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
     $script:calls.Add($Method)
     $script:payloads.Add([pscustomobject]@{method=$Method;payload=$Payload})
     if($Method -like 'prepare_*' -or $Method -like 'commit_*'){throw 'A read-only sampler attempted a write'}
+    if($script:fault -in @('source15fps','source20fps')){$script:now=$script:now.AddMilliseconds(130)}
     $index=[math]::Min($script:sampleIndex,$script:ends.Count-1);$tick=$script:ends[$index]
-    if($script:fault -ceq '15fps'){$tick=[long](($script:now-$script:startTime).TotalSeconds*15)}
+    if($script:fault -in @('15fps','source15fps','source20fps')){$ticksPerSecond=if($script:fault -ceq 'source20fps'){20}else{15};$tick=[long](($script:now-$script:startTime).TotalSeconds*$ticksPerSecond)}
     $result=switch($Method){
         get_session_state {
-            if($script:entryBoundaryPending){if($script:fault -cne '15fps'){$tick=if($script:sampleIndex -eq 0){0}else{$script:ends[$script:sampleIndex-1]}};$script:entryBoundaryPending=$false}
+            if($script:entryBoundaryPending){if($script:fault -notin @('15fps','source15fps','source20fps')){$tick=if($script:sampleIndex -eq 0){0}else{$script:ends[$script:sampleIndex-1]}};$script:entryBoundaryPending=$false}
             if($script:fault -ceq 'paused' -and $index -gt 0){$tick=$script:ends[0]}
             [pscustomobject]@{sessionId=$SessionId;localPlanetId=104;gameVersion=$(if($script:fault -ceq 'version'){'other'}else{'fixture'});gameLoaded=$true;ownedBySpherewright=$true;accessRestricted=$false;writeHealth=$(if($script:fault -ceq 'quarantine'){'quarantined'}else{'healthy'});writeBlockers=@();gameTick=$tick;revision=22}
         }
@@ -70,10 +71,41 @@ $boundary=@{};foreach($key in $arguments.Keys){$boundary[$key]=$arguments[$key]}
 Reset-Sampling @(600) '' $boundaryIds
 $boundaryResult=Invoke-SpherewrightProductionExperiment @boundary
 $boundaryProduction=@($script:payloads|Where-Object method -CEQ 'get_overseer_production')
-Assert-Sampling ($boundaryResult.result -ceq 'sampling_completed' -and $boundaryResult.samples -eq 1 -and $boundaryResult.requests -eq 6 -and $boundaryProduction.Count -eq 1 -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -eq 16 }).Count -eq 1) 'sixteen-item caller boundary succeeds as one complete source-item response'
+Assert-Sampling ($boundaryResult.result -ceq 'sampling_completed' -and $boundaryResult.samples -eq 1 -and $boundaryResult.requests -eq 6 -and $boundaryProduction.Count -eq 1 -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -eq 16 }).Count -eq 1) 'existing sixteen-item scope still succeeds as one complete source-item response'
+
+# Actual complete-chain observation scope; no writes and no split item windows.
+$completeEntities=@(1500,1511,723,724,725,726,727,814,827,883,885,869,871,562,3073,3074,5326,5334,5333,5329,5331,870,861,5187,863,3348,3084,3966,3964,3965,3083,163,784,95,862,753,129,86,752,2802,5171,1496,2440,10,26,1217,1216,1213)
+$completeItems=@(1000,1001,1002,1005,1006,1007,1101,1102,1104,1109,1112,1114,1116,1120,1121,1123,1127,1203,1204,1206,1209,1210)
+$complete=@{};foreach($key in $arguments.Keys){$complete[$key]=$arguments[$key]};$complete.EntityIds=$completeEntities;$complete.ItemIds=$completeItems;$complete.RequiredWindows=1;$complete.MaximumSamples=1;$complete.MaximumRequests=60
+Reset-Sampling @(600) '' $completeItems
+$completeResult=Invoke-SpherewrightProductionExperiment @complete
+$completeQueries=@($script:payloads|Where-Object method -CEQ 'get_overseer_production')
+Assert-Sampling ($completeEntities.Count -eq 48 -and $completeItems.Count -eq 22 -and $completeResult.result -ceq 'sampling_completed' -and $completeResult.requests -eq 53 -and @($script:payloads|Where-Object method -CEQ 'inspect_factory_entity').Count -eq 48) 'complete forty-eight-entity chain fits its declared fifty-three reads'
+Assert-Sampling ($completeQueries.Count -eq 1 -and (@($completeQueries[0].payload.itemIds|Sort-Object) -join ',') -ceq (@($completeItems|Sort-Object) -join ',') -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -eq 22 }).Count -eq 1 -and $completeResult.gameWrites -eq 0) 'all twenty-two source items are read once in the same native window'
+
+$maximum=@{};foreach($key in $complete.Keys){$maximum[$key]=$complete[$key]};$maximum.EntityIds=@(1..48);$maximum.ItemIds=@(1101..1124);$maximum.MaximumRequests=60
+Reset-Sampling @(600) '' $maximum.ItemIds
+$maximumResult=Invoke-SpherewrightProductionExperiment @maximum
+Assert-Sampling ($maximumResult.result -ceq 'sampling_completed' -and $maximumResult.requests -eq 53 -and @($script:payloads|Where-Object method -CEQ 'inspect_factory_entity').Count -eq 48 -and @($script:payloads|Where-Object method -CEQ 'get_overseer_production').Count -eq 1 -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -eq 24 }).Count -eq 1) 'forty-eight-entity and twenty-four-item hard boundaries succeed without splitting'
+
+$completeBudget=@{};foreach($key in $complete.Keys){$completeBudget[$key]=$complete[$key]};$completeBudget.MaximumRequests=51
+Reset-Sampling @(600) '' $completeItems
+$completeBudgetError=$null;try{Invoke-SpherewrightProductionExperiment @completeBudget|Out-Null}catch{$completeBudgetError=$_}
+Assert-Sampling ($null -ne $completeBudgetError -and $completeBudgetError.Exception.Data['spherewrightSamplingFailureKind'] -ceq 'request_budget_exhausted' -and $script:calls.Count -eq 51 -and $completeBudgetError.Exception.Data['spherewrightSamplingSamples'] -eq 0 -and @($script:payloads|Where-Object method -CEQ 'get_overseer_production').Count -eq 0) 'larger read scope cannot override a tight request budget or invent a completed sample'
+
+# Offline virtual clocks include per-read latency, not just game simulation
+# wait. Validate the EXACT larger scope and original long-run budgets first.
+foreach($sourceClock in @('source15fps','source20fps')){
+    $completeContinuous=@{};foreach($key in $complete.Keys){$completeContinuous[$key]=$complete[$key]}
+    $completeContinuous.Mode='continuous';$completeContinuous.MaximumSamples=120;$completeContinuous.MaximumRequests=4090;$completeContinuous.TimeoutSeconds=3290;$completeContinuous.IntervalGameTicks=390;$completeContinuous.PollSeconds=4
+    Reset-Sampling @(600) $sourceClock $completeItems
+    $completeContinuousResult=Invoke-SpherewrightProductionExperiment @completeContinuous
+    Assert-Sampling ($completeContinuousResult.result -ceq 'sampling_completed' -and $completeContinuousResult.coveredGameTicks -ge 36000 -and $completeContinuousResult.resetCount -eq 0 -and $completeContinuousResult.requests -le 4090 -and $completeContinuousResult.samples -le 120 -and $completeContinuousResult.timingMs.total -lt 3290000) "$sourceClock exact complete scope covers36000ticks within initial sample/read/wall caps"
+    Assert-Sampling ($completeContinuousResult.gameWrites -eq 0 -and $completeContinuousResult.modelDecisionsInsideLoop -eq 0 -and -not $completeContinuousResult.governorAcceptance -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -ne 22 }).Count -eq 0) "$sourceClock complete source coverage grants no mutation or automatic supply sign-off"
+}
 
 foreach($scopeCase in @(
-    [pscustomobject]@{name='seventeen items';ids=[int[]](1101..1117)},
+    [pscustomobject]@{name='twenty-five items';ids=[int[]](1101..1125)},
     [pscustomobject]@{name='duplicate item id';ids=[int[]]@(1109,1109)},
     [pscustomobject]@{name='nonpositive item id';ids=[int[]]@(0)}
 )){
@@ -84,9 +116,9 @@ foreach($scopeCase in @(
 }
 
 Reset-Sampling @(600) '' @(1109)
-$tooManyEntities=@{};foreach($key in $arguments.Keys){$tooManyEntities[$key]=$arguments[$key]};$tooManyEntities.EntityIds=@(1..33)
+$tooManyEntities=@{};foreach($key in $arguments.Keys){$tooManyEntities[$key]=$arguments[$key]};$tooManyEntities.EntityIds=@(1..49)
 $entityScopeError=$null;try{Invoke-SpherewrightProductionExperiment @tooManyEntities|Out-Null}catch{$entityScopeError=$_}
-Assert-Sampling ($null -ne $entityScopeError -and $script:calls.Count -eq 0) 'thirty-three entity scope rejects before any request'
+Assert-Sampling ($null -ne $entityScopeError -and $script:calls.Count -eq 0) 'forty-nine entity scope rejects before any request'
 
 $incomplete=@{};foreach($key in $arguments.Keys){$incomplete[$key]=$arguments[$key]};$incomplete.ItemIds=$chainIds;$incomplete.RequiredWindows=1;$incomplete.MaximumSamples=1;$incomplete.MaximumRequests=40;$incomplete.ValidateObservation={param($sample) $true}
 Reset-Sampling @(600) 'incompleteProduction' $chainIds

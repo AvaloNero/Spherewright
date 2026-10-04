@@ -593,3 +593,97 @@ graphite feed does not guarantee exclusive allocation or resolve the
 conditional net-hydrogen deficit. No new construction, transfers, crafting,
 long experiment, cold deployment, save or lifecycle occurred. Steam/DSP
 remain running; the user-cancelled Codex-exit survival test was not done.
+
+## Complete current source cut: oil ceiling and coupled fuel demand
+
+This is a diagnosis within Gate2, not new construction or another Gate.
+Source HEAD `3a38857b97781c442e840fa6a1688734cac884c6`; installed
+`b1557bb`/native29104 remains unchanged. Existing normal action and protected
+read transport were reused. No Plugin field, tool, whitelist or executor
+was added. The previous goal turn made progress through committed caller
+fixes and a closed native negative; it was not a live wait or a Game pause.
+
+Two fixed read-only tasks completed without caller/native failure:
+
+| Task | Original records | Requests | Protected wall ms | Stock tick / closing tick |
+|---|---|---:|---:|---|
+| Graphite / legacy fuel allocation | `1eedc59b5e4f4d9da99cf492ddd50eb1:1–16` | 14 | 7533.2553 | 93983615 / 93983770 |
+| Crude extractors / local oil catalog | `92aab5623f4c45148410028578b03cec:1–10` | 8 | 3127.3412 | 94031465 / 94031517 |
+
+Their terminals are SHA-256
+`57ECEB33984C4D2077E84B823D8E786BBABEF88F24790167CF612B4E200AAD97`
+and `AF952F2B97C7EA85625881AEC410691674F818265C7BA1E75FE6C76650AEE1B7`.
+Root reused the originals, checked all26 ordinal/hash records, exact
+read-only methods/success, owned/native/save/R/J closure, same-tick40/7
+object coverage, cargo-path deduplication and both immutable generator
+pages. Independent proof `07b9eaf5b4294bc68e07d67a0db31f1d:1`, SHA-256
+`C7E541EE00CF0DCC8015B91AB929CFD03BB6BB2553C975A4831104BBAD48B2D5`,
+929.2688ms/zero Game calls. No prepare, token, commit or new accepted action.
+
+Original `1eed…:9` has a ready, single600tick native window and complete
+current-runtime theoretical coverage for1007: exactly2 producers/2
+diagnosed producers, **18.14736032485962 crude/min**. Actual P/C=3/4
+(18/24 per minute); this quantized short window is not sustained proof.
+The refinery nameplate90 oil/min and hydrogen gross225/min are not
+allocatable raw supply. New oil resource qualification remains unproved.
+
+Fresh `92aa…:4–7` identifies129/node538 and2802/node540: both normal2307
+extractors, full power, zero mined-output buffer.141/707/3964 have zero or
+sub-recipe crude inputs;3083/3084 have zero refined-oil inputs. These are
+different capture ticks, not a fabricated shared snapshot. The complete
+local1007 catalog contains17 oil nodes,15 unmined; all are outside the
+current player's build area. Positive reserves/zero miner count do not
+prove terrain, placement, transport, power, materials or native eligibility.
+
+Original `1eed…:6` observes3073 H3<10,5326 D3<10 and3403 D5<20,
+all idle/full power;3965 has graphite output20,3966 is working, and5334
+has diamond output100. In the600tick planet104 window H P/C=8/15,
+D=5/0,1210=1/0. A single buffered warper or deuterium batch is not
+source attribution, an adequate rate or a continuous window.
+
+Original `1eed…:7–8` covers all133 generators at93983657 without duplicate
+IDs/cursors:3 hydrogen thermal,6 graphite thermal,4 fusion among them.
+Hydrogen generation totals9957 J/t, graphite13276 J/t, fusion92176 J/t;
+two graphite thermal units have0 J/t in that frame. These are current
+generation, never fuel stock, fuel emptiness or stable demand. Reader
+`isWorking=false` is not generator-stop evidence.
+
+The exact29104 native `PowerGeneratorComponent.GenEnergyByFuel` was
+inspected offline (DLL SHA-256
+`6C122E5443E6843979B4064050DFCB5E0D75577A0B64F6AE4111290238B33C12`;
+generated research hash `B4736641…918C6000`, private, not shipped).
+Using current generation with runtime fuel profiles/heat, the **conditional
+unproliferated generation-equivalent**, not measured stable burn, is:
+H4.9785/min, graphite8.850667/min and fuel rods0.553056/min.
+Recipe41 would require5.53056 D/min (11.06112 H/min) for that rod rate;
+fuel proliferation/residual energy/stock and future demand are unobserved.
+Thus old fuel cannot be assigned0 or ignored in a whole-source budget.
+Even converting all current crude through16/58, ignoring acid/other oil
+consumers and guaranteeing every graphite sink, gives only the favourable
+stoichiometric H ceiling27.221040/min. These conditional quantities are
+not one sustained mass-balance experiment or permission to expand.
+
+Offline reuse of the old5945-object layout (zero Game calls):
+`9970992d0bb6431a9b059b88b3970f68:1` / SHA `019791E5…9D6C3E3CC`
+traces3965/3966/3084 and coal5187 graphite to existing thermal/SMA/shared
+paths, with coal also feeding5334. `c94f040107f44d9f88f98ae12d250dbd:1`
+/ SHA `1A789CDC…85ED06DC` traces141/707 H to old stores165/137,
+thermal134/183/2516 and redLab256, not3073. Reverse crude trace
+`da97c8da0ddf4c709360e116bff7e579:1` / SHA `93257F7F…2A75178`
+identifies129→141/707 and2802→707/3964. Static traces are candidate
+topology, not fresh allocation or native positives. Graphene1123 belongs
+to869→883; diamond5334/r60 requires graphite1109, not graphene.
+
+Next design must budget raw oil, usable netH, old fuel/D sharing and
+actual graphite consumers before another tap qualification. No new source
+or route candidate is approved here; no blind retry of4171/4190 or
+4172/4029. Whole repair/source allocation/finite-buffer exclusion/Gate2
+remain false. Latest94031517/R1, normal save92128739/J100,
+pending=false/error=null, external9/lifetime149 unchanged. All handles
+terminal, zero unknown/in-flight/unsaved accepted; natural production is
+not saved progress. No construction, transfer, craft, long experiment,
+save, restart/deployment, Host survival test or publication occurred.
+Private entry smoke and independent original audit passed; no unrelated
+local full build was repeated. Provider usage and total root/Luna model
+cost are unknown; no speedup percentage is claimed. The22-request Game
+read cost and0.929s offline audit are measured, not the whole planning wall.

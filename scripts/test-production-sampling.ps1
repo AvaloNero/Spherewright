@@ -8,12 +8,14 @@ function Reset-Sampling([long[]]$Ends,[string]$Fault='',[int[]]$ItemIds=@(1109))
     $script:ends=$Ends;$script:sampleIndex=0;$script:fault=$Fault;$script:itemIds=@($ItemIds);$script:entryBoundaryPending=$false;$script:calls=[Collections.Generic.List[string]]::new();$script:payloads=[Collections.Generic.List[object]]::new();$script:records=[Collections.Generic.List[object]]::new();$script:entityTimingWitnesses=[Collections.Generic.List[object]]::new();$script:now=[datetime]'2026-09-30T00:00:00Z';$script:startTime=$script:now
 }
 function Get-Date{$script:now}
+function Get-SpherewrightProductionClockMilliseconds{($script:now-$script:startTime).TotalMilliseconds}
 function Start-Sleep([int]$Milliseconds){$script:now=$script:now.AddMilliseconds($Milliseconds)}
 function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[hashtable]$Payload){
     $script:calls.Add($Method)
     $script:payloads.Add([pscustomobject]@{method=$Method;payload=$Payload})
     if($Method -like 'prepare_*' -or $Method -like 'commit_*'){throw 'A read-only sampler attempted a write'}
     if($script:fault -in @('source15fps','source20fps')){$script:now=$script:now.AddMilliseconds(130)}
+    if($script:fault -ceq 'source60fps'){$script:now=$script:now.AddMilliseconds(120)}
     if($script:fault -in @('jitter15fps','jitter20fps')){
         # Alternate normal native reads and slower responses; do not assume
         # constant transport latency when declaring a full-source experiment.
@@ -21,10 +23,10 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
         $script:now=$script:now.AddMilliseconds($latency)
     }
     $index=[math]::Min($script:sampleIndex,$script:ends.Count-1);$tick=$script:ends[$index]
-    if($script:fault -in @('15fps','source15fps','source20fps','jitter15fps','jitter20fps')){$ticksPerSecond=if($script:fault -in @('source20fps','jitter20fps')){20}else{15};$tick=[long](($script:now-$script:startTime).TotalSeconds*$ticksPerSecond)}
+    if($script:fault -in @('15fps','source15fps','source20fps','source60fps','jitter15fps','jitter20fps')){$ticksPerSecond=if($script:fault -ceq 'source60fps'){60}elseif($script:fault -in @('source20fps','jitter20fps')){20}else{15};$tick=[long](($script:now-$script:startTime).TotalSeconds*$ticksPerSecond)}
     $result=switch($Method){
         get_session_state {
-            if($script:entryBoundaryPending){if($script:fault -notin @('15fps','source15fps','source20fps','jitter15fps','jitter20fps')){$tick=if($script:sampleIndex -eq 0){0}else{$script:ends[$script:sampleIndex-1]}};$script:entryBoundaryPending=$false}
+            if($script:entryBoundaryPending){if($script:fault -notin @('15fps','source15fps','source20fps','source60fps','jitter15fps','jitter20fps')){$tick=if($script:sampleIndex -eq 0){0}else{$script:ends[$script:sampleIndex-1]}};$script:entryBoundaryPending=$false}
             if($script:fault -ceq 'paused' -and $index -gt 0){$tick=$script:ends[0]}
             [pscustomobject]@{sessionId=$SessionId;localPlanetId=104;gameVersion=$(if($script:fault -ceq 'version'){'other'}else{'fixture'});gameLoaded=$true;ownedBySpherewright=$true;accessRestricted=$false;writeHealth=$(if($script:fault -ceq 'quarantine'){'quarantined'}else{'healthy'});writeBlockers=@();gameTick=$tick;revision=$(if($script:fault -ceq 'revision' -and $script:sampleIndex -gt 0){23}else{22})}
         }
@@ -44,6 +46,20 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
     [pscustomobject]@{success=$true;result=$result}
 }
 $arguments=@{SessionId='fixture-session';PlanetId=104;GameVersion='fixture';EntityIds=@(3404);ItemIds=@(1109);ValidateObservation={param($s) $s.entities[0].recipeId -eq 17 -and $s.power.networks[0].consumerRatio -eq 1 -and $s.production.planets[0].production[0].actualProductionPerMinute -gt 0};ReceiptMarker={[pscustomobject]@{runId='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';ordinal=$script:calls.Count}};RecordEvidence={param($row) $script:records.Add($row);if($row.event -ceq 'production-experiment-intent'){$script:entryBoundaryPending=$true}}}
+$sleepArgs=@{RemainingGameTicks=39;ObservedTicksPerSecond=60;MaximumSleepMilliseconds=4000;RemainingWallMilliseconds=30000}
+Reset-Sampling @(600)
+Assert-Sampling ((Get-SpherewrightProductionSleepMilliseconds @sleepArgs) -eq 487) '39 remaining ticks at measured60TPS do not trigger a four-second wait'
+Assert-Sampling ((Get-SpherewrightProductionSleepMilliseconds 600 15 4000 30000) -eq 4000) 'slow simulation still uses the declared maximum poll bound'
+foreach($unavailableRate in @(0.0,[double]::NaN,[double]::PositiveInfinity)){
+    Assert-Sampling ((Get-SpherewrightProductionSleepMilliseconds 39 $unavailableRate 4000 30000) -eq 4000) 'unknown or paused rate falls back without inventing ticks'
+}
+Assert-Sampling ((Get-SpherewrightProductionSleepMilliseconds 39 60 4000 43.9) -eq 43) 'adaptive wait cannot cross the original remaining wall budget'
+Assert-Sampling ((Get-SpherewrightProductionSleepMilliseconds 0 60 4000 30000) -eq 0 -and (Get-SpherewrightProductionSleepMilliseconds 1 60 4000 30000) -eq 12 -and (Get-SpherewrightProductionSleepMilliseconds 1 3000 4000 30000) -eq 1) 'due target never sleeps and near-target polling has no coarse minimum wait'
+$badSleep=$null;try{Get-SpherewrightProductionSleepMilliseconds -1 60 4000 30000|Out-Null}catch{$badSleep=$_}
+Assert-Sampling ($null -ne $badSleep -and $script:calls.Count -eq 0) 'invalid wait input rejects without a native call'
+$invalidPoll=@{};foreach($key in $arguments.Keys){$invalidPoll[$key]=$arguments[$key]};$invalidPoll.Mode='continuous';$invalidPoll.EntitySampleEvery=2;$invalidPoll.PollSeconds=11
+$invalidPollError=$null;try{Invoke-SpherewrightProductionExperiment @invalidPoll|Out-Null}catch{$invalidPollError=$_}
+Assert-Sampling ($null -ne $invalidPollError -and $script:calls.Count -eq 0) 'entry PollSeconds bound rejects values above10 before any read, not mid-experiment'
 Reset-Sampling @(600,1206,1812)
 $result=Invoke-SpherewrightProductionExperiment @arguments
 Assert-Sampling ($result.result -ceq 'sampling_completed' -and $result.qualifyingWindows -eq 3 -and $result.requests -eq 14) 'three fixed independent windows run in one bounded entry'
@@ -142,6 +158,23 @@ foreach($jitterClock in @('jitter15fps','jitter20fps')){
     Assert-Sampling (@($script:entityTimingWitnesses|Where-Object {$_.sample -gt 1 -and $_.lastEntityTick -lt $_.freshStateTick}).Count -gt 0 -and @($script:entityTimingWitnesses|Where-Object {$_.lastEntityTick -gt $_.counterTick}).Count -eq 0) "$jitterClock early entity timestamps are retained and the post-wait session is fresh"
     if($jitterClock -ceq 'jitter20fps'){$jitterAfterResult=$interleavedResult}
 }
+# Same fixed48-entity scope,390-tick target and120ms native latency, at60TPS.
+# Only sleep scheduling differs. The old coarse wait cannot pass; no gaps are
+# interpolated, forgiven or joined, and neither run writes to the game.
+$adaptiveSleep=(Get-Item Function:Get-SpherewrightProductionSleepMilliseconds).ScriptBlock
+try{
+    Set-Item Function:Get-SpherewrightProductionSleepMilliseconds -Value {
+        param([long]$RemainingGameTicks,[double]$ObservedTicksPerSecond,[int]$MaximumSleepMilliseconds,[double]$RemainingWallMilliseconds)
+        [int][math]::Floor([math]::Min($MaximumSleepMilliseconds,$RemainingWallMilliseconds))
+    }
+    Reset-Sampling @(600) 'source60fps' $completeItems
+    $fastBeforeResult=Invoke-SpherewrightProductionExperiment @interleaved
+}finally{Set-Item Function:Get-SpherewrightProductionSleepMilliseconds -Value $adaptiveSleep}
+Reset-Sampling @(600) 'source60fps' $completeItems
+$fastAfterResult=Invoke-SpherewrightProductionExperiment @interleaved
+Assert-Sampling ($fastBeforeResult.result -ceq 'not_proven' -and $fastBeforeResult.resetCount -gt 0 -and $fastBeforeResult.samples -eq 120) 'fixed four-second polling reproduces high-rate sample gaps under the same finite declaration'
+Assert-Sampling ($fastAfterResult.result -ceq 'sampling_completed' -and $fastAfterResult.coveredGameTicks -ge 36000 -and $fastAfterResult.resetCount -eq 0 -and $fastAfterResult.requests -le 4090 -and $fastAfterResult.timingMs.total -lt 3290000) 'adaptive polling completes the same60TPS fixture without relaxing continuity or budgets'
+Assert-Sampling (@($script:calls|Where-Object {$_ -like 'prepare_*' -or $_ -like 'commit_*'}).Count -eq 0 -and $fastAfterResult.gameWrites -eq 0 -and $fastAfterResult.modelDecisionsInsideLoop -eq 0 -and -not $fastAfterResult.governorAcceptance) 'adaptive scheduling remains read-only and is not independent production acceptance'
 $interleavedShort=@{};foreach($key in $interleaved.Keys){$interleavedShort[$key]=$interleaved[$key]};$interleavedShort.MaximumSamples=3
 foreach($interleavedFault in @('gap','power','revision','budget')){
     Reset-Sampling $(if($interleavedFault -ceq 'gap'){@(600,1300,1900)}else{@(600,1200,1800)}) $(if($interleavedFault -in @('gap','budget')){''}else{$interleavedFault}) $completeItems

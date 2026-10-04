@@ -2,6 +2,28 @@
 # Scheduling of existing read-only native windows, not a Governor/sign-off engine.
 Set-StrictMode -Version Latest
 
+function Get-SpherewrightProductionClockMilliseconds {
+    # Monotonic receive-time clock; fixtures replace only this inert clock.
+    [Diagnostics.Stopwatch]::GetTimestamp()*1000.0/[Diagnostics.Stopwatch]::Frequency
+}
+
+function Get-SpherewrightProductionSleepMilliseconds {
+    param(
+        [ValidateRange(0,[long]::MaxValue)][long]$RemainingGameTicks,
+        [double]$ObservedTicksPerSecond,
+        [ValidateRange(1,10000)][int]$MaximumSleepMilliseconds,
+        [ValidateScript({-not [double]::IsNaN($_) -and -not [double]::IsInfinity($_) -and $_ -ge 0})][double]$RemainingWallMilliseconds
+    )
+    if ($RemainingGameTicks -eq 0) { return 0 }
+    $wait=[double]$MaximumSleepMilliseconds
+    if ($ObservedTicksPerSecond -gt 0 -and -not [double]::IsInfinity($ObservedTicksPerSecond)) {
+        # Poll before the predicted target. This is scheduling, not tick credit:
+        # slow/paused/variable simulation still needs fresh native responses.
+        $wait=[math]::Min($wait,[math]::Max(1.0,$RemainingGameTicks*1000.0/$ObservedTicksPerSecond*0.75))
+    }
+    [int][math]::Floor([math]::Min($wait,$RemainingWallMilliseconds))
+}
+
 function Invoke-SpherewrightProductionExperiment {
     [CmdletBinding()]
     param(
@@ -40,7 +62,7 @@ function Invoke-SpherewrightProductionExperiment {
         ($Mode -ceq 'independent' -and $EntitySampleEvery -ne 1) -or
         ($Mode -ceq 'continuous' -and $IntervalGameTicks -gt $WindowGameTicks)) { throw 'Invalid fixed scope/cadence/budget; no request sent.' }
     $started=Get-Date; $deadline=$started.AddSeconds($TimeoutSeconds)
-    $experiment=[pscustomobject]@{requests=0;lastMethod=$null;readWallMs=0.0;pollWaitMs=0.0;samples=0;entitySamples=0;qualifying=0;resets=0;covered=0;startTick=$null;endTick=$null;lastWindowEnd=$null;lastSessionTick=$null;nextTick=0;firstTick=$null;lastTick=$null;lastRates=@()}
+    $experiment=[pscustomobject]@{requests=0;lastMethod=$null;readWallMs=0.0;pollWaitMs=0.0;samples=0;entitySamples=0;qualifying=0;resets=0;covered=0;startTick=$null;endTick=$null;lastWindowEnd=$null;lastSessionTick=$null;nextTick=0;firstTick=$null;lastTick=$null;lastRates=@();rateClockTick=$null;rateClockMs=$null;observedTicksPerSecond=0.0}
     $read = {
         param([string]$Method,[hashtable]$Payload)
         $experiment.lastMethod=$Method
@@ -58,6 +80,17 @@ function Invoke-SpherewrightProductionExperiment {
             $failure=[InvalidOperationException]::new('Read crossed the original sampling deadline; evidence retained, no new request.')
             $failure.Data['spherewrightSamplingFailureKind']='read_crossed_deadline'
             throw $failure
+        }
+        if ($Mode -ceq 'continuous' -and $EntitySampleEvery -gt 1 -and $Method -ceq 'get_session_state') {
+            $receivedMs=Get-SpherewrightProductionClockMilliseconds
+            if ($null -ne $experiment.rateClockTick -and $receivedMs -gt $experiment.rateClockMs -and $value.gameTick -gt $experiment.rateClockTick) {
+                $rate=([long]$value.gameTick-$experiment.rateClockTick)*1000.0/($receivedMs-$experiment.rateClockMs)
+                # Fastest measured positive rate is conservative for sleeping;
+                # Estimation reuses these reads; shorter waits may add bounded polls.
+                if (-not [double]::IsInfinity($rate)) { $experiment.observedTicksPerSecond=[math]::Max($experiment.observedTicksPerSecond,$rate) }
+            }
+            $experiment.rateClockTick=[long]$value.gameTick
+            $experiment.rateClockMs=$receivedMs
         }
         return $value
     }
@@ -100,6 +133,9 @@ function Invoke-SpherewrightProductionExperiment {
                 $remaining=($deadline-(Get-Date)).TotalMilliseconds
                 if ($remaining -le 0) { throw 'Finite sampling deadline reached.' }
                 $sleepMs=[int][math]::Min($PollSeconds*1000,$remaining)
+                if ($Mode -ceq 'continuous' -and $EntitySampleEvery -gt 1) {
+                    $sleepMs=Get-SpherewrightProductionSleepMilliseconds -RemainingGameTicks ($experiment.nextTick-[long]$state.gameTick) -ObservedTicksPerSecond $experiment.observedTicksPerSecond -MaximumSleepMilliseconds ($PollSeconds*1000) -RemainingWallMilliseconds $remaining
+                }
                 Start-Sleep -Milliseconds $sleepMs; $experiment.pollWaitMs+=$sleepMs
                 if ($EntitySampleEvery -eq 1) { break }
                 $state=& $read get_session_state @{}

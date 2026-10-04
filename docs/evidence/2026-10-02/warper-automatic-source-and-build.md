@@ -733,3 +733,25 @@ root独立核验的point proof `015fec99132443baab4a9ebf412851a0:1`，SHA-256 **
 恢复后六个互不重叠的600-tick只读窗原件 `c2c6ae9c3199460380d5b6a359ac79f4:1–143`，marker为`:28/:50/:72/:94/:116/:138`；共133 native请求（128 sampler），77.276秒。1210各窗生产/消费为 **1/0、0/0、0/0、0/0、0/0、0/0**，六窗合计原生实产1；`coveredContinuousTicks=0`。PC库存序列2728/2729/2727/2728/2729/2728，1210库存1011/1012/1012/1013/1013/1013；库存净增2含窗间未采样生产，不能解释为六窗产出3。N3均full-serve，capacity **1,878,000–1,914,000 J/t**，不低于本次声明峰值 **1,804,700 J/t**。root proof `45a1756ad0844cb2b93e172832a77837:1`，SHA-256 `AF988AC6A02B44EA05AA32C705793F609A35B173A6487AC0F0A4E465F2443713`，离线审计3.218秒、0次新Game调用。
 
 最新原件观察 **S90530020 / save90474729 / R1 / durableJ100 / external7 / lifetime147**；无unknown、inflight或未核销动作。恢复后出现过一次1210非零原生生产，因此“保存→必要受保护重启→healthy primary恢复→再次非零”这一窄垂直门通过；这不是持续率证明。不得把最低资格写成gross产量或P=C。`finiteBufferExclusion`仍false：在途货物及141/707窗口内buffer未完整界定；Governor与完整sourceSupply仍false。六短窗不累计连续信用，也不证明无界供给、36,000 ticks持续产出或Gate 2全链完成。Steam/DSP保持运行；用户取消的Codex退出存活专项测试不属于本次验收。只读阶段批准已消费，Game writes仍blocked。
+
+### 2026-10-04：完整物料前沿与粗等待造成的采样缺口
+
+从同一5945对象不可变快照和runtime配方逐级反查1210物料前沿，离线投影定位22个生产设备、21个仓储前沿、8个原料源，未解析输入为0；补入旧范围遗漏的298/884/3064库存与707来源。投影仅为方向/过滤后的静态候选，不冒充实际供料。配置binding `778def25da8b4c9b8a576fd0aa54d9ff:2`，SHA-256 `533B0215768D8BA36E05407E0F08B3CF7C81C6082EB1F7A00CE4B708B1F74A47`。固定48个关键生产/库存对象、24项物料；8个原料源仅留开闭原件，不写成逐样本新观察。
+
+原件 `53edbdb6c5f64b2782994d296644c876:1–3623` 在source `0761dcf`、installed `3fe31d1` 上只执行一次：120样本/60次完整实体观察、3499 native（3479 sampler+20开闭）、墙钟1159085.8331 ms，0 writes。root原件审计 `7e2c4400e9084371ae09aa0339906698:1`，SHA-256 `52D68649B6B134ED47E85CEC6170E47FF4A809B80875BB92CA918840B96D9551`；120次健康/静态配置检查有效，但42次`sample_gap`重置，最后仅1133连续ticks，结论`not_proven`。closing **91240764 / R1 / save90474729 / durableJ100 / external7 / lifetime147**；无unknown/inflight，审批已消费、执行已停止、禁止重放。
+
+root独立等待诊断 `0f142ec7f1fb48a3a7cd85a50d010d91:1`，SHA-256 `2546F86F98A73ACF64A422D6A1D37E53B4028D60EB56441EA7C9157EEB42A056`：`:124`距目标还差39tick，调用方却继续睡满4秒；`:127`与前窗相距603tick，形成真实3tick采样缺口。全部42次重置均为缺口（41次完整观察、1次counter-only），不是产线健康检查失败；不能将其写成产线停产，也不能补插缺口或拼接信用。首末完整观察的1210库存1313→1343、PC2800→2807、所有选定非零库存无净下降，是分离现场趋势，不是连续验收或完整有限缓存排除。
+
+必要最小修复只改已有共享采样器等待：复用已有session回执，以单调接收时钟测native tick速度，临近目标时缩短睡眠；`PollSeconds`仍为上限，原deadline/read/sample cap、fresh校验和严格gap/reset不变。默认cadence1/independent不改，无游戏写入、自动重试或新planner。离线60TPS/120ms native延迟fixture对比仅证明调用方调度：旧4秒等待120样本、59次gap、未完成；新等待可在相同上限内覆盖≥36000ticks且gap0，不冒充实机或token节省。Claude流式外审terminal为BLOCK（`94e647ba297e465eb460bb564dbb5b7f:1`），所疑`PollSeconds>10`经root核实际未改入口`ValidateRange(1,10)`和11秒零native调用负例，不适用于有效参数；不将外审改称APPROVE。root核销 `75b528dc47894e0aa5122659573e4821:1`，SHA-256 `9CB506D4673A908F0EF7CBBB49424CB3F55817EFE35214B38B4568AA1DE51A22`。新实机须另行固定声明、从零计连续信用。
+
+修复精确三文件提交并push为 `ff362e0a130b1b6ba3477bbdc3dbfb29a82d4a53`，最终离线sampler85/85、MCP指南2/2通过，均0 Game调用；root核远端相同SHA及Windows Core CI `37195880987` completed/success。原research及两项test dirty保留，未混入提交。运行Plugin/MCP与228项安装文件仍为既有cohort，未冷部署；共享caller修复不等于包内已安装实现更新。另一个从零计信用的固定只读声明 `551ae66a-478d-4797-a7f3-d83a9881ad65` 保持48对象/24物料/8开闭来源、120样本/4096读取/3300秒原上限；旧53ed不能重放或累计信用。真实Codex退出存活专项测试取消，不执行；不为观察主动关闭Steam/DSP。
+
+#### 同一会话的新适应等待实机正例
+
+新声明唯一执行 `5e1cf80452674139b528c67cf47b30ef:1–2879`，原handle31164正常exit0；无worker在途。89样本/45次完整48对象观察，2786 native（2766 sampler+20开闭），墙钟619332.6737 ms；连续 **91464990–91501193 / 36204 ticks / reset0**，0 writes/0 accepted增量。root直接核原件与静态配置、窗口/覆盖/供电、45组buffer及8开闭来源：proof `ad89fb2801274af68d9d520014afac1a:1`，SHA-256 `A6B7024893380D21501888BD026422743B85E39AF2430FA0AF4835B228909DEC`，独立离线审计全程56088.0418 ms、0 Game调用。新鲜1210非重叠下界 **18≥需求11**；PC2832→2835。1210仓1448→1465的净增17与native下界18不是同一测量区间，不能相加或改写成精确产量。
+
+root复用同一原件运行既有非负区间等式算法，不相加重叠窗：material proof `9802245ba8aa4c7d850bc2258fd87ce3:1`，SHA-256 `D25577742F382097E4E621E25DBFBA130F1259366463714629094B3D02CEBDAD`。24项输入/中间产物/1210计数均保留上下界；1210总生产可行界18–24，不是精确值。所有选定非零库存无首末净下降，变化仅PC+3、871石墨烯+12、163氢+8、1210+17；各对象实际观察时间保留。原油/精炼油/氢等净产量界跨零，不得据此宣布净下降、缺供或配平；氢gross含裂解循环，不能当外部净供给。
+
+同一48/24/8范围、390目标及原上限，实机观察从旧1159085.8331 ms/120样本/3499 native/42次gap且未完成，变为新619332.6737 ms/89样本/2786 native/0次gap且完成；这是一次阶段实验结果，不是全部开发流程提速比例，也不证明token或价格减少。新旧世界进度不同，产量变化不能只归因等待修复。source仍`ff362e0`、installed仍`3fe31d1`，未部署、未save/restart/关闭游戏，未做取消的Host测试。
+
+closing **91501262 / R1 / save90474729 / durableJ100 / external7 / lifetime147**；无unknown/inflight/未核销accepted。新声明已消费，禁止重放。最低持续率门及此前保存恢复正例保留；`sampling_completed`不自动使`sourceSupplyAcceptance`、`finiteBufferExclusion`、Gate2或Governor通过。关键141/707窗口buffer缺口已补为45次实际观察，但未界定运输中的有限缓存和完整来源归因；下一项只能设计最小物料/在途cut核验，不再次盲跑整厂长窗，不新增永久施工、未来库存或其它Gate。

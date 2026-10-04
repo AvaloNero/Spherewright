@@ -518,3 +518,78 @@ is unknown. Hydrogen recycling gross output is not net supply. Next is only
 root review of shared H/D allocation, actual source budgets and source-end
 native direction before considering a minimal repair; neither negative
 preview authorizes construction, same-candidate adjustment or replay.
+
+### Corrected endpoint pose, ground caller and closed outer-route negative
+
+Root's earlier planned-quarter inference omitted the inserter destination
+180° transform. The exact current DLL plus adapter proof
+`35c58918bb8f4bc9aff1cb1dee0f8f7d:1` (SHA-256
+`24E919E5B9E138DB0951EBDBFFBA40234431F7A41FA0D0340CBDF0E1608B81A8`)
+supersedes that inference; it is not native placement approval. For the
+same4171 geometry, source planned3 passes the straight-pair guard, but
+`304362e296e04355a312a10ffde471e5:1–17` rejects overlap with existing4190
+before native sorter checking. H/D were not prepared. All existing links
+remain intact. The incorrect planned1 trial `5e0c864…` is also consumed,
+not a repeatable fallback. Guide/contract/MCP-description commit `208a570`
+passed127 Core and2 MCP tests; exact-SHA CI `37237567822` is green. No Plugin
+behavior was changed or deployed.
+
+Fresh coupled-source task `2509c917…:1–6` stopped after4 reads because
+BuildCatalog has planet/revision but no sessionId. Root verified zero writes
+and continued only the original unexecuted7-read suffix
+`60888eba561c4f549dfefd30b9a183b1:1–9` (terminal SHA-256
+`4E86C08F7E88A8889F01379F224B8E76E3DBFD7A85EEC6621469F8330D23311D`).
+The same-tick24-object cut at93602045 has3073 hydrogen8,5326 deuterium8 and
+3403 deuterium14, below respective10/10/20 thresholds, idle/full-power.
+3965/r58 graphite output is20 and idle;3966/r58 is working on its frame.
+One600-tick planetary window reports hydrogen8/4, deuterium0/0,
+fuel1802 0/0 and1210 0/0. Recycling gross output and a zero short fuel row
+do not establish net supply or zero legacy demand. Hydrogen generator2516
+observed3425J/t; fuel stock remains unknown. Catalog generator ratings
+are capacities, not measured fuel consumption.
+
+Seven-read direct-port task `b68171a…:1–9` closed at93670219; five-read
+outer-belt task `302fbd1ff9ff41a8bcd370e24b2deaf6:1–6` closed at93817171,
+terminal SHA-256 `3B11D5916D7AA864884C9E04A90ABD5A6AEF5EE6CEDECBCC66D35AAC6EAE3748`.
+4169 is a diagonal belt corner;4172 is a straight belt with virtual1 facing
+west. Their null virtual occupancy and empty generic buffers do not mean
+free ports or empty cargo. Old static topology connects3965's graphite
+output via4185 and4165…4169 to4172; that is not fresh allocation proof.
+Refinery free slots likewise do not prove an unobstructed NEW approach.
+
+The shared bounded read-only caller had hardcoded elevated mode. Commit
+`d7a1c61` reuses existing native_grid, omits ground altitude keys (null is
+not0), checks exact routing/layer echoes, and keeps all limits, closure,
+token privacy and non-executable semantics.100 qualification checks and95
+existing thin-stage checks passed with zero Game calls. The initial
+StrictMode missing-property fixture failure was preserved; the corrected
+v2 passed. Streaming CC review ended APPROVE/is_error=false (raw stream SHA
+`18A1547D298E05AA689B164DBCCBF8691A50321F14FD4DA3440541D9F850C7B8`);
+its separate post-terminal formatter failed without rerunning review.
+Exact-SHA CI `37240082277` is green. The actual ground parameter entry's
+ValidateOnly smoke returned3 spans/12-request cap/zero Game calls. These are
+offline/caller validations, not site positives; installed cohort staysb1557bb.
+
+One fixed outer-ground4172→5523 qualification
+`7610376eea1d4c17a36678e67146e9c6:1–17` stopped at firstA:
+`BUILD_LOCATION_INVALID/belt_path_existing_overlap`, NEW point2/object4029.
+No object was created; no endpoint native positive, H/D prepare or commit
+followed.8 requests, first-prepare1023.9659ms/total2044.5301ms. Terminal SHA
+`35D5EEC0C59C2D94F22251A11BD372143CC954EE4610278E1B73B817BDD94862`.
+Root independently checked all17 original ordinals, exact eight-method
+allowlist, source hash/directions and ground omission, explicit rejection,
+player/inventory/session/save/durable-J closure, preserving every original:
+proof `169d6b814871467b9877b9529de7f40b:1`, SHA-256
+`98B7974D494C956EB92CE12612B585D0293E05DB876227A997B42A2E348CC92A`,
+offline662.1149ms/zero Game calls. Do not replay this site or modify its
+coordinates/seed; next work requires a complete route/budget redesign.
+
+Latest observation93835314/R1, normal save92128739/J100,
+pending=false/error=null, external9/lifetime149. Every task is terminal,
+zero new accepted/unknown/in-flight/unsaved accepted. Natural post-save
+production is not saved progress. The whole repair, sustainable source
+allocation, finite-buffer exclusion and Gate2 remain false. A parallel
+graphite feed does not guarantee exclusive allocation or resolve the
+conditional net-hydrogen deficit. No new construction, transfers, crafting,
+long experiment, cold deployment, save or lifecycle occurred. Steam/DSP
+remain running; the user-cancelled Codex-exit survival test was not done.

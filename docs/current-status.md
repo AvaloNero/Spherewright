@@ -1,18 +1,15 @@
 # Spherewright 当前快照
 
-更新：2026-10-04（Asia/Singapore）。本阶段原件与边界见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
+更新：2026-10-04（Asia/Singapore）。原件与边界见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
 
-## 当前已核状态
+## 当前状态
 
-- 本阶段sampler source HEAD为`9be6b5fa5355162dcd2496a6539e07a88f983f22`，包含只读采样caller的16物料范围修复；对应Windows Core CI `37161579848`成功。运行中的DSP仍为已安装`3fe31d1` / native `29104`（64 tools / 1 resource），本修复未部署。
-- 当前owned primary仍为 **89919581 / R18 / J100**；随后只读来源点包closing观察 **90141554**。Steam与DSP保持运行，未做restart或Codex退出存活测试；该专项测试已取消。external **5** / lifetime **145**，只读核验无Game写入、unknown或inflight。
-- 连续sampler run `0ec62d89ef9d410bb468d5c08c492ea3`在32实体/15物料固定范围内完成82个样本、0次reset，覆盖 **90066166–90102290（36125 ticks）**；3412 sampler reads、3416 native请求，墙钟2075.794秒。root proof `2abcbc714cd94daebf69bdb636f17634:1`，SHA-256 `8F75A06F027BF82F9F55EBB778B5DE724BBD5F91CACBFDA859491464254EF2A8`，离线审计94.7935023秒、0 Game调用。
-- 1210非重叠新产量保守下界为 **16**，高于该窗口按最低1件/分钟所需的`ceil(36125/3600)=11`；这是下界而非精确总产量。Warper 5331库存798→814、PC 885为2677→2680。N3采样满供，容量满足本次声明；不能据此证明全源供料配平或排除有限上游库存。
-- 窗口端点读数：870石墨0→0、酸100→100；863酸为600→600、3348氢为0→0、3074氢/氘为0→0。上游buffer会周期变化，端点零值不等于没有流动。Fe 1511为3000→2999，区间最小2998、最大3000，也不是零变化。
-- 来源点包只读核验已闭合：22 native响应、14个唯一实体，closing仍为R18/save89919581/J100。点读只纠正163/784当时的库存标签（氢而非油）；原静态snapshot中item-aware的1114过滤候选成立，但不证明实际油流、持续来源或有限库存排除。瞬时采集器状态与逐项读数见阶段证据。
+- 源码 `0b3dd2f` 的只读采样修复已由Windows Core CI `37176748646`通过；显式`EntitySampleEvery=2`，默认仍为1。运行中的Plugin/MCP未更换，仍为installed `3fe31d1` / native `0.10.35.29104`（64 tools / 1 resource），未部署。
+- 本阶段连续采样 `8d3f2a538b5b40119f64ded602b95b61`覆盖36391 ticks、85样本、43次完整实体观察、reset0、2820 native；root proof `e6eab6f392014500ae82b3fa49fa45da:1` / `DFB7E4FA8AF6CFC1A5333C7E4B63F4C2ECB9E2E2ED2AF60A305F83F1886FF1EB`。最低来源资格proof `44c6537a889a44888de962e3a262d898:1` / `0F665EE1B5AE9C085F973CDB6386EA9B972BEF07F1F649CC9AE0CA613210C58C`：1210保守下界16≥需求11，PC 2711→2716、Warper 950→966、净氢下界290≥需求220；仅最低1件/分钟门，不是全源配平或有限缓存排除。
+- 最近正常保存 **90474698 / R19 / J100** 后，必要DSP重启与healthy owned-primary恢复已完成；当前为 **90474729 / R1 / J100**，S **90530020**，external **7** / lifetime **147**。Steam未关闭，228项安装文件哈希匹配，无重新部署。prepare的`exactEmbeddedIdentityVerified=false`，故不声称加载前已完全读回内嵌身份；native terminal adoption/readback之后才核实同一primary。恢复库存、手持物与位置守恒，Y差1微米在既有1毫米容差内，不推断原因。
+- 重启后完整capture为 **60页 / 5945 built / 0 prebuild / 17 details / 11620互逆边**，无新增/删除实体；本阶段将1535、2317从2011升级至2012，既有1512在baseline已为2012并保持；仅2440/node168耗尽差异许可，其余静态配置一致。Gate2垂直门“正常保存→必要受保护重启→恢复同一healthy primary→再次出现1210非零实产”通过。专门Codex退出存活测试已由用户取消，未执行。
+- 恢复后六个分离600-tick只读窗仅有1件1210原生实产；`coveredContinuousTicks=0`，不计连续信用。1210库存1011→1013含窗间未采样生产，不能按六窗实产3件解释。N3各窗full-serve，容量1878000–1914000 J/t，高于声明峰值1804700 J/t。
 
-## 尚未闭合的边界
+## 尚未闭合
 
-`sourceSupply`、`finiteBufferExclusion`与Governor验收仍为false。下一项按runtime库存物品与分拣过滤方向核验真实精炼油到861/3084的实际流量、持续来源及上游有限缓存；当前静态过滤候选无item矛盾，但不等于实流。现行调用端允许最多16物料；本次连续采样使用15物料并将实体范围固定为32。
-
-本次采样不是来源归因、持续供料配平或protected restart通过。此前保存/恢复事实保持不变；本轮不施工、不重启、不部署或发布。
+`finiteBufferExclusion`、Governor与完整sourceSupply仍false：在途货物及141/707窗口内buffer未完整界定。不得据六短窗推断无界/36,000-tick持续供给或Gate2全链完成。当前无unknown、inflight或未核销动作；只读阶段批准已消费且Game writes仍blocked。下一唯一边界是核清有限上游/在途buffer来源，不进入支线施工。

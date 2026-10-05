@@ -702,3 +702,60 @@ Source HEAD `00b24b718967f6726616f3e8629420754b44deaf`; its exact-SHA CI `372452
 **Next authority boundary:** complete the1210 source/allocation/material/power/layout budget; do not claim the new-source native condition has passed. A physically reachable, genuinely material-backed preview may require a narrowly authorized qualification-preparation stage (normal save/ten-write audit, bounded ordinary Move and exact one-extractor materials), but none is authorized or executed here. Whole repair remains `executable=false`; no construction, bulk future stock, source manipulation, new long experiment, other Gate or Steam/DSP lifecycle is permitted. Existing completed production entities and failed graphite candidates remain untouched.
 
 Provider-level root/Luna usage is unavailable; no token saving, price or total speed-up percentage is inferred. The five native reads and root audit wall clocks above exclude planning, documentation and Git/CI.
+
+## 2026-10-05: close the ten-accepted-action oil-preparation window
+
+Root independently closed the bounded window from original proof
+`54e57431ac4343f89c454f702bbeb195:1`, SHA-256
+`A1C8AF4D7077AC7F597E9161ABDC4CA13523053D43E802A1EE9C347E12A762FB`
+(zero Game calls). Its ten unique successful actions are indexed by runs
+`fc8f0f0e907d4f51a50b6e1ddde97332` (5),
+`1193a2656645437d88c6434ba88d079a`,
+`a9f30a480263417f97da208330dcd903`,
+`5cce6a8ddf754c89a4be6565b7086f3e`,
+`920e3b7d46a246dda218fa960fb85b4c`, and
+`66ad75c2f8f34e32a9e5be0e400dec14` (1 each). Accepted-action summary
+`5babc932811040f3b5b311502f8fb3ef:1`, SHA-256
+`14D922CA591DB2F4825FD1377E27F42E0E40B495079658379CEBDDEBF5955C8B`,
+confirms 10 unique successes, zero replay/unknown/in-flight, and reconciles
+player inventory: Fe `1101` −3, coil `1202` −1, all other item deltas 0.
+
+The tenth action was the ordinary save in run
+`66ad75c2f8f34e32a9e5be0e400dec14:7`, completed at tick `94656863`
+(about 1.781 s); summary SHA-256
+`0C4CD30ED8BDF9D34F844DE05B81BF17BAF5C8AB9455F4CA517596F27D81E178`.
+It closed at `R2/J100`, external accepted `10`, lifetime `150`. The later
+owned read ended at `94691576/R2`; durable J100 still refers to save tick
+`94656863`, not the later natural production. No unsaved accepted action
+remained.
+
+Fresh full capture `dabf773d60f0472baa9d1bc61ec0b806` at factory tick
+`94667688` contains 60 pages, 5945 entities, 0 prebuilds, 18 detail records
+and 11620 reciprocal edges (17.844 s). Baseline capture
+`183568336ec7495d87fe7c0137873b70` is tick `90521995`. The audited factory
+structure matches; the only resource-membership delta is the exact subset
+removed from node lists: `1213` IDs `35,42`, `1496` IDs `45,49`, and `2440`
+ID `163`. Iron-99 evidence `Capture5a9f…:3` and Copper-69 evidence
+`73feed…:1–5` (terminal SHA-256
+`C57C7B95D9DF9E1DA19D93543732C4A09160E54BB0C576D04920508CE2273257`)
+show those IDs are absent from the matching active-product enumerations.
+This exact-subset change is compatible with natural depletion; it does not
+prove global nonexistence or the historical cause/time of depletion.
+
+One bounded read caller used `page.kind` where the response shape differed:
+three successful reads were already retained, the Copper suffix was not
+executed, and the overall six reads ended with one local caller-shape error,
+zero native rejections and zero writes. It was not replayed. This is a
+caller-formatting boundary, not an unknown Game outcome.
+
+This window establishes the ten-action/save closure and a fresh structural
+snapshot only. It adds no live positive for a new oil source, no complete
+1210 source-supply proof, and no continuous-window credit. Targets remain
+1210 at least 1/min, hydrogen 20/min and deuterium 10/min; the actual demand
+of legacy fuel `1802` is still unknown. Whole-source balance and
+finite-buffer exclusion remain false. A narrow qualification-preparation
+exception now exists in `AGENTS.md`, but no preparation may start before this
+documentation commit's CI is green and root explicitly reopens it. No
+construction, move, material gathering, long window or restart occurred in
+this phase; DSP/Steam remain running and the cancelled Host-exit test was
+not performed.

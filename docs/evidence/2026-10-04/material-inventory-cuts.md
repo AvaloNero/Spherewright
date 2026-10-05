@@ -1182,3 +1182,55 @@ The two same-class overlap refusals are the stop condition: do not try nearby
 coordinates, a fifth segment or a downgraded route. Root will redesign the
 source-route-end path as a whole; this does not reopen the old 11-segment
 chain. Overall executability remains `false`.
+
+#### Oil-source and crossing qualification continuation
+
+Root audited 33 native reads plus one stop record for this continuation; the
+consolidated proof is `3cdadd9b272742ffbd981a65772303e7:1`, SHA-256
+`4EA7DF7E23F9CCD2CCD5D0D24B3E3B50F67F9E4FE25BCCAB73514E368BC16478`.
+Component indices are `56d2d10931e046b6a7c315d4ff297555:1–13` (oil-node and
+graphite-sink observations), `49443087a9b6474da00f01e0101647d7:1–6`
+(3600-tick fuel-budget point), `8826571093b84d33a096032a4c47d684:1–9`
+plus stop `:10` (placement and belt qualification), and
+`a349cc5500b0408fae1711b966bbe222:1–5` (session/save/Journal closure).
+There were zero Game calls by root, writes, commits or accepted actions; final
+observation was `95379077/R24`, normal save `95141009/J100`, external accepted
+`7`, lifetime `167`.
+
+The `544` / yaw-180 oil-source placement was a prepare positive at ordinal5;
+the 21-point uphill span (0→1) was positive at ordinal7. The downhill prepare
+at ordinal9 stopped on planned point4 with `BUILD_LOCATION_INVALID` against
+existing belt `4098`; neither the middle nor tail span was called. Fresh
+direction is `4099→4098→4097` (an earlier caller summary had it reversed).
+Only the 21-cell segment's cargo was empty; this says nothing about the full
+existing path. The resource-node list contains 17 entries (`532–548`, including
+`544`); `544` amount `71491` and miner `0` apply only to this current build
+scope. The other 16 are not treated as current same-scope substitutes; their
+mining status is not inferred. No actual-ID source-to-consumer join, material
+reservation, build or oil flow was proven.
+
+The production read `49443087a9b6474da00f01e0101647d7:1–6` covers one
+3600-tick point window `95342323–95345922`: fuel rods `1802` P/C `0/0`,
+deuterium `1121` `5/0`. This is not a long-window fuel gate or a locked
+baseline, and does not establish zero legacy-fuel demand. At separate point
+reads, `870` held graphite `1490`/acid `100`, relevant `3074` buffers were
+empty, and `3965/r58` graphite output was `20`; none is continuous-rate
+evidence. The oil-source/sink read was
+`56d2d10931e046b6a7c315d4ff297555:1–13`. These point observations do not
+close net-hydrogen, graphite or old-fuel allocation.
+
+The remaining design summary preserves the existing 11 source-to-endpoint
+pairs. The proposed new route is `544 → new extractor actual output → short
+belt stub → sorter 2011/filter 1007 → empty new trunk → 3964.slot1/filter
+1007`; join each empty span before adding cargo and keep existing H/D branches.
+This is a forecast, not a native budget or authorization: ceiling extractor1,
+poles3, belts164, sorters2; current stock is `1/3/28/7`. The `1210` target
+requires at least net H `20/min`, graphite `10/min` and acid `2/min`; r58
+gross cycle hydrogen is not net supply and legacy-fuel demand remains unknown.
+Estimated new extractor plus two sorters load is `14600 J/t`; under the stated
+conditional reserve, headroom is `58700 J/t`, not proof of sustained power.
+The first direct blocker is the unqualified complete crossing corridor. Net
+H/G/legacy-fuel allocation, a future actual-ID join and exact material
+accounting remain open. No nearby-seed retry, permanent construction, bulk
+material collection or long-window test is authorized by this result; overall
+`executable=false`.

@@ -754,16 +754,224 @@ Game outcome.
 
 This window establishes the ten-action/save closure and a fresh structural
 snapshot only. It adds no live positive for a new oil source, no complete
-1210 source-supply proof, and no continuous-window credit. The previous
-window's measured crude-oil ceiling was `18.147360/min`; net hydrogen and
+1210 source-supply proof, and no continuous-window credit. An earlier
+window's theoretical crude-oil ceiling estimate was `18.147360/min`, not a
+measured sustained rate; net hydrogen and
 legacy-fuel allocation remain unresolved. Node `544` has no native
 qualification positive. Failed candidates `4171/4190` and
 `4172/4029` must not be replayed. Targets remain 1210 at least 1/min,
 hydrogen 20/min and deuterium 10/min; the actual demand of legacy fuel
 `1802` is still unknown. Whole-source balance and finite-buffer exclusion
-remain false. A narrow qualification-preparation
-exception now exists in `AGENTS.md`, but no preparation may start before this
-documentation commit's CI is green and root explicitly reopens it. No
-construction, move, material gathering, long window or restart occurred in
-this phase; DSP/Steam remain running and the cancelled Host-exit test was
-not performed.
+remain false. A narrow qualification-preparation exception exists in
+`AGENTS.md`. At the close of this ten-action window, the preparation below
+had not started; it was later explicitly authorized and is recorded as a
+continuation of this same Gate 2 phase. No construction or restart occurred
+in that earlier window; DSP/Steam remain running and the cancelled Host-exit
+test was not performed.
+
+### Same Gate 2 phase: bounded oil-source qualification preparation
+
+Root independently closed the preparation originals in
+`544b1a8de097400cb44cfb99b651a70c:1`, SHA-256
+`0EAD33C880DC641B0364AF7EE424ACFB31C3F4A6CFC7870F13FD0BF49B9B3D7F`.
+Original `0f3544…:1–84` accounts for four material gathers and one ordinary
+handcraft terminal, with inventory, increment and source configuration
+reconciled. The four gathers yielded steel `1103` ×12, magnet `1102` ×12,
+copper `1104` ×6 and raw ore `1005` ×24. The one-extractor recipe's recorded
+leaf inputs are steel ×12, stone ×12, circuit board ×6, magnet ×16, copper ×8
+and raw ore ×24; this preparation did not build the extractor or mine oil.
+The handcraft caller once timed out at 60 seconds; the same action's original
+receipt `cad23a00d343475eaa6325431e6c08fa:1–4` resolved successfully, with no
+resubmission.
+
+The bounded move/save originals are indexed by
+`de0e6b06c3e84e978ef56cd01f6673f1:1`, SHA-256
+`43E3D2D741A740D72E190C7CA4D5CB774C2BB51575B9D35CFBDFB4295B099885`, over
+`2ac6e00bde7048d298dc3846416f517d:1–55`. Its sole native positive is the
+prepare at `:54`, SHA-256
+`302EFE97AF8E029C0B0773CB10B97E57E79535C2C7377227F7235288C2B5E278`;
+prepare qualified only the bounded site, not a built entity or oil output.
+The first candidate path stopped with zero commits after three shore-risk
+samples (`40538328c781423a974f7127a447cc7e:1–7`). The failed Move receipt
+`51d7711d6d764a788236c5d8cabd7663:22/39` records 180 ticks of
+`position_stalled`; that accepted failure was not replayed. After root reviewed
+the rejection, the sole writer used the other bounded route: two Moves then
+completed, with one successful save. The window closed at save tick
+`94806691`, `R14/J100`; session and resource observations followed at
+`94806694` and `94806698`. These are separate observations, not one same-tick
+cut. External accepted is `9`, lifetime `159`; the save covers all nine
+accepted actions, with no unknown or in-flight action.
+
+The initial read caller expected a top-level `kind` on a list-page response;
+that field is absent. It stopped locally after three successful reads,
+including completed Iron. After root reviewed the original Iron evidence, the
+sole writer executed only the still-unread Copper and closing session/Journal
+suffix. Together the sequence contains six successful reads, one caller-shape
+failure, zero native rejections and zero writes; Iron was not replayed. This
+was a local response-shape issue, not an unknown Game outcome.
+
+The approved scope prepared one extractor in inventory and completed the
+bounded moves; it did not place the extractor, produce oil, restart or deploy.
+The broader repair remains `executable=false`. The next unresolved design
+question is the complete crude-oil → net-hydrogen → deuterium supply budget,
+including sharing with legacy fuel, plus the necessary transport hard
+interface. No full-source allocation or sustained supply is established by
+this preparation. Provider-level usage remains unknown.
+
+#### Current coupled source and power observations
+
+The current source cut is `6435691f315447698b885df9e03f36ee:1–16`: 43
+objects at game tick `94827102`. The 133-generator read is a separate tick
+(`94827121`), as is the single 600-tick production point (`94827144`); the
+closing session observation is `94827162`. These are not one same-tick cut
+or a continuous production window. Root's independent audit is
+`008f016c3d284e2183e3d3cf1cbd011c:1`, SHA-256
+`C7A1C19019F90075410BC104C0739C5A48938967A7C30518CA00380E504C19C2`.
+Save remains tick `94806691/R14/J100`, external accepted `9`, lifetime `159`;
+the latest observation `94891447` is not a new save. No accepted action was
+added by these reads.
+
+The two existing oil producers' current theoretical ceiling is
+`15.744960308/min`; `18.147360/min` is an earlier theoretical estimate, not a
+measured sustained rate or the current ceiling. The isolated 600-tick point for `1007` read P/C
+`2/0`, not a continuous rate. At `3965/r58`, graphite output is `20`, direct
+evidence of an output blockage at that read. Gross hydrogen circulation is
+not net hydrogen available to deuterium and legacy fuel.
+
+Two zero-write power reads have narrow scope. `48fbea68a7de453d9b5b5413aca087db:1–5`
+shows the same-source coordinate assumption for `2303` is not covered; it is
+not a positive oil-site power qualification. `36ae911a24b642498170181a2d9c2069:1–5`
+reads N3 budget at the occupied coordinate of existing `5329`, under the
+hypothesis of adding one `2303`; that coordinate is site-blocked. This is a
+budget read only, not a build/placement positive. Capacity is
+`1,878,000 J/t`, reserved `1,804,700 J/t`, export `0`; under an assumed added
+load of `4,500 J/t` (`270,000 W`), modeled remaining capacity is
+`68,800 J/t`. Combined independent power audit:
+`274d14c38f4c49ec88c63d89978622f0:1`, SHA-256
+`2753FCCA3DBF014C38AEE099059AF712B02CC1469473C8EA5514A2DB42746384`.
+The assumed added unit is not a placement positive, and nameplate/point-in-time
+capacity does not prove sustained fuel supply.
+
+Accordingly, the current observations do not close full crude-to-net-H-to-D
+allocation or its sharing with legacy fuel. The new well remains unbuilt and
+unmined; whole-source allocation, finite-buffer exclusion and Gate 2 remain
+false. Do not treat these separate point reads, output buffers or conditional
+power arithmetic as stable supply evidence.
+
+#### Downstream native-slot observation
+
+Read-only originals `cd1da6dd64054d75ae05be9d56ffc3c5:1–6` show the native
+slot layout of `3964`: physical slots `0/1/4/6/7/8` are empty; existing
+connections remain at slot `2 → 4181`, slot `3 ← 4193`, and slot `5 → 4180`.
+The separate `3996` detail contains only four virtual poses with `slot=-1`
+and `occupied=null`; these do not establish physical-slot availability.
+Root's independent audit `c43956056f55496cb2c90a1bed5bad3f:1`, SHA-256
+`C61A5FA10F5C1837468765860C299EF486DDD94CC7CABCDFA3EEEDA79FC134A3`, confirms
+the `3964` configuration and endpoint hashes match the preceding 43-object
+cut. Save remains `94806691/R14/J100`, external accepted `9`, lifetime `159`;
+the slot-read bracket's observation was `94891447`, not a new save. The later
+prepare-only observation is recorded below. This only identifies downstream
+candidates: native placement, a new route and whole-source supply remain
+unqualified.
+
+#### Follow-up prepare-only rejection
+
+The later `r8×3` prepare-only request is recorded in original
+`7b1fc4836a7c477c8f83b751524042f3:1–7`: seven native requests over
+1538.4 ms, with zero commit, ending `ACTION_REJECTED`. Native did not return
+an item-level breakdown, so the specific missing-material cause is unknown.
+The same observation bracket remained `R14/save94806691/J100`; inventory
+count, increments, slot counts, empty hand and empty handcraft queue were
+consistent in the read. Latest observed tick was `94930594`. External accepted `9`
+and lifetime `159` did not change. Root's independent proof is
+`131737cbbb914ec298479c7562536c72:1`, SHA-256
+`E942BA4DEF87FA7FAA62F8F9626351041564E96ACF30EE41239BE02340032634`.
+
+Runtime recipe catalog `643569…:4` gives only a paper-input estimate for
+three power towers: iron `1101` ×6, magnet `1102` ×4, copper `1104` ×2,
+leaving one coil in the batch estimate. This is not a native shortage
+diagnosis, inventory reservation or authorization. The prior bounded
+qualification-preparation authorization is consumed; additional gathering,
+tower handcrafting and short moves remain unapproved. The overall plan stays
+`executable=false`.
+
+#### Static crude-to-graphite route reachability and conditional balance
+
+Root's original static trace `f408dec59d4e4c01b7b76c24f7418660:1`, SHA-256
+`D01B09616B34444338E1B8B265DDC2E3CE03C038B9100FAFD3024F9EC2BAAB59`, uses
+the immutable 5945-entity capture: 60 nonempty pages share snapshot tick
+`94667688`; a separate empty 61st response at `94668684` is not part of that
+snapshot. The 43-object overlay at tick `94827102` checks identities, items,
+recipes, pick/insert/filter and connections only. Its configuration hash
+includes dynamic buffers and is not a static-only hash.
+
+The traced routes show refined oil from `3964` outlet `4180` first reaches
+`3965/3966` (`r58`). Their graphite outlets `4185/4189` can reach `3404`
+(`r103`) and existing thermal generators `3058/3060/3062`; `3083` outlet
+`3123` can reach `3059/3061/3063`; `3084` outlet `3122` can reach `870→869`
+and the same thermal group. `3404` SMA connects only to fuel-rod assembler
+`3403/r41`. These are directed static paths, not evidence of present receipt,
+continuous consumption or exclusive allocation; all known thermal branches
+are retained in the trace.
+
+Conditional recipe balance: if all refined oil feeds these two `r58`
+consumers, with `p` `r16` cycles and `x` `r58` cycles, then `x=2p`, net H is
+`p+x=1.5x`, and graphite output is `x`. Supplying only the target 20 H/min
+for 1210 would therefore require at least 13.333 graphite/min of sustained
+outlet, before adding legacy-fuel or other hydrogen demand. This is a paper
+balance, not a measured allocation or passed supply budget. No thermal,
+storage or branch modification, new route or further authorization is implied.
+
+#### Final normal save and independently sealed ten-write preparation window
+
+The later explicit human permission allows the normal save/ten-write closure
+first, then small qualification materials, normal dependencies for at most
+three power towers, and bounded ordinary movement. It does not authorize
+permanent construction, old-line modification, an extra extractor, stockpiling,
+game shutdown/reload, deployment, or a passed whole-chain plan.
+
+One new save (`fe7d6b5b7dea41e1b17399815ecc3dfd:6-9`) completed the same
+action at tick `94993578`; actual R15 and durable J100 come from native
+readback, not accepted-count arithmetic. Its summary at ordinal10 has SHA-256
+`A47293A3F1649223AEE0CCCFA263CC2D5B1880900134959A8D02E33E8B53BD15`.
+The external window is now10 / lifetime160: nine completed actions and one
+terminal `position_stalled` (180ticks, same failed target never replayed).
+Normal-save wall time was1919.423ms; save availability is not a restart test.
+
+The complete capture `6d905e717f8649578b110c7cb53a2569:1-85` contains60
+nonempty immutable pages at tick `94998720`,5945 unique built entities and
+11620 directed connection records. The separate prebuild read at ordinal65,
+tick `94999401`, returned0 and no next cursor; it is not a 61st immutable
+entity page. Eighteen explicit material/production details, player and power
+were also captured. N3 served its observed362038J/t in full, capacity1878000J/t;
+this point observation does not prove sustainable fuel or supply headroom.
+The capture's Journal is ordinal63, not a closing Journal. A separate bounded
+closure `50f92ae3fa564ff48b1f2e17b790db4a:1-2` verifies durableJ100 with
+no pending/error, then the same healthy owned session at tick `95017029/R15`,
+normal-save tick94993578. This supplemental closure performed two reads and
+zero writes,865.6ms. No game restart or Host-survival test was performed.
+
+Root reused this capture and the old sealed baseline without new game calls.
+The strict shared comparator initially rejected the native DTO's null
+`materialInventoryCut`; [IFX-063](../../incident-fix-log.md#ifx-063--工厂审计调用方拒绝共享dto的空库存切片占位)
+records the minimal caller fix and21 direct regressions. The replay reports
+zero added/removed/static changes/nonreciprocal edges,199 dynamic changes;
+it does not ignore populated cuts or unclassified fields. Backpack count/inc/
+slot totals and held item remained conserved after the already audited
+preparation; the single extractor remains in inventory, not built.
+
+Independent root proof `1566ad31222d485c8db4e5d8c6df3c94:1`, SHA-256
+`9840082AFD4241FE8BF04C019F70BA5328172ECFAB7943742F0CEECBD63E3B79`,
+binds all ten original commit/terminal pairs, prior material/move proof hashes,
+normal save, owned identity, Journal, complete factory/configuration/edges,
+inventory and explicit production/power observations. All indexed actions are
+terminal, with no unresolved intent/unknown/replay; session DTO itself does
+not advertise an in-flight field. Audit-only local processing was69119.065ms,
+zero game calls/writes. Source HEAD was`8b86288`, installed cohort remains
+`b1557bb`, native`0.10.35.29104`; no binaries were changed or deployed.
+Provider-level token usage is unknown. This is not a new-oil output, a complete
+1210 automatic source, a continuous-production window, or a restart proof.
+
+External10 remains frozen until the phase commit/push, its exact green CI
+and root's explicit new-window handoff. No game revision/tick/Journal/identity
+is reset by that external bookkeeping.

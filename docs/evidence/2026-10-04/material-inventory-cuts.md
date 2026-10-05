@@ -895,6 +895,88 @@ qualification-preparation authorization is consumed; additional gathering,
 tower handcrafting and short moves remain unapproved. The overall plan stays
 `executable=false`.
 
+#### Raised lateral qualification and current whole-chain budget
+
+The next candidate was redesigned against the complete 5945-entity snapshot,
+not offset from the rejected descent. An offline ground continuation would
+cross 4215 and approach 3402; it was rejected without a Game request. The
+chosen elevated lateral span crosses both retained rows and the return column
+before descending on the consumer side. Static advisory `466c86…:1` is not
+native placement evidence.
+
+Run `c898d01722714dd7aa2557861c7e0d91` made 16 native reads in 3784 ms:
+544/yaw180 placement at ordinal5, uphill 21 points at7, elevated lateral
+17 points at9, downhill 7 points at11, and consumer-inlet preview at14 all
+passed. The latter is tokenless, `prepared=false`, `commitAllowedNow=false`:
+3964.slot1, filter1007, quarter-turn3, five planned points and one 2011
+preview. Independent root proof `2ad9ec2d6cc34d68a1d20d7e24e5c041:1`, SHA-256
+`AC48955F528285441639148FC855555B33F98B53D70102B9C4EB212EC877BB5D`,
+checks all original reads and unchanged inventory. Intentional future-join
+gaps remain between the separately qualified empty spans. No endpoint was
+cropped, no actual-ID join or complete joined-site preflight was claimed,
+and no prepare token was persisted or used.
+
+The following current source/material budget reused the existing coupled
+read-only caller, with the declared accepted value corrected to7 rather than
+the historical9 in its intent/summary. Run
+`763db041702e456c93d5beb2ac015428:1–16` made 14 native reads in 9853 ms:
+S/J, runtime recipe/build catalogs, one explicit 46-object material cut, two
+immutable generator pages, production/power, the two retained oil nodes,
+player and closing S/J. Root proof `356330415261450086cfde9513c7dd46:1`,
+SHA-256 `CBB0A50CE5CA84455BD4B8986CA09C050D400D6CB853AB9463716DE8483414F5`,
+checks exact ordinal/method/hash coverage, all selected same-tick objects,
+units, 133 unique generators, recipes and backpack/held-item continuity.
+
+The 46 selected objects have zero static-field differences against the
+complete snapshot at94998720; 40 dynamic field differences are retained.
+An initial offline root assertion incorrectly used `FactoryConfiguration`
+as a static-only hash. Source shows it includes buffers; 11 such hashes
+changed during production. Reusing the existing classified static/dynamic
+evidence fields corrected that caller false blocker without ignoring fields,
+changing Plugin semantics, repeating a Game read or claiming a current full
+factory audit.
+
+Whole source–route–endpoint proposal, **not executable authorization**:
+
+| Portion | Sources, direction and consumer | Budget/qualification boundary |
+| --- | --- | --- |
+| 1127 inputs | 883/r99 produces1206 from1204+1104+1123; 1500/r1→1511 supplies1101; 3073/r40→3076→3074→5736/5735 supplies1121 to5326/r104 | Existing item-aware eleven-pair static proof retained; selected current input buffers1206=4/iron=4/D=2. Preserve3074 outputs3081/3075/3405; no exclusive allocation claim. |
+| Diamond | 5187/r17 coal→1109 through the existing route to5334/r60→1112 | Current graphite output100 and Diamond output100 are finite buffers. Runtime1123 is **graphene**, not Diamond feed; 869/r31→883 is its automatic role. |
+| Lens and1210 | 5326/r104→1127 plus5334/r60→1112→5333/r101→1209→5329/r78→5364→ordered29belts→5365→5331 | Retained reciprocal source/sink paths, recipes and filtered sorters are not rebuilt. Final stock2249 does not prove fresh or continuous1210 production. |
+| New crude | 544→new2307 actual outlet→short empty stub→2011/filter1007→northern ground spans→qualified raised lateral spans→consumer preview→2011/filter1007→3964.slot1 | Preserve old4193 and all3964 outputs. Join independent empty spans before admitting cargo. Actual source ID/port, shortened-ground full native prepares and all same-shell covers are fresh post-build gates, not already passed. |
+| Materials/site | Forecast ceiling2307×1/2201×3/2001×164/2011×2; backpack1/3/28/7 | Short136 belts: recipe84×46 yields138; gear recipe5×46 plus direct iron costs138 iron. Backpack37 + additional101 from1511 current3000 can fund the forecast. Nothing transferred/crafted; exact NEW join bill/reservation and complete site are unproved. |
+| Power/logistics | Three previously qualified pole sites extend existing N3; source and two2011 estimated14600 J/t | N3 capacity1878000, retained full-base reserve1804700, conditional headroom58700. Individual pole positives are not joint-network/fuel-continuity proof. No towers or new types. |
+| Production/allocation | Isolated1210≥1/min needs1206×2, iron×2, D×10, Diamond×4, Lens×1; underlying netH≥20/G≥10/acid≥2 per minute | r58 gross3out/2in means net1, not3. One r16 plus two r58 conditionally yields at most netH45/G30 from raw30/min, only with real drains/inputs. Legacy fuel demand remains unknown; rated upper and point0/0 cannot be used as actual demand. |
+
+Current stock point at95435529: 3073/r40 input H7 (batch requires10),
+output D0; 5326/r104 input D2 (requires10), output1127=0; 3074 empty;
+3965/r58 graphite output20; 870 graphite1278/acid100; 883 output1206=10.
+The separate production point95434984–95435583 (600 ticks) records
+P/C1007=4/2, 1109=5/3, 1114=4/3, 1120=5/7, and
+1121/1123/1127/1205/1210/1802=0/0. These do not establish source attribution,
+steady fuel demand, buffer exclusion or sustained supply. N3 point
+195827/195827 J/t, ratio1, is not a fuel-stock or continuous-power observation.
+
+Both new read-only runs are consumed: zero accepted/commits/writes, no
+unknown/in-flight/unreconciled action; root made zero Game calls. Source
+HEAD `1672aeea47a63aa075ec0f204a14adb7ab83e700`, installed cohort `b1557bb`,
+native29104, 64 tools/1 resource unchanged. Latest closed observation
+95435606/R24; normal save95141009/J100, external7/lifetime167 unchanged.
+Natural post-save production is not saved progress; no restart was performed.
+
+Execution remains `false`: future source outlet/joins and netH/graphite/old-fuel
+allocation are open. The preparation-only exception is consumed. A new human
+decision was requested only for three already-qualified poles and one
+extractor using existing backpack stock, respecting ten-write windows; it
+has not been confirmed or executed. No new trunk, bulk procurement, old-line
+edits, lifecycle test, save load or other Gate follows from this evidence.
+After any separately authorized build, require actual source working/output,
+3964 raw receipt, H→D→1127→Lens→fresh1210; then three disjoint600-tick startup
+windows, normalSave, protectedrestart and renewed output. Joint36000-tick
+acceptance remains deferred until that Gate end; partial/finite-stock output
+cannot substitute. Caller/model usage and comparable end-to-end timing are
+unknown; the two native wall times are not a speedup claim.
+
 #### Static crude-to-graphite route reachability and conditional balance
 
 Root's original static trace `f408dec59d4e4c01b7b76c24f7418660:1`, SHA-256

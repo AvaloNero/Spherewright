@@ -1786,3 +1786,11 @@
 - 修复：边界显式-1.0/1.0、浮点累加，游戏读取前增加60°已知向量自检，并修正另一只读路径helper的同类clamp。
 - 验证：raw-9f49ba0c三对端点得25.959°/1.081°/44.205°；raw-80bc4404独立原生prepare接受1582→2311，1583拒绝保留。没有放宽产品阈值、重放失败commit或执行额外Move。
 - 状态：`fixed_local_helper`；关联EXP-248、存档日记001。辅助结果仍不能代替原生准入。
+
+## IFX-063 — 工厂审计调用方拒绝共享DTO的空库存切片占位
+
+- 首见：2026-10-05，十写封窗后复用完整工厂快照时，`SpherewrightFactoryEvidence.ps1` 报 `Unclassified snapshot field: materialInventoryCut`；本地投影中止，没有再次采集或游戏写入。
+- 根因：当前 `FactoryEntitySnapshot` 已有 detail-only 可选字段 `MaterialInventoryCut`，普通列表返回 null；共享审计调用方的严格字段分类未同步。不是游戏动作失败、版本漂移或工厂变化。
+- 修复：仅允许该字段缺失或 null 占位，投影保持不变；任何非 null 值（包括空对象、空数组）明确拒绝，不能丢弃真实库存切片或放宽其他未知字段检查。
+- 验证：实际 `pwsh` 的21项直接回归通过，零游戏调用。复用原快照 `dabf773d60f0472baa9d1bc61ec0b806` 与 `6d905e717f8649578b110c7cb53a2569`，各5945实体：新增/删除/静态变化/非互反边均为0，动态变化199项；这只是原件离线比对，完整十写独立验收另见本阶段证据。
+- 状态：`fixed_offline_preserved_evidence_replayed`；无Plugin/MCP程序集、安全或动作语义变化，不需要部署；未据此声称生产、重启或版本验收通过。

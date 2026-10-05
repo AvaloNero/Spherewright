@@ -2,7 +2,7 @@
 Set-StrictMode -Version Latest
 $script:swFactoryStatic = @('objectId','itemId','objectKind','componentKind','position','rotation','connections','recipeId','forceAccelerationMode','filterItemId','storageConfiguration','powerNetworkId','resourceNodeIds','pickTargetObjectId','insertTargetObjectId')
 $script:swFactoryDynamic = @('isWorking','progress','progressRequired','powerDemandPerTick','powerServeRatio','buffers','tankFluidCount','beltCargo','inserterStage','inserterStackCount','requiredBuildItemCount','constructionProgress','sorterEndpoints')
-$script:swFactoryMetadata = @('sessionId','planetId','name','recipeName','filterItemName','capturedAtGameTick','stateHash','stateHashVersion','configurationStateHash','configurationStateHashVersion','endpointStateHash','endpointStateHashVersion')
+$script:swFactoryMetadata = @('sessionId','planetId','name','recipeName','filterItemName','capturedAtGameTick','stateHash','stateHashVersion','configurationStateHash','configurationStateHashVersion','endpointStateHash','endpointStateHashVersion','materialInventoryCut')
 $script:swStationStatic = @('planetId','entityId','stationId','galacticStationId','buildingItemId','position','isInterstellar','isCollector','isVeinCollector','powerNetworkId','energyCapacity','maximumChargeEnergyPerTick','maximumChargePowerWatts','warperCapacity','droneCapacity','vesselCapacity','droneTripRangeRaw','vesselTripRangeRaw','includeOrbitCollectors','warpEnableDistanceRaw','warpersRequired','droneDeliverySetting','vesselDeliverySetting','pilerCount','droneAutoReplenish','vesselAutoReplenish','remoteGroupMask','remoteRoutePriority')
 $script:swStationDynamic = @('powerServeRatio','energy','requestedChargeEnergyPerTick','requestedChargePowerWatts','warperCount','idleDroneCount','workingDroneCount','idleVesselCount','workingVesselCount','neededItemIds')
 $script:swStationMetadata = @('sessionId','buildingName','capturedAtGameTick','stateHash','stateHashVersion','configurationStateHash','configurationStateHashVersion','fleetStateHash','fleetStateHashVersion')
@@ -48,6 +48,13 @@ function New-SpherewrightFactoryEvidenceView {
                 $entity.capturedAtGameTick -ne $first.capturedAtGameTick) { throw 'Duplicate/mixed entity identity.' }
             foreach ($field in @('position','rotation','connections','resourceNodeIds','buffers')) {
                 if ($null -eq $entity.PSObject.Properties[$field] -or $null -eq $entity.$field) { throw "Required snapshot observation unknown: $field" }
+            }
+            # The shared native DTO carries this optional wrapper on ordinary rows.
+            # Only a null placeholder is row metadata: never silently discard a
+            # populated selected-stock/cargo cut or mistake it for a factory page.
+            $materialCut = $entity.PSObject.Properties['materialInventoryCut']
+            if ($null -ne $materialCut -and $null -ne $materialCut.Value) {
+                throw 'Populated materialInventoryCut is not an immutable factory entity row.'
             }
             $known = $script:swFactoryStatic + $script:swFactoryDynamic + $script:swFactoryMetadata + @('logisticsStation')
             foreach ($property in $entity.PSObject.Properties) {

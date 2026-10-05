@@ -23,6 +23,25 @@ $after=New-SpherewrightFactoryEvidenceView -Pages @($b) -ExpectedEntityCount 2
 $delta=Compare-SpherewrightFactoryEvidence $before $after
 Assert-Factory (@($delta.staticChanges).Count -eq 0 -and $delta.dynamicChangedObjectIds -join ',' -ceq '1' -and @($delta.nonreciprocalEdges).Count -eq 0) 'buffer delta separated, exact reciprocal edges retained'
 Assert-Factory (-not $delta.independentAcceptance -and $before.notFreshPreflight) 'derived evidence grants neither fresh preflight nor independent acceptance'
+$plainPage=New-FixturePage 100;$nullCutPage=New-FixturePage 100
+foreach($entity in $nullCutPage.entities){$entity|Add-Member -NotePropertyName materialInventoryCut -NotePropertyValue $null}
+$plainView=New-SpherewrightFactoryEvidenceView -Pages @($plainPage) -ExpectedEntityCount 2
+$nullCutView=New-SpherewrightFactoryEvidenceView -Pages @($nullCutPage) -ExpectedEntityCount 2
+$sameProjection=$plainView.entityCount -eq $nullCutView.entityCount
+foreach($id in $plainView.entities.Keys){
+    $sameProjection=$sameProjection -and
+        ((ConvertTo-SpherewrightEvidenceJson $plainView.entities[$id].static) -ceq (ConvertTo-SpherewrightEvidenceJson $nullCutView.entities[$id].static)) -and
+        ($plainView.entities[$id].dynamic -ceq $nullCutView.entities[$id].dynamic)
+}
+Assert-Factory $sameProjection 'missing and null material-cut placeholders preserve the exact same projection'
+foreach($cutKind in @('populated','emptyObject','emptyArray')) {
+    $cutPage=New-FixturePage 100
+    $cut=switch($cutKind){populated{[pscustomobject]@{capturedAtGameTick=100;selectedObjectIds=@(1)}}emptyObject{[pscustomobject]@{}}emptyArray{,@()}}
+    $cutPage.entities[0]|Add-Member -NotePropertyName materialInventoryCut -NotePropertyValue $cut
+    $rejected=$false
+    try{New-SpherewrightFactoryEvidenceView -Pages @($cutPage) -ExpectedEntityCount 2|Out-Null}catch{$rejected=$_.Exception.Message -ceq 'Populated materialInventoryCut is not an immutable factory entity row.'}
+    Assert-Factory $rejected "$cutKind material-cut wrapper cannot be silently discarded"
+}
 $b.entities[0].resourceNodeIds=@(2)
 $after=New-SpherewrightFactoryEvidenceView -Pages @($b) -ExpectedEntityCount 2
 $delta=Compare-SpherewrightFactoryEvidence $before $after

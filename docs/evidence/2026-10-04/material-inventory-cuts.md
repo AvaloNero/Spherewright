@@ -975,3 +975,210 @@ Provider-level token usage is unknown. This is not a new-oil output, a complete
 External10 remains frozen until the phase commit/push, its exact green CI
 and root's explicit new-window handoff. No game revision/tick/Journal/identity
 is reset by that external bookkeeping.
+
+#### Three-tower qualification materials prepared and normally saved
+
+The prior closure was pushed as `a5da481`; exact-head CI `37281844106`
+succeeded before root reopened the external window at0 / lifetime160.
+The first bounded Move (`61723f860d1d4fa3804e65ee1df0fa83:17`)
+terminated `position_stalled` after180ticks. It counted once and was never
+replayed. Fresh native business prepare already admitted the copper transfer
+at75.042m within the80m build area, so further movement was unnecessary.
+
+Remaining-only run `3b96dd5c0fe64ca2978cf9044d207322:1-42` took16519ms:
+copper2 transfer, magnet4 transfer, normal `r8×3` handcraft and normal save.
+All four new unique actions completed, with no additional Move or construction.
+Native transfer terminals respectively show copper1900→1898 and magnets
+1919→1915; a later copper point read was1899, not1898. That +1 non-atomic
+residual is recorded separately and not attributed or treated as transfer loss.
+Backpack readbacks exactly conserve count/inc and held item: craft consumed
+iron6/magnets4/copper2, produced towers3/coil1, and preserved extractor1.
+The final backpack has iron37, towers3, coil1 and the original extractor1.
+
+Normal save tick95086680 covers external5 / lifetime165; actual closing
+session is95086683/R21, durableJ100 with no pending/error. R21 is readback,
+not an assumption that revision increments once per accepted action.
+Summary ordinal42 SHA-256 is
+`85B73E75172B82B0E5BCA34203F182607BBB01BD3A27D1A5BD148AE3D5A8C0EB`.
+Root independent proof `aff4829868814969bdc093d4bf8be0dd:1`, SHA-256
+`4DA0A13AEDE597B83C4ABCE7AF6D4E6322B76D3F319855DD5612F66FF6424CAF`,
+checks all original coverage, same-action terminals, both exact native transfer
+debits, all backpack count/inc/held deltas, source configuration, owned/save
+and durable Journal. Its final replay took1480.616ms and made zero game calls.
+The action ledger has no unknown, unresolved intent or in-flight action.
+No new full-factory snapshot, restart, oil output or full1210 source proof is
+claimed. Source HEAD is `a5da481`, installed cohort remains `b1557bb`.
+Only bounded hard-interface read-only qualification may follow; all executed
+entries are consumed. Permanent construction remains blocked while the
+whole-chain plan is false. DSP and Steam remain running.
+
+#### Individual power-tower prepare-only site checks
+
+The first bounded caller run `52102b71392b4cb5b8b3d56aeddf7dbc` made eight
+native requests and stopped before request nine. The first tower's native
+prepare succeeded, but the local summary looked for `commitAllowed` instead
+of the response field `commitAllowedNow`; this produced zero accepted actions
+and no write. Root's correction proof is
+`04eaa79391904ddf9a63bd6df1e3e4d4:1`, SHA-256
+`0CC0DCE92F8346170B8B773C1BBDC2CF09DDA3C8663C511AA412D18CCC398B48`.
+
+The remaining candidate suffix `90ec38984e044c128cfb74fee0e559e7:1–14`
+made thirteen native requests in 2497 ms with zero writes; its summary SHA-256
+is `E9628DCB704396D6BC52892B7E2F158DAD2370761C7C83226FD6FEC5B29556E4`.
+Root's independent complete-original audit is
+`40968af78baa43dcb70401ffcc20ccdc:1`, SHA-256
+`950FA5D322245A0ED85131D5D2C3BCCE33B615E00B3B1EF553C8628043F32BA8`.
+The first site's saved snapped geometry was reused, never its short-lived
+prepare token. The three adjacent snapped pole spans measured 20.713,
+20.996 and 20.645 m; the final pole was 7.875 m from the already-qualified
+oil-source placement. Native readback reported a 22.5 m connection range,
+10.5 m coverage and a 0.1 m remaining margin.
+
+These are three individual native prepare positives only. No tower was built;
+there was no joint native network qualification, material reservation,
+operational power or continuous-fuel proof, and no oil-flow evidence. The
+external count remains 5 / lifetime 165 and no accepted action was added.
+Latest observation is `95122753/R21`; the normal-save boundary remains
+`95086680/J100`. The whole-chain plan remains `executable=false`; the next
+blocker is the complete oil route into existing `3964` plus net-hydrogen and
+legacy-fuel allocation.
+
+#### Approach, source/consumer readback and normal save
+
+The subsequent bounded run `3a097d2024ee4ce3a9e798fc6d9f1f17:1–25`
+completed in 9301.593 ms. Its summary at ordinal25 has SHA-256
+`6DD032650A3CF4D93884FC2A0E4CD107E2B6F9D1FAEEB6126F0C9C55521E49AD`.
+The two new unique accepted actions were the 8 m Move
+`74a3fe55-f1ea-4893-8e58-c82732fd929e` and normal Save
+`222b6cbe-c278-4b2b-9618-06b2eca7ccfe`; both reached terminal. Root's full
+original audit is `dd6d4f0c6f514cd6bfa43ba5afef90d8:1`, SHA-256
+`10A7A7DFBD83EC582927D15E78015A3065D973945C601E8537ECF93A63C293C4`.
+It verifies the seven unique accepted actions as terminal with no replay or
+unknown; inventory count/increments and held item were conserved.
+
+Normal-save tick is `95141009`, session readback `R24/J100`; latest observed
+tick is `95141011`. External accepted is `7`, lifetime `167`. No entity was
+built and there was no restart. Node `544` remains unmined but is within the
+actual build area; its fresh `2307` placement had one native prepare positive
+(original ordinal17). This is placement qualification only, not a built
+extractor or oil output.
+
+At existing consumer `3964`, the point read was 78.674 m from that candidate;
+it is recipe `16`, with raw-oil `1007` input count1, hydrogen `1120` and
+refined-oil `1114` output count0, and `isWorking=false`. Physical slots
+`0/1/4/6/7/8` were empty; existing connections on `2/3/5` were unchanged.
+These are separate point observations, not proof of delivered oil or a
+continuous source. The later consumer-side planned-path preview remained
+tokenless and non-mutating; its native route check is detailed below, but no
+route or entity was committed. The full oil → net-H → deuterium / legacy-fuel
+budget remains unresolved.
+
+#### Tokenless consumer-inlet planned-path preview
+
+The first preview `c073d53bc7524cc7b97cf66ffe2dab8a:1–7` stopped with
+`prepared=false`, `commitAllowedNow=false` and `nativeCheckPerformed=false`;
+the local planned endpoint was `planned_endpoint_TooSkew:destination`. It had
+six planned belts and one sorter, zero accepted actions and zero writes. Root's
+geometry diagnosis `0b35f15dd4ae4ee7ae12a30b3431141e:1`, SHA-256
+`CB9BE4BE1597ACBCFBA39A3082A2AFC06BF677362444954386420C99B4440CD8`, confirms
+the current DLL's `Maths.SphericalRotation(position,0)` is local-north and
+independent of path direction: quarter1 faced east while this endpoint needed
+west (quarter3). The last cell was skewed; this was not a native rejection.
+
+The corrected tokenless preview `bbc7e9871d8540b69cb3d0cbcaf22fed:1–10`
+made nine native reads in 1.7865804 s; summary SHA-256
+`22DA9BD64C72DAE55F36FF63DF0581802D61E8C1AADD8D049AD3C8C3872B96AD`.
+It reused returned native snapped points 0 and 4, not seed geometry, and did
+not relax the 11-degree limit. The planned route contains five belts, one
+ordinary sorter and span2; the consumer is `3964.slot1`, filter `1007`,
+quarter3. The planned-path native check returned `nativeCheckPerformed=true`,
+`nativeCheckPassed=true`, `Ok`. It remained a preview: `prepared=false`,
+`commitAllowedNow=false`, no token, zero accepted actions and zero writes.
+
+Root's original-by-original proof is
+`d08d53ec9ac2443798523cf4a26a0fdb:1`, SHA-256
+`81F3DBEDCC61CE99F679C269011969F647F355B1BD396D116A6C6DF60FD980F0`; it
+verified the native points and route response, conserved inventory, and
+continuous session/save/Journal readbacks with zero game calls. At that
+preview's readback, observation was `95176349/R24`; normal save
+`95141009/R24/J100`, external accepted `7`, lifetime `167` did not change. The offline caller smoke is bound
+to script SHA-256
+`F644266ABB2F764A3302675D3845079A5A3831EC49F6A42B9C1DB87F9CD5C75B` and made
+zero game calls. A prior local audit mistook a protected redaction placeholder
+for an issued token; the control fields and `PlanToken=string.Empty` show this
+was tokenless. That caller/audit error caused no game retry or write.
+
+This qualifies only the five-object planned consumer-inlet geometry, not the
+source outlet, intermediate crossings or complete source-to-consumer route.
+It does not build belts, prove a
+connected live route, reserve materials, mine node `544`, deliver oil, or
+close the complete net-hydrogen/legacy-fuel budget. The whole-chain plan
+remains `executable=false`.
+
+#### Latest bounded production point and static-route projection
+
+The production record `1c06ad00…:3` is a single 600-tick window at
+`95216919–95217518`: `1007` P/C `2/4`, `1109` `1/1`, `1114` `2/1`,
+`1120` `4/4`, `1121` `0/0`, `1210` `0/0` and `1802` `0/0`. The theoretical
+upper bound from the current native components of the two existing oil
+extractors is `14.807759761810303/min` (`current_runtime_component_formula_v1`),
+not a conversion of the window count. The actual count conversion is
+production/consumption `12/24 per minute`; neither proves a continuous rate.
+`3965/r58` graphite output remained `20`. Four fusion-buffer
+fields are in `joules_per_tick`; do not sum them as fuel inventory. N3 read
+required/served `342511 J/t`, capacity `1878000 J/t`, ratio `1`, a point value
+not sustained-power evidence. Root's audit of the 25 originals is
+`30160eb93cc74498ad3920cbefea2215:1`, SHA-256
+`8A209BF70F524B30BB09E6AED0756BE2B72A73F06BC9D01FB906622E67DC36A9`.
+
+Two caller-side read issues are not Game failures: `d474…:21` supplied
+`limit=100` where the API maximum is16 and was rejected; after using an
+accepted limit, the caller incorrectly required production IDs in request
+order. The production record was already persisted and audited; only its
+session/Journal closure was supplemented from `5e0fc…`. There was no Game
+write or replay.
+
+Static reachability comes from the immutable 60-page, 5945-entity,
+11620-connection snapshot at tick `94998720`, not from a fresh dynamic graph.
+The first ten pair checks are indexed by
+`49dc7920e8c04cb1b7045ff4e4119cda:1`, SHA-256
+`68ECEF413C07AF399F647C82F695A89F9B22C9A906D366D86FC3C5E1FFA88FDF`; the
+final projection is `e5d1eabf6fe24d6bb54072a27572c32e:1`, SHA-256
+`E07825F15FA50CA310F3A03FD5C58034F3E925C73C456794C42298547219DB9E`. All
+eleven distinct source-to-destination pairs are statically reachable; the
+last/output pair is `5329→5364→ordered29belts→5365→5331`. `5330` is power item `2201`, and `5331`
+is storage item `2101`. This does not prove current receipt, allocation or
+flow. The historical 571-belt construction forecast was already completed;
+it is not new work or a redo target.
+
+The `bbc7…` planned-path preview remains inlet-only. The actual `544` source
+outlet and crossing are not qualified; full source supply, net hydrogen and
+legacy-fuel allocation remain open. At the final readback, observation was
+`95270864/R24`; normal save remained `95141009/J100`, external accepted `7`,
+lifetime `167`. No accepted action, construction or restart was added.
+
+#### Prepare-only double-ramp qualification close
+
+The bounded qualification window made 21 native reads plus two stop records,
+including 6 prepare checks: four positive segments and two overlap refusals. Run
+`1b74b668cfb84182a295622b83c32342` passed three `native_grid` spans of 26/24/24
+points; planned point 23 of its fourth segment overlapped existing belt 4031.
+After an overall redesign rather than a seed nudge, run
+`87da5e34aa1c45e7a526a5c1201242a4` passed the 24-point uphill segment (0→1)
+and refused planned point 3 of the downhill segment (1→0) where it overlapped
+old belt 4034.
+The first close read at tick `95257031` observed existing 2001 belt 4031 and
+its retained `4032→4031→4030` line. Belt 4034's position and
+`4035→4034→4033` line are from the prior snapshot, not fresh reads. The
+21-read audit is `5e0d63f8a3a74b79afaaa92e4aded8ab:1`, SHA-256
+`D672F72752AA539430A17B881678F29DAE22E607773661727F1DD16C59972C95`; final
+session/Journal closure observed `95270864/R24` with save `95141009/J100`,
+external accepted `7`, lifetime `167`.
+
+These were prepare-only segment results: no actual-ID join from the 544 source
+outlet to the consumer, complete joined-site qualification, material
+reservation, construction, oil flow or sustained supply was demonstrated.
+The two same-class overlap refusals are the stop condition: do not try nearby
+coordinates, a fifth segment or a downgraded route. Root will redesign the
+source-route-end path as a whole; this does not reopen the old 11-segment
+chain. Overall executability remains `false`.

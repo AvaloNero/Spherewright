@@ -725,9 +725,10 @@ The tenth action was the ordinary save in run
 (about 1.781 s); summary SHA-256
 `0C4CD30ED8BDF9D34F844DE05B81BF17BAF5C8AB9455F4CA517596F27D81E178`.
 It closed at `R2/J100`, external accepted `10`, lifetime `150`. The later
-owned read ended at `94691576/R2`; durable J100 still refers to save tick
-`94656863`, not the later natural production. No unsaved accepted action
-remained.
+owned read ended at `94691576/R2`. Save tick `94656863` and durable journal
+sequence `100` are separate recorded values; do not treat J100 as the save
+tick. Natural production after that save is not saved progress. No unsaved
+accepted action remained.
 
 Fresh full capture `dabf773d60f0472baa9d1bc61ec0b806` at factory tick
 `94667688` contains 60 pages, 5945 entities, 0 prebuilds, 18 detail records
@@ -735,25 +736,32 @@ and 11620 reciprocal edges (17.844 s). Baseline capture
 `183568336ec7495d87fe7c0137873b70` is tick `90521995`. The audited factory
 structure matches; the only resource-membership delta is the exact subset
 removed from node lists: `1213` IDs `35,42`, `1496` IDs `45,49`, and `2440`
-ID `163`. Iron-99 evidence `Capture5a9f…:3` and Copper-69 evidence
-`73feed…:1–5` (terminal SHA-256
+ID `163`. Iron-99 evidence `5a9fca41cc3b4c6dbb445f223f883725:3` and
+Copper-69 evidence `73feed46141948db85b13d813dcd2de4:1–5` (terminal SHA-256
 `C57C7B95D9DF9E1DA19D93543732C4A09160E54BB0C576D04920508CE2273257`)
 show those IDs are absent from the matching active-product enumerations.
 This exact-subset change is compatible with natural depletion; it does not
 prove global nonexistence or the historical cause/time of depletion.
 
-One bounded read caller used `page.kind` where the response shape differed:
-three successful reads were already retained, the Copper suffix was not
-executed, and the overall six reads ended with one local caller-shape error,
-zero native rejections and zero writes. It was not replayed. This is a
-caller-formatting boundary, not an unknown Game outcome.
+The first read caller expected a top-level `kind` on a list page; that
+response contract has no such field. It failed locally after three
+successful reads, including the completed Iron slice. After root reviewed
+the original Iron evidence, the sole writer executed only the still-unread
+Copper and closing session/journal suffix: six reads in the combined
+sequence, one caller-shape failure, zero native rejections and zero writes.
+Iron was not replayed. This is a caller-formatting boundary, not an unknown
+Game outcome.
 
 This window establishes the ten-action/save closure and a fresh structural
 snapshot only. It adds no live positive for a new oil source, no complete
-1210 source-supply proof, and no continuous-window credit. Targets remain
-1210 at least 1/min, hydrogen 20/min and deuterium 10/min; the actual demand
-of legacy fuel `1802` is still unknown. Whole-source balance and
-finite-buffer exclusion remain false. A narrow qualification-preparation
+1210 source-supply proof, and no continuous-window credit. The previous
+window's measured crude-oil ceiling was `18.147360/min`; net hydrogen and
+legacy-fuel allocation remain unresolved. Node `544` has no native
+qualification positive. Failed candidates `4171/4190` and
+`4172/4029` must not be replayed. Targets remain 1210 at least 1/min,
+hydrogen 20/min and deuterium 10/min; the actual demand of legacy fuel
+`1802` is still unknown. Whole-source balance and finite-buffer exclusion
+remain false. A narrow qualification-preparation
 exception now exists in `AGENTS.md`, but no preparation may start before this
 documentation commit's CI is green and root explicitly reopens it. No
 construction, move, material gathering, long window or restart occurred in

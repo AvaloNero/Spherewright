@@ -1609,3 +1609,69 @@ game shutdown/restart, continuous credit or whole-chain executability is
 claimed. Steam/DSP remain running. Existing3 dirty research/test files are
 preserved outside this repair. Net H/G/legacy-fuel allocation remains open;
 the source qualification exception stays consumed.
+
+## 2026-10-06 / maintenance cohort, normal save, and protected primary recovery
+
+The maintenance source was `d744b8e6eb5b898b9e9484b2209c30380e40ddda`; its
+exact Windows Core CI run `37451961117` succeeded. Same-cohort offline
+validation recorded 2574 tests, 4 Plugin plus 224 MCP files (228 total) with
+matching hashes, 64 tools/1 resource, exact embedded-guide metadata, and
+unchanged native `0.10.35.29104`. These are offline cohort/build facts, not a
+release claim or evidence of a live fuel-state read.
+
+Before installation, the owned primary was normally saved at
+`97255748/R35/J100`. The protected save receipt is
+`03a2455d00234c3a8302a1bf2b5811d4:1–10` plus suffix
+`9af8be2233504290be2e9fa21baf53dc:1`; root audit
+`1dd1ef9b94e548eebe3bf78d066db8a2:1`, SHA-256
+`7D4DC60A4789A1BEA8D6FB7947E7124BC094C0635D65AF66C7047FA386CBB01B`,
+verified the save outcome. Installation receipt
+`a2cf9214ff60409f89d7e6a5a26c8695:1–5` and root audit
+`d11d92119c7442ec9bf03e3994780e81:1`, SHA-256
+`2C1244CE00C33B58AB857501F6EF7BC26D7B0086BF86D0BD0D0570A7645252F4`,
+cover the normal DSP-only close, transactional same-batch install, and new
+DSP process; Steam was retained. No Host-exit survival test, hot replacement,
+or version migration was performed.
+
+The exact healthy owned primary was then recovered through the protected
+default path: `474ac6f2e168439a91b1fef591ea81b8:1–25`, action
+`1944ba01-103b-40be-baf2-fb36e5d70239`, terminal succeeded once in about
+9.8 seconds. Root audit `8adb6d8a85a64525a1b001d235892810:1`, SHA-256
+`5D613A49410716A2E46ABF380FA7F9FD9EA6886E3B6CDB93203EA7A7B669E854`,
+verified same-primary adoption, per-save Journal continuity, preserved player
+inventory, and a renewed healthy ticket. The immediate post-resume readback was
+`R1`, save `97255779`, observed tick `97255792`, durable `J100`; external
+count was `5`, lifetime `175` at that read. The original protected token is redacted, so no
+direct token-byte/hash comparison is claimed. There is no unknown, in-flight,
+or unaccounted accepted action.
+
+The earlier `5946–5949` construction prefix remains valid and this maintenance
+window added no construction, material gathering, handcraft, ZIP, or release.
+The whole `1210` chain remains `executable=false`; this record does not prove
+full source attribution, finite-buffer exclusion, continuous output, or the
+net H/graphite/legacy-fuel budget. The native fuel-state cohort was installed,
+and a later read-only detail batch is now recorded below; it does not establish
+the complete source or rate budget. Steam remains running; the cancelled
+Host-exit test remains unperformed.
+
+### Fuel-state detail after the maintenance deployment
+
+The native detail read `22133b628181495a97f1c53b3c915d80:1–18` returned all
+18 requests successfully; 13/13 selected objects had `state=observed`. Root's
+independent audit is `5ba23771516045c19fc522c5dbe19df3:1`, SHA-256
+`A264E076920B985FED1EF122C1A828D8F4A1593E8550C9E2E95375B0A15E2C23`. The
+read opened at tick `97280023` and closed at `97280181`; it left `R1`, save
+`97255779`, durable `J100`, external `5`, and lifetime `175` unchanged. It
+made no game writes or accepted actions. The detail objects have their own
+capture ticks and are not a same-tick material cut.
+
+The three H-fueled generators `134/183/2516` each reported item `1120` count
+10. Graphite buffers on `3058–3062` were `10/8/10/1/10`; `3063` reported
+buffer count 0, residual loaded energy 1 J, and capacity/generation 0. Four
+fusion units `3079/4227/4229/4230` each reported fuel item `1802` count 10
+with productive loaded fuel and no incremental load. At the observed N3 point,
+capacity was `1878000 J/t`, required/served/generation were `372323 J/t`, and
+ratio was 1; N4 capacity was `10000 J/t`, required `1800 J/t`, ratio 1. These
+instantaneous values do not prove fuel burn, sustained generation, or net H/G
+allocation. The new oil source `5949` remains unconnected; whole-chain
+executability and the continuous budget remain false.

@@ -55,6 +55,13 @@ public sealed class MaterialInventoryCutGuidanceTests
         Assert.Contains("missing/unavailable", guide);
         Assert.Contains("A cut does not prove flow", guide);
         Assert.Contains("Do not stitch different-tick cuts", guide);
+        Assert.Contains("supports only belt, storage, tank, inserter, assembler and miner", guide);
+        Assert.Contains("`power-node` and `power-generator` are unsupported", guide);
+        Assert.Contains("generation in J/t", guide);
+        Assert.Contains("Native `energyCapacity` is a dynamic observation, not network membership", guide);
+        Assert.Contains("approved capacity floor and served ratio", guide);
+        Assert.Contains("Neither value proves fuel stock, burn or continuity", guide);
+        Assert.Contains("does not establish its cause", guide);
     }
 
     public class InventoryBridgeProxy : DispatchProxy

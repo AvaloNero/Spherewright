@@ -1394,3 +1394,137 @@ are model/nameplate
 rates, not measured burn, proliferation, loaded-heat consumption, fuel stock
 or stable demand. A point `P/C=0/0` therefore cannot be used to claim zero
 legacy consumption or to close net-H/graphite allocation.
+
+#### 2026-10-06 one-time source-qualification exception consumed
+
+The previously authorized narrow exception is complete: the third `2201`
+tower (`5948`) and the `2307` oil extractor (`5949`) were built from the
+approved backpack materials, alongside the already recorded towers `5946`
+and `5947`. The root-verified original window `f164f182824f49cfb8205c05e8822c04:1–58`
+contains the two new terminal outcomes and exact material reconciliation;
+there was no replay. The normal-save-only run
+`2898f09523924f379fe548944b301da1:1–10` records save tick `96684808`,
+`R34/J100`; root's independent save audit is
+`e0a2b45e45664e6c9c0d45a80d01e8eb:1`, SHA-256
+`D846C2313C0232E854DC671EBC47DE7FF5FA20D7DDB103BDC632B2FD5E840517`. The
+current external window is `3`, lifetime `173`, with no unknown, in-flight or
+unsaved accepted action. This consumes the one-time permission; it does not
+authorize further construction, bulk material collection, handcrafting or
+changes to existing lines.
+
+The read-only source closure
+`cb9b819e48fe48abb4746e41a8e8753f:1–9` observed source node `544` with
+remaining amount `71473`, extractor `5949` with `50` units of output item
+`1007` in its buffer, and N3 ratio `1`. A separate single 600-tick point
+showed item `1007` production/consumption `2/4`; neither that point nor the
+buffer establishes a continuous rate. The quoted three-source theoretical
+`201.8887/min` is not measured output from the new extractor or proof of
+allocatable supply. The N3 summary's dynamic capacity changed from
+`1914000` to `1878000`; capacity is not a static topology identity.
+
+The native outlet qualification `844161e156264fb2981e60f20c7a32fd:1–9`
+returned a positive `native_device_port` prepare for a six-segment belt path,
+with zero commit. Those belts were not built, and this did not prove an
+actual-ID join to existing refinery `3964` or delivered oil. An unavailable
+`sorterEndpoints` summary field is not evidence that the device lacks a belt
+port. A local summary/capacity classification issue was corrected without
+replaying any game action.
+
+Whole-chain `executable=false` remains. The target's required net-H/graphite
+and acid rates, legacy-fuel allocation, exact shared material/power budget,
+and sustained source-to-consumer flow are not closed; gross r58 hydrogen,
+theoretical source rates, point buffers and a single N3 ratio do not close
+them. No deployment, close, restart or load occurred; DSP and Steam remain
+running, and the user-cancelled Host-exit test was not performed. No additional
+construction or long-window permission follows from this completed exception.
+
+#### Same-stage material and power cut; route preparation pending
+
+The completed point cut `a258aed5e4124496b2c62049e53fd878:1–10` contains 47
+material objects and two complete cargo paths observed at the same tick
+`96728601`; its closing observation is `96728635/R34`, while the latest normal
+save remains `96684808/J100`. Root's independent proof is
+`66c4d82ee6d547e0b73fa134ae2389ea:1`, SHA-256
+`A4562812E367532643817232C8005A5C8DD7159D59FD557157794B98323D1FC4`.
+Observed values include iron `1511=3000`, backpack iron `37`, gear `1202=1`,
+belts `28`, sorters `7`; refinery `3964` oil `0`, `3965` graphite output `20`,
+`3073` H/D `8/0`, `5326` D/strange-matter output `3/0`, `5333` lens `0`,
+`5329` warper `0`, historical `5331` stock `2380`, and extractor `5949` oil
+buffer `50`. These are point stocks/counters, not allocation or sustained-flow
+proof.
+
+The associated single 600-tick point reports P/C: H `7/2`, graphite `2/1`,
+crude oil `2/2`; D, matter, lens, warper and fuel rods each `0/0`. It cannot
+establish stable production or legacy demand. Nine thermal generators and
+four fusion generators are on N3; the sampled capacity was `1914000 J/t`,
+ratio `1`. A conditional headroom calculation is `1914000 - 1804700 - 14000
+- 600 = 94700 J/t`, using the historical base, the installed oil extractor
+and two proposed sorters. This is not measured burn or sustained power. The
+native generator buffer fields are generation in J/t, not fuel stock or
+consumption. The independent native outlet geometry/status verification
+`5354c9f738c94454a2f7f83c96245f1a:1`, SHA-256
+`82D433C3653391905DB047BE419F6AD4CF2E892120C29E14D55D69C1C011C8D9`, does
+not contain or prove the 14 private offline power-checker fixtures. Those
+fixtures are a separate offline result without a public evidence index; neither
+is product/live evidence.
+
+The three-source theoretical ceiling `201.8887/min` is not the new extractor's
+measured rate. Existing target requirements remain net H `20/min`, graphite
+`10/min` and acid `2/min`; gross r58 hydrogen must not be counted as net, and
+legacy-fuel allocation is still open. The rated model earlier in this file is
+conditional, not a measured demand or fuel inventory. Current source, power
+and full-chain budgets remain pending synthesis.
+
+Caller/summary errors were not native game failures: one request stopped
+before dispatch because its entity-ID count was `60` against declared `61`;
+another material-cut request included a generator, which the reader marked
+unsupported rather than empty inventory. The corrected same-tick 47-object
+cut completed. A final local PowerShell summary expression then failed after
+the ten original responses were preserved; they were not rerun. No native
+action was rejected or replayed because of these local projection errors.
+
+Three ground-route spans in `1e064befdd4248288c21dca644fd325e:1–11` were
+independently prepare-qualified at plan costs `21/21/18` (60 total) with zero
+commit; the source-to-outlet preview in `844161e156264fb2981e60f20c7a32fd:1–9`
+cost 6. The later elevated/tail records are
+`f5a98d2af1bb4b9a8d01cfd38e91d915:1–9` and
+`617539832c724e719d13ba4a51dda82b:1–9`: elevated spans cost `21/17/7`, and
+the tail-only preview cost 5, for `116` across separate previews. This is not
+a unique-entity count or a
+joined exact bill: the tail and down-route share their first future anchor.
+The tail's tokenless preview returned native pass/`Ok` for existing
+`3964.slot1`, filter `1007`; the future joins still require fresh actual-ID
+qualification. No route belt/sorter was built, and the forecast ceiling of
+164 belts is not a material reservation. The source port preview remains a
+separate prepare-only result.
+
+The bounded tail read allowance was 8 requests; the executor used 9 because
+of one additional read-only player observation. There were zero writes or
+accepted actions, but the task is `readCapCompliant=false`; this overrun is not
+silently waived. The new ground/elevated/tail prepare set had no native
+geometry rejection and no successful prepare was replayed. A wrapper-layer
+`sorterEndpoints` projection issue and a local summary-expression failure did
+not change native outcomes. Root's independent combined proof is
+`88b9edf932234725a859d4ef358211e4:1`, SHA-256
+`C7E04D9ABD2322A0F9B84752C1F07DF531DAF049599A3D286AE186F7672DB226`;
+latest close is `96766055/R34`, save `96684808/J100`, external `3`, lifetime
+`173`. A separate offline parser check once failed on an unquoted 32-hex key;
+that checker input was corrected offline and caused no Game call. It is not a
+runtime failure.
+
+For budgeting, one r16 plus two r58 cycles imply theoretical net H `45/min`
+and graphite `30/min`, contingent on an actual graphite sink. An r58 cycle's
+gross H output `3` against input `2` is net `1`; gross circulation is not net
+supply. Existing legacy nameplate figures `174 H/min` and `144 G/min` remain
+rated values, not observed burn, inventory or stable demand. The exact shared
+net-H/graphite/legacy-fuel allocation remains open; do not infer a solution
+from the 47-object point cut or native generator J/t fields.
+
+The direct embedded-guide MCP test rebuilt the resource and passed `3/3`; the
+offline package-surface policy passed `37/37`. The first test attempt had one
+text assertion mismatch because Markdown backticks were not included; the
+assertion was corrected to match the embedded text and rerun successfully.
+These are offline documentation/policy checks, not product live evidence.
+The one-time source exception is consumed; after full-chain qualification,
+future execution remains governed by existing authorization and root's
+bounded handoff, without inventing a per-action user reconfirmation gate.

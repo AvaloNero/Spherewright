@@ -648,6 +648,8 @@ internal sealed partial class GameStateReader
                 snapshot.SorterEndpoints = CaptureSorterEndpoints(factory, request.ObjectId);
             if (snapshot?.ComponentKind == "belt")
                 snapshot.BeltCargo = CaptureBeltCargo(factory, request.ObjectId);
+            if (snapshot?.ComponentKind == "power-generator")
+                snapshot.FuelPowerState = CaptureFuelPowerState(factory, request.ObjectId);
         }
         else if (request.ObjectId < 0 && -request.ObjectId < factory!.prebuildCursor)
         {

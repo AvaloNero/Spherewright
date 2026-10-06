@@ -1528,3 +1528,84 @@ These are offline documentation/policy checks, not product live evidence.
 The one-time source exception is consumed; after full-chain qualification,
 future execution remains governed by existing authorization and root's
 bounded handoff, without inventing a per-action user reconfirmation gate.
+
+## 2026-10-06 / shared-budget correction and native fuel observation (source only)
+
+The revised complete source spans and five free join gaps completed in
+`a890cadd4da3429d995e0b05dde9982f:1–25`: exactly25 reads,0 commits,5.6s native
+execution. Root audit `ced9aeaaa5764329bc25fa051fd0f65a:1`, SHA-256
+`78847CE9FC8AAE82059074977F7FAF3E8AA632124D77999A8A3302D181B56696`,
+verifies spans20/20/17/20/16, gaps5/5/5/4/4, inventory conservation and
+unchanged ownership/R34/J100/save96684808. Each future dual-cover join must
+retain at least2 NEW points. The prospective full route123 is a partition
+forecast, not an actual-ID joined bill. Actual cover joins still require
+fresh native checks after their anchors exist. The historical tail9/8 read
+cap violation remains recorded; this newer25/25 task does not erase it.
+
+Root fixed-inlet trace `2f1d1485678646748c83e441f40e071f:1`, SHA-256
+`C42A3C0C3A5FC174993D8ADA6451B7D2A72E2D1F119661483AFDCBCA6A263AAC`,
+uses the original60-page5947-object snapshot at96612508 with reciprocal
+edges and bounded explicit targets. It proves141/707 feed the old H thermal
+branch,3073 receives3964 and four cracker outlets, and three odd-numbered G
+thermal units receive only3083/3084 on their G branches. Inspection of the
+same raw sorter connections also shows3060–3063 have both H and G inputs.
+A current fuel ID therefore cannot prove an exclusive fuel allocation.
+Null filters retain uncertainty; static reachability is not flow or burn.
+
+The fresh budget prefix `25bd4f5f56044577b62a381fac341393:1–6` stopped on an
+unavailable cut: its first9 selected objects were valid, then researchLab256
+was unsupported. This was a root selection mistake, not damaged world state
+or a rejected game action. Power summary at:5 succeeded; an initial writer
+summary incorrectly implied it had not been reached. The remaining-only
+suffix `2657a7ef42e348a29a65f0ff8148d487:1–8` removed onlyLab256 and read all23
+supported objects at96878020. It completed in2.377s,0writes/0accepted; no
+accepted action was retried. Root independently verified all14 original
+receipts, caps, identities, Journal, stock units and exact native recipes in
+`48d5f8297f4f429daa089c50b2cd21ea:1`, SHA-256
+`5D33CA7B6B60327C81C19CD8CFB868D0F6AD43C54BB984D81FF0AD56C75AAE0E`.
+Closing96878035/R34/J100/save96684808/external3/lifetime173 is unchanged in
+write history; no in-flight, unknown or unsaved accepted action is known.
+
+The fresh native catalog proves r5 makes gear1201, not magnetic-coil1202.
+The backpack has iron37,coil1202×1,belt28,sorter7 and no gear1201. The former
+gear1/material forecast was wrong: a164-belt ceiling needs46 r84 batches
+(138 belts) and46 r5 gear batches,138 iron total,101 additional iron. A123
+prospective count needs32 of each batch,96 iron,59 additional iron. These are
+formula forecasts, not fresh handcraft plans or procurement authority. The
+5187 coal-G source's4/min target is correct for Diamond; another6/min G for
+Graphene comes from the cracker branch, giving10/min globally, not10/min
+from5187. R103 uses G1 per ring, and r41 alloy1+D20+ring1 produces2 rods.
+
+The separate600-tick native window96877428–96878027 records raw counts P/C:
+crude2/2,G3/2,refined0/1,H6/3,D0/0,warper0/0,rod0/1.3964 was working;3073
+H7 and5326 D4 were below full batches;5331 had2393 warpers. These are point
+stocks and a short window, not new-oil attribution or continuous acceptance.
+N3 power at the prefix's own tick has capacity1878000J/t,required/served
+141843,ratio1. Its conditionally forecast full-base reserve1819300 leaves
+58700J/t, not proof of sustainable fuel. Window item counts register native
+item events, not continuous heat burn; loaded fuel can keep generating after
+the buffered stack is empty.
+
+This identifies the smallest required code repair: existing
+`inspect_factory_entity` adds detail-only `fuelPowerState` for ordinary
+2204/2211 generators. Current native assembly SHA-256 is
+`6C122E5443E6843979B4064050DFCB5E0D75577A0B64F6AE4111290238B33C12`;
+fresh decompilation verifies public field types and native fuel semantics.
+Only identity-checked scalars are copied on the Unity main thread, including
+separate buffered item count/inc/base heat and residual loaded heat/current
+fuel/productivity state. Buffered and loaded fuel identities may differ.
+No `EnergyCap_Fuel`, `GenEnergyByFuel`, `SetNewFuel` or other mutator is called.
+Invalid/unsupported observations report unavailable with null quantities,
+never fabricated zero. Generation/capacity retain J/t and full-width values.
+No item injection, new tool, action/hash change, material-cut whitelist
+expansion, automatic selector or planner is introduced; lists omit it.
+
+Offline Release validation:52 relatedCore tests and5 MCP tests passed; full
+solution including the native-DLL Plugin build has0 warnings/0 errors.
+Source metadata probe reports64 tools/1 resource,exact embedded guide match
+and0 extra stdout characters; package-surface policy37/37 passed. Native
+fuel observation is **not installed or live-validated**, and no new ZIP,
+game shutdown/restart, continuous credit or whole-chain executability is
+claimed. Steam/DSP remain running. Existing3 dirty research/test files are
+preserved outside this repair. Net H/G/legacy-fuel allocation remains open;
+the source qualification exception stays consumed.

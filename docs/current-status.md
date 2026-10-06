@@ -1,18 +1,18 @@
 # Spherewright 当前快照
 
-更新：2026-10-06（Asia/Singapore）。本页覆盖当前事实；本阶段权威回执索引见[材料库存与恢复证据](evidence/2026-10-04/material-inventory-cuts.md)。阶段进度不等于 Gate 2 通过。
+更新：2026-10-07（Asia/Singapore）。本页覆盖当前事实；本阶段权威回执索引见[材料库存与恢复证据](evidence/2026-10-04/material-inventory-cuts.md)。阶段进度不等于 Gate 2 通过。
 
 ## 当前 owned 状态
 
 - 本阶段从源码 `d744b8e6eb5b898b9e9484b2209c30380e40ddda` 构建并部署同批维护 cohort；精确 SHA 的 Windows Core CI `37451961117` 成功。离线候选回归实际计数为 2574；4 个 Plugin 与 224 个 MCP 文件（共 228）同批哈希匹配，MCP source metadata 为 64 tools/1 resource，embedded guide 精确匹配。native `0.10.35.29104` 未变；没有 ZIP、发布或热替换。
 - 部署前正常保存的 durable 点为 `97255748/R35/J100`。后续仅关闭 DSP，事务安装同批文件，保留 Steam，再恢复同一个健康的 owned primary；没有做用户已取消的 Host 退出存活专项测试，也未做版本迁移。
-- 受保护恢复完成后，最新核验为 `R1`、save `97255779`、观察 tick `97280181`、durable `J100`；external `5`、lifetime `175`。恢复以 healthy exact-primary 原生终态、同一 per-save Journal 连续性及新健康票据核验；原始票据字段经脱敏，未声称直接比较原 token 字节或 hash。无 unknown、在途或未核销 accepted。
+- 受保护恢复完成后的最新只读观察为 `R1`、正常存档 tick `97255779`、观察 tick `97688155`、durable `J100`；external `5`、lifetime `175`。观察未见新的 Game writes/accepted、unknown、在途或未核销动作；没有提交游戏动作。
 - 已完成的 `2201` 电塔 `5946/5947/5948` 与 `2307` 采油器 `5949` 作为此前限定例外的成功前缀保留；本阶段没有新建设、取材或手搓。恢复后的新 session 是回执中的 `R1`，计数按上文实际值记录，不从 accepted 推算。配方核正：齿轮产物为 `1201`，`1202` 是磁线圈；历史预算库存铁37/带28/分拣器7/齿轮0。164带上限估算138铁、补101；123条未来接头预测96铁、补59；这不是精确采购账或取材授权。
 - 最近完整全厂快照为 `80dd28e14adb4206b13c69166abd6805:1–78`，tick `96612508`，60页/5947已建/0prebuild/11620互反连接。它早于5948/5949等新增对象，不能冒充当前全厂覆盖；成功增量看阶段终态和定向读回。
 
 ## Gate 2 边界
 
 - 整案仍 `executable=false`。1210 既有启动、正常保存、受保护重启及恢复后非零正例仍有效。冷部署 cohort 后已完成一次 fuelPowerState 只读详情核验（13/13 state 为 observed）；这是分时点的库存/发电状态，不是同 tick 物料 cut，也不证明燃烧率、持续功率或净氢/石墨/旧燃料配平。新油源 `5949` 尚未连接，整链持续供料与完整有限缓存排除仍未通过；详见阶段证据。
-- 下一直接 blocker 是净氢/石墨/旧燃料分配和完整整链预算。五个span、五个free gap的原生prepare正例为 `a890cadd4da3429d995e0b05dde9982f:1–25`；123个NEW带只是预测账，锚点建成后仍要fresh核实际ID接头，不能裁剪原生点。齿轮是1201而非1202；背包37铁/28带/7分拣器/0齿轮的历史库存只作预测，具体采购仍须fresh预检。
+- 唯一未解决的直接 blocker 是净氢/石墨/旧燃料分配与完整整链预算，整案仍 `executable=false`；当前只读 cut、prepare-only 资格结果及预算边界见[2026-10-07 事件记录](evidence/2026-10-04/material-inventory-cuts.md#2026-10-07-net-hydrogen-and-graphite-budget-blocker-prepare-only-close)。
 - 点库存、短窗 P/C、单台机器状态、额定能力或单个原生 prepare 正例，都不能替代完整 source-to-consumer 连接、稳定产率及材料/功率预算。必要维护长期授权已写入根规范，不延伸为业务永久施工、任意加载或发布授权；整案false期间只做相关只读/prepare-only资格。
 - Steam 保留运行。除本阶段正常保存与必要 DSP-only 维护恢复外，没有关闭 Steam、热替换、重启其他进程或运行 Host 专项测试。

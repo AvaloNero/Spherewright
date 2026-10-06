@@ -1675,3 +1675,49 @@ ratio was 1; N4 capacity was `10000 J/t`, required `1800 J/t`, ratio 1. These
 instantaneous values do not prove fuel burn, sustained generation, or net H/G
 allocation. The new oil source `5949` remains unconnected; whole-chain
 executability and the continuous budget remain false.
+
+### 2026-10-07: net hydrogen and graphite budget blocker (prepare-only close)
+
+This record uses source HEAD `da159788d0c9c798d26cb8b7d5cf0cf8e54bbcd2`;
+the installed cohort remains source `d744b8e6eb5b898b9e9484b2209c30380e40ddda`,
+and native `0.10.35.29104` is unchanged. The latest read-only observation
+was `R1`, normal-save tick `97255779`, observation tick `97688155`, durable
+`J100`, external `5`, lifetime `175`; it found no new Game writes, accepted
+actions, unknowns, in-flight actions, or unaccounted results.
+The four backup hydrogen inputs `3069–3072` still use filter `1120`; their
+routes are `3065→3060/3061` and `3066→3062/3063`. Hydrogen remains allowed on
+those routes, so the existing six graphite power stations cannot be attributed
+to graphite-only fuel use.
+
+Changing all four input filters to graphite `1109` passed native prepare-only
+validation against the actual Core request hashes. The input-route read is
+`dec5e74cbbde4b729781037226bfd094:1–9`; successful `3069` prepare prefix
+`65b4988613bc4f169af74da5283a74c3:1–5`, and remaining three items
+`09c3a87c05fe4d479b05ebe3f65dd3fa:1–11`; none was committed and no token was
+retained or reused. The first caller misread a missing `sessionId` field after
+the successful `3069` prepare; it caused no commit and that prefix was not
+repeated. A later DTO fixture ruled out the misread. Exact native
+`PowerSystem` ratio scheduling also rules out assuming wind is dispatched
+first or legacy-fuel consumption is zero. The six additional graphite
+generators remain a conditional model only: sites, wiring, actual fuel
+allocation, and the complete budget are unverified. The predicted
+`220000 J/t` envelope is unproven; the observed maintenance point of
+`372323 J/t` remains material. Six units are not established as final or
+minimum construction.
+
+Root independently audited the fuel model, bindings, and inventory in
+`9e2868fadf7c41adb66dc06ebe832bb4:1`, SHA-256
+`A6DEAECCEFC5EBB3988CDAAB259BC799C832D2F68D27DFA74C751666452165C0`.
+The carried inventory was thermal generator `2204` 0, iron 37, stone 156,
+coil 1, gear 0, magnet 0, copper 0, belt 28, and sorter 7. One normally
+recursive `2204` requires 14 iron and 4 stone plus obtaining 4 magnets and 2
+copper; this is not a bulk-material budget. A separate same-tick cut recorded
+magnet 1915 and copper 1900 at captured tick `97688151` in
+`f0b16ec3197b4d399ff165414723e7ee:3`. Root independently audited that cut in
+`9d1737e2f04c4f76b43680206ecf8799:1`, SHA-256
+`FFF9B4E3646F9387BBF98ED51703F72BF68419398548923E60603F9064C0EB84`. The
+81.846 m distance derives only from an earlier player read and proves neither
+fresh material access nor Move eligibility. No new handcraft, Move, or
+material-gathering exception was authorized for this qualification. Continuous
+credit remains 0 and new permanent
+entities remain 0; Gate 2 stays read-only/prepare-only and `executable=false`.

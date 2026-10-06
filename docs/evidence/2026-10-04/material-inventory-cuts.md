@@ -1316,3 +1316,81 @@ H/G/legacy-fuel allocation, a future actual-ID join and exact material
 accounting remain open. No nearby-seed retry, permanent construction, bulk
 material collection or long-window test is authorized by this result; overall
 `executable=false`.
+
+#### 2026-10-06 two-pole source-qualification window close
+
+Under the user's narrow source-qualification exception, two `2201` towers
+were built from backpack stock through separate native actions. They reached
+successful terminals at game ticks `96559201` and `96576481` (306 and 520
+execution ticks). Backpack `2201` changed `3→1`; other inventory, increments
+and held items were unchanged. The N3 node count changed `216→218`; the native
+power table and measured anchors support the new nodes' N3 placement. The
+power-node DTO does not expose its network ID, so its null field is not evidence
+of disconnection. Root's independent two-tower proof is
+`79352a64f8314981b3498440bd814d2f:1`, SHA-256
+`98275CB991F393C071DC2224302B1A5E481392807B1EE4416A5E665C2E1DE619`.
+
+The first tower's read timed out, then the same action was queried to its
+successful terminal; it was not replayed. After the second successful terminal,
+the player snapshot showed construction drones `working=1` and
+`pendingBuildTargets=0` (returning). Existing terminal, entity, material and
+connection checks were satisfied. Existing playbook guidance says ordinary
+next fresh preparation and save do not require all drones to be idle; this was
+not an action failure or a missing shared API. The separate initial save
+attempt used the wrong player-state hash and returned `STALE_STATE` with zero
+commit/acceptance. A fresh revision was then used with the existing normal-save
+path. Root's proof for the stale caller attempt is
+`da47a3e8ec5f4687998ad4b8f9d9f4b3:1`, SHA-256
+`A6E201060B3FDBD499CDC1FD3604DF0C4D35D632E7ADBBF5B6D313E3A11D8D4F`.
+
+The successful normal save is recorded in
+`8cec0b31a20746ba92a2fd61004c5419:1–13`: save action `4def…` completed at
+tick `96611787`, with `R29/J100`. At this point external accepted is `10` and
+lifetime is `170`; accepted actions are terminal, with no unknown or in-flight
+write. Natural production after the save is not part of the saved state.
+
+The subsequent read-only full-factory acquisition is
+`80dd28e14adb4206b13c69166abd6805:1–78`: 60 entity pages, 5947 built
+entities, zero prebuilds, 11620 reciprocal edges, 11 detail reads, factory
+snapshot tick `96612508`, plus a separate prebuild observation at `96613323`.
+Root's ten-write audit is `826763382f2241a0872ec0ec5222f393:1`, SHA-256
+`F0506BC538CEBC4C49DADF9463CBDFCDA43D5D884648D94C2D2BBD0F0E085CC1`;
+the focused diff is `5400616df9044f5387555bb12eb71ad3:1`, SHA-256
+`548539DA38FC7389A9A0DC371E9BB29E3E525FB2CCCC6D511C9F3F75CF41DDC0`.
+The audit found only new entities `5946/5947`, no removed entities and no
+non-reciprocal edges; 216 dynamic changes are retained. Static differences
+outside the exact `resourceNodeIds` subset are zero.
+
+The only static subset losses are entity `1496` (iron ore `1001`, references
+`47/46`) and entity `2440` (copper ore `1002`, reference `172`). The complete
+active-node directory `57807d030c8a492e93ee3b59866ac09a:1–6` reports 97 active
+`1001` nodes at tick `96636294` and 68 active `1002` nodes at `96636306`; all
+retained references are present and the omitted IDs are absent. This is
+compatible with natural depletion, not proof of exact depletion time, actor or
+`remainingAmount=0`. No broader ignore rule was used.
+
+The ten-write ledger has nine successful terminals plus one earlier failed
+Move; all outcomes are resolved, with no replay, unknown or in-flight write.
+The normal save at `96611787` covers the successful accepted work through
+`R29/J100`; later natural production is not saved progress. The latest
+independent observation is `96636320/R29`. No third tower or oil extractor was
+built, and no oil outlet, source-to-consumer join, sustained supply or full
+1210 chain was demonstrated. No deploy, close, restart or load occurred; DSP
+and Steam remained running. The user-cancelled Host-exit survival test was not
+performed. The whole plan remains `executable=false`; the next Game
+write/commit remains frozen pending this evidence commit, its matching green
+CI and explicit root handoff.
+
+#### Rated legacy fuel model (conditional only)
+
+Native base-model proof `0e43f65496974696ae7a441c1c97fe6e:1`, SHA-256
+`4D2E1CF824F7589C64899054747322293DC05D4E2B48AB69849A1C9A9FF9BB69`, gives
+energy values `H=9 MJ`, `G=6.75 MJ`, fuel rod `=600 MJ`. The three existing
+hydrogen thermal generators have a rated total of `54 H/min`; the four fusion
+generators, using the model's `6 rods/min` conversion, add a rated-equivalent
+`120 H/min`, so the conditional legacy-hydrogen total is `174 H/min`, not
+merely `120`. Six graphite thermal generators are rated at `144 G/min`. These
+are model/nameplate
+rates, not measured burn, proliferation, loaded-heat consumption, fuel stock
+or stable demand. A point `P/C=0/0` therefore cannot be used to claim zero
+legacy consumption or to close net-H/graphite allocation.

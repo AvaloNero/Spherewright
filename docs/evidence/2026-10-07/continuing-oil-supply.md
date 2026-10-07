@@ -8,7 +8,19 @@
 
 授权提交 `29fd66b308db40253994835dd074876f8c1ec375` 仅含三份现行授权文档；focused MCP指导17/17、包规范37/37通过，精确SHA的[Windows Core CI](https://github.com/AvaloNero/Spherewright/actions/runs/37573629266)成功。没有为文档修改冷部署或重复部署fuelPowerState。三处原有dirty保留，未混入提交。
 
-## 最新截面：lifetime230的D族返回段十写封窗
+## 最新截面：lifetime240的pole、dry main与三tap十写封窗
+
+R28材料窗口原件 3fa04498f5da4dee896646896db83955:1–76（seal SHA-256 5DD9C9536C8B18B2F9C55D05067004AC9CCB056BBE9D6E9DFDC158B01A6D7BF6）完成4个唯一accepted材料动作。原调用方最终positive=false发生于kit之后的旧对象比较；root只读复核 34786d7e7e7b471e85dd019ec0803079:19（SHA-256 1645B340E1F36053795BA600BF82A53C8E14A047A0FBB76925A396BECDC24BD8）确认6129.sorterEndpoints.capturedAtGameTick从99457972变为99458400是唯一差异，endpointStateHash、端点姿态/占用和燃料未变。四个accepted动作全部完成；pole从未在该原件中prepare或commit。R28b第二pole原件 6d3cf90a443a40eba72976ba59aeaede:1–57（seal SHA-256 61CD82AAC3A6EF751C383A1530B0B821668A22B8E35519570FDE151E656DF7A1）完成新增pole 6161，随后R29原件 fe635b290cbe4c55a4a7f4da21790a83:1–346（seal SHA-256 CABF3D75D6E345F0EB6A66D3A8FC1912F3391AD970AADAD27AF24E341314B63F）324请求完成5笔：main 21 belts、三条tap各2 belts、normal Save。
+
+root独立封窗审计 7a0c87061d884e8ca8b623c5b1425a65:1（SHA-256 D6009D7633D4F7EF68C184CE402B8D942358BCA289A34F82FEB385E2C39F1F62）从受保护原件核销10笔unique accepted全部completed、0 replay/unknown/unpaired/inflight，Save 99483674/R117/J100覆盖全部10笔且Journal 100/100 exact；external 10/10 FROZEN、lifetime 240。
+
+最新完整capture c38240a45bc74992982d1b3eea4afdf3:1–86（SHA-256 FC833C929CA2836F31DAA2E590FA71C4D59B302A9E37F898E8862E333649B76E）为6188 built/0 prebuild、tick 99484808。相对6160基线增加6161–6188共28项：pole 6161、belt 6162–6188共27；0移除、12076条边、0非互反。声明的native源覆盖只在6154的rotation/connections有差异；6156原输入保留且rotation本次未变。main按6162–6182；tap C为6183→6184，A为6185→6186，western B为6188→6187，不可按ID数值排序解释路径。
+
+same-tick cut d80925eaf8844d9b89ba4e06b537e37f:1–13（SHA-256 F26BBAE886F7D165B69E001B8624BC0812EEF558D52748AC5FF13362B49D9A90）位于tick 99485210，109对象（105 belts及4个既有G sorter）、11条完整Native路径全部空货。D族累计105条实际dry belt/106上限、4个实际sorter/14上限、3 thermal/3上限、2 pole/2上限；14个sorter累计工作需求上限为4500 J/t（13普通×300、1快速×600）。N3为224 nodes、545 consumers、134 generators且点读full-serve；三台新thermal仍空燃料、实际capacity/generation为0。source4450仍未admit；旧油路5949→3964、既有filters及煤源/旧机组配置保留。末库存Fe0/gear0/belt1/normal sorter9/fast sorter1/pole0/thermal0/circuit938/brick144/magnetic coil1，inc0、held null。连续供给、共享供需与整合恢复均未验收，整案executable=false。
+
+九个普通接缝已通过prepare-only Native资格：root run `8886c579d68747ebb08f7d60239596b9:1–53`，完成记录 `:53` 文件SHA-256 `293B6A616B1FFDB208B3909CEC37E9972677E7966C765924ACF85CECDFAB155C`，51请求/9 prepare/0 commit，九项均positive，R117/Save99483674/J100及全库存保持精确、source仍未admit。准确SHA绿CI并由root重开后，下一有限阶段为九普通接缝施工并将正常Save留作第10笔封窗动作；fast source admission延至后续窗口并先核下游。
+
+## 上一截面：lifetime230的D族返回段十写封窗
 
 本窗从lifetime `220`推进至`230`。受保护原件紧凑索引覆盖四个run：R17 `5eeccd1d4b2e402e9f805109d1e10349:1–144`（seal SHA-256 `E42244580E6D3021D90E825A9946F6026885C92D30B97DCF38D59F39F082B386`，4笔accepted）、R17 remainder `9f648eb2c501421589cc5cbccb4e9595:1–105`（seal `D1825A382CDA918EEF0FB76ECFB755081CC1FCA93C89A4F069CAF114C85887FD`，2笔）、R22 `cef2c0da5cf743e89513448a84e38291:1–219`（seal `8C745DD0F36E75E0E37E2D1156C2B30E202179BD4F712CF4BD49956DBD2CAA86`，2笔）、R25 `3befe027bced40fc847490d7be6d73c5:1–108`（seal `3D52415DDA1F025FD49AA23C69FABE860DA58B4707CB8FCF11625F706926293D`，2笔）。索引读取328条标准commit/terminal回执，10笔唯一accepted全completed，0 replay、rejected、unpaired、unknown或未决；`newWriteBlocked=false`只描述该回执集合，不替代十写审计。
 

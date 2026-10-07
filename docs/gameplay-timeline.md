@@ -3,6 +3,8 @@
 更新时间：2026-10-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-07 — R28/R28b/R29完成材料包、第二pole、dry main 21带及3条2带tap，正常Save 99483674/R117/J100封存external10/10、lifetime240；root独立审计核销10笔completed、0 replay/unknown并确认Save覆盖全10。D族累计105条dry belt，fresh full capture新增6161 pole及6162–6188的27带；same-tick cut中105条dry belt与4个既有sorter均空货。source4450未admit、continuous供给与≥36000-tick验收仍未通过；下一步为准确SHA绿CI及root重开后的九普通接缝施工+Save10。[lifetime240审计与dry main封窗](evidence/2026-10-07/continuing-oil-supply.md)。
+
 2026-10-07 — 本窗lifetime220→230，普通Save `99414378/R99/J100`，external10/10 FROZEN；四run紧凑索引及独立审计核销10笔completed、0 replay/unknown，Save覆盖全10。capture `440a69d54eda42c78d39995685e11e21:1–86`为6160 built/0 prebuild，较6127基线新增33个实体；same-tick cut的8条Native路径均为空货。新增三thermal实际capacity/generation为0，source4450未admit，shared supply与≥36000-tick门未通过，整案`executable=false`。R25私有nullable-array序列化问题只读核销后局部修复；下一施工仍等准确SHA绿CI及root重开。[lifetime230十写审计与返回段](evidence/2026-10-07/continuing-oil-supply.md)。
 
 2026-10-07 — 备料含从1511取出Fe112至玩家、r5×22、r84×22及Save `99037141/R45/J100`；独立十写审计 `ad29ade6e82b486bb75943d75e45a1aa:1` 通过，10笔unique completed、0 replay，Save覆盖全10。`newWriteBlocked=false`仅指已审窗口，不是新窗授权；下一窗未由root重开。全厂差异核销新增6061–6074共14项、0移除、11872连接/0非互反；玩家备料后Fe46/gear0/belt67/stone156。D族候选仍未施工或通过整链native/持续验收。[备料与审计边界](evidence/2026-10-07/continuing-oil-supply.md)。

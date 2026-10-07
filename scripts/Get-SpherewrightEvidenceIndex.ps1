@@ -23,8 +23,11 @@ foreach ($runId in $RunIds) {
     $files = @(foreach ($family in @('action', 'resume')) {
         Get-ChildItem -LiteralPath $EvidenceDirectory -File -Filter "$family-$runId-*.json"
     })
+    # Descriptive protected evidence labels may end in "commit-intent" or a
+    # response label. Only the exact standard record name is an RPC receipt.
+    $receiptNamePattern = '^(action|resume)-' + [regex]::Escape($runId) + '-[0-9]{4,}-(commit-intent|bridge-response-(commit_[A-Za-z0-9_]+|get_action_result))\.json$'
     $files = @($files |
-        Where-Object { $_.Name -match '-(commit-intent|bridge-response-(commit_[A-Za-z0-9_]+|get_action_result))\.json$' } |
+        Where-Object { $_.Name -match $receiptNamePattern } |
         Sort-Object Name)
     if ($files.Count -eq 0) { throw "No commit/action receipts found for run $runId." }
     if ($files.Count -gt 4096 -or $readRecords + $files.Count -gt 4096) {

@@ -8,7 +8,17 @@
 
 授权提交 `29fd66b308db40253994835dd074876f8c1ec375` 仅含三份现行授权文档；focused MCP指导17/17、包规范37/37通过，精确SHA的[Windows Core CI](https://github.com/AvaloNero/Spherewright/actions/runs/37573629266)成功。没有为文档修改冷部署或重复部署fuelPowerState。三处原有dirty保留，未混入提交。
 
-## 最新截面：G端空带与材料包十写封存
+## 最新截面：G端延伸与材料包十写封存
+
+四个受保护run的紧凑回执索引覆盖 `ee6e78fb84544ffe96fc3a673c8bda1d`、`260fd03cf4a24332ba0eb8c6e9985676`、`a489904c4f774d58959ae6f4d5c9be0d`、`d62aac8ca898411c817f11e8f2ca89cf`，共266条记录：R12的3笔、R14的4笔和R15b的3笔共10个唯一accepted均completed，0 replay、rejected commit response、unknown、unpaired或未决intent。R12原run记录247项，达到240请求观察预算；原调用方只完成前三笔中的前两笔读回。`260fd...`是只读续接，核销第三笔终态。该索引仅覆盖动作回执，索引字段`newWriteBlocked=false`仅描述已审集合；root独立十写审计 `87458dde429e4c05b4ef95bf6d740ef7:1`（SHA-256 `4A379B5C8DCE8580E38E46BE9A9E9919EE0F17FA7ADBEA7CA23C1A24FE7EB6BD`）另行核实全部10笔、Save覆盖全10、Journal 100/100 durable及完整库存/inc/held守恒。窗口为 `10/10 FROZEN`、lifetime `220`，Save `99297127/R80/J100`；封存不构成下一写窗授权。
+
+备料run R15原件 `94e98fbda034403b891e62cb1a2eb278:1–5`只读4次；当时 `get_build_catalog` 不含 `handcraft` 字段，因此没有prepare、commit或accepted。root closure `cf74b71951b940c5a2a6efbf6c31e947:1`（SHA-256 `05004F1A7E7B80DD03EB8966C0DD539AAB77C4561781D4D9DCA241573F4E5689`）记录该入口问题。改用真实 `get_recipe_catalog` 后，R15b `d62aac8ca898411c817f11e8f2ca89cf`完成三笔：从1511取Fe36、r5手搓11件（Fe11→gear11）及普通Save；没有部署二进制。当前玩家库存Fe25/gear11/belt18、`2011×1`、`2012×1`、`2201×2`、`2204×3`、circuit946、inc0、held null。
+
+本阶段D族新建42条实际belt `6082–6123`和4个G sorter：`6124`（`6082→6101`）、`6125`（`6091→6102`）、`6126`（`6123→6081`）、`6127`（`6078→5334` slot 5）；均为`2011/filter1109`，N3点读为full-serve。source `4450`尚未admit，不能据此声称新G物料到达。完整capture `9227907ce1534b708fc6b17c39147510:1–86`（SHA-256 `CCA119A4C382D6C8B951A6E8A4BC179469C90CBDCE99F10320BC6D4B7C52B30B`）为62页、6127 built/0 prebuild、snapshot `99298318`；相对6081基线新增42 belts与4 sorters、0移除、11976条边/0非互反，仅`6081`、`6078`、`5334`三处声明连接变化。完整capture的`beltCargo=null`是detail-only未知，不能解释为空货。另一次same-tick cut `27e2e8a775e142778ed505aa693382c5:1–10`（SHA-256 `AF22FF553EC2DD25B47F2F1D68A6DF7511721F1A4BD784DDF23DC6FF8A3135E6`）在tick `99311737`读取53个对象（49 belts与4 sorters）、5条完整native路径，路径货物均为空；该cut独立绑定R80/Save99297127/J100的末态。旧油路 `5949→3964`及旧`4193`保留，油路累计123条belt/2个sorter。
+
+整案仍 `executable=false`。source4450未admit，共享供需和持续≥36000 ticks均未验收。R16首次9次只读且0 prepare；调用方误将pole的`NetworkId=3`作为硬条件。修正后R16b `5c268e481f6948f694139cb5387f9119:1–20`（seal SHA-256 `AB7AD2725E7F526EB3EED28F875A2A5AD2BCB55AE8E9113FCBA440633E413331`）为17次只读、4次prepare、0 commit/accepted；root独立原审 `f8aca907db92447b8cd32476b29b0032:1`（SHA-256 `2E7C94A21CFC3F75C3AD7F895BC36DBA0C717867C442ED3B664AB7976F91F000`）确认三thermal与一pole各自的单体Native资格均为正例，无原生候选失败，也未发生施工、供料、二进制变化或计数变化；这些单体正例未验证候选同时存在时相互无碰撞。5330实体detail中的`powerNetworkId=null`仅证明物理link长16.014m及未来覆盖≤7.820m；不证明已接入N3，实际Network成员须施工后按差量核实。下一步为fresh施工与实际读回，仍不等于共享供需或最终验收。
+
+## 上一截面：G端空带与材料包十写封存
 
 新G source端按 `[6077,6076,6075]`、consumer端按 `[6081,6080,6079,6078]` 建成7条空货带，共两个唯一build accepted；fresh全厂读回确认两端有向内部边与自由端，尚无G供料、连接中段或新发电机，也没有改filter。R3 source原件 `e05ee4d43a8e4d3a990e3cb425739b65:1–63`（seal SHA-256 `1D8ADEACF00722ADB9D47BE5F65A054AD6055D9291275C751D8E5B0F8B1CC7CD`）初始false仅因returning drone超过15秒调用方readiness timeout；只读closure `9fb255735180400f99ecac1b765d2afb:1–13`（SHA-256 `3AEAF694C55A8C0A49BB8446C5069C91B939FFE7E8EC12CC8B566B7459958AA9`）核销其状态、0写。R4 consumer原件 `dd36c0f7448548dfa6a094e3e6769b61:1–59`，seal SHA-256 `E833B1A6E6E4B75FD0F7926A5A79AB15A20B27F78911B09FFCD9AC94512BD25E`。source接口4461→6077和consumer接口6078→5334的fresh native资格均为positive；surface读回使用planet radius 200对齐，root抽查11点最大偏差0.00001353m，无native失败或commit。此前false来自调用方把raw player radius约200.217直接比较，而非原生拒绝。
 

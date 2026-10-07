@@ -77,12 +77,21 @@ try {
     Add-Fixture 3 'bridge-response-get_action_result' @{actionId='action-one';terminal=$true;succeeded=$true;state='completed';completedAtGameTick=123} '2026-09-30T00:00:02.125Z'
     Add-Fixture 4 'bridge-response-commit_build' @{accepted=$true;actionId='action-one';idempotentReplay=$true} '2026-09-30T00:00:03Z'
     Add-Fixture 5 'bridge-response-commit_save' @{accepted=$true;actionId='action-two';idempotentReplay=$false} '2026-09-30T00:00:04Z'
+    # Actual stage callers also write descriptive notes. Their suffixes must
+    # neither create RPCs nor hide a real unresolved standard commit intent.
+    $noteType = 'r12-dry-build-commit-intent'
+    $notePath = Join-Path $fixtureDir ('action-{0}-0008-{1}.json' -f $run, $noteType)
+    @{runId=$run;ordinal=8;recordType=$noteType;payload=@{scope='dry-build';planToken='fixture-secret-must-not-appear'}} |
+        ConvertTo-Json -Depth 8 -Compress | Set-Content -LiteralPath $notePath
+    $files.Add($notePath)
+    Add-Fixture 9 'stage-bridge-response-commit_build' @{accepted=$true;actionId='descriptive-only';idempotentReplay=$false} '2026-09-30T00:00:04Z'
+    Add-Fixture 10 'stage-bridge-response-get_action_result' @{actionId='descriptive-only';terminal=$true;succeeded=$true;state='completed';completedAtGameTick=999} '2026-09-30T00:00:05Z'
     $indexJson = & $indexScript -EvidenceDirectory $fixtureDir -RunIds @($run)
     if ($indexJson -match 'fixture-secret-must-not-appear' -or $indexJson -match [regex]::Escape($fixtureDir)) {
         throw 'Evidence index leaked a token or private evidence path.'
     }
     $summary = $indexJson | ConvertFrom-Json
-    if ($summary.acceptedUnique -ne 2 -or $summary.replayResponses -ne 1 -or
+    if ($summary.readRecords -ne 5 -or $summary.acceptedUnique -ne 2 -or $summary.replayResponses -ne 1 -or
         @($summary.unresolvedActionIds).Count -ne 1 -or $summary.unresolvedActionIds[0] -cne 'action-two' -or
         $summary.actions[0].receiptWallMs -ne 2125 -or $summary.actions[0].completedAtGameTick -ne 123 -or
         $summary.auditCoverage -cne 'action_receipts_only') {

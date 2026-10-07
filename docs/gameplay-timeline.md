@@ -3,7 +3,7 @@
 更新时间：2026-10-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-07 — 新G source端6077/6076/6075与consumer端6081/6080/6079/6078共7条空货带已建成；R6完成正常移动、有限材料制作和Save `99154541/R62/J100`。独立十写审计 `b89f5ff0426a4a52877381b79affc667:1`确认10笔completed、无重放/unknown且Save覆盖全10；capture `139066f11dec4025ae706ac364138148:1–85`为6081 built、0 prebuild。G供料/中段/新发电/滤镜未做，完整供需与持续验收仍未通过。[空带端点与材料包十写封存](evidence/2026-10-07/continuing-oil-supply.md)。
+2026-10-07 — 最新窗口10/10 FROZEN、lifetime220，普通Save `99297127/R80/J100`；四run紧凑索引与独立十写审计共同核销10笔completed、0 replay/unknown/unpaired，Save覆盖全10。capture `9227907ce1534b708fc6b17c39147510:1–86`为6127 built/0 prebuild；较6081基线新增42 belts和4个G sorter。same-tick cut的5条完整native路径均为空货，source4450未admit；共享供需、完整整链及≥36000-tick验收仍未通过，整案保持`executable=false`。[G端延伸与材料包十写封存](evidence/2026-10-07/continuing-oil-supply.md)。
 
 2026-10-07 — 备料含从1511取出Fe112至玩家、r5×22、r84×22及Save `99037141/R45/J100`；独立十写审计 `ad29ade6e82b486bb75943d75e45a1aa:1` 通过，10笔unique completed、0 replay，Save覆盖全10。`newWriteBlocked=false`仅指已审窗口，不是新窗授权；下一窗未由root重开。全厂差异核销新增6061–6074共14项、0移除、11872连接/0非互反；玩家备料后Fe46/gear0/belt67/stone156。D族候选仍未施工或通过整链native/持续验收。[备料与审计边界](evidence/2026-10-07/continuing-oil-supply.md)。
 

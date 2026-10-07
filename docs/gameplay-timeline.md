@@ -3,7 +3,9 @@
 更新时间：2026-10-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-07 — R28/R28b/R29完成材料包、第二pole、dry main 21带及3条2带tap，正常Save 99483674/R117/J100封存external10/10、lifetime240；root独立审计核销10笔completed、0 replay/unknown并确认Save覆盖全10。D族累计105条dry belt，fresh full capture新增6161 pole及6162–6188的27带；same-tick cut中105条dry belt与4个既有sorter均空货。source4450未admit、continuous供给与≥36000-tick验收仍未通过；下一步为准确SHA绿CI及root重开后的九普通接缝施工+Save10。[lifetime240审计与dry main封窗](evidence/2026-10-07/continuing-oil-supply.md)。
+2026-10-07 — R33将lifetime 240推进至250，normal Save `99543357/R136/J100`封存external10/10；root十写审计核销10笔completed、0 replay/unknown/inflight/unpaired。新增sorter `6189–6197`完成18条互惠端点连接，同tick cut的11条Native路径全空；source `4450`尚未admit。后续R42 fast-sorter Native prepare positive、0 commit；source admission与持续供给尚未通过。[lifetime250主干接缝十写封窗](evidence/2026-10-07/continuing-oil-supply.md)。
+
+2026-10-07 — 上一窗R28/R28b/R29完成材料包、第二pole、dry main 21带及3条2带tap，normal Save `99483674/R117/J100`封存external10/10、lifetime240；root独立审计核销10笔completed、0 replay/unknown并确认Save覆盖全10。D族累计105条dry belt；当时full capture新增6161 pole及6162–6188的27带，same-tick cut中105条dry belt与4个既有sorter均空货。source4450未admit、continuous供给与≥36000-tick验收未通过；随后九普通接缝施工和Save封窗记录见最新截面。[lifetime240审计与dry main封窗](evidence/2026-10-07/continuing-oil-supply.md)。
 
 2026-10-07 — 本窗lifetime220→230，普通Save `99414378/R99/J100`，external10/10 FROZEN；四run紧凑索引及独立审计核销10笔completed、0 replay/unknown，Save覆盖全10。capture `440a69d54eda42c78d39995685e11e21:1–86`为6160 built/0 prebuild，较6127基线新增33个实体；same-tick cut的8条Native路径均为空货。新增三thermal实际capacity/generation为0，source4450未admit，shared supply与≥36000-tick门未通过，整案`executable=false`。R25私有nullable-array序列化问题只读核销后局部修复；下一施工仍等准确SHA绿CI及root重开。[lifetime230十写审计与返回段](evidence/2026-10-07/continuing-oil-supply.md)。
 

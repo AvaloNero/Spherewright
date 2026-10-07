@@ -3,7 +3,11 @@
 更新时间：2026-10-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-07 — 第二个十写窗口完成，external10/lifetime190冻结，正常保存98676748/R28/J100；独立审计6060built/0prebuild/11838互惠边、无未解释变化，油路累计111条。封窗后只读复核6042 gap 2带、6060尾延4带与5949 outlet 6带资格；另有4个NEW belt点的3964 tokenless preview（nativeSpan2），0新增accepted，未重跑通过候选。sorter实体/fresh施工、5949放料、真实供油及长窗仍未证明。[持续授权与新油源接通](evidence/2026-10-07/continuing-oil-supply.md)。
+2026-10-07 — 三个有间隙的600-tick窗口、28对象同tick cut及暖机后20-read复核均零写，continuous credit为0；3965/3966仍有批次输出接纳堵塞。最新单窗数据与fuel点读不能证明连续供给或永久零需求。root与writer正在比较有界完整方案，尚未选定或批准新施工；后续须fresh原生资格。[诊断及候选](evidence/2026-10-07/continuing-oil-supply.md)。
+
+2026-10-07 — 准确SHA CI成功并由root重开后，完成2+4条consumer延伸belt、sorter6067及5949出口6带/source sorter6074；6个accepted均完成并由正常保存98801251/R39/J100覆盖，external6/10、lifetime196。原油1007经两条完整原生货物流路径到达3964/r16 slot1，8次同tick读回观察到插入周期推进；新油路123带/2 sorters。拓扑为6060封存全厂基线加局部原件overlay，不是新的全厂捕获。首次实际到油已确认，连续供给与共享供需诊断仍待验收。[持续授权与新油源接通](evidence/2026-10-07/continuing-oil-supply.md)。
+
+2026-10-07 — 此前第二个十写窗口完成，external10/lifetime190冻结，正常保存98676748/R28/J100；独立审计6060built/0prebuild/11838互惠边、无未解释变化，油路累计111条。该封窗时只读复核6042 gap 2带、6060尾延4带与5949 outlet 6带资格；另有4个NEW belt点的3964 tokenless preview（nativeSpan2），0新增accepted，未重跑通过候选。当时sorter实体/fresh施工、5949放料、真实供油及长窗仍未证明。[持续授权与新油源接通](evidence/2026-10-07/continuing-oil-supply.md)。
 
 2026-10-01 — 紫糖供料路线十写审计完成，保存82810176/J96 durable，closing82812633/R50；accepted10/10仍FROZEN，待绿CI和root交接。三段间隔窗口的星球104原生6004生产/消耗为0/1；已确认4743缺1402，待核其上游原因。不代表连续36,000 ticks或实际重启。[紫糖供料十写审计与持续产出诊断](evidence/2026-10-01/purple-supply-ten-write-audit-and-output-diagnostic.md)。
 

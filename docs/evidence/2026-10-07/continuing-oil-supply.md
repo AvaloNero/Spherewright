@@ -22,7 +22,7 @@ R25结束时私有caller将nullable空数组序列化为`[null]`并停止。root
 
 施工前资格和候选仍需按范围区分。R18–R23没有新增accepted；两次旧`6080` south-head失败后退役，mixed-climb被Native拒绝而R21 descent未尝试。R19 pure climb、R20b三个port-2 tap分别通过单体Native资格。R22 free-return虽然单体positive，但与未来descent tail/tap head重合，施工前退役。R23 row26把return修为7格、main预测21条NEW belt；整体条件上限106 belt、14 sorter（13 normal+1 fast）、4500 J-tick、3 thermal、2 pole，不新增配方机器。额外Fe11/circuit5的gear2、belt6、normal sorter5材料仍未备出。
 
-整案仍`executable=false`；源`4450`未admit，实际joins/source/filters、共享供需及≥36000-tick长窗均未通过。准确SHA绿CI并由root重开后，计划先取Fe11、制作gear2+belt6+normal sorter5，再建2 pole、actual-tail/main21与3 taps6，并将normal Save预留为第10个accepted。上述顺序是后续有限计划，不等于接口已验证、执行已完成或最终Gate通过。
+整案仍`executable=false`；源`4450`未admit，实际joins/source/filters、共享供需及≥36000-tick长窗均未通过。准确SHA绿CI并由root重开后，计划先取Fe11、制作gear2+belt6+normal sorter5，再建第二座pole（新增1座，累计2座）、actual-tail/main21与3 taps6，并将normal Save预留为第10个accepted。上述顺序是后续有限计划，不等于接口已验证、执行已完成或最终Gate通过。
 
 ## 上一截面：G端延伸与lifetime220窗口
 

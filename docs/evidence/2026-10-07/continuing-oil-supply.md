@@ -8,6 +8,14 @@
 
 授权提交 `29fd66b308db40253994835dd074876f8c1ec375` 仅含三份现行授权文档；focused MCP指导17/17、包规范37/37通过，精确SHA的[Windows Core CI](https://github.com/AvaloNero/Spherewright/actions/runs/37573629266)成功。没有为文档修改冷部署或重复部署fuelPowerState。三处原有dirty保留，未混入提交。
 
+## 最新截面：第二个十写窗口
+
+第一窗提交 `71a513bd08431446ecd09e2290333d66346c32dd` 的[Windows Core CI](https://github.com/AvaloNero/Spherewright/actions/runs/37576418127)成功后，root以证明 `d835d738cb3c49f4aaa74332afc2a05b:1` 重开窗口；本窗从external `0/10`、lifetime `180` 连续推进至external `10/10 FROZEN`、lifetime `190`。第二个十写窗口的独立审计通过：十个唯一accepted均completed，0 replay、unknown或在途；正常保存 `98676748/R28/J100` 覆盖全部十笔。封窗后的只读原生资格观察为 `98726758/R28`，accepted仍为10、lifetime仍为190、Save/Journal边界未变。
+
+最新不可变全厂快照 `c4b50b48c0b1424590f90b40d2e9f8c9:1–82`，SHA-256 `2FCD71C44E45DB3FD24B70CB7427B56C1C6A5D8578E2F3D4251E78D2512B981D`：snapshot tick `98680938`，61页、6060 built、0 prebuild。独立差异 `2f0edd7ba58746daa520bb1be2265898:1`，SHA-256 `F12C8447DE830A2B298BA4E09360DFADA39481350362DDEDEDF8487ABCFABF07`，相对5969基线恰新增5970–6060共91对象，0删除，11838条互惠边、0坏边；199项动态变化。三个静态差异为2440铜矿节点集合减少167，以及5950原生cover旋转和新增输出连接6045。root用固定5请求、1页、67节点完整原生铜矿目录复核：162/164/165/171仍active，167已不存在；该子集变化与正常矿竭相容，不归因历史操作者，未解释项为0。
+
+本窗油路累计111条belt（保守164上限尚余53），由104点主路径与独立7点下降组成；111条belt的空货状态来自各施工阶段逐项实体原件读回，封窗后的fresh全厂捕获只核验全量拓扑与位置，不是111条belt的fresh cargo核验。不能据此声称油已送达。玩家余13条belt、两个sorter预算仍为0/2；油源5949仍未连接/放料，旧消费者配置保留。点功率full-serve只代表该次观察，不代表持续功率或物料平衡。独立审计原件 `291396ee1ab148e38b2f54fae1402693:7`，SHA-256 `F9484A6B096B021B73DB8C9800836F726963921084D3348617FC85C4154DF43D`。下降与预留普通Save原件 `2ced5c4c3f9b4b65a17bfa22f114e1eb:1–60`，SHA-256 `F444DBBEE60C9FE128BF16564299162522B6915372EC232C4B8BB46D8E8503F9`；完整工序如下文。整体仍 `executable=false`，持续供油与最终Gate均未通过。
+
 R0止于离线准备、零游戏调用；root随后收敛为R1固定九读，1.6秒完成：session/Journal/player/5949/3964/1511/power/session/Journal。原始 `62a700134dbf485e9ed353f163548696:1–9`，root独立证明 `6f04b18db9e04a07a21ad30f4b9071e9:1`，SHA-256 `3C72644183D068D1031E4B072AE8C6B78FC9206E315F2DACC7023EDD9D66919F`。首末tick98470417–98470479、R1、save97255779、J100连续且healthy，无新accepted。5949/N3/serve1、油缓冲50且无连接；3964/r16的slot1空闲，旧4193/4180/4181保留。玩家铁37/带28/齿轮0/分拣器7，1511铁3000、距离52.238米/buildArea80；可达资格仍由每次原生prepare判断。N3容量1914000、需140381、serve1仅为点观察，不是持续功率预算。
 
 Root另核58条原意图/终态，当前窗口5个唯一accepted均completed，0 replay/unknown/未决；lifetime175来自上次封窗170加五笔，不由R/J推算。索引覆盖为四个明确run：`f164f182824f49cfb8205c05e8822c04`、`2898f09523924f379fe548944b301da1`、`03a2455d00234c3a8302a1bf2b5811d4`、`474ac6f2e168439a91b1fef591ea81b8`。root证明 `863beb73a68c47449354e624bb712a91:1`，SHA-256 `A170F270EF51D63BD0BCFBF74E0FEF7E0DF478928403A717F4AD0921970CE043`。这是开片核销，尚不是本窗十写全厂审计。
@@ -35,7 +43,7 @@ Root另核58条原意图/终态，当前窗口5个唯一accepted均completed，0
 
 油路总新增暂定上限2001×164、2011×2；已建塔/采油器新增为0。123带只是有界接缝预测，精确NEW点数以每片原生计划及实际ID核销。优先准备r5/r84各32批，叶铁96、最多补取59、带产96；不用101铁/46批保守上限取满。新工程不从旧已成功前缀累计重算。
 
-## 当前有限执行片
+## 首个十写窗口的施工与保存
 
 R2a材料包的60秒首读准备上限耗尽，writer明确停止：无live请求、run、commit意图、accepted或活动句柄。root没有追加该声明额度，判定为调用方准备过度；直接提供复用现有NormalAction/受保护transport的三动作薄入口，真实 `pwsh -File -Mode smoke` 零游戏调用通过，避免继续读旧固定模板。
 
@@ -45,7 +53,7 @@ R4按已验证五段走廊的首个完整20点native_grid自由空段施工，�
 
 root批准不同目的的R4b保留成功前缀、补全20个读回并执行预留第10笔普通Save，不追加R4原额度。40请求/120秒/≤1accepted，实际29请求/5.165秒完成。实体按原生路径位置映射为 `5960→5961→5962→5964→5965→5967→5968→5969→5966→5963→5959→5958→5957→5956→5955→5954→5953→5952→5951→5950`；全段空货、内部19组有向互惠边、两端自由，无外部接线。正常保存98559834/R9/J100/restart ticket可用，external10/lifetime180立即冻结。原始 `f10e2f713f5641dcb42dcf80589c3553:1–31`，save commit27/terminal28，阶段SHA-256 `472FF3EF4CA348A37BF03FD2E78A00EC077772037A2E5A4D512C9B1AE6A8100C`。这不是新油源实际供料或重启证明。
 
-## 十写独立审计与下一窗口
+## 首个十写封窗审计与历史续接点
 
 root只读捕获 `de1353bfbd7b4d7b8d7ba23582c65e86:1–81`：79请求/28.522秒，built不可变snapshot tick98564357，完整60页/5969实体，独立0prebuild；首末session、Journal、玩家、功率和九个明确消费者/源/仓全部读取，closing98565858/R9/save98559834/J100。原capture seal SHA-256 `759F5F8BC04CB37B466E1566B3970CE5FE099F16AA94204DE5404E1A0999A966`。
 
@@ -58,3 +66,21 @@ root只读捕获 `de1353bfbd7b4d7b8d7ba23582c65e86:1–81`：79请求/28.522秒�
 本窗新增油路仅2001×20，距总新带164上限剩144；玩家带104，原123预测剩103仍待实际NEW点核销，2011新增0/上限2，5946–5949不重建。待本次必要提交与准确SHA绿CI后由root明确OPEN重开external0、lifetime180并立即续接：按现有原生正例完成余下四个完整空段，再以实建ID核真实cover接缝；消费者接入、源口最后放料仍未执行。下一片须fresh精确计划，不裁点、不把自由端预检费用相加当真实接头账。
 
 最终结束条件仍为实际原油入3964、共享供需与连续≥36000tick、双补给/准备清单、整合正常保存及受保护恢复、同干净SHA双候选包。此次材料/空段/十写审计不替代这些门，也没有正式tag/Release/Thunderstore上传。
+
+## 第二个十写窗口：下降、保存与独立审计
+
+第一窗准确SHA的CI通过并由root重开external窗口后，R5新增20点空自由段，实际实体按fresh原生计划完整读回，空货、方向互惠且两端自由；玩家belt `104→84`，新油路累计40。R5成功后caller的fresh玩家状态显示两架无人机正在返航、0个build target，因此在下一段prepare前停止。root核实该段未prepare、没有后续accepted或在途动作；这是readiness stop，不是原生拒绝，不重建成功前缀。阶段run `e6a95df836794a8d9af0e7dde9d5b0c0`；root原件 `94895a69453841539c8f53a836bb7393:4`，SHA-256 `E4CCC0544AF4271A723D23C3E0375A3109ECBB67DAA0AB32EA84062DED316996`。
+
+R5b以三个fresh原生完整路径各建17、20、16点，共53条成功belt，精确读回并保全库存、inc及手持物；玩家belt `84→31`，油路累计93。阶段run `939a8f7d9d7d4031b6e58a5ae40d9deb`；root原件 `11e5d7e6567c440893c245e7a823f6c3:1`，SHA-256 `BBD63BD1AC0D75727656526094416F5AC9F2682E6B005FEA7AAD8D2AEF58ECA5`。随后四个真实cover分别原生建成3、3、3、2点，共11条；计划材料与实际实体相符，路径共104点，全部空货、内部有向互惠、首尾自由。该阶段复用封存局部快照，原件含8项native rotation changes，不是新的全厂快照。阶段run `1d940b262b904a4a929df540328012f2`（107条原件，完成记录SHA-256 `5B017C120C5A53316F0AB3D889CF8F92E0D40997C341650753A2ABE5E53E3BE5`）；root原件 `a1eaf3dea5c04736a05d74ffdc7f3c52:1`，SHA-256 `667807DF57A6C038BAF9F48E81D760FAC14088302CDC0B5CC7BCA5DFFE11AC60`。至四covers时external `8/10`、lifetime `188`、玩家余20带；本阶段无新Save，保存仍是 `98559834/R9/J100`，5949未启用。
+
+本窗最后两个accepted为7点自由下降和预留普通Save。下降实际建成6054–6060，完整空货有向路径，build action `e3c465fe-cdae-4187-b6ed-a2225a2982b3` 于tick `98676648` completed。随后唯一Save action `f8a498a2-689a-40f5-9971-85b56e06eb6a` 于tick `98676748` completed，保存点为 `98676748/R28/J100`，受保护健康恢复票据可用；玩家余13带。原阶段run `2ced5c4c3f9b4b65a17bfa22f114e1eb` 的最终原件 `:60` SHA-256 `F444DBBEE60C9FE128BF16564299162522B6915372EC232C4B8BB46D8E8503F9`；proof同时核出external10/lifetime190、冻结、下降7条、累计新建油路111条、旧4193保留、5949未启用。未重放任何accepted动作。
+
+root独立十写审计逐项覆盖本窗10个唯一accepted，均completed且Save覆盖全部；完整背包只有belt `−91`，其他物品、inc及held不变。根级原件 `291396ee1ab148e38b2f54fae1402693:7`（`passed=true`），SHA-256 `F9484A6B096B021B73DB8C9800836F726963921084D3348617FC85C4154DF43D`。审计还复核与封存5969基线的完整拓扑差异、5950 cover及资源节点167变化，并确认0 unexplained。factory delta比较器对5950变化默认标记 `allowed=false`；这是比较器状态，不是root逐项审计结论。root另按四covers原生回执核销了5950原生覆盖及其旋转/新增输出6045。
+
+当前静态边界：5949仍未连接/放料至3964；104点主路径与7点下降虽已完整读回，末端连接、两个sorter接口及最后源admission尚待后续root有限阶段。旧3964/4193及其它静态配置保留；油路新增量距保守164上限剩53，sorter预算尚余2。source-to-consumer实际油流、净氢/石墨/旧燃料共享供需、连续≥36000 ticks、补给准备清单、整合保存与受保护恢复、最终双候选包仍未通过。本次审计没有重置游戏计数，也没有正式tag/Release/Thunderstore发布。
+
+## 封窗后的只读原生资格
+
+十写审计后只读原件 `1f72839a89e342ef9e2d830361ea2b36:1–16` 保留三个positive候选：6042→6054的2点gap与从6060继续的4点source-only尾延各自通过原生完整计划；3964 slot1 / 原油1007 / sorter2011 的tokenless consumer preview请求完整4个NEW belt点，原生回复 `nativeSpan=2`，不是2个NEW点。调用方在重新原生snap后对第一点作JSON严格相等检查并停止；root后续核对该坐标差 `0.0000161236m` 小于调用方几何对应容差 `0.0001m`，原生check已通过。三项成功候选均保留，未重跑。
+
+focused continuation的root只读证明 `8339955b569e4f2da16b8183afc8cb0a:1–11`，SHA-256 `1C2A3FD8F1965ABC8463728F082050C341F556425589212AC1893A53B6FA4330`：仅新fresh准备了5949 source outlet的完整6点native span，并复核健康与consumer边界；同时离线核销 `1f728...:9,:12,:15` 的A/B和preview正例及重吸附差异，没有重新执行已通过候选。9请求后以 `98726758/R28` 结束，保存 `98676748`、J100 durable、external `10/10 FROZEN`、lifetime190，新增accepted为0。总belt forecast为 `2+4+6=12`，背包有13；sorter仅是2个预估，实际两个sorter实体ID及各自ordinary fresh prepare仍待后续阶段输出，SourceSort实际能力未证明。5949未放料。root给出的续接顺序为提交后准确SHA CI绿并重开，再完成2点gap、4点尾延及actual consumer sorter；source-port 6带与source sorter最后处理，实际接口须由阶段新读回核验。此资格只证明native候选，不是施工或供油结果。

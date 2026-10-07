@@ -3,7 +3,9 @@
 更新时间：2026-10-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-07 — 三个有间隙的600-tick窗口、28对象同tick cut及暖机后20-read复核均零写，continuous credit为0；3965/3966仍有批次输出接纳堵塞。最新单窗数据与fuel点读不能证明连续供给或永久零需求。root与writer正在比较有界完整方案，尚未选定或批准新施工；后续须fresh原生资格。[诊断及候选](evidence/2026-10-07/continuing-oil-supply.md)。
+2026-10-07 — 备料含从1511取出Fe112至玩家、r5×22、r84×22及Save `99037141/R45/J100`；独立十写审计 `ad29ade6e82b486bb75943d75e45a1aa:1` 通过，10笔unique completed、0 replay，Save覆盖全10。`newWriteBlocked=false`仅指已审窗口，不是新窗授权；下一窗未由root重开。全厂差异核销新增6061–6074共14项、0移除、11872连接/0非互反；玩家备料后Fe46/gear0/belt67/stone156。D族候选仍未施工或通过整链native/持续验收。[备料与审计边界](evidence/2026-10-07/continuing-oil-supply.md)。
+
+2026-10-07 — 到油后的三段有间隔600-tick窗口、28对象同tick cut及暖机后20-read复核均零写，continuous credit为0；3965/3966仍有批次输出接纳堵塞。该诊断时点的候选比较尚未结束；后续选定方案与当前未施工边界见顶部备料更新。[诊断及候选](evidence/2026-10-07/continuing-oil-supply.md)。
 
 2026-10-07 — 准确SHA CI成功并由root重开后，完成2+4条consumer延伸belt、sorter6067及5949出口6带/source sorter6074；6个accepted均完成并由正常保存98801251/R39/J100覆盖，external6/10、lifetime196。原油1007经两条完整原生货物流路径到达3964/r16 slot1，8次同tick读回观察到插入周期推进；新油路123带/2 sorters。拓扑为6060封存全厂基线加局部原件overlay，不是新的全厂捕获。首次实际到油已确认，连续供给与共享供需诊断仍待验收。[持续授权与新油源接通](evidence/2026-10-07/continuing-oil-supply.md)。
 

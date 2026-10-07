@@ -8,7 +8,15 @@
 
 授权提交 `29fd66b308db40253994835dd074876f8c1ec375` 仅含三份现行授权文档；focused MCP指导17/17、包规范37/37通过，精确SHA的[Windows Core CI](https://github.com/AvaloNero/Spherewright/actions/runs/37573629266)成功。没有为文档修改冷部署或重复部署fuelPowerState。三处原有dirty保留，未混入提交。
 
-## 最新截面：lifetime260的P102到达与G供电十写封窗
+## 最新截面：R73 Ti矿机重建与未接通边界
+
+R64重开后，R66拆除旧空miner1；R71 Native Build完成新miner ID1并消耗 `2301×1`。fresh readback覆盖19个Ti节点，5组读数为 `318/326/309/310/312`。N1为full-serve、实际work `7000 J/t`；旧stage power检查把idle读值400误判为work，因此 `oldStagePowerConditionPassed=false`，该字段不表示新矿机的实际work为400。
+
+R73独立核对 `19d9202f3573437bbb70dc54f6431054:18`（SHA-256 `BCEB4F602F812E4255D90DB111976C0F0F1042FC42A472B61895CD764D7AA0EE1`）确认owned状态P102/R154、external `2/10`、lifetime `262`、无在途或unknown，正常Save仍为 `99724071/R150/J100`，尚未覆盖新增动作，普通业务冻结且Save仍预留。factory读回为181 built/0 prebuild；相对R61仅1项pose/resources变化与7项input移除，无其他静态变化。same-tick cut覆盖163个支持对象、5条完整Native路径与151个belt成员；station44另行同tick点读，未将unsupported对象当成零库存。
+
+新miner的出口 `connections[]` 为空，旧7仍保留out8，因此Ti来源没有自动接通；不得写成已经自动供料。same-star remote factory read与64-item sampler目前只是离线源码/测试改动，安装cohort仍为 `d744b8e6eb5b898b9e9484b2209c30380e40ddda`，尚未部署或实机验证。共享供需、自动补给、连续≥36000-tick验证、保存恢复整合与同一干净SHA双候选包仍未验收，整案保持 `executable=false`；没有新的业务范围或施工授权记录。
+
+## 上一截面：lifetime260的P102到达与G供电十写封窗
 
 R43已将G源4450经快速分拣器6198（2012/filter1109）接入6090，并保存至 `99571937/R139`；R47独立只读原件 `1a3ec36fde674264add804b05ed66eb9:171`（SHA-256 `776B192785E11C2ED8D0801E54A2F9D055CACFF2D91A9E869D3E24B023167385`）确认11条新G路径上的实际货物及3台新增thermal有燃料并发电。该观察只证明当时实际到料/发电，不是持续供给或稳定产率；新diamond支路5334仍未证明，旧煤源5580保留。
 

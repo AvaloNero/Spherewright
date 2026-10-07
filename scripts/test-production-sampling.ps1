@@ -116,18 +116,20 @@ Assert-Sampling ($boundaryResult.result -ceq 'sampling_completed' -and $boundary
 
 # Actual complete-chain observation scope; no writes and no split item windows.
 $completeEntities=@(1500,1511,723,724,725,726,727,814,827,883,885,869,871,562,3073,3074,5326,5334,5333,5329,5331,870,861,5187,863,3348,3084,3966,3964,3965,3083,163,784,95,862,753,129,86,752,2802,5171,1496,2440,10,26,1217,1216,1213)
-$completeItems=@(1000,1001,1002,1005,1006,1007,1101,1102,1104,1109,1112,1114,1116,1120,1121,1123,1127,1203,1204,1206,1209,1210)
+$completeItems=@(1000,1001,1002,1004,1005,1006,1007,1101,1102,1103,1104,1106,1107,1109,1112,1114,1116,1120,1121,1123,1127,1201,1202,1203,1204,1205,1206,1209,1210,1802)
 $complete=@{};foreach($key in $arguments.Keys){$complete[$key]=$arguments[$key]};$complete.EntityIds=$completeEntities;$complete.ItemIds=$completeItems;$complete.RequiredWindows=1;$complete.MaximumSamples=1;$complete.MaximumRequests=60
 Reset-Sampling @(600) '' $completeItems
 $completeResult=Invoke-SpherewrightProductionExperiment @complete
 $completeQueries=@($script:payloads|Where-Object method -CEQ 'get_overseer_production')
-Assert-Sampling ($completeEntities.Count -eq 48 -and $completeItems.Count -eq 22 -and $completeResult.result -ceq 'sampling_completed' -and $completeResult.requests -eq 53 -and $completeResult.entitySampleEvery -eq 1 -and $completeResult.entitySamples -eq 1 -and @($script:payloads|Where-Object method -CEQ 'inspect_factory_entity').Count -eq 48) 'default complete forty-eight-entity chain still fresh-reads all entities in fifty-three requests'
-Assert-Sampling ($completeQueries.Count -eq 1 -and (@($completeQueries[0].payload.itemIds|Sort-Object) -join ',') -ceq (@($completeItems|Sort-Object) -join ',') -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -eq 22 }).Count -eq 1 -and $completeResult.gameWrites -eq 0) 'all twenty-two source items are read once in the same native window'
+Assert-Sampling ($completeEntities.Count -eq 48 -and $completeItems.Count -eq 30 -and $completeResult.result -ceq 'sampling_completed' -and $completeResult.requests -eq 53 -and $completeResult.entitySampleEvery -eq 1 -and $completeResult.entitySamples -eq 1 -and @($script:payloads|Where-Object method -CEQ 'inspect_factory_entity').Count -eq 48) 'complete thirty-item chain still fresh-reads all entities in fifty-three requests'
+$completeSamples=@($script:records|Where-Object event -EQ 'production-sample')
+$completeRates=@($completeSamples|ForEach-Object {$_.rates}|ForEach-Object {$_.itemId})
+Assert-Sampling ($completeQueries.Count -eq 1 -and (@($completeQueries[0].payload.itemIds|Sort-Object) -join ',') -ceq (@($completeItems|Sort-Object) -join ',') -and (@($completeRates|Sort-Object) -join ',') -ceq (@($completeItems|Sort-Object) -join ',') -and $completeSamples.Count -eq 1 -and $completeRates.Count -eq 30 -and $completeResult.gameWrites -eq 0) 'the exact thirty requested and returned source item IDs are complete in one native window'
 
-$maximum=@{};foreach($key in $complete.Keys){$maximum[$key]=$complete[$key]};$maximum.EntityIds=@(1..48);$maximum.ItemIds=@(1101..1124);$maximum.MaximumRequests=60
+$maximum=@{};foreach($key in $complete.Keys){$maximum[$key]=$complete[$key]};$maximum.EntityIds=@(1..48);$maximum.ItemIds=@(1101..1164);$maximum.MaximumRequests=60
 Reset-Sampling @(600) '' $maximum.ItemIds
 $maximumResult=Invoke-SpherewrightProductionExperiment @maximum
-Assert-Sampling ($maximumResult.result -ceq 'sampling_completed' -and $maximumResult.requests -eq 53 -and @($script:payloads|Where-Object method -CEQ 'inspect_factory_entity').Count -eq 48 -and @($script:payloads|Where-Object method -CEQ 'get_overseer_production').Count -eq 1 -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -eq 24 }).Count -eq 1) 'forty-eight-entity and twenty-four-item hard boundaries succeed without splitting'
+Assert-Sampling ($maximumResult.result -ceq 'sampling_completed' -and $maximumResult.requests -eq 53 -and @($script:payloads|Where-Object method -CEQ 'inspect_factory_entity').Count -eq 48 -and @($script:payloads|Where-Object method -CEQ 'get_overseer_production').Count -eq 1 -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -eq 64 }).Count -eq 1) 'forty-eight-entity and native sixty-four-item hard boundaries succeed without splitting'
 
 $completeBudget=@{};foreach($key in $complete.Keys){$completeBudget[$key]=$complete[$key]};$completeBudget.MaximumRequests=51
 Reset-Sampling @(600) '' $completeItems
@@ -142,7 +144,7 @@ foreach($sourceClock in @('source15fps','source20fps')){
     Reset-Sampling @(600) $sourceClock $completeItems
     $completeContinuousResult=Invoke-SpherewrightProductionExperiment @completeContinuous
     Assert-Sampling ($completeContinuousResult.result -ceq 'sampling_completed' -and $completeContinuousResult.coveredGameTicks -ge 36000 -and $completeContinuousResult.resetCount -eq 0 -and $completeContinuousResult.requests -le 4090 -and $completeContinuousResult.samples -le 120 -and $completeContinuousResult.timingMs.total -lt 3290000) "$sourceClock exact complete scope covers36000ticks within initial sample/read/wall caps"
-    Assert-Sampling ($completeContinuousResult.gameWrites -eq 0 -and $completeContinuousResult.modelDecisionsInsideLoop -eq 0 -and -not $completeContinuousResult.governorAcceptance -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -ne 22 }).Count -eq 0) "$sourceClock complete source coverage grants no mutation or automatic supply sign-off"
+    Assert-Sampling ($completeContinuousResult.gameWrites -eq 0 -and $completeContinuousResult.modelDecisionsInsideLoop -eq 0 -and -not $completeContinuousResult.governorAcceptance -and @($script:records|Where-Object event -EQ 'production-sample'|Where-Object { $_.rates.Count -ne 30 }).Count -eq 0) "$sourceClock complete source coverage grants no mutation or automatic supply sign-off"
 }
 
 # An explicitly declared second cadence separates expensive full inventory
@@ -172,7 +174,7 @@ foreach($jitterClock in @('jitter15fps','jitter20fps')){
     $counterSamples=@($interleavedSamples|Where-Object entityObservationPerformed -EQ $false)
     Assert-Sampling ($interleavedResult.result -ceq 'sampling_completed' -and $interleavedResult.coveredGameTicks -ge 36000 -and $interleavedResult.resetCount -eq 0 -and $interleavedResult.requests -le 4090 -and $interleavedResult.timingMs.total -lt 3290000) "$jitterClock declared dual cadence completes inside unchanged sample/read/wall limits"
     Assert-Sampling ($fullSamples.Count -eq $interleavedResult.entitySamples -and $fullSamples.Count -eq [math]::Ceiling($interleavedSamples.Count/2.0) -and @($fullSamples|Where-Object {$_.entityCount -ne 48 -or $_.observationKind -cne 'entities_power_production'}).Count -eq 0 -and $counterSamples.Count -gt 0 -and @($counterSamples|Where-Object {$_.entityCount -ne 0 -or $_.observationKind -cne 'power_production_only'}).Count -eq 0) "$jitterClock explicitly marks full versus unobserved inventory scope"
-    Assert-Sampling (@($script:payloads|Where-Object method -CEQ 'inspect_factory_entity').Count -eq 48*$fullSamples.Count -and @($script:payloads|Where-Object method -CEQ 'get_power_summary').Count -eq $interleavedSamples.Count -and @($script:payloads|Where-Object method -CEQ 'get_overseer_production').Count -eq $interleavedSamples.Count -and @($interleavedSamples|Where-Object {$_.rates.Count -ne 22}).Count -eq 0) "$jitterClock every sample still has fresh power and the same complete twenty-two-item native window"
+    Assert-Sampling (@($script:payloads|Where-Object method -CEQ 'inspect_factory_entity').Count -eq 48*$fullSamples.Count -and @($script:payloads|Where-Object method -CEQ 'get_power_summary').Count -eq $interleavedSamples.Count -and @($script:payloads|Where-Object method -CEQ 'get_overseer_production').Count -eq $interleavedSamples.Count -and @($interleavedSamples|Where-Object {$_.rates.Count -ne 30}).Count -eq 0) "$jitterClock every sample still has fresh power and the same complete thirty-item native window"
     Assert-Sampling ($script:records[0].entitySampleEvery -eq 2 -and $script:records[0].entityObservationTiming -ceq 'between_native_samples_after_first' -and $interleavedResult.gameWrites -eq 0 -and $interleavedResult.modelDecisionsInsideLoop -eq 0 -and -not $interleavedResult.governorAcceptance) "$jitterClock inventory timing/cadence is declared before execution and grants no production sign-off or writes"
     Assert-Sampling (@($script:entityTimingWitnesses|Where-Object {$_.sample -gt 1 -and $_.lastEntityTick -lt $_.freshStateTick}).Count -gt 0 -and @($script:entityTimingWitnesses|Where-Object {$_.lastEntityTick -gt $_.counterTick}).Count -eq 0) "$jitterClock early entity timestamps are retained and the post-wait session is fresh"
     if($jitterClock -ceq 'jitter20fps'){$jitterAfterResult=$interleavedResult}
@@ -228,7 +230,7 @@ foreach($badEvery in @(0,5)){
 
 
 foreach($scopeCase in @(
-    [pscustomobject]@{name='twenty-five items';ids=[int[]](1101..1125)},
+    [pscustomobject]@{name='sixty-five items';ids=[int[]](1101..1165)},
     [pscustomobject]@{name='duplicate item id';ids=[int[]]@(1109,1109)},
     [pscustomobject]@{name='nonpositive item id';ids=[int[]]@(0)}
 )){

@@ -1,5 +1,6 @@
 using Spherewright.Bridge.Core.Safety;
 using Spherewright.Bridge.Core.Logistics;
+using Spherewright.Bridge.Core.Factory;
 using Spherewright.Contracts.Actions;
 using Spherewright.Contracts.Errors;
 using Spherewright.Contracts.Factory;
@@ -1325,7 +1326,7 @@ internal sealed partial class NormalGameActionCoordinator
                 "Inspect current session state and retry with its exact session ID."));
         }
 
-        if (planetId <= 0 || session.LocalPlanetId != planetId)
+        if (!OwnedFactoryScopePolicy.IsCurrentLocalActionTarget(planetId, session.LocalPlanetId ?? 0))
         {
             return CommonPrepareResult.Failed(BridgeError.Create(
                 BridgeErrorCodes.NoLocalPlanet,

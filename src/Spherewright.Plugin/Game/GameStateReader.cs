@@ -625,9 +625,21 @@ internal sealed partial class GameStateReader
 
     public GameCallResult<FactoryEntitySnapshot> InspectFactoryEntityOnMainThread(
         string? requestedSessionId,
-        InspectFactoryEntityRequest request)
+        InspectFactoryEntityRequest request) =>
+        InspectFactoryEntityOnMainThread(requestedSessionId, request, allowCurrentStarRemoteReadOnly: false);
+
+    internal GameCallResult<FactoryEntitySnapshot> InspectFactoryEntityOnMainThread(
+        string? requestedSessionId,
+        InspectFactoryEntityRequest request,
+        bool allowCurrentStarRemoteReadOnly)
     {
-        var accessError = ValidateOwnedPlanetOnMainThread(requestedSessionId, request.PlanetId, out var factory);
+        // Only the direct read-only Bridge inspection route opts into this scope.
+        // Action-coordinator calls retain the two-argument, strictly local overload.
+        var localPlanetId = GameMain.localPlanet?.id ?? 0;
+        PlanetFactory? factory;
+        var accessError = allowCurrentStarRemoteReadOnly && request.PlanetId != localPlanetId
+            ? ValidateOwnedCurrentStarFactoryReadOnMainThread(requestedSessionId, request.PlanetId, out factory)
+            : ValidateOwnedPlanetOnMainThread(requestedSessionId, request.PlanetId, out factory);
         if (accessError is not null)
         {
             return GameCallResult<FactoryEntitySnapshot>.Failed(accessError);
@@ -3745,6 +3757,115 @@ internal sealed partial class GameStateReader
 
         return null;
     }
+
+    private BridgeError? ValidateOwnedCurrentStarFactoryReadOnMainThread(
+        string? requestedSessionId,
+        int requestedPlanetId,
+        out PlanetFactory? factory)
+    {
+        factory = null;
+        var localPlanet = GameMain.localPlanet;
+        var localStar = GameMain.localStar;
+        if (localPlanet is null || localStar?.planets is null)
+        {
+            return NotReady("The current owned local star system is not ready for a same-star factory read.");
+        }
+
+        // Reuse the existing exact-owned-session and local-factory guard before
+        // using the current star as the only remote-read scope.
+        var localError = ValidateOwnedPlanetOnMainThread(requestedSessionId, localPlanet.id, out _);
+        if (localError is not null) return localError;
+        var gameData = GameMain.data;
+        if (gameData is null) return NotReady("The exact owned game data is not ready.");
+
+        var localPlanetMembership = localStar.planets.Count(planet =>
+            planet is not null && planet.id == localPlanet.id && ReferenceEquals(planet, localPlanet));
+        if (localPlanetMembership != 1)
+        {
+            return NotReady("The active local planet does not match the current star-system planet pool.");
+        }
+
+        var matches = localStar.planets.Where(planet => planet is not null && planet.id == requestedPlanetId).ToList();
+        if (matches.Count > 1)
+        {
+            return NotReady("The current star has duplicate planet identities; the requested factory cannot be selected safely.");
+        }
+
+        var targetPlanet = matches.SingleOrDefault();
+        var targetIsInCurrentStar = targetPlanet is not null;
+        if (targetPlanet is null)
+        {
+            var outside = OwnedFactoryScopePolicy.EvaluateCurrentStarRead(
+                requestedPlanetId, requestedPlanetId, false, false,
+                -1, gameData.factoryCount, gameData.factories?.Length ?? 0,
+                -1, -1, 0, false);
+            return CreateOwnedFactoryReadScopeError(outside);
+        }
+
+        if (targetPlanet is not null && !targetPlanet.factoryLoaded)
+        {
+            var notLoaded = OwnedFactoryScopePolicy.EvaluateCurrentStarRead(
+                requestedPlanetId,
+                targetPlanet.id,
+                targetIsInCurrentStar,
+                false,
+                targetPlanet.factoryIndex,
+                gameData.factoryCount,
+                gameData.factories?.Length ?? 0,
+                -1,
+                targetPlanet.factoryIndex,
+                0,
+                false);
+            return CreateOwnedFactoryReadScopeError(notLoaded);
+        }
+
+        var resolvedTargetPlanet = targetPlanet!;
+
+        var factoryPoolError = TryGetOwnedFactories(gameData, out var ownedFactories);
+        if (factoryPoolError is not null) return factoryPoolError;
+
+        var candidate = resolvedTargetPlanet.factoryIndex >= 0
+            && resolvedTargetPlanet.factoryIndex < ownedFactories.Count
+                ? ownedFactories[resolvedTargetPlanet.factoryIndex]
+                : null;
+        var status = OwnedFactoryScopePolicy.EvaluateCurrentStarRead(
+            requestedPlanetId,
+            resolvedTargetPlanet.id,
+            targetIsInCurrentStar,
+            resolvedTargetPlanet.factoryLoaded,
+            resolvedTargetPlanet.factoryIndex,
+            gameData.factoryCount,
+            gameData.factories?.Length ?? 0,
+            candidate?.index ?? -1,
+            resolvedTargetPlanet.factoryIndex,
+            candidate?.planetId ?? 0,
+            candidate is not null && ReferenceEquals(candidate.planet, resolvedTargetPlanet));
+        var scopeError = CreateOwnedFactoryReadScopeError(status);
+        if (scopeError is not null) return scopeError;
+
+        factory = candidate;
+        return null;
+    }
+
+    private static BridgeError? CreateOwnedFactoryReadScopeError(OwnedFactoryReadStatus status) => status switch
+    {
+        OwnedFactoryReadStatus.Allowed => null,
+        OwnedFactoryReadStatus.InvalidPlanetIdentity => InvalidRequest(
+            "A same-star factory read requires a positive, identity-matched planetId.",
+            "Use a planetId from the current owned star-system snapshot."),
+        OwnedFactoryReadStatus.OutsideCurrentStar => BridgeError.Create(
+            BridgeErrorCodes.StaleState,
+            "The requested planet is not in the current local star system.",
+            false,
+            "Only inspect an already-created factory in the current owned star."),
+        OwnedFactoryReadStatus.FactoryNotLoaded => NotReady(
+            "The requested planet's factory is not loaded; no inventory was observed."),
+        OwnedFactoryReadStatus.FactoryIndexUnavailable => NotReady(
+            "The requested planet's factory index is not available in the owned factory pool."),
+        OwnedFactoryReadStatus.FactoryIdentityMismatch => NotReady(
+            "The requested planet and factory pool identities do not match; no inventory was observed."),
+        _ => NotReady("The requested factory read scope could not be validated."),
+    };
 
     private BridgeError? ValidateOwnedSessionOnMainThread(string? requestedSessionId, out PlanetFactory? factory)
     {

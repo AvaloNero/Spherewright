@@ -34,9 +34,9 @@ function Invoke-SpherewrightProductionExperiment {
         # experiment. These read-only bounds do not change construction limits,
         # native600-tick windows, request caps or the original wall deadline.
         [Parameter(Mandatory)][ValidateCount(1,48)][int[]]$EntityIds,
-        # The native query already permits64 IDs; keep this caller at24 so the
-        # complete22-item chain fits in the SAME response, without split credit.
-        [Parameter(Mandatory)][ValidateCount(1,24)][int[]]$ItemIds,
+        # Match the native query's64-ID bound; every sample still requires the
+        # complete requested set in the SAME response, without split credit.
+        [Parameter(Mandatory)][ValidateCount(1,64)][int[]]$ItemIds,
         [Parameter(Mandatory)][scriptblock]$ValidateObservation,
         [Parameter(Mandatory)][scriptblock]$ReceiptMarker,
         [Parameter(Mandatory)][scriptblock]$RecordEvidence,

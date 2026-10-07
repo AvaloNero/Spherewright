@@ -20,6 +20,8 @@ internal sealed partial class GameStateReader
             var entity = TryCaptureFactoryEntity(factory, id);
             if (entity is null)
             { cut.ReasonCode = "material_inventory_object_unavailable"; return cut; }
+            if (entity.ComponentKind == "power-generator")
+                entity.FuelPowerState = CaptureFuelPowerState(factory, id);
             // Do not silently label unsupported/unobserved buffers as empty stock.
             var buffersKnown = entity.ComponentKind switch
             {
@@ -29,12 +31,15 @@ internal sealed partial class GameStateReader
                 "inserter" => entity.InserterStage is not null && InserterStockKnown(factory, id, entity),
                 "assembler" => entity.RecipeId > 0 && AssemblerStockKnown(factory, id, entity),
                 "miner" => entity.ProgressRequired > 0 && MinerStockKnown(factory, id, entity),
+                "station" => StationStockKnown(factory, id, entity),
+                "power-generator" => entity.FuelPowerState?.State == "observed",
                 _ => false,
             };
             if (!buffersKnown)
             { cut.ReasonCode = "material_inventory_buffers_unavailable_or_unsupported"; return cut; }
-            if (entity.Buffers.Any(buffer => buffer.ItemId <= 0 || LDB.items.Select(buffer.ItemId) is null
-                    || buffer.Count < 0 || buffer.Inc < 0 || buffer.CountUnit != "items" || buffer.UnitsPerItem != 1))
+            if (!MaterialInventoryCutPolicy.HasValidStockUnits(entity)
+                || (entity.ComponentKind is not ("station" or "power-generator")
+                    && entity.Buffers.Any(buffer => LDB.items.Select(buffer.ItemId) is null)))
             { cut.ReasonCode = "material_inventory_buffer_identity_or_unit_unavailable"; return cut; }
             cut.Objects.Add(entity);
             if (entity.ComponentKind != "belt") continue;
@@ -48,6 +53,26 @@ internal sealed partial class GameStateReader
         cut.State = "observed";
         cut.ReasonCode = null;
         return cut;
+    }
+
+    private static bool StationStockKnown(PlanetFactory factory, int id, FactoryEntitySnapshot captured)
+    {
+        var snapshot = captured.LogisticsStation;
+        var transport = factory.transport;
+        var componentId = factory.entityPool[id].stationId;
+        if (snapshot is null || transport?.stationPool is null || componentId <= 0
+            || componentId >= transport.stationCursor || componentId >= transport.stationPool.Length) return false;
+        var station = transport.stationPool[componentId];
+        if (station is null || station.id != componentId || station.entityId != id
+            || station.storage is null || station.storage.Length != snapshot.StorageSlots.Count) return false;
+        for (var index = 0; index < station.storage.Length; index++)
+        {
+            ref var native = ref station.storage[index];
+            var slot = snapshot.StorageSlots[index];
+            if (slot.Index != index || slot.ItemId != native.itemId || slot.Count != native.count || slot.Inc != native.inc
+                || (native.itemId > 0 && LDB.items.Select(native.itemId) is null)) return false;
+        }
+        return true;
     }
 
     private static bool StorageStockKnown(PlanetFactory factory, int id, FactoryEntitySnapshot captured)

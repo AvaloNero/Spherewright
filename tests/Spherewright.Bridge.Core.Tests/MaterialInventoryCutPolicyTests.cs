@@ -1,12 +1,93 @@
 using Spherewright.Bridge.Core.Factory;
 using Spherewright.Bridge.Core.Safety;
 using Spherewright.Contracts.Factory;
+using Spherewright.Contracts.Logistics;
 using Xunit;
 
 namespace Spherewright.Bridge.Core.Tests;
 
 public sealed class MaterialInventoryCutPolicyTests
 {
+    [Fact]
+    public void StationStockUsesVerifiedSlotsAndNeverOrdersAsItemBuffers()
+    {
+        var entity = StationEntity();
+        entity.LogisticsStation!.StorageSlots[0].RemoteOrder = -300;
+        Assert.True(MaterialInventoryCutPolicy.HasValidStockUnits(entity));
+        entity.LogisticsStation.StorageSlots[0].ItemId = 0;
+        Assert.False(MaterialInventoryCutPolicy.HasValidStockUnits(entity));
+        entity.LogisticsStation.StorageSlots[0].Count = 0;
+        Assert.True(MaterialInventoryCutPolicy.HasValidStockUnits(entity));
+    }
+
+    [Fact]
+    public void StationCutRequiresSameTickIdentityAndAllSlotUnits()
+    {
+        var entity = StationEntity();
+        entity.LogisticsStation!.CapturedAtGameTick++;
+        Assert.False(MaterialInventoryCutPolicy.HasValidStockUnits(entity));
+        entity = StationEntity();
+        entity.LogisticsStation!.EntityId++;
+        Assert.False(MaterialInventoryCutPolicy.HasValidStockUnits(entity));
+        entity = StationEntity();
+        entity.LogisticsStation!.StorageSlots[0].Inc = -1;
+        Assert.False(MaterialInventoryCutPolicy.HasValidStockUnits(entity));
+        entity = StationEntity();
+        entity.LogisticsStation!.StorageSlots[0].Index = 1;
+        Assert.False(MaterialInventoryCutPolicy.HasValidStockUnits(entity));
+    }
+
+    [Fact]
+    public void FuelCutKeepsLoadedHeatSeparateFromZeroBufferedFuelAndGeneration()
+    {
+        var entity = FuelEntity();
+        Assert.True(MaterialInventoryCutPolicy.HasValidStockUnits(entity));
+        Assert.Equal(0, entity.FuelPowerState!.BufferedFuelCount);
+        Assert.Equal(1000000, entity.FuelPowerState.LoadedFuelEnergyJoules);
+        entity.Buffers[0].CountUnit = "items";
+        Assert.False(MaterialInventoryCutPolicy.HasValidStockUnits(entity));
+    }
+
+    [Fact]
+    public void FuelCutRejectsMissingNativeFieldsAndAllowsDifferentBufferedLoadedIdentities()
+    {
+        var entity = FuelEntity();
+        entity.FuelPowerState!.BufferedFuelItemId = 1006;
+        entity.FuelPowerState.BufferedFuelCount = 10;
+        entity.FuelPowerState.BufferedFuelHeatPerItemJoules = 2700000;
+        Assert.True(MaterialInventoryCutPolicy.HasValidStockUnits(entity));
+        entity.FuelPowerState.LoadedFuelEnergyJoules = null;
+        Assert.False(MaterialInventoryCutPolicy.HasValidStockUnits(entity));
+        entity = FuelEntity();
+        entity.FuelPowerState!.State = "unavailable";
+        Assert.False(MaterialInventoryCutPolicy.HasValidStockUnits(entity));
+    }
+
+    [Theory]
+    [InlineData("power-node")]
+    [InlineData("lab")]
+    [InlineData("other")]
+    public void UnsupportedEmptyMetadataNeverBecomesKnownZeroStock(string kind) =>
+        Assert.False(MaterialInventoryCutPolicy.HasValidStockUnits(new FactoryEntitySnapshot { ComponentKind = kind }));
+
+    private static FactoryEntitySnapshot StationEntity() => new()
+    {
+        ComponentKind = "station", SessionId = "fixture", PlanetId = 104, ObjectId = 1657, CapturedAtGameTick = 100,
+        LogisticsStation = new LogisticsStationSnapshot
+        {
+            SessionId = "fixture", PlanetId = 104, EntityId = 1657, CapturedAtGameTick = 100,
+            StorageSlots = new() { new() { Index = 0, ItemId = 1004, Count = 200, Inc = 0 } },
+        },
+    };
+
+    private static FactoryEntitySnapshot FuelEntity() => new()
+    {
+        ComponentKind = "power-generator", ItemId = 2204,
+        FuelPowerState = FuelPowerStatePolicy.Capture(2204, 1, 1109, 0, 0, 6750000, 1109,
+            1000000, 0, true, 36000, 45000, 36000, 1000),
+        Buffers = new() { FactoryBufferSemantics.PowerGeneration(1000, 1109, "graphite") },
+    };
+
     [Fact]
     public void OmittedEmptyAndBoundedExplicitSelectionAreAccepted()
     {

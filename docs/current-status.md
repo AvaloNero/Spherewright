@@ -1,6 +1,6 @@
 # Spherewright 当前快照
 
-更新：2026-10-08（Asia/Singapore）。本页覆盖最新已核事实；本阶段证据见[P102 Ti源端接通与P104短期返程](evidence/2026-10-08/ti-source-powered-return.md)。整案验收仍未通过。
+更新：2026-10-08（Asia/Singapore）。本页覆盖最新已核事实；本阶段离线读取维护见[同星仿真驻留工厂与材料切片读取维护](evidence/2026-10-08/simulation-resident-material-read-maintenance.md)。整案验收仍未通过。
 
 ## 当前 owned 状态
 
@@ -8,6 +8,7 @@
 - P102源端由R122新建分拣器16（`2012/filter1004`，pick185→insert61）和电塔187；185→16→61互惠连接成立。root R123读回确认来源几何和供电有效，Ti货物已进入完整原生路径；连续验收credit为0。P102矿机1及分拣器16在N1 full-serve。
 - R127同tick读回覆盖9个支持对象、2条完整Native货物流路径与station1657库存锚点。P104需求站1657短期观察到workingVessel 1、remoteOrder `200`、槽内count `113`；factory530当时working。这证明近期运输/进料活动，不证明持续自动补给或长窗配平。当前均已停在P104；下一次远端库存结论须依新的fresh读取。
 - 玩家完整库存/inc/held保持一致；source/destination两次保存分别覆盖新建和飞行。当前安装仍为提交`f6694ee11e17a5b32c52c8499c495cbf2a97d301`（Windows Core CI `37675299409` success）对应的同源4+224 cohort，已冷部署并核对228个哈希，MCP为64 tools/1 resource；本阶段没有重新部署或打包。
+- 新源码离线扩展只读检查到同星simulation-resident且display未加载的factory，并允许显式same-tick cut读物流站槽存量与普通thermal/fusion缓冲燃料；orders、loaded heat和J/t电力buffer不混作item stock。身份/tick/单位必须完整，原有cut预算不变；所有normal-action prepare/commit仍限本地星球，动作哈希、64 tools/1 resource均未改变。root封存 `30504f6b8fae4db9be99bdda9cae92ec:1`（SHA-256 `5E18ED43075B1721FDF7AF7D35367C07BAEFCCFE24082546FDC0D9BDD3515C51`），相关Core52/52、MCP6/6测试和Native29104 Plugin Release构建0 warnings/0 errors通过；修改仍未部署或实机验证。
 
 ## Gate 2 边界
 

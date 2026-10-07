@@ -18,7 +18,8 @@ public sealed class FuelPowerStateGuidanceTests
         Assert.Contains("loadedFuelEnergyJoules is energy", text);
         Assert.Contains("Buffered and loaded fuel IDs may differ", text);
         Assert.Contains("Null/unavailable is unknown", text);
-        Assert.Contains("does not change action hashes or material-cut support", text);
+        Assert.Contains("Action hashes remain unchanged", text);
+        Assert.Contains("fuelPowerState at the cut tick", text);
         Assert.DoesNotContain("prepare_fuel_power", text);
     }
 

@@ -3802,23 +3802,6 @@ internal sealed partial class GameStateReader
             return CreateOwnedFactoryReadScopeError(outside);
         }
 
-        if (targetPlanet is not null && !targetPlanet.factoryLoaded)
-        {
-            var notLoaded = OwnedFactoryScopePolicy.EvaluateCurrentStarRead(
-                requestedPlanetId,
-                targetPlanet.id,
-                targetIsInCurrentStar,
-                false,
-                targetPlanet.factoryIndex,
-                gameData.factoryCount,
-                gameData.factories?.Length ?? 0,
-                -1,
-                targetPlanet.factoryIndex,
-                0,
-                false);
-            return CreateOwnedFactoryReadScopeError(notLoaded);
-        }
-
         var resolvedTargetPlanet = targetPlanet!;
 
         var factoryPoolError = TryGetOwnedFactories(gameData, out var ownedFactories);
@@ -3839,7 +3822,9 @@ internal sealed partial class GameStateReader
             candidate?.index ?? -1,
             resolvedTargetPlanet.factoryIndex,
             candidate?.planetId ?? 0,
-            candidate is not null && ReferenceEquals(candidate.planet, resolvedTargetPlanet));
+            candidate is not null && ReferenceEquals(candidate.planet, resolvedTargetPlanet),
+            factorySimulationResident: candidate is not null
+                && ReferenceEquals(resolvedTargetPlanet.factory, candidate));
         var scopeError = CreateOwnedFactoryReadScopeError(status);
         if (scopeError is not null) return scopeError;
 

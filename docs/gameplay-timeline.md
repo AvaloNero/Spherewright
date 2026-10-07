@@ -3,6 +3,8 @@
 更新时间：2026-10-08（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-08 — 离线维护补齐同星simulation-resident/display-unloaded factory的只读详细读与station/普通thermal-fusion燃料同tick库存cut。Core52/MCP6及Native29104 Plugin Release通过离线验证；当前f6694 cohort未更换，实机读取和长窗仍待验证。[仿真驻留工厂与材料切片读取维护](evidence/2026-10-08/simulation-resident-material-read-maintenance.md)
+
 2026-10-08 — R122接通P102 Ti尾带到既有belt61并建电塔187，R124经同星飞行到P104后普通Save `100342332/R36/J100`；R127独立核对新建、飞行与保存全闭合，external5冻结、lifetime285。需求站1657短期有船有货，但连续供给credit仍为0，整案未通过。[P102 Ti源端接通与P104短期返程](evidence/2026-10-08/ti-source-powered-return.md)
 
 2026-10-08 — 上一P102封窗由R107/R112完成5条Ti源端空带，R116回收旧空分拣器并以普通Save `100241992/R27/J100`保存；R119独立审计10笔unique accepted全完成，external10冻结、lifetime280。当时新尾端185尚未接到Ti带61，矿机未通电。[P102 Ti源端五带、回收与十写封窗](evidence/2026-10-08/ti-source-five-belts-reclaim-ten.md)

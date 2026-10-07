@@ -55,13 +55,31 @@ public sealed class MaterialInventoryCutGuidanceTests
         Assert.Contains("missing/unavailable", guide);
         Assert.Contains("A cut does not prove flow", guide);
         Assert.Contains("Do not stitch different-tick cuts", guide);
-        Assert.Contains("supports only belt, storage, tank, inserter, assembler and miner", guide);
-        Assert.Contains("`power-node` and `power-generator` are unsupported", guide);
+        Assert.Contains("supports belt, storage, tank, inserter, assembler, miner and station", guide);
+        Assert.Contains("`power-node` and other generator kinds are unsupported", guide);
+        Assert.Contains("orders are not stock", guide);
+        Assert.Contains("must be excluded from inventory sums", guide);
         Assert.Contains("generation in J/t", guide);
         Assert.Contains("Native `energyCapacity` is a dynamic observation, not network membership", guide);
         Assert.Contains("approved capacity floor and served ratio", guide);
         Assert.Contains("Neither value proves fuel stock, burn or continuity", guide);
         Assert.Contains("does not establish its cause", guide);
+    }
+
+    [Fact]
+    public void ResidentFactoryReadDisclosesDisplayIndependenceWithoutRemoteWrites()
+    {
+        var method = typeof(SpherewrightTools).GetMethod(nameof(SpherewrightTools.InspectFactoryEntityAsync))!;
+        var description = method.GetCustomAttribute<DescriptionAttribute>()!.Description;
+        Assert.Contains("simulation-resident", description);
+        Assert.Contains("even when its display is unloaded", description);
+        Assert.Contains("This read does not create or load factories", description);
+        Assert.Contains("prepare/commit paths remain restricted to the current local planet", description);
+        var parameter = method.GetParameters().Single(item => item.Name == "materialInventoryObjectIds");
+        var units = parameter.GetCustomAttribute<DescriptionAttribute>()!.Description;
+        Assert.Contains("excluding orders", units);
+        Assert.Contains("separate residual heat", units);
+        Assert.Contains("Do not add power-generation-current-tick buffers to item stock", units);
     }
 
     public class InventoryBridgeProxy : DispatchProxy

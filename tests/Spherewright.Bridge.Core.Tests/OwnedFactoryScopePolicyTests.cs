@@ -41,6 +41,26 @@ public sealed class OwnedFactoryScopePolicyTests
             Evaluate(factoryLoaded: false));
     }
 
+    [Fact]
+    public void VerifiedSimulationResidentCanBeReadWithoutDisplayLoading()
+    {
+        Assert.Equal(OwnedFactoryReadStatus.Allowed,
+            Evaluate(factoryLoaded: false, factorySimulationResident: true));
+    }
+
+    [Fact]
+    public void SimulationResidencyDoesNotBypassCurrentStarOrPoolIdentity()
+    {
+        Assert.Equal(OwnedFactoryReadStatus.OutsideCurrentStar,
+            Evaluate(factoryLoaded: false, factorySimulationResident: true, targetIsInCurrentStar: false));
+        Assert.Equal(OwnedFactoryReadStatus.FactoryIndexUnavailable,
+            Evaluate(factoryLoaded: false, factorySimulationResident: true, targetFactoryIndex: -1));
+        Assert.Equal(OwnedFactoryReadStatus.FactoryIdentityMismatch,
+            Evaluate(factoryLoaded: false, factorySimulationResident: true, resolvedFactoryIndex: 8));
+        Assert.Equal(OwnedFactoryReadStatus.FactoryIdentityMismatch,
+            Evaluate(factoryLoaded: false, factorySimulationResident: true, factoryReferencesTargetPlanet: false));
+    }
+
     [Theory]
     [InlineData(-1, 12, 12)]
     [InlineData(12, 12, 12)]
@@ -100,7 +120,8 @@ public sealed class OwnedFactoryScopePolicyTests
         int resolvedFactoryIndex = 7,
         int planetFactoryIndex = 7,
         int factoryPlanetId = 102,
-        bool factoryReferencesTargetPlanet = true) =>
+        bool factoryReferencesTargetPlanet = true,
+        bool factorySimulationResident = false) =>
         OwnedFactoryScopePolicy.EvaluateCurrentStarRead(
             requestedPlanetId,
             targetPlanetId,
@@ -112,5 +133,6 @@ public sealed class OwnedFactoryScopePolicyTests
             resolvedFactoryIndex,
             planetFactoryIndex,
             factoryPlanetId,
-            factoryReferencesTargetPlanet);
+            factoryReferencesTargetPlanet,
+            factorySimulationResident);
 }

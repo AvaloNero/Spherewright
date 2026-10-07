@@ -14,13 +14,17 @@ public static class OwnedFactoryScopePolicy
         int resolvedFactoryIndex,
         int planetFactoryIndex,
         int factoryPlanetId,
-        bool factoryReferencesTargetPlanet)
+        bool factoryReferencesTargetPlanet,
+        bool factorySimulationResident = false)
     {
         if (requestedPlanetId <= 0 || targetPlanetId <= 0 || requestedPlanetId != targetPlanetId)
             return OwnedFactoryReadStatus.InvalidPlanetIdentity;
         if (!targetIsInCurrentStar)
             return OwnedFactoryReadStatus.OutsideCurrentStar;
-        if (!factoryLoaded)
+        // Native factoryLoaded describes display loading. A separately verified
+        // simulation resident may be read without creating/loading its display.
+        // Pool indices and both planet/factory references still have to match.
+        if (!factoryLoaded && !factorySimulationResident)
             return OwnedFactoryReadStatus.FactoryNotLoaded;
         if (factoryCount < 1 || factoryCount > factoryPoolLength
             || targetFactoryIndex < 0 || targetFactoryIndex >= factoryCount)

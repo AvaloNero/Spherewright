@@ -3,7 +3,9 @@
 更新时间：2026-10-08（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-08 — R74拆除新建但未接线的Ti矿机1，其缓冲有`1004×50`；正常回收`2301×1`与矿石后，完整玩家背包读回确认矿石inc0。旧footprint/yaw120候选因传送带对象7碰撞被Native拒绝，0 build commit；同族候选退役。R78普通Save `99927096/R157/J100`覆盖回收动作，R80只读复核健康、无在途/unknown；当前P102、external4/10、lifetime264，普通写冻结。空Ti矿机唯一SOURCE接入支持和64物料采样已完成离线实现与Release/焦点测试，但仍未部署或实机验证，Ti自动供料与Gate 2长窗未通过。[P102空矿机源接续维护](evidence/2026-10-08/p102-empty-source-binding-maintenance.md)
+2026-10-08 — 同源程序集在Windows Core CI `37675299409` 成功后冷部署，健康primary恢复；R88新建Ti矿机1但source接缝尚未施工。完成Fe17备料、Native手搓belt15及普通Save `100030212/R10/J100`；R97独立审计10笔unique accepted全完成并冻结external10、lifetime270。Ti自动来源、P104远端读回和Gate 2长窗仍未通过。[P102空Ti源端维护与R97十写审计](evidence/2026-10-08/p102-empty-source-binding-maintenance.md)
+
+2026-10-08 — R74拆除新建但未接线的Ti矿机1，其缓冲有`1004×50`；正常回收`2301×1`与矿石后，完整玩家背包读回确认矿石inc0。旧footprint/yaw120候选因传送带对象7碰撞被Native拒绝，0 build commit；同族候选退役。R78普通Save `99927096/R157/J100`覆盖回收动作，R80只读复核健康、无在途/unknown；当时P102、external4/10、lifetime264，普通写冻结。该截面为历史；后续部署、重建、备料与封窗见上方最新记录。[P102空矿机源接续维护](evidence/2026-10-08/p102-empty-source-binding-maintenance.md)
 
 2026-10-08 — R64重开后R66拆旧空miner1，R71完成新miner ID1（消耗2301×1）；R73核对P102/R154、external2/lifetime262、无在途或unknown，Save仍为99724071/R150/J100且普通业务冻结。N1实际work 7000 J/t；新miner出口尚未接线，Ti自动来源、连续≥36000-tick和整体验收仍未通过。[R73 Ti矿机重建与未接通边界](evidence/2026-10-07/continuing-oil-supply.md)
 

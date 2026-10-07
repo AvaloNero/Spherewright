@@ -1,6 +1,16 @@
 # P102 空 Ti 矿机源端接入维护
 
-日期：2026-10-08（Asia/Singapore）。此记录归并R74回收、R78保存、R80健康复核和后续离线源端支持。它不代表新矿机已建、路径已接通、自动Ti供料已恢复或Gate 2通过。
+日期：2026-10-08（Asia/Singapore）。此记录归并R74回收、离线源端维护、同源部署、新Ti矿机、备料和R97十写审计。最新封窗仍未证明Ti源端接通、自动补给或Gate 2通过；较早R74/R78/R80截面保留为历史。
+
+## 最新封窗：部署、Ti矿机、备料与R97审计
+
+源码提交 `f6694ee11e17a5b32c52c8499c495cbf2a97d301` 的Windows Core CI `37675299409` 成功后，同批4+224程序集已冷部署并核对228个哈希，MCP为64 tools/1 resource。精确primary健康恢复由root复核；恢复只计1笔accepted。root复核 `eb2f25fb959340cfb16f32c3cbda7192:10`，SHA-256 `C6A00AC2A371B4E84848A073B98C6B7B0A998853A33FE92FBBB2C62D43DFD619`，确认新owned会话P102/J100健康。该部署和恢复不是最终双候选包验证。
+
+R88在P102以Native建成1台覆盖9个Ti节点的新矿机。R90独立复核 `25db23ac140f47fbab6c748091caf76b:10`，SHA-256 `32AA483068731B2C2FF538C81D3171BF21010606E3678B9324579159316B34A8`，确认其network0、无出料端口且尚未接线；`powerServeRatio=null`仍表示未知。矿机出口与空带主路的精确Native接缝未实机施工，Ti自动来源未恢复。P104远端工厂未加载，不能把缺失读数解释为零。
+
+备料前缀 `53e4623d4d8041b3b6532c3152d7f649:58`，seal SHA-256 `12B99D061FF8DC5951C2FE6EDBC8A602B56A8818648640F8DE04572C173169FF`：正常移动与Iron19采集已完成，节点 `24540→24523`、玩家库存增加Fe矿石17。其后手搓准备动作的Native配方原生输入输出与调用方预期不一致，提交前停止，0 craft commit；root独立核销 `da8c3494bd4b449b87d7bfb8d41a0728:9`，SHA-256 `C8F9070FB1CFB9ED5EB887FCE1C5B6597029CDBDCEBCED8D97E0B56D10221776`。修正后的后缀run `6d43794933344683883955ff6c7c5f64:40`，seal SHA-256 `38449CCD8042DE83B4D37316629C11F9A87E4DB348CABA2C6466E4AE1FE440AB`：Native recipe84×5递归手搓完成，消耗Fe矿石15并产出15条belt，随后普通Save完成。最终相关库存为Fe矿石2、belt16、Ti矿石50/inc0、矿机2301为0，magcoil1保留。完整背包/inc/held均与读回一致；早先已完成的动作未重放。
+
+root十写审计 `4d8ac5064a224b22bca5b07018a6569d:14`，SHA-256 `28625CA94354418BA31A539FE97F12FAB1BEBFF823007885AC22169DBF391DB7`，独立核对8个原始run中的10笔unique accepted全部completed、无replay/unknown/in-flight，普通Save `100030212/R10/J100` 覆盖全10笔。当前P102、external `10/10 FROZEN`、lifetime `270`，没有在途intent或unknown。R97 fresh factory为181 built/0 prebuild；相对R77仅新增未供电矿机1、无旧静态漂移或非互惠边。163个支持对象的同tick cut覆盖5条完整Native路径和151条belt，以station44为同tick物料锚点；N1保持17 nodes/9 consumers/10 generators、full-serve、capacity `55000 J/t`。本次准确SHA绿CI后仍须root明示重开。
 
 ## 原生失败、回收与保存边界
 
@@ -16,10 +26,10 @@ R78普通Save原件 `b00aec127d8844259a3ba9a26285d736:16`，SHA-256 `0F6B79BFB0C
 
 对应离线源端策略要求fresh复制并核对矿机、consumer、factory、节点及head身份；仅限item2301、vein miner、有效且非空的Ti1004节点、consumer `networkId=0`且真实 `networkServes[0]=0`、`productCount=0`、`productId`为0或1004。它只允许矿机slot0到新head belt slot1这一条互惠连接；`insertTarget`必须等于head的object ID。目标路径继续要求独立、完整、空货、开放且没有设备feed；原生路径几何、碰撞、占位、材料、旋转和prepare检查均保留。配对的可空miner身份/hash只扩展现有plan echo，未增加MCP工具或参数。
 
-当前改动已通过离线策略/覆盖验证（Core 169/169、Contracts 4/4、MCP belt cover 9/9）；root报告Plugin Release按29104原生引用构建0 warnings/errors。安装仍是旧cohort `d744b8e6eb5b898b9e9484b2209c30380e40ddda`，新同星远端读取、64物料采样和矿机源端支持均未部署或实机验证。没有新Native source join prepare/build/readback。
+截至R80截面，离线策略/覆盖验证为Core 169/169、Contracts 4/4、MCP belt cover 9/9，Plugin Release按29104原生引用构建0 warnings/errors；当时安装仍为旧cohort `d744b8e6eb5b898b9e9484b2209c30380e40ddda`，也没有新Native source join prepare/build/readback。其后同源部署与运行时事实以本页“最新封窗”为准；离线测试本身不代替source接缝实机验证。
 
 ## 下一步和未通过项
 
-后续若root批准新有限阶段，先按同批维护流程部署已审代码，再fresh读取原生来源、库存、设备身份和空接缝；施工后逐项读回。只有源端接通且核验后，才另行fresh计划给新矿机供电。此记录不授予上述游戏动作。
+后续须由root重开有限阶段，再fresh读取原生来源、库存、设备身份和空接缝；施工后逐项读回。只有源端接通且核验后，才另行fresh计划给新矿机供电。此记录不授予上述游戏动作。
 
 现有5949→3964原油、4450→快速分拣器6198→6090的G线及R47三台新thermal实际供料/发电观察保留；新diamond支路5334供料仍未证明。P102 Ti自动运输、共享供需与净功率分配、连续≥36000-tick验证、整合保存恢复和同SHA双候选包均未通过，整案保持 `executable=false`。

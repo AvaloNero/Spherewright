@@ -1,7 +1,9 @@
 # 存档日记 001：从落地到当前的决策、科技与首次产出
 
-更新时间：2026-10-01（Asia/Singapore）
+更新时间：2026-10-07（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
+
+2026-10-07 — 持续目标授权已生效；取铁59/制作96带及新油路首个20点空段完成，正常保存98559834/R9/J100。十写全厂独立审计5969built/0prebuild/11658互惠边，无未决；两项铁矿成员变化单独核销。external10/lifetime180封窗，待必要提交准确SHA绿CI后root重开继续接缝/最终放油，尚未实际供3964或通过持续产出。[持续授权与新油源接通](evidence/2026-10-07/continuing-oil-supply.md)。
 
 2026-10-01 — 紫糖供料路线十写审计完成，保存82810176/J96 durable，closing82812633/R50；accepted10/10仍FROZEN，待绿CI和root交接。三段间隔窗口的星球104原生6004生产/消耗为0/1；已确认4743缺1402，待核其上游原因。不代表连续36,000 ticks或实际重启。[紫糖供料十写审计与持续产出诊断](evidence/2026-10-01/purple-supply-ten-write-audit-and-output-diagnostic.md)。
 

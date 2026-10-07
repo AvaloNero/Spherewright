@@ -34,6 +34,24 @@ foreach($id in $plainView.entities.Keys){
         ($plainView.entities[$id].dynamic -ceq $nullCutView.entities[$id].dynamic)
 }
 Assert-Factory $sameProjection 'missing and null material-cut placeholders preserve the exact same projection'
+$nullFuelPage=New-FixturePage 100
+foreach($entity in $nullFuelPage.entities){$entity|Add-Member -NotePropertyName fuelPowerState -NotePropertyValue $null}
+$nullFuelView=New-SpherewrightFactoryEvidenceView -Pages @($nullFuelPage) -ExpectedEntityCount 2
+$sameFuelProjection=$plainView.entityCount -eq $nullFuelView.entityCount
+foreach($id in $plainView.entities.Keys){
+    $sameFuelProjection=$sameFuelProjection -and
+        ((ConvertTo-SpherewrightEvidenceJson $plainView.entities[$id].static) -ceq (ConvertTo-SpherewrightEvidenceJson $nullFuelView.entities[$id].static)) -and
+        ($plainView.entities[$id].dynamic -ceq $nullFuelView.entities[$id].dynamic)
+}
+Assert-Factory $sameFuelProjection 'legacy rows and current null fuel placeholders preserve the exact same projection'
+foreach($fuelKind in @('observed','unknown','emptyObject','emptyArray')) {
+    $fuelPage=New-FixturePage 100
+    $fuel=switch($fuelKind){observed{[pscustomobject]@{state='observed';fuelCount=1}}unknown{[pscustomobject]@{state='unknown'}}emptyObject{[pscustomobject]@{}}emptyArray{,@()}}
+    $fuelPage.entities[0]|Add-Member -NotePropertyName fuelPowerState -NotePropertyValue $fuel
+    $rejected=$false
+    try{New-SpherewrightFactoryEvidenceView -Pages @($fuelPage) -ExpectedEntityCount 2|Out-Null}catch{$rejected=$_.Exception.Message -ceq 'Populated fuelPowerState is not an immutable factory entity row.'}
+    Assert-Factory $rejected "$fuelKind fuel wrapper cannot be silently discarded"
+}
 foreach($cutKind in @('populated','emptyObject','emptyArray')) {
     $cutPage=New-FixturePage 100
     $cut=switch($cutKind){populated{[pscustomobject]@{capturedAtGameTick=100;selectedObjectIds=@(1)}}emptyObject{[pscustomobject]@{}}emptyArray{,@()}}

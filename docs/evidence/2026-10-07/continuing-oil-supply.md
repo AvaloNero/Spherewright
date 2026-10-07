@@ -8,7 +8,23 @@
 
 授权提交 `29fd66b308db40253994835dd074876f8c1ec375` 仅含三份现行授权文档；focused MCP指导17/17、包规范37/37通过，精确SHA的[Windows Core CI](https://github.com/AvaloNero/Spherewright/actions/runs/37573629266)成功。没有为文档修改冷部署或重复部署fuelPowerState。三处原有dirty保留，未混入提交。
 
-## 最新截面：G端延伸与材料包十写封存
+## 最新截面：lifetime230的D族返回段十写封窗
+
+本窗从lifetime `220`推进至`230`。受保护原件紧凑索引覆盖四个run：R17 `5eeccd1d4b2e402e9f805109d1e10349:1–144`（seal SHA-256 `E42244580E6D3021D90E825A9946F6026885C92D30B97DCF38D59F39F082B386`，4笔accepted）、R17 remainder `9f648eb2c501421589cc5cbccb4e9595:1–105`（seal `D1825A382CDA918EEF0FB76ECFB755081CC1FCA93C89A4F069CAF114C85887FD`，2笔）、R22 `cef2c0da5cf743e89513448a84e38291:1–219`（seal `8C745DD0F36E75E0E37E2D1156C2B30E202179BD4F712CF4BD49956DBD2CAA86`，2笔）、R25 `3befe027bced40fc847490d7be6d73c5:1–108`（seal `3D52415DDA1F025FD49AA23C69FABE860DA58B4707CB8FCF11625F706926293D`，2笔）。索引读取328条标准commit/terminal回执，10笔唯一accepted全completed，0 replay、rejected、unpaired、unknown或未决；`newWriteBlocked=false`只描述该回执集合，不替代十写审计。
+
+root独立十写审计 `f596f8881e8644bc9f3979c140bfb6fa:1`（SHA-256 `B9CFE365D95C2F1394B9BC919D5D3A3DD4C51D4EC9A9C6D37F4DBBD1D1D3F53C`）确认10/10 unique completed、无replay/unknown，普通Save `99414378/R99/J100`覆盖全部10笔，external `10/10 FROZEN`、lifetime `230`、无在途。
+
+完整capture `440a69d54eda42c78d39995685e11e21:1–86`（SHA-256 `DAC55A067B6CCC7C5E8B804DB4BB7AC243B05B2C1709DB850177CA158A1341E5`）为6160 built/0 prebuild、snapshot tick `99417148`。相对6127基线新增6128–6160共33个实体：pole `6128`、thermal `6129/6130/6131`及29条belt `6132–6160`；0移除、0旧静态变化、12028条互返边、0非互反。same-tick cut `a2cec63d988f4440bf35e8fcf0b553d0:1–13`（SHA-256 `7D8FAF206EC1E1DAD57FF7BDA2187D59EB8850503BD12E51CABFA44F5C7C867F`）位于tick `99417713`，读82个对象（78条belt、4个既有G sorter）和8条完整Native路径，货物均为空。
+
+三台新thermal仍接在N3但为空燃料，当前实际capacity及generation均为0；N3为223节点、545消费者、134发电机且点读full-serve，铭牌108000不等于当前实际capacity。源`4450`尚未admit；旧油路、四条H filter、煤源`5580`与13台既有generator配置保留。当前背包Fe0/gear0/belt22/normal sorter4/fast sorter1/pole1/thermal0/circuit943/brick144/magnetic coil1，inc0、held null。
+
+R25结束时私有caller将nullable空数组序列化为`[null]`并停止。root只读复核 `4d94a113b40f47fbab6c748091caf76b:6`（SHA-256 `BE00047A6B8AA973710305288458EEC11381C2715419EE8E9911DFBA554B1658`；5次read、0写）从原两action核终态、owned/session/Journal/player，确认仍10/10 FROZEN，无重放、unknown或计数变化。之后仅把`.local`成熟helper的nullable-array归一为`[]`；离线验证0 Game calls且仍阻断unknown，不涉及Plugin/MCP或部署。该数组序列化问题不同于PowerShell把空数组折叠为null的既有经验，通用边界记于[经验账本](../../experience-ledger.md)。
+
+施工前资格和候选仍需按范围区分。R18–R23没有新增accepted；两次旧`6080` south-head失败后退役，mixed-climb被Native拒绝而R21 descent未尝试。R19 pure climb、R20b三个port-2 tap分别通过单体Native资格。R22 free-return虽然单体positive，但与未来descent tail/tap head重合，施工前退役。R23 row26把return修为7格、main预测21条NEW belt；整体条件上限106 belt、14 sorter（13 normal+1 fast）、4500 J-tick、3 thermal、2 pole，不新增配方机器。额外Fe11/circuit5的gear2、belt6、normal sorter5材料仍未备出。
+
+整案仍`executable=false`；源`4450`未admit，实际joins/source/filters、共享供需及≥36000-tick长窗均未通过。准确SHA绿CI并由root重开后，计划先取Fe11、制作gear2+belt6+normal sorter5，再建2 pole、actual-tail/main21与3 taps6，并将normal Save预留为第10个accepted。上述顺序是后续有限计划，不等于接口已验证、执行已完成或最终Gate通过。
+
+## 上一截面：G端延伸与lifetime220窗口
 
 四个受保护run的紧凑回执索引覆盖 `ee6e78fb84544ffe96fc3a673c8bda1d`、`260fd03cf4a24332ba0eb8c6e9985676`、`a489904c4f774d58959ae6f4d5c9be0d`、`d62aac8ca898411c817f11e8f2ca89cf`，共266条记录：R12的3笔、R14的4笔和R15b的3笔共10个唯一accepted均completed，0 replay、rejected commit response、unknown、unpaired或未决intent。R12原run记录247项，达到240请求观察预算；原调用方只完成前三笔中的前两笔读回。`260fd...`是只读续接，核销第三笔终态。该索引仅覆盖动作回执，索引字段`newWriteBlocked=false`仅描述已审集合；root独立十写审计 `87458dde429e4c05b4ef95bf6d740ef7:1`（SHA-256 `4A379B5C8DCE8580E38E46BE9A9E9919EE0F17FA7ADBEA7CA23C1A24FE7EB6BD`）另行核实全部10笔、Save覆盖全10、Journal 100/100 durable及完整库存/inc/held守恒。窗口为 `10/10 FROZEN`、lifetime `220`，Save `99297127/R80/J100`；封存不构成下一写窗授权。
 

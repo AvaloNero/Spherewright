@@ -1,6 +1,12 @@
 # Spherewright experience ledger
 
-更新时间：2026-10-03（Asia/Singapore）
+更新时间：2026-10-07（Asia/Singapore）
+
+## EXP-341 — 私有nullable-array序列化保留真正空数组
+
+- 状态：`observed`，2026-10-07。
+- 可复用规则：私有PowerShell caller将可空集合序列化前，需确认空值最终是JSON空数组`[]`；`[null]`表示含一个null元素，不等于空集合。R25的本地后处理遇到该形状时应冻结后续写入并用同一action原回执及只读状态核终态；不能重发已成功动作，也不能把解析/展示故障降格成`outcome_unknown`的豁免。修正只落私有nullable-array helper，保持公共DTO、Plugin/MCP与unknown硬阻断不变。
+- 本次R25后只读证明`4d94a113b40f47fbab6c748091caf76b:6`（SHA-256 `BE00047A6B8AA973710305288458EEC11381C2715419EE8E9911DFBA554B1658`）以5次read/0写复核原两action、owned/session/Journal/player，确认仍10/10 FROZEN、无重放、unknown或计数变化。私有helper归一到`[]`后离线验证0 Game calls且unknown仍被阻断；未修改或部署Plugin/MCP。此问题不同于PowerShell管线把真正空数组折叠成null，参见[本阶段事件](evidence/2026-10-07/continuing-oil-supply.md)。
 
 ## EXP-340 — 固定调用、终态与摘要字段保持各自边界
 

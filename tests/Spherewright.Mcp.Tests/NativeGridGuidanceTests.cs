@@ -5,6 +5,17 @@ namespace Spherewright.Mcp.Tests;
 
 public sealed class NativeGridGuidanceTests
 {
+    [Fact]
+    public void EmbeddedGuideDistinguishesElevatedEndpointSpanFromCallerLengthFailure()
+    {
+        var guide = AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
+        Assert.Contains("straight3D distance between the native-snapped endpoints", guide, StringComparison.Ordinal);
+        Assert.Contains("not the sum of grid-route segment lengths", guide, StringComparison.Ordinal);
+        Assert.Contains("separate64-point, per-segment, altitude and full native checks", guide, StringComparison.Ordinal);
+        Assert.Contains("A local caller assertion is not a native rejection", guide, StringComparison.Ordinal);
+        Assert.Contains("permission to execute an unapproved whole-chain plan", guide, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("longitude grid spacing changes with latitude", "complete fresh `plannedPath`")]
     [InlineData("reject a mismatch", "ignoring unexpected points")]

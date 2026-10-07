@@ -156,6 +156,39 @@ public sealed class BeltElevationPolicyTests
         // These are synthetic policy inputs, not native placement permission.
     }
 
+    [Fact]
+    public void CompleteNativePathBoundsEndpointDistanceNotSummedGridRouteLength()
+    {
+        // A synthetic high, flat L-shaped grid route: its chord is under30m,
+        // while its polyline is over30m. This is policy evidence, not a site pass.
+        var radius = GroundRadius + 3 * BeltElevationPolicy.NativeLayerHeight;
+        var path = new List<Vector3Snapshot>();
+        for (var i = 0; i <= 14; i++)
+        {
+            var x = -20f + i * (20f / 14);
+            path.Add(new Vector3Snapshot { X = x, Y = 0, Z = MathF.Sqrt(radius * radius - x * x) });
+        }
+        for (var i = 1; i <= 14; i++)
+        {
+            var y = i * (20f / 14);
+            path.Add(new Vector3Snapshot { X = 0, Y = y, Z = MathF.Sqrt(radius * radius - y * y) });
+        }
+
+        double polylineLength = 0;
+        for (var i = 1; i < path.Count; i++)
+        {
+            var dx = (double)path[i].X - path[i - 1].X;
+            var dy = (double)path[i].Y - path[i - 1].Y;
+            var dz = (double)path[i].Z - path[i - 1].Z;
+            polylineLength += Math.Sqrt(dx * dx + dy * dy + dz * dz);
+        }
+
+        Assert.Equal(29, path.Count);
+        Assert.True(polylineLength > 30);
+        Assert.True(BeltElevationPolicy.ValidEndpoints(path[0], path[^1], GroundRadius));
+        Assert.True(BeltElevationPolicy.CompleteNativePath(path, 256, path[0], path[^1], GroundRadius));
+    }
+
     [Theory]
     [InlineData(.51f, false)]
     [InlineData(.53f, true)]

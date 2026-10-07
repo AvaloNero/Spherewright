@@ -1,6 +1,6 @@
 # 0.4 持续授权与新油源接通
 
-2026-10-07（Asia/Singapore）。本阶段直接服务已建油源5949→3964及0.4剩余验收；不是正式发布授权。成功的5946–5949和既有三级链保留，不重建。
+2026-10-08（Asia/Singapore）。本阶段直接服务已建油源5949→3964及0.4剩余验收；不是正式发布授权。成功的5946–5949和既有三级链保留，不重建。
 
 ## 授权与续接
 
@@ -8,7 +8,23 @@
 
 授权提交 `29fd66b308db40253994835dd074876f8c1ec375` 仅含三份现行授权文档；focused MCP指导17/17、包规范37/37通过，精确SHA的[Windows Core CI](https://github.com/AvaloNero/Spherewright/actions/runs/37573629266)成功。没有为文档修改冷部署或重复部署fuelPowerState。三处原有dirty保留，未混入提交。
 
-## 最新截面：lifetime250的R33主干接缝十写封窗
+## 最新截面：lifetime260的P102到达与G供电十写封窗
+
+R43已将G源4450经新belt 6198接入6090，并保存至 `99571937/R139`；R47独立只读原件 `1a3ec36fde674264add804b05ed66eb9:171`（SHA-256 `776B192785E11C2ED8D0801E54A2F9D055CACFF2D91A9E869D3E24B023167385`）确认11条新G路径上的实际货物及3台新增thermal有燃料并发电。该观察只证明当时实际到料/发电，不是持续供给或稳定产率；新diamond支路5334仍未证明，旧煤源5580保留。
+
+R49原件 `9fefd015dd6546e8bd3583ccea2c4a87:1–56`（seal SHA-256 `55ECC822542DB258BFD0D6EAA6926D240D837DACC0AB894CF2E8702EC05E529A`）完成从870取G300、3次正常refuel各100及Save `99642768`；G源库存2500→2200，玩家背包末态不变。root独立核验 `b9992d139f334af28828cae0f3a0bbb6:1`（SHA-256 `E1DA675FA4ED029400624ED281175F4BADE20EE77EE09FB7DE9673C30ED97FD4`）。
+
+R54正常同星系飞行由行星104抵达102，原件 `dc9a1d8315a14213a699011544c7c4bc:1–58`（seal SHA-256 `176757AE2FDEE6B8C25369ECE0A1A52E7E84BFF8B3AF14FC6CC6040A1A34CC60`），external `8/10`、lifetime `258`、R147。root R56落地核验 `00c71d4f61054291a92d20749f8c478a:1–22`（SHA-256 `58F5C6328668ADBAE88E56E66C7F9C6A29581CFF7BE93358411F3C4336B6AFB6`）确认Native飞行及605 tick落地；Si miner17的4节点保留。R59随后正常Move至矿区附近并完成预留Save；原件 `a45984e9bb7d45868b9c040f40c2b1b2:1–97`（seal SHA-256 `6F7E16B5AE668F6CD834880C9DC4E44CBD020026B8D9B3B0E8CE0A5D808BA7A5`），最终保存 `99724071/R150/J100`。
+
+R61独立十写审计 `71c09951f02c4d6c8acd2465acf5d532:13`（SHA-256 `B0FB94AF464DAA835693D2407BA9841FE4243AA73C269E893BA3A8E5B9B9AD24`）核销R43的2笔、R49的5笔、R54的1笔与R59的2笔：10笔unique accepted全completed，0 replay/unknown/unpaired；Save覆盖全部10笔、Journal 100/100 exact，external `10/10 FROZEN`、lifetime `260`，无在途或unknown。
+
+R61在P102的fresh完整capture为181 built/0 prebuild；对照immutable着陆基线无新增、移除、静态变化或非互反边。一次同tick cut覆盖163个支持对象、5条完整Native路径及151个完整belt成员。Source logistics station 44单独点读，因为station不在cut支持类型内。行星102电网N1为17 nodes/10 consumers/10 generators，full-serve，需求4350 J/tick、capacity 55000 J/tick。当前库存为Fe0/gear0/belt1/normal sorter0/fast sorter0/pole0/thermal0/circuit938/brick144/magnetic coil1，inc0、held null。
+
+Ti来源尚未接通：station 44读到Ti 158/max200、remoteSupply、无订单、0 vessels；full-dispatch阈值配置为199，但现有证据不能判定阈值是无补货的原因。source miner1虽接在N1且点读full-serve，但resources为空、库存空、not working；Ti节点仍非空，资源组剩余1,268,791且minerCount为0；root确认后续可经有界正常接近/采集取得，非工具阻塞，不能将miner1的空resources读数归因为矿脉耗尽。R50的30-item 600-tick P/C只是短窗，没有continuous credit；不拼接为长窗供需证明。
+
+R62 prepare-only以13次只读取得source miner1正常拆除positive prepare、0 commit且external仍为10；没有施工或accepted。待本次准确SHA CI成功且root明确重开后，再fresh核验实际动作、有限材料与接入；尚未批准新的飞行/建造。共享供需、净分配和连续≥36000-tick验收仍未通过，整案保持 `executable=false`，不涉及正式发布或部署。
+
+## 上一截面：lifetime250的R33主干接缝十写封窗
 
 本窗从lifetime `240`推进至`250`。R33原件 `d73d34622e244bd987f359a39d638955:1–57`（seal SHA-256 `45D3B1C4077D0EAA93E9541C0409C76A7B4357BC8B027759F67499B7DCECA6AB`）的sorter `6189`已实际completed；调用方添加`actualSourceSlot`摘要字段时失败并停止后续写入。root只读核销 `d0dd22ae3a85486b8bbac0e8ed548359:1–14`（SHA-256 `E7D413984C59DD0AD7B8D898DA1CD03494666A0689E2FA6639F3560E2E6F34CE`），确认成功终态且未重放。R33b原件 `8a83728ddf3144fc8260a6aff5abbe8f:1–344`（seal SHA-256 `7CC705F697F6567E6A4928192703724692670D16DEDC2A338E0C54CC157DCDE6`）以306请求/383.2秒完成sorter `6190–6197`及预留normal Save。root十写审计 `6a0e6fbadb66424383db65752bac1723:1`（SHA-256 `995F795247D36627C09D769A1AF368CD7BDA2E4D2C16D3EADC7A2D78A265DF63`）通过：10笔unique accepted全completed，0 replay/unknown/inflight/unpaired；Save `99543357/R136/J100`覆盖全部10笔，Journal 100/100 exact，external `10/10 FROZEN`、lifetime `250`。
 

@@ -1,7 +1,9 @@
 # 存档日记 001：从落地到当前的决策、科技与首次产出
 
-更新时间：2026-10-07（Asia/Singapore）
+更新时间：2026-10-08（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
+
+2026-10-08 — R43/R49/R54/R59完成本窗10笔accepted并由Save 99724071/R150/J100封窗；R61独立审计核销10/10、0 replay/unknown/unpaired。P102到达与同tick cut确认当前地图/库存边界；G源已实际到料并曾驱动3台新thermal，Ti站未下单且矿机1无资源，不能判定矿脉耗尽或阈值为根因。持续供需与≥36000-tick门仍未通过，下一步须准确SHA绿CI及root重开后再做有限Ti源修复。[lifetime260 P102到达与G供电十写封窗](evidence/2026-10-07/continuing-oil-supply.md)
 
 2026-10-07 — R33将lifetime 240推进至250，normal Save `99543357/R136/J100`封存external10/10；root十写审计核销10笔completed、0 replay/unknown/inflight/unpaired。新增sorter `6189–6197`完成18条互惠端点连接，同tick cut的11条Native路径全空；source `4450`尚未admit。后续R42 fast-sorter Native prepare positive、0 commit；source admission与持续供给尚未通过。[lifetime250主干接缝十写封窗](evidence/2026-10-07/continuing-oil-supply.md)。
 

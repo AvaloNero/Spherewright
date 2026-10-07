@@ -8,7 +8,17 @@
 
 授权提交 `29fd66b308db40253994835dd074876f8c1ec375` 仅含三份现行授权文档；focused MCP指导17/17、包规范37/37通过，精确SHA的[Windows Core CI](https://github.com/AvaloNero/Spherewright/actions/runs/37573629266)成功。没有为文档修改冷部署或重复部署fuelPowerState。三处原有dirty保留，未混入提交。
 
-## 最新截面：备料窗口封存，独立十写审计通过
+## 最新截面：G端空带与材料包十写封存
+
+新G source端按 `[6077,6076,6075]`、consumer端按 `[6081,6080,6079,6078]` 建成7条空货带，共两个唯一build accepted；fresh全厂读回确认两端有向内部边与自由端，尚无G供料、连接中段或新发电机，也没有改filter。R3 source原件 `e05ee4d43a8e4d3a990e3cb425739b65:1–63`（seal SHA-256 `1D8ADEACF00722ADB9D47BE5F65A054AD6055D9291275C751D8E5B0F8B1CC7CD`）初始false仅因returning drone超过15秒调用方readiness timeout；只读closure `9fb255735180400f99ecac1b765d2afb:1–13`（SHA-256 `3AEAF694C55A8C0A49BB8446C5069C91B939FFE7E8EC12CC8B566B7459958AA9`）核销其状态、0写。R4 consumer原件 `dd36c0f7448548dfa6a094e3e6769b61:1–59`，seal SHA-256 `E833B1A6E6E4B75FD0F7926A5A79AB15A20B27F78911B09FFCD9AC94512BD25E`。source接口4461→6077和consumer接口6078→5334的fresh native资格均为positive；surface读回使用planet radius 200对齐，root抽查11点最大偏差0.00001353m，无native失败或commit。此前false来自调用方把raw player radius约200.217直接比较，而非原生拒绝。
+
+R6原件 `9f509635965b43a795c50c5b7b1bb40f:1–114`，seal SHA-256 `1BA529C52BC7D76320723B1003B7D36806FABAD28C56D44DB63D8DE3DBB7FF88`：105请求/96.5185秒、8 accepted全成功、unknown=false；内容限正常Move 10m、从562取1102×14与1104×7、r6×7/r5×12/r8×2/r64×3手搓及第8笔normal Save。Save `99154541/R62/J100`，closing `99155715/R62`，external `10/10 FROZEN`、lifetime `210`。末库存Fe0/gear0/magnet0/Cu0/coil1/stone144/belt60/2011×5/2012×1/2201×2/2204×3，其余全库存/inc/held守恒；562的1102库存1915→1901吻合取14，玩家Cu+7而562即时库存1900→1894（自动回补1），按原始双边读回核销，不用显示净差反推取6。
+
+完整capture `139066f11dec4025ae706ac364138148:1–85`，seal SHA-256 `35538FDEB5547F97C065101FEA8358363ED33F38D2CAAE955614FCD44AB44CEB`：83请求/24.421秒、61页、6081 built/0 prebuild，snapshot `99155347`、end `99155715/R62`、Save `99154541/J100`。相对上一全厂capture `3084c9e07f5145c2b963dbf550fad4d0` 的root projection `f83521a2de7543979ace10b6b50d2fab:1`（SHA-256 `252C39B0A580EEBDB12D0E36C7455B319E3E1C4E23B85E67A33A48FEECD0ECB3`）核销恰新增6075–6081七项、0移除、0静态变化、175正常动态变化、11882条连接/0非互反；7点逐点匹配原native plannedPath、位置差0，旧N3/N4网成员与full-serve均保留。root独立十写审计 `b89f5ff0426a4a52877381b79affc667:1`（SHA-256 `42FAE7F05D0B03F592E848E7090AF2C9AE635547D342660602B5E2610F2D9C04`）确认10 unique completed、无replay/unknown、Save覆盖全部10、Journal 100/100，旧配置/电网及完整库存/inc/held守恒；R6的1102转移为1915→1901，玩家Move终点距562为72.9751m。`newWriteBlocked=false`仅描述已审集合；窗口保持冻结。
+
+整案仍 `executable=false`：这次只完成7条空带端点与材料kit，没有G线供料、中段/实际接缝、新generator或filter改动；没有稳定净供需证明或连续≥36000 ticks验收。此前R5两项接口native正例未重跑。下一动作须等本提交准确SHA的Windows Core CI成功并由root重开，再fresh资格有限2012中段/空带接缝与条件发电分支；是否装新thermal及实际数量由供需读回决定。
+
+## 上一截面：备料窗口封存，独立十写审计通过
 
 备料前的固定18-read原件为 `b507b864728b4953964eb3d26a4978db:1–26`，完成记录 `:26` 文件SHA-256 `556D8B10F818E2952B8AE8E59755A02E3D5CC6199A5EF97627ED019EFFDA0979`；root审计 `582441c53ef04269966c522a40a777a6:1`，SHA-256 `66D00BD39F0EBD9384AFD936CC0567609306648F2FF44EA04C4E48674821FEE2`。该固定读取包25请求/4.872秒。
 

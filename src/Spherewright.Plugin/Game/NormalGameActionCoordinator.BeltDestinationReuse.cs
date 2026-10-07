@@ -19,6 +19,7 @@ internal sealed partial class NormalGameActionCoordinator
         internal int[] EntityIds = Array.Empty<int>();
         internal string BindingHash = string.Empty;
         internal string PreservationHash = string.Empty;
+        internal UnpoweredMinerFeedState? UnpoweredMinerFeed;
     }
 
     private sealed class BeltDestinationState
@@ -32,12 +33,13 @@ internal sealed partial class NormalGameActionCoordinator
     }
 
     private static bool TryCaptureEmptyBeltPath(PlanetFactory factory, int anchorId, int changingSlot,
-        out EmptyBeltPathState? state, out string reason)
+        out EmptyBeltPathState? state, out string reason, bool allowUnpoweredMinerSource = false)
     {
         state = null;
         reason = "belt_join_path_identity_unavailable";
         var identity = new List<object?>();
-        if ((changingSlot != 0 && changingSlot != 1) || !AppendBeltSourceObject(factory, anchorId, identity)) return false;
+        if ((changingSlot != 0 && changingSlot != 1) || (allowUnpoweredMinerSource && changingSlot != 0)
+            || !AppendBeltSourceObject(factory, anchorId, identity)) return false;
         var traffic = factory.cargoTraffic;
         var entity = factory.entityPool[anchorId];
         if (entity.protoId != 2001 || entity.tilt != 0 || traffic?.beltPool is null || traffic.pathPool is null
@@ -56,7 +58,7 @@ internal sealed partial class NormalGameActionCoordinator
             if (!NativeBeltPathCapture.TryRead(path, out var export, out var captureReason))
             { reason = "belt_join_" + captureReason; return false; }
             reason = "belt_join_requires_empty_open_independent_path";
-            if (export!.Closed || export.OutputPathId != 0 || export.InputPathIds.Count != 0
+            if (export!.Closed || export.BeltIds.Count == 0 || export.OutputPathId != 0 || export.InputPathIds.Count != 0
                 || !BeltUpgradePathPolicy.TryLocateAllCargo(export, out var cargo, out _) || cargo.Count != 0
                 || (changingSlot == 0 ? export.BeltIds.Last() : export.BeltIds.First()) != belt.id) return false;
             var members = new List<int>();
@@ -77,8 +79,13 @@ internal sealed partial class NormalGameActionCoordinator
                 fields.Add(id); fields.Add(member.segIndex); fields.Add(member.segLength); fields.Add(member.segPivotOffset);
             }
             if (members.Distinct().Count() != members.Count) return false;
-            // Require a simple chain, not a side input, device-fed path or prebuild
-            // feed. Only the declared endpoint slot may change during creation.
+            UnpoweredMinerFeedState? feed = null;
+            factory.ReadObjectConn(members[0], 1, out _, out var headFeed, out _);
+            if (headFeed != 0 && (!allowUnpoweredMinerSource || !TryCaptureUnpoweredMinerFeed(factory, members[0], out feed)))
+            { reason = "belt_join_source_feed_requires_bound_unpowered_empty_ti_miner"; return false; }
+            // Require a simple chain. Only a SOURCE path may retain the exact
+            // unpowered, stock-free Ti miner; side and prebuild feeds still reject.
+            // Only the declared endpoint slot may change during creation.
             for (var i = 0; i < members.Count; i++)
             {
                 var component = traffic.beltPool[factory.entityPool[members[i]].beltId];
@@ -95,7 +102,7 @@ internal sealed partial class NormalGameActionCoordinator
                     if (members[i] == anchorId && slot == changingSlot) continue;
                     factory.ReadObjectConn(members[i], slot, out var output, out var other, out var otherSlot);
                     var expected = slot == 0 ? (i + 1 < members.Count ? members[i + 1] : 0)
-                        : slot == 1 ? (i > 0 ? members[i - 1] : 0) : 0;
+                        : slot == 1 ? (i > 0 ? members[i - 1] : feed?.ObjectId ?? 0) : 0;
                     if (slot < 4)
                     {
                         if (other != expected || (other != 0 && (output != (slot == 0) || otherSlot != (slot == 0 ? 1 : 0))))
@@ -105,12 +112,12 @@ internal sealed partial class NormalGameActionCoordinator
                     { reason = "belt_join_external_input_unsupported"; return false; }
                 }
             }
-            if (!TryEmptyBeltMembersHash(factory, members, anchorId, changingSlot, false, out var topology)
-                || !TryEmptyBeltMembersHash(factory, members, anchorId, changingSlot, true, out var preservation)) return false;
-            fields.Add(topology);
+            if (!TryEmptyBeltMembersHash(factory, members, anchorId, changingSlot, false, out var topology, feed)
+                || !TryEmptyBeltMembersHash(factory, members, anchorId, changingSlot, true, out var preservation, feed)) return false;
+            fields.Add(topology); fields.Add(feed?.BindingHash);
             state = new EmptyBeltPathState { PathId = path.id, AnchorId = anchorId, ChangingSlot = changingSlot,
                 EntityIds = members.ToArray(), BindingHash = CanonicalStateHash.Combine("belt-empty-path-v1", fields.ToArray()),
-                PreservationHash = preservation };
+                PreservationHash = preservation, UnpoweredMinerFeed = feed };
             reason = string.Empty;
             return true;
         }
@@ -118,13 +125,17 @@ internal sealed partial class NormalGameActionCoordinator
     }
 
     private static bool TryEmptyBeltMembersHash(PlanetFactory factory, IReadOnlyList<int> members,
-        int anchorId, int changingSlot, bool nativeRotation, out string hash)
+        int anchorId, int changingSlot, bool nativeRotation, out string hash, UnpoweredMinerFeedState? unpoweredFeed = null)
     {
         hash = string.Empty;
         if (members.Count < 1 || members.Count > BeltUpgradePathPolicy.MaximumBelts) return false;
         var memberSet = new HashSet<int>(members);
         if (memberSet.Count != members.Count) return false;
         var fields = new List<object?>();
+        if (unpoweredFeed is not null && (unpoweredFeed.HeadObjectId != members[0]
+            || !TryCaptureUnpoweredMinerFeed(factory, members[0], out var freshFeed)
+            || !SameUnpoweredMinerFeed(unpoweredFeed, freshFeed))) return false;
+        fields.Add(unpoweredFeed?.BindingHash);
         foreach (var id in members)
         {
             if (!AppendBeltSourceObject(factory, id, fields, nativeRotation)) return false;
@@ -140,8 +151,11 @@ internal sealed partial class NormalGameActionCoordinator
                 factory.ReadObjectConn(other, otherSlot, out var reverseOutput, out var reverseId, out var reverseSlot);
                 if (reverseOutput == output || reverseId != id || reverseSlot != slot) return false;
                 if (memberSet.Contains(other)) continue;
-                // External consumers may remain, but cannot be unobserved feeds.
-                if (!output || !AppendBeltSourceObject(factory, other, fields, nativeRotation)) return false;
+                // All external inputs reject except the separately rebound sole
+                // miner outlet at the SOURCE head. External consumers still bind.
+                var sourceFeed = unpoweredFeed is not null && id == unpoweredFeed.HeadObjectId && slot == 1
+                    && !output && other == unpoweredFeed.ObjectId && otherSlot == 0;
+                if ((!output && !sourceFeed) || !AppendBeltSourceObject(factory, other, fields, nativeRotation)) return false;
                 for (var s = 0; s < 16; s++)
                 {
                     factory.ReadObjectConn(other, s, out var o, out var n, out var p);
@@ -164,9 +178,9 @@ internal sealed partial class NormalGameActionCoordinator
             entity.tilt, true, connections.Skip(1).Take(3).Count(c => c.OtherObjectId != 0), 0, 0, 0))
         { reason = "belt_destination_requires_same_grade_empty_open_head"; return false; }
         EmptyBeltPathState? sourcePath = null;
-        if (source is not null && (!TryCaptureEmptyBeltPath(factory, source.EntityId, 0, out sourcePath, out reason)
+        if (source is not null && (!TryCaptureEmptyBeltPath(factory, source.EntityId, 0, out sourcePath, out reason, true)
             || sourcePath!.PathId == path!.PathId || sourcePath.EntityIds.Intersect(path.EntityIds).Any()))
-        { reason = "belt_join_source_path_must_be_empty_independent_and_unfed: " + reason; return false; }
+        { reason = "belt_join_source_path_must_be_empty_independent_with_proven_feed: " + reason; return false; }
         // The eventual concatenated path must also remain within our readable bound.
         if (path!.EntityIds.Length + (sourcePath?.EntityIds.Length ?? 0) + 2 > BeltUpgradePathPolicy.MaximumBelts)
         { reason = "belt_join_combined_path_too_large"; return false; }
@@ -190,7 +204,8 @@ internal sealed partial class NormalGameActionCoordinator
     {
         if (!TryCaptureEmptyBeltPath(factory, bound.EntityId, 1, out var target, out _)
             || !BeltSourceReusePolicy.SameEvidence(bound.Path.BindingHash, target!.BindingHash)) return false;
-        return bound.SourcePath is null || (TryCaptureEmptyBeltPath(factory, bound.SourcePath.AnchorId, 0, out var source, out _)
+        return bound.SourcePath is null || (TryCaptureEmptyBeltPath(factory, bound.SourcePath.AnchorId, 0, out var source, out _,
+                bound.SourcePath.UnpoweredMinerFeed is not null)
             && BeltSourceReusePolicy.SameEvidence(bound.SourcePath.BindingHash, source!.BindingHash)
             && source.PathId != target.PathId && !source.EntityIds.Intersect(target.EntityIds).Any());
     }
@@ -343,8 +358,10 @@ internal sealed partial class NormalGameActionCoordinator
     private static bool ProvesCompletedEmptyJoin(PlanetFactory factory, BeltDestinationState bound, IReadOnlyList<int> newIds)
     {
         var expected = (bound.SourcePath?.EntityIds ?? Array.Empty<int>()).Concat(newIds).Concat(bound.Path.EntityIds).ToArray();
+        var feed = bound.SourcePath?.UnpoweredMinerFeed;
         if (expected.Length > BeltUpgradePathPolicy.MaximumBelts
-            || !TryCaptureEmptyBeltPath(factory, expected[expected.Length - 1], 0, out var joined, out _)
+            || !TryCaptureEmptyBeltPath(factory, expected[expected.Length - 1], 0, out var joined, out _, feed is not null)
+            || !SameUnpoweredMinerFeed(feed, joined!.UnpoweredMinerFeed)
             || !BeltDestinationReusePolicy.ProvesJoinedMembership(bound.SourcePath?.EntityIds, newIds, bound.Path.EntityIds, joined!.EntityIds)
             || !ProvesDestinationInput(factory, bound, newIds[newIds.Count - 1], false)) return false;
         // The final open tail is NOT one of the approved mutable endpoints.
@@ -352,7 +369,7 @@ internal sealed partial class NormalGameActionCoordinator
         if (output != 0 || !TryEmptyBeltMembersHash(factory, bound.Path.EntityIds, bound.EntityId, 1, true, out var targetHash)
             || !BeltSourceReusePolicy.SameEvidence(bound.Path.PreservationHash, targetHash)) return false;
         return bound.SourcePath is null || (TryEmptyBeltMembersHash(factory, bound.SourcePath.EntityIds,
-            bound.SourcePath.AnchorId, 0, true, out var sourceHash)
+            bound.SourcePath.AnchorId, 0, true, out var sourceHash, feed)
             && BeltSourceReusePolicy.SameEvidence(bound.SourcePath.PreservationHash, sourceHash));
     }
 }

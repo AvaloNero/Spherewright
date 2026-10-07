@@ -169,6 +169,8 @@ internal sealed partial class NormalGameActionCoordinator
                         : preparation.DestinationObjectId > 0 ? "native_device_port" : "none",
                     ReusedDestinationObjectId = destinationAnchor?.EntityId,
                     DestinationPreservationMode = destinationAnchor is null ? null : BeltDestinationReusePolicy.PreservationMode,
+                    UnpoweredSourceMinerObjectId = destinationAnchor?.SourcePath?.UnpoweredMinerFeed?.ObjectId,
+                    UnpoweredSourceMinerStateHash = destinationAnchor?.SourcePath?.UnpoweredMinerFeed?.BindingHash,
                     NewObjectCount = preparation.Steps.Count,
                     RoutingMode = preparation.Steps[0].BeltPathMode,
                     StartAltitudeLevel = request.BeltPathMode == BeltPathModes.NativeElevatedGrid ? request.BeltStartAltitudeLevel : null,

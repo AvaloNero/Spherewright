@@ -167,6 +167,117 @@ public sealed class BeltSourceReusePolicyTests
         Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(target,2002,0,755));
     }
     [Fact]
+    public void PairedUnpoweredSourceMinerEchoRequiresBothExactPreservedCovers()
+    {
+        var plan=UnpoweredSourceTargetCoverPlan();
+        Assert.True(BeltSourceReusePolicy.ConfirmsPlanEcho(plan,2001,754,755));
+
+        plan.PlannedBeltPath!.UnpoweredSourceMinerObjectId=null;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(plan,2001,754,755));
+        plan.PlannedBeltPath.UnpoweredSourceMinerObjectId=756;
+        plan.PlannedBeltPath.UnpoweredSourceMinerStateHash=null;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(plan,2001,754,755));
+    }
+    [Fact]
+    public void BothNullUnpoweredMinerEchoRemainsCompatibleWithOrdinaryLegacyPlan()
+    {
+        var plan=Plan();
+        Assert.Null(plan.PlannedBeltPath!.UnpoweredSourceMinerObjectId);
+        Assert.Null(plan.PlannedBeltPath.UnpoweredSourceMinerStateHash);
+        Assert.True(BeltSourceReusePolicy.ConfirmsPlanEcho(plan,2001,754,0));
+
+        var target=TargetPlan();
+        Assert.True(BeltSourceReusePolicy.ConfirmsPlanEcho(target,2001,0,755));
+    }
+    [Theory]
+    [InlineData("source_free")]
+    [InlineData("source_device_port")]
+    [InlineData("source_cover_id")]
+    [InlineData("source_preservation")]
+    [InlineData("destination_free")]
+    [InlineData("destination_device_port")]
+    [InlineData("destination_cover_id")]
+    [InlineData("destination_preservation")]
+    public void RejectsUnpoweredMinerEchoWithoutExactSourceAndDestinationCovers(string mutation)
+    {
+        var plan=UnpoweredSourceTargetCoverPlan();
+        switch(mutation)
+        {
+            case "source_free":
+                plan.SourceObjectId=null;
+                plan.PlannedBeltPath!.SourceBindingMode="none";
+                plan.PlannedBeltPath.ReusedSourceObjectId=null;
+                plan.PlannedBeltPath.SourcePreservationMode=null;
+                break;
+            case "source_device_port":
+                plan.PlannedBeltPath!.SourceBindingMode="native_device_port";
+                plan.PlannedBeltPath.ReusedSourceObjectId=null;
+                plan.PlannedBeltPath.SourcePreservationMode=null;
+                break;
+            case "source_cover_id": plan.PlannedBeltPath!.ReusedSourceObjectId=753; break;
+            case "source_preservation": plan.PlannedBeltPath!.SourcePreservationMode=null; break;
+            case "destination_free":
+                plan.DestinationObjectId=null;
+                plan.PlannedBeltPath!.DestinationBindingMode="none";
+                plan.PlannedBeltPath.ReusedDestinationObjectId=null;
+                plan.PlannedBeltPath.DestinationPreservationMode=null;
+                break;
+            case "destination_device_port":
+                plan.PlannedBeltPath!.DestinationBindingMode="native_device_port";
+                plan.PlannedBeltPath.ReusedDestinationObjectId=null;
+                plan.PlannedBeltPath.DestinationPreservationMode=null;
+                break;
+            case "destination_cover_id": plan.PlannedBeltPath!.ReusedDestinationObjectId=753; break;
+            case "destination_preservation": plan.PlannedBeltPath!.DestinationPreservationMode=null; break;
+        }
+
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(plan,2001,754,755));
+    }
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(754)]
+    [InlineData(755)]
+    [InlineData(65537)]
+    public void MinerIdentityMustBePositiveBoundedAndDistinctFromBothCovers(int minerObjectId)
+    {
+        var plan=UnpoweredSourceTargetCoverPlan();
+        plan.PlannedBeltPath!.UnpoweredSourceMinerObjectId=minerObjectId;
+
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(plan,2001,754,755));
+    }
+    [Theory]
+    [InlineData("prefix")]
+    [InlineData("short")]
+    [InlineData("long")]
+    [InlineData("uppercase")]
+    [InlineData("non_hex")]
+    public void MinerStateHashMustBeCanonicalSha256Hex(string mutation)
+    {
+        var plan=UnpoweredSourceTargetCoverPlan();
+        var hash="sha256:"+new string('a',64);
+        plan.PlannedBeltPath!.UnpoweredSourceMinerStateHash=mutation switch
+        {
+            "prefix" => "sha-256:"+new string('a',64),
+            "short" => "sha256:"+new string('a',63),
+            "long" => "sha256:"+new string('a',65),
+            "uppercase" => "sha256:"+new string('A',64),
+            "non_hex" => "sha256:"+new string('a',63)+"g",
+            _ => hash
+        };
+
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(plan,2001,754,755));
+    }
+    [Fact]
+    public void UnpoweredMinerEchoIsSpecificToNormalBeltConstruction()
+    {
+        var plan=UnpoweredSourceTargetCoverPlan();
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(plan,2002,754,755));
+
+        plan.ItemBudget[0].ItemId=2002;
+        Assert.False(BeltSourceReusePolicy.ConfirmsPlanEcho(plan,2002,754,755));
+    }
+    [Fact]
     public void DeviceDestinationRetainsLegacyFreeAndDeviceSourceEchoesOnly()
     {
         var free=DeviceDestinationPlan("native_device_port");
@@ -251,6 +362,18 @@ public sealed class BeltSourceReusePolicyTests
             DestinationBindingMode="non_removing_belt_cover",ReusedDestinationObjectId=755,
             DestinationPreservationMode=BeltDestinationReusePolicy.PreservationMode,RoutingMode=BeltPathModes.NativeGrid}
     };
+    private static PreparedNormalAction UnpoweredSourceTargetCoverPlan()
+    {
+        var plan=Plan();
+        plan.DestinationObjectId=755;
+        plan.PlannedBeltPath!.DestinationBindingMode="non_removing_belt_cover";
+        plan.PlannedBeltPath.ReusedDestinationObjectId=755;
+        plan.PlannedBeltPath.DestinationPreservationMode=BeltDestinationReusePolicy.PreservationMode;
+        plan.PlannedBeltPath.RoutingMode=BeltPathModes.NativeGrid;
+        plan.PlannedBeltPath.UnpoweredSourceMinerObjectId=756;
+        plan.PlannedBeltPath.UnpoweredSourceMinerStateHash="sha256:"+new string('a',64);
+        return plan;
+    }
     private static PreparedNormalAction DeviceDestinationPlan(string destinationMode) => new()
     {
         Prepared=true,BuildKind="belt",DestinationObjectId=755,PlannedPath=new(){P(1),P(2)},

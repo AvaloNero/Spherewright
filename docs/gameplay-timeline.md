@@ -3,6 +3,8 @@
 更新时间：2026-10-08（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-08 — R74拆除新建但未接线的Ti矿机1，其缓冲有`1004×50`；正常回收`2301×1`与矿石后，完整玩家背包读回确认矿石inc0。旧footprint/yaw120候选因传送带对象7碰撞被Native拒绝，0 build commit；同族候选退役。R78普通Save `99927096/R157/J100`覆盖回收动作，R80只读复核健康、无在途/unknown；当前P102、external4/10、lifetime264，普通写冻结。空Ti矿机唯一SOURCE接入支持和64物料采样已完成离线实现与Release/焦点测试，但仍未部署或实机验证，Ti自动供料与Gate 2长窗未通过。[P102空矿机源接续维护](evidence/2026-10-08/p102-empty-source-binding-maintenance.md)
+
 2026-10-08 — R64重开后R66拆旧空miner1，R71完成新miner ID1（消耗2301×1）；R73核对P102/R154、external2/lifetime262、无在途或unknown，Save仍为99724071/R150/J100且普通业务冻结。N1实际work 7000 J/t；新miner出口尚未接线，Ti自动来源、连续≥36000-tick和整体验收仍未通过。[R73 Ti矿机重建与未接通边界](evidence/2026-10-07/continuing-oil-supply.md)
 
 2026-10-07 — R33将lifetime 240推进至250，normal Save `99543357/R136/J100`封存external10/10；root十写审计核销10笔completed、0 replay/unknown/inflight/unpaired。新增sorter `6189–6197`完成18条互惠端点连接，同tick cut的11条Native路径全空；source `4450`尚未admit。后续R42 fast-sorter Native prepare positive、0 commit；source admission与持续供给尚未通过。[lifetime250主干接缝十写封窗](evidence/2026-10-07/continuing-oil-supply.md)。

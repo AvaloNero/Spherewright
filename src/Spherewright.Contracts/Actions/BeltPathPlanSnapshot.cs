@@ -10,6 +10,9 @@ public sealed class BeltPathPlanSnapshot
     public string DestinationBindingMode { get; set; } = "none";
     public int? ReusedDestinationObjectId { get; set; }
     public string? DestinationPreservationMode { get; set; }
+    /// <summary>Present only for a stock-free, unpowered Ti miner feeding the retained SOURCE path of an empty join.</summary>
+    public int? UnpoweredSourceMinerObjectId { get; set; }
+    public string? UnpoweredSourceMinerStateHash { get; set; }
     public int NewObjectCount { get; set; }
     /// <summary>Null in legacy responses; a non-default request requires an exact explicit echo.</summary>
     public string? RoutingMode { get; set; }

@@ -90,6 +90,7 @@ public static class BeltSourceReusePolicy
             || plan.ItemBudget is null || plan.ItemBudget.Count != 1 || plan.ItemBudget[0] is null || plan.ItemBudget[0].ItemId != itemId
             || plan.ItemBudget[0].Count != echo.NewObjectCount || plan.ItemBudget[0].Direction != "construction-consumption") return false;
         if (sourceId > 0 && destinationId > 0 && sourceId == destinationId) return false;
+        if (!ConfirmsUnpoweredSourceFeedEcho(echo, itemId, sourceId, destinationId)) return false;
         return echo.DestinationBindingMode switch
         {
             // Older echoes omit this field (whose contract default is none), but can still bind a device destination.
@@ -104,6 +105,21 @@ public static class BeltSourceReusePolicy
                 && ConfirmsTargetCoverSourceEcho(echo, sourceId),
             _ => false,
         };
+    }
+
+    private static bool ConfirmsUnpoweredSourceFeedEcho(BeltPathPlanSnapshot echo, int itemId, int sourceId, int destinationId)
+    {
+        if (!echo.UnpoweredSourceMinerObjectId.HasValue && echo.UnpoweredSourceMinerStateHash is null) return true;
+        var id = echo.UnpoweredSourceMinerObjectId.GetValueOrDefault();
+        var hash = echo.UnpoweredSourceMinerStateHash;
+        return itemId == 2001 && sourceId > 0 && destinationId > 0 && id > 0
+            && id <= BeltBuildOccupancyPolicy.MaximumFactorySlots && id != sourceId && id != destinationId
+            && echo.SourceBindingMode == "non_removing_belt_cover" && echo.ReusedSourceObjectId == sourceId
+            && echo.SourcePreservationMode == BeltSourceRotationPolicy.PreservationMode
+            && echo.DestinationBindingMode == "non_removing_belt_cover" && echo.ReusedDestinationObjectId == destinationId
+            && echo.DestinationPreservationMode == BeltDestinationReusePolicy.PreservationMode
+            && hash is not null && hash.Length == 71 && hash.StartsWith("sha256:", StringComparison.Ordinal)
+            && hash.Skip(7).All(character => (character >= '0' && character <= '9') || (character >= 'a' && character <= 'f'));
     }
 
     private static bool ConfirmsSourceOnlyEcho(BeltPathPlanSnapshot echo, int sourceId) => echo.SourceBindingMode switch

@@ -4,9 +4,9 @@
 
 ## 当前 owned 状态
 
-- 最新正常保存仍为 `99724071/R150/J100`；之后完成的两笔普通动作尚未由新Save覆盖。R73独立核对 `19d9202f3573437bbb70dc54f6431054:18`（SHA-256 `BCEB4F602F812E4255D90DB111976C0F0F1042FC42A472B61895CD764D7AA0EE1`）确认当前在P102/R154、external `2/10`、lifetime `262`，无在途或unknown。普通业务保持冻结，normal Save仍为预留动作。
-- R73本地factory读回为181 built/0 prebuild；相对R61仅见1项pose/resources变化与7项input移除，无其他静态变化。同tick cut覆盖163个支持对象、5条完整Native路径及151个belt成员；station 44以同tick点读核对，unsupported对象未当作零库存。完整阶段记录见[持续授权与油路事件](evidence/2026-10-07/continuing-oil-supply.md)。
-- R66拆除旧空miner1后，R71 Native Build完成新miner ID1并消耗 `2301×1`；19个Ti节点的5组读数为 `318/326/309/310/312`。N1为full-serve、实际work `7000 J/t`；旧stage检查把idle读值400当作work，因此 `oldStagePowerConditionPassed=false`。新miner的 `connections[]` 为空，旧7仍保留out8，Ti自动来源尚未接通。
+- 最新正常保存仍为 `99724071/R150/J100`；之后完成的两笔普通动作尚未由新Save覆盖。R73独立核对 `19d9202f3573437bbb70dc54f6431054:18`（SHA-256 `BCEB4F602F812E4255D90DB111976C0F0F1042FC42A472B61895CD764D7AA0EE`）确认当前在P102/R154、external `2/10`、lifetime `262`，无在途或unknown。普通业务保持冻结，normal Save仍为预留动作。
+- R73本地factory读回为181 built/0 prebuild；相对R61仅对象1的pose/resources变化及对象7的旧input移除，无其他静态变化。同tick cut覆盖163个支持对象、5条完整Native路径及151个belt成员；station 44以同tick点读核对，unsupported对象未当作零库存。完整阶段记录见[持续授权与油路事件](evidence/2026-10-07/continuing-oil-supply.md)。
+- R66拆除旧空miner1后，R71 Native Build完成新miner ID1并消耗 `2301×1`；资源组19内的5个Ti节点读数为 `318/326/309/310/312`。N1为full-serve、实际work `7000 J/t`；旧stage检查把idle读值400当作work，因此 `oldStagePowerConditionPassed=false`。新miner的 `connections[]` 为空，旧7仍保留out8，Ti自动来源尚未接通。
 - 安装cohort仍为 `d744b8e6eb5b898b9e9484b2209c30380e40ddda`，64 tools/1 resource；same-star factory读取和64-item sampler改动仍只经过离线验证，尚未部署或实机验证。Steam保留运行。
 
 ## Gate 2 边界

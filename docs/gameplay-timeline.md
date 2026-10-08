@@ -5928,4 +5928,4 @@ factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembl
 - 2026-10-08：R321只读联合观察出现24-tick间隙，未取得36,000连续ticks；R322核销continuous credit为0，详见[观察缺口事件](evidence/2026-10-08/joint-observation-gap-r321.md)。
 - 2026-10-08：R323完成36,316个连续game ticks的联合只读采样，R324核销来源条件未通过、continuous credit仍为0；详见[阶段证据](evidence/2026-10-08/joint-supply-long-window-r324.md)。
 - 2026-10-09：R438完成36090个无缺口ticks，R441核验四项计数下界与三厂电力达标、但五项库存下降超容差；R443确认有限出发清单已齐，持续来源仍未通过，详见[来源书挡与清单核对](evidence/2026-10-09/full-source-bookends-r441.md)。
-- 2026-10-09：R447回收空载耗尽的矿机86并正常保存；R449核验既有矿机未覆盖石料矿点，新的矿机位置又被Native碰撞拒绝，来源仍未恢复且当前窗口未闭合，详见[石料来源恢复阶段](evidence/2026-10-09/stone-source-recovery-r449.md)。
+- 2026-10-09：R447回收空载耗尽的矿机86并保存；R449核验来源未恢复，R451核销原17笔并完整封窗，剩余3额度不转移，详见[石料来源检查与封窗](evidence/2026-10-09/stone-source-recovery-r449.md)。

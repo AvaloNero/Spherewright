@@ -5909,3 +5909,4 @@ factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembl
 - 2026-10-04：固定32实体/15物料的连续只读采样覆盖36,125 ticks，1210非重叠产量下界16；随后22项runtime source-point reads纠正了163/784的当时库存标签（氢而非油）。原静态filter=1114路径是物料一致的候选，不证明实际油流或持续来源；有限缓存排除仍未证明。save维持89919581/R18/J100、最新观察90141554、0写入。详见[阶段证据](evidence/2026-10-02/warper-automatic-source-and-build.md)。
 - 2026-10-08：R282十笔核销及健康恢复后保存完成；铁源与全物料短窗已记录，持续供需、36,000-tick长窗和双补给仍未通过，详见[事件证据](evidence/2026-10-08/iron-routing-full-material-ten-r282.md)。
 - 2026-10-08：R303十笔已由正常保存覆盖，ILS准备与全厂/物料快照已封存；持续共享供需和36,000-tick门仍未通过，详见[事件证据](evidence/2026-10-08/departure-ils-ten-r303.md)。
+- 2026-10-08：R312十笔由保存覆盖，便携套件与铜节点变化完成封窗核销；全局供需、Rod carry和36,000-tick门仍未通过，详见[事件证据](evidence/2026-10-08/departure-small-kit-ten-r312.md)。

@@ -59,6 +59,8 @@ internal sealed partial class NormalGameActionCoordinator
         var playerActionHash = CanonicalStateHash.PlayerAction(playerResult.Value);
         var emptyStorageHash = target.ComponentKind == "storage"
             ? CaptureEmptyStorageDismantleBoundary(target, false).NativeHash : string.Empty;
+        var emptyBeltHash = target.ComponentKind == "belt"
+            ? CaptureEmptyBeltDismantleBoundary(target, false).NativeHash : string.Empty;
         var expectedHash = CanonicalStateHash.Combine(
             NormalActionKinds.Dismantle,
             _sessions.SessionId,
@@ -69,6 +71,8 @@ internal sealed partial class NormalGameActionCoordinator
             target.ItemId);
         if (emptyStorageHash.Length != 0)
             expectedHash = CanonicalStateHash.Combine(expectedHash, emptyStorageHash);
+        if (emptyBeltHash.Length != 0)
+            expectedHash = CanonicalStateHash.Combine(expectedHash, emptyBeltHash);
         var payload = NormalActionPlanPayload.Dismantle(
             _sessions.SessionId!,
             request.PlanetId,
@@ -76,12 +80,12 @@ internal sealed partial class NormalGameActionCoordinator
             playerActionHash,
             target.EndpointStateHash,
             target.ObjectId,
-            target.ItemId, emptyStorageHash);
+            target.ItemId, emptyStorageHash, emptyBeltHash);
         var prepared = AddPreparedPlan(
             payload,
             common.Session!,
             1,
-            "DSP's normal PlayerAction_Build.DoDismantleObject removes the exact supported miner, basic sorter, or isolated empty default2101 storage. Readback proves disappearance and recovery; empty storage additionally preserves surviving entities/prebuilds and connections. No automatic rebuild or slot write.");
+            "DSP's normal PlayerAction_Build.DoDismantleObject removes the exact supported miner, basic sorter, isolated empty default2101 storage, or isolated empty2001 chain head (at most16 belts/512 cells). Readback proves disappearance and recovery; empty storage/belt additionally preserve surviving entities/prebuilds/connections, with touched belt rotations proven from exact native geometry. No automatic rebuild or slot write.");
         if (prepared.Success && prepared.Value is not null)
         {
             prepared.Value.TargetObjectId = target.ObjectId;
@@ -130,6 +134,9 @@ internal sealed partial class NormalGameActionCoordinator
         if (targetResult.Value.ComponentKind == "storage"
             && CaptureEmptyStorageDismantleBoundary(targetResult.Value, false).NativeHash != plan.StorageNativeStateHash)
             return Stale("The empty storage native identity or contents changed after dismantle preparation.");
+        if (targetResult.Value.ComponentKind == "belt"
+            && CaptureEmptyBeltDismantleBoundary(targetResult.Value, false).NativeHash != plan.EmptyBeltNativeStateHash)
+            return Stale("The empty belt chain native identity, geometry, topology or cargo changed after dismantle preparation.");
         return null;
     }
 
@@ -142,11 +149,12 @@ internal sealed partial class NormalGameActionCoordinator
             || target.ObjectId <= 0
             || target.ItemId <= 0
             || !(target.ComponentKind == "miner" || target.ComponentKind == "inserter" && SorterDismantlePolicy.Supports(target.ItemId)
-                || EmptyStorageDismantlePolicy.SupportsSnapshot(target)))
+                || EmptyStorageDismantlePolicy.SupportsSnapshot(target)
+                || EmptyBeltDismantlePolicy.SupportsSnapshot(target)))
         {
             return BridgeError.Create(
                 BridgeErrorCodes.InvalidRequest,
-                "Dismantle accepts a resource miner, ordinary2011/2012 sorter, or isolated empty default2101 storage only.",
+                "Dismantle accepts a resource miner, ordinary2011/2012 sorter, isolated empty default2101 storage, or isolated empty2001 chain head only.",
                 false,
                 "Inspect one supported positive entity and prepare again; other types are not implicitly authorized.");
         }
@@ -158,11 +166,12 @@ internal sealed partial class NormalGameActionCoordinator
                 && item.prefabDesc.minerType != EMinerType.Vein
                 && item.prefabDesc.minerType != EMinerType.Oil)
             || (target.ComponentKind == "inserter" && !item.prefabDesc.isInserter)
-            || (target.ComponentKind == "storage" && !item.prefabDesc.isStorage))
+            || (target.ComponentKind == "storage" && !item.prefabDesc.isStorage)
+            || (target.ComponentKind == "belt" && !item.prefabDesc.isBelt))
         {
             return BridgeError.Create(
                 BridgeErrorCodes.InvalidRequest,
-                "The inspected entity is not a supported current-version resource miner, basic sorter or empty storage.",
+                "The inspected entity is not a supported current-version resource miner, basic sorter, empty storage or empty basic belt head.",
                 false,
                 "Use one explicitly supported entity; no general building removal.");
         }
@@ -214,6 +223,16 @@ internal sealed partial class NormalGameActionCoordinator
             {
                 return BridgeError.Create(BridgeErrorCodes.BuildConnectionInvalid, error.Message, false,
                     "Only an empty default2101 with no layers, add-on, entity/prebuild links or cached references is recoverable. Never force removal or automatically rebuild.");
+            }
+        }
+
+        if (target.ComponentKind == "belt")
+        {
+            try { CaptureEmptyBeltDismantleBoundary(target, false); CaptureDismantleInventoryInc(GameMain.mainPlayer); }
+            catch (InvalidOperationException error)
+            {
+                return BridgeError.Create(BridgeErrorCodes.BuildConnectionInvalid, error.Message, false,
+                    "Only a complete empty isolated2001 chain head (at most16 belts/512 cells) is recoverable. Disconnect external endpoints normally first; never force removal.");
             }
         }
 
@@ -270,15 +289,23 @@ internal sealed partial class NormalGameActionCoordinator
         var expectedRecovery = CaptureExpectedDismantleRecovery(targetResult.Value);
         var sorter = targetResult.Value.ComponentKind == "inserter";
         var emptyStorage = targetResult.Value.ComponentKind == "storage";
+        var emptyBelt = targetResult.Value.ComponentKind == "belt";
         EmptyStorageDismantleBoundary? emptyBoundary = null;
+        EmptyBeltDismantleBoundary? beltBoundary = null;
         if (emptyStorage)
         {
             if (RevalidateDismantlePlanOnMainThread(action.Plan) is not null)
                 throw new InvalidOperationException("Empty storage lost its prepared recovery proof before execution.");
             emptyBoundary = CaptureEmptyStorageDismantleBoundary(targetResult.Value, true);
         }
+        if (emptyBelt)
+        {
+            if (RevalidateDismantlePlanOnMainThread(action.Plan) is not null)
+                throw new InvalidOperationException("Empty belt lost its prepared recovery proof before execution.");
+            beltBoundary = CaptureEmptyBeltDismantleBoundary(targetResult.Value, true);
+        }
         var survivors = sorter ? CaptureSorterDismantleNeighbors(targetResult.Value) : new List<FactoryEntitySnapshot>();
-        var beforeInc = sorter || emptyStorage ? CaptureDismantleInventoryInc(player) : null;
+        var beforeInc = sorter || emptyStorage || emptyBelt ? CaptureDismantleInventoryInc(player) : null;
         var cargo = targetResult.Value.Buffers.SingleOrDefault(b => b.Role == "inserter-held");
         foreach (var survivor in survivors)
             survivor.Connections.RemoveAll(e => e.OtherObjectId == action.Plan.EntityId);
@@ -306,6 +333,13 @@ internal sealed partial class NormalGameActionCoordinator
             VerifyEmptyStorageDismantleBoundary(action.Plan.EntityId, emptyBoundary);
             if (!SorterDismantlePolicy.ProvesIncRecovery(beforeInc!, CaptureDismantleInventoryInc(player), 0, 0))
                 throw new InvalidOperationException("Empty storage recovery changed inventory proliferation points.");
+        }
+
+        if (beltBoundary is not null)
+        {
+            VerifyEmptyBeltDismantleBoundary(action.Plan.EntityId, beltBoundary);
+            if (!SorterDismantlePolicy.ProvesIncRecovery(beforeInc!, CaptureDismantleInventoryInc(player), 0, 0))
+                throw new InvalidOperationException("Empty belt recovery changed inventory proliferation points.");
         }
 
         var afterTarget = _reader.InspectFactoryEntityOnMainThread(
@@ -338,7 +372,8 @@ internal sealed partial class NormalGameActionCoordinator
         Complete(action,
             $"DSP's normal dismantle path removed {targetResult.Value.ComponentKind} {action.Plan.EntityId} and returned its building item plus live recoverable cargo with exact inventory conservation."
             + (sorter ? $" Cargo inc and {survivors.Count} surviving endpoint configurations/connections were verified; no slot write or automatic rebuild occurred." : "")
-            + (emptyStorage ? " Empty default2101 refund, unchanged inventory inc and all surviving entities/prebuilds/connections were verified; no automatic rebuild occurred." : ""));
+            + (emptyStorage ? " Empty default2101 refund, unchanged inventory inc and all surviving entities/prebuilds/connections were verified; no automatic rebuild occurred." : "")
+            + (emptyBelt ? " Empty2001 head refund, unchanged inventory inc, complete remaining empty chain and all surviving entities/prebuilds/connections were verified; only exact native renderer rotations may change. No automatic rebuild occurred." : ""));
     }
 
     private List<FactoryEntitySnapshot> CaptureSorterDismantleNeighbors(FactoryEntitySnapshot target)
@@ -414,6 +449,8 @@ internal sealed partial class NormalGameActionCoordinator
 
     private sealed partial class NormalActionPlanPayload
     {
+        public string EmptyBeltNativeStateHash { get; set; } = string.Empty;
+
         public static NormalActionPlanPayload Dismantle(
             string sessionId,
             int planetId,
@@ -421,7 +458,7 @@ internal sealed partial class NormalGameActionCoordinator
             string playerStateHash,
             string endpointStateHash,
             int entityId,
-            int buildingItemId, string emptyStorageNativeHash = "") => new NormalActionPlanPayload
+            int buildingItemId, string emptyStorageNativeHash = "", string emptyBeltNativeHash = "") => new NormalActionPlanPayload
             {
                 ActionKind = NormalActionKinds.Dismantle,
                 SessionId = sessionId,
@@ -432,6 +469,7 @@ internal sealed partial class NormalGameActionCoordinator
                 EntityId = entityId,
                 BuildingItemId = buildingItemId,
                 StorageNativeStateHash = emptyStorageNativeHash,
+                EmptyBeltNativeStateHash = emptyBeltNativeHash,
                 Count = 1,
                 EstimatedTicks = 1,
             };

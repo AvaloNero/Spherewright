@@ -1,18 +1,19 @@
 # Spherewright 当前快照
 
-更新：2026-10-08（Asia/Singapore）。本页覆盖最新已核事实；本阶段离线读取维护见[同星仿真驻留工厂与材料切片读取维护](evidence/2026-10-08/simulation-resident-material-read-maintenance.md)。整案验收仍未通过。
+更新：2026-10-08（Asia/Singapore）。本页覆盖最新已核事实；本窗口封存见[共享精炼燃料耦合与物料十写封窗](evidence/2026-10-08/shared-refinery-fuel-coupling-material-ten.md)。整案验收仍未通过。
 
 ## 当前 owned 状态
 
-- 当前为P104/R1/J100，健康主档恢复后的normal Save为 `100406366`；external `7/10 FROZEN`、lifetime `287`，无unknown或在途。root R98独立核验确认当前owned状态、保存与完整J100。
-- P102源端由R122新建分拣器16（`2012/filter1004`，pick185→insert61）和电塔187；185→16→61互惠连接成立。root R123读回确认来源几何和供电有效，Ti货物已进入完整原生路径；连续验收credit为0。P102矿机1及分拣器16在N1 full-serve。
-- 源码提交 `863d35546f6cb49fcdaec5b5814869d1e13af42b`（Windows Core CI `37698616442` success）已完成同源冷部署：locked restore/Native29104 Release build-test-publish证据为 `2441d64ed9064d06810bfcfd10acad36:5`，SHA-256 `A65BD874A05A0EE1C84588C2CA27E3D305EAC4D56690CECCAE07147E9EB8CC08`，2672 tests、228 files、64 tools/1 resource。R130普通保存 `100406334/R37/J100` 经R132独立核验；R133确认正常关闭、228哈希匹配、保留Steam 36408，仅一次桌面启动分发，没有强制关闭、Host测试或手动加载。
-- 冷部署后已健康恢复同一主档。一次旧Gate参数在Native请求前被拒绝（0 accepted），修正调用方后primary resume完成并停止：P104/R1/J100，Save `100406366`，external7/lifetime287。R98独立复核当前状态及完整库存/inc/held与J100；本次没有游戏写入或重新部署。
-- 新增只读能力已在部署后实机验证：P104本地同tick切片覆盖46对象、station1657与16台普通fuel generator；P102远端切片覆盖8对象与3条完整Native路径，读取到Ti200/Si500。两个星球的切片各自保留Native tick，不跨tick拼库存。订单、loaded heat与J/t电力buffer不计作item stock。unsupported或身份缺失保持unobserved；过量对象请求和异星陈旧索引明确拒绝。所有normal-action prepare/commit仍严格限本地星球，原cut预算与64 tools/1 resource不变。
+- 当前为P104/R5/J100，Save `100546323`；external `10/10 FROZEN`、lifetime `290`，无unknown或在途，健康owned同档。root独立十写审计 `5b5f5b68ecd04f1795f25bef2c064aa7:1`（SHA-256 `83119F6A7D229D5C48D6AB4BC7AE48A8EDE8FA5943067D4EAA3CCBCA26CA4253`）确认十笔已闭合且Save覆盖全部十笔。
+- 当前运行的代码仍是源码提交 `863d35546f6cb49fcdaec5b5814869d1e13af42b`（CI `37698616442` success）对应的已部署cohort；本次公共记录是独立的文档提交。部署包锁定构建/测试证据为 `2441d64ed9064d06810bfcfd10acad36:5`，SHA-256 `A65BD874A05A0EE1C84588C2CA27E3D305EAC4D56690CECCAE07147E9EB8CC08`，2672 tests、228 files、64 tools/1 resource。
+- R152审计核对完整6198对象快照与历史6197基线：新增历史对象6198及4450/6090声明连接；P102为169个支持物料对象、156条带、6条完整Native路径。矿机1由N0转为N1，N1为18节点/10消费者/10发电机、full-serve、55000 J/t容量；分拣器16和电塔187的Native位置匹配。此证据不是新的完整电网姿态帧。
+- 当前完整读回确认P102 N1与P104 N3（224节点/555消费者/134发电机）均full-serve，16个普通fuel状态可读。R148材料终态为玩家Fe56、circuit930、2011分拣器8、belt11；老铁矿1496的44/53矿脉已由Native报尽（remaining_resource=0），后续不得计作持续铁源。
 
 ## Gate 2 边界
 
 - 原油5949→3964持续保留。G源4450经快速分拣器6198接至6090；R47读回证明11条新G路径有货、3台新thermal已进燃料并发电。新diamond支路5334实际供料仍未证明；旧煤源5580保留。R50的600-tick、30-item P/C只是短窗诊断，没有连续验收credit。
-- 新实机切片验证了本地P104站点/普通fuel缓冲与远端P102物料读取，不构成持续供给或供需平衡证据；两地切片不是同一tick。此前P104 station1657短期有船有货只代表一次运输/进料活动。共享H/D/G/副产物与旧燃料竞争仍待完整复核。
+- R152十笔封窗覆盖R122、R124、R130、R136与R148各阶段。R145在Native prepare前因Fe仅39低于64而停止；R147基于Fe2693及69.906m有效范围取得positive预览，R148取64 Fe后制作r85×8。原有最终封存字段格式错误由R149按原intent与新鲜读回核销，动作未重放。
+- R148取材Native终态为存储Fe2698→2634，32 tick后2635属于自然边界变化；r85×8后玩家阶段净变化为Fe+56、circuit−8、2011分拣器+8。R152保存 `100546323/R5/J100`覆盖全部十笔。P102矿机/线路及旧配置保持；历史6198与两处连接声明不代表完整供电姿态快照。
 - R118被动供给仍是离线条件模型：2台矿机、7台分拣器、station44闲置负载与充电器估算 `19800 J/t`，低于N1的 `55000 J/t`容量；这不证明远端运输或长窗稳定供电。`597300 J/t`全负荷理论需求仍高于容量，Foundry full-load baseline为false。
-- 连续credit仍为0。下一步是在完整共享供需复核后，必要时做有限修复，再预声明连续≥36000-tick窗口；燃料/翘曲器双自动补给、净库存守恒、最终保存恢复整合及同SHA双候选包仍未通过，整案保持 `executable=false`。
+- 下一阶段只是有界设计上限：最多新增60条belt、8台normal sorter、0台generator、0拆厂；待fresh资格与root授权后，拟连接G 4223→3298（18.4327m）及refined 4049→3111（36.4285m）。当前G源离玩家95.6m，需正常移动后才可能施工；材料预测为r5×18加r84×18消耗54 Fe、产54 belt，与现11合计65，超60条规划上限需继续压缩。预测的新增sorter负载上界7200 J/t；均未施工或验收。
+- 原油、旧煤与既有G前缀保留，但diamond 5334供料、共享物料/电力平衡和旧燃料竞争仍待复核。连续credit仍为0；连续≥36000-tick窗口、燃料/翘曲器双自动补给、最终保存恢复整合与同SHA双候选包均未通过，整案保持 `executable=false`。

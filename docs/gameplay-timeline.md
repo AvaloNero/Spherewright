@@ -3,7 +3,7 @@
 更新时间：2026-10-09（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-09 — R389连续观察在32,295 ticks后因sample间33 ticks缺口自动失败；R391独立核对17组cuts，发现石墨、氢、材料1127分别超过申报容差，末组无closing cut。当前R89/Save `102564883`、external3/20、lifetime378冻结，continuous credit仍为0；R392在首条Native请求前因调用方引用错误停止（0 Native responses/0 intent/0 accepted），root修复后批准R394有界只读诊断，结果待出。[联合来源缺口与R391前缀核验](evidence/2026-10-09/joint-source-gap-and-prefix-r391.md)
+2026-10-09 — R389连续观察在32,295 ticks后因sample间33 ticks缺口自动失败；R391独立核对17组cuts，发现高能石墨1109、磁铁1102、奇异物质1127分别超过申报容差，末组无closing cut。当前R89/Save `102564883`、external3/20、lifetime378冻结，continuous credit仍为0；R394只读诊断已完成（16次读取、0 Game写入），R395独立核验准备中。[联合来源缺口与R391前缀核验](evidence/2026-10-09/joint-source-gap-and-prefix-r391.md)
 
 2026-10-08 — R364完成9笔材料准备并保存至`102313600/R74/J102`，R365独立核销；当前新窗口external9/20、lifetime368冻结。R359/R361仅资格化结构绕行与有界材料范围，整路尚未施工、持续供给未通过。[油路绕行材料封窗](evidence/2026-10-08/oil-detour-material-r365.md)
 

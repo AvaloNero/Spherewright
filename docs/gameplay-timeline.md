@@ -3,6 +3,8 @@
 更新时间：2026-10-08（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-08 — R334保存并独立核销铁入口升级阶段：保留原转移终态、不重放，完成r88手搓与2351 sorter升级，普通Save `101943803/R47/J102`；持续供需与36,000-tick门仍未通过。[R334铁入口升级](evidence/2026-10-08/iron-admission-upgrade-r334.md)
+
 2026-10-08 — R218独立审计通过并核销十笔成功动作及Save `100924863/R42/J100`覆盖；R215手采Iron54得10 Ore，矿机1496已回收重建但出口仍空。R219原生配方资格positive、0 accepted，未制作；铁线、共享供需与连续窗口仍未通过。[铁源回收、备料与十写封窗](evidence/2026-10-08/iron-source-recovery-ten-r218.md)
 
 2026-10-08 — R185完成G侧16带/3 sorter与R侧首12带；10笔unique intent由Save `100842338/R23/J100`覆盖，root审计为9成功、1笔已知停滞Move失败、无unknown或在途。完整快照6229 built/0 prebuild，G Native路径见到1109但持续燃烧/供给及Gate 2仍未通过。[G/R燃料接线进度与R185十写封窗](evidence/2026-10-08/fuel-coupling-ten-r185.md)

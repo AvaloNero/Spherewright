@@ -1,17 +1,19 @@
 # Spherewright 当前快照
 
-更新：2026-10-08（Asia/Singapore）。R323联合供需长窗与R324独立核销见[本阶段事件](evidence/2026-10-08/joint-supply-long-window-r324.md)。前一轮观察缺口仍保留在[R321/R322事件](evidence/2026-10-08/joint-observation-gap-r321.md)；更早的Rod carry与七写阶段见[R320事件](evidence/2026-10-08/departure-rod-carry-seven-r320.md)。
+更新：2026-10-08（Asia/Singapore）。最新阶段保存与独立审计见[R334铁入口升级事件](evidence/2026-10-08/iron-admission-upgrade-r334.md)；联合供需长窗的来源条件未通过，见[R323/R324原件](evidence/2026-10-08/joint-supply-long-window-r324.md)。
 
 ## 当前 owned 状态
 
-- 固定20写窗口仍为external `7`、lifetime `347`、R41；普通Save `101620229`/J102保持。R323完成只读连续观察，0 Game writes、0 accepted；双边玩家/J102读回一致，owned和平、非沙盒1×、healthy。无intent/unknown，窗口冻结，未重开。
-- R323在同一健康区间采得71个样本、连续`36,316` game ticks、reset `0`，共1,032次Native读取、总耗时约`1085.39`秒。pairwise-disjoint计数下Warp `1210`保守下界为8件（`0.793038880934/min`），Rod `1802`为10件（`0.991298601168/min`）。这是下界证据不足，不能推成实际产率低于1/min，也没有达到声明目标的验收要求。
-- 29物料池中，`1109`由`1614→1562`（−52，允许3）、`1120`由`5382→5340`（−42，允许10）、`1203`由`2467→2452`（−15，允许2）；接通D的独立H池`46→46`，排除legacy H混计。P102钛石`1004`与P104钛块`1106`输出均为0，但原矿机output读数为50、钛熔炉output读数为100且上下游库存满；不能据此判断矿竭或容量不足。远端节点剩余量仍未知。
-- 采样点电力均full-serve，原静态与完整路径保留；R324判定source conditions未通过，continuous credit为`0`、`wholeSupplyPassed=false`。下一步先按本次原件定位三个库存下降及计量局限，只fresh检查相关生产端接口，再决定最小修复与新的有界长窗；不做无目标全厂重采。
-- 执行源码基准仍为`e5d95d34297a468e11d61509d03f04a38c70aaf4`（Windows CI `37763171765` success）；已安装二进制仍为cohort `863d35546f6cb49fcdaec5b5814869d1e13af42b`。
+- 当前为R47/J102，普通Save `101943803`；external `11`、lifetime `351`。固定20写窗口仍开放但冻结，无在途或unknown。R334独立审计确认本阶段已保存的业务动作均已核销。
+- R327有一次成功的物料转移；客户端随后因库存汇总解析失败停止。R331/R333只读核销了同一原动作的Native终态与双边`1203`守恒，没有重放或重复转移。
+- 后续三笔accepted为r88×1手搓、原生升级与普通保存。相对转移核销后的库存净变化为`1203 −1`、`2011 −1`、`2012 +1`；玩家最终持有`2011×1`、`2012×1`、`1203×0`，出发套件其余项目不变。
+- 物件`2351`升级后保持原ID，现为`2012/filter1101`，接入`2348→723`。原货物数量及增量、两条互惠连接和分拣器循环比例保留；9个相关DTO静态检查及本地满电检查通过。
+- 执行源码基准仍为`e5d95d34297a468e11d61509d03f04a38c70aaf4`，已安装二进制仍为`863d35546f6cb49fcdaec5b5814869d1e13af42b`。
 
 ## Gate 2 边界
 
-- R324独立审计：`0ea664292d784e6aa7ed9dd6c6ab0922:20`，SHA-256 `EEBF1E979B48674B09B75270DE7AA46ABF6C305C296620376C63DE32E3225FB6`；审计完成，但`sourceConditionsPassed=false`。R323原记录：`8e075abd2cc74a068c98e54bce586984:1–1145`，SHA-256 `C73B3337A99E26C0547FCACD3483F96F043A02C7BE93EF55DBFE4AE820098CD8`；caller SHA-256 `A4C525E6254D7FEF56635A25B00480318F557156EE70CEE7A0A21BD44EC112DF`。
-- H/D/Fe自动共享来源、双自动补给、完整清单速率与运输供电余量、远端Ti、连续至少36,000 ticks、整合保存恢复及最终同SHA双候选包仍未验收；既有蓝图生命周期与Governor 2×门保持先前通过范围，不重开或扩大；整案仍为`executable=false`。
-- 既有阶段证据仅保留原件链接，不在当前快照重述旧流水：[Gate 2生产证据](evidence/2026-10-02/warper-automatic-source-and-build.md)、[R282](evidence/2026-10-08/iron-routing-full-material-ten-r282.md)、[R303](evidence/2026-10-08/departure-ils-ten-r303.md)、[R312](evidence/2026-10-08/departure-small-kit-ten-r312.md)、[R320](evidence/2026-10-08/departure-rod-carry-seven-r320.md)、[R321/R322](evidence/2026-10-08/joint-observation-gap-r321.md)。
+- R334证明本阶段保存与独立核销完成，不证明持续产量或整体供给。R323的`36,316`连续tick观察仍由R324判定`sourceConditionsPassed=false`，continuous credit为`0`，整案保持`executable=false`、`wholeSupplyPassed=false`。
+- 双自动补给、完整清单速率与运输供电余量、远端Ti、连续至少36,000 ticks、整合保存恢复及最终同SHA双候选包仍未验收。已通过的蓝图生命周期与Governor 2×范围保持原结论，不重开或扩大。
+- 下一步只读检查铁入口升级效果及旧油/石墨共享支路的真实供需，再据此确定有界修复和新长窗；R323/R324未通过结论保持不变。
+
+历史证据只通过[Gate 2生产阶段](evidence/2026-10-02/warper-automatic-source-and-build.md)、[R282铁路由封窗](evidence/2026-10-08/iron-routing-full-material-ten-r282.md)、[R303远征ILS封窗](evidence/2026-10-08/departure-ils-ten-r303.md)、[R312小型套件封窗](evidence/2026-10-08/departure-small-kit-ten-r312.md)、[R320 Rod carry阶段](evidence/2026-10-08/departure-rod-carry-seven-r320.md)、[R321/R322观察缺口](evidence/2026-10-08/joint-observation-gap-r321.md)及[R323/R324联合长窗](evidence/2026-10-08/joint-supply-long-window-r324.md)查阅；本快照不复述旧阶段流水。

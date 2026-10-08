@@ -137,7 +137,7 @@ function Invoke-SpherewrightBridgeRequest([string]$Method,[string]$SessionId,[ha
     [pscustomobject]@{success=$true;result=$result}
 }
 function Run-Qualification([int]$Accepted=10) {
-    Invoke-SpherewrightBeltSiteQualification -ApprovedPlan $script:plan -ExpectedRevision 7 -AcceptedBefore $Accepted -MinimumDurableSequence 1 -RecordEvidence {param($row)$script:evidence.Add($row)}
+    Invoke-SpherewrightBeltSiteQualification -ApprovedPlan $script:plan -ExpectedRevision 7 -AcceptedBefore $Accepted -AuditWindowLimit 10 -MinimumDurableSequence 1 -RecordEvidence {param($row)$script:evidence.Add($row)}
 }
 foreach($count in @(3,4,5)) {
     Reset-Qualification -Count $count
@@ -149,6 +149,10 @@ foreach($count in @(3,4,5)) {
     Assert-Qualification (-not$summary.futureActualIdJoinProven -and -not$summary.wholePlanExecutable -and $summary.doNotReplay) 'site previews never mean construction approval'
     Assert-Qualification (($summary|ConvertTo-Json -Depth 30)-notmatch'PRIVATE-FIXTURE-TOKEN' -and ($script:evidence|ConvertTo-Json -Depth 30)-notmatch'PRIVATE-FIXTURE-TOKEN') 'ordinary prepare tokens never enter returned or caller evidence'
 }
+Reset-Qualification -Count 3
+$summary = Invoke-SpherewrightBeltSiteQualification -ApprovedPlan $script:plan -ExpectedRevision 7 -AcceptedBefore 20 -MinimumDurableSequence 1 -RecordEvidence {param($row)$script:evidence.Add($row)}
+Assert-Qualification ($summary.result-ceq'qualified_sites_only' -and $summary.acceptedAfter-eq20 -and $summary.acceptedDelta-eq0 -and
+    $summary.auditWindowLimit-eq20 -and @($script:methods|Where-Object{$_ -like 'commit_*'}).Count-eq0) 'omitted read-only limit defaults to 20 at acceptedBefore 20 without consuming a write slot'
 foreach($count in @(3,4,5)) {
     Reset-Qualification -Count $count -Ground
     $summary=Run-Qualification 9

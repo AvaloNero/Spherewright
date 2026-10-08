@@ -72,7 +72,7 @@ function Invoke-SpherewrightBridgeRequest([string]$Method, [string]$SessionId, [
     }
     [pscustomobject]@{success=$true;result=$result}
 }
-$arguments = @{SessionId='fixture-session';PlanetId=104;GameVersion='fixture-version';TechId=2104;AcceptedBefore=8;ValidateResearchPlan={
+$arguments = @{SessionId='fixture-session';PlanetId=104;GameVersion='fixture-version';TechId=2104;AcceptedBefore=8;AuditWindowLimit=10;ValidateResearchPlan={
     param($p)
     if ($p.actionKind -cne 'select-research' -or @($p.itemBudget).Count -ne 4 -or
         $p.completionCondition -cne "DSP's normal technology queue contains the requested technology and currentTech reflects the queue head.") { return $false }
@@ -85,7 +85,7 @@ $arguments = @{SessionId='fixture-session';PlanetId=104;GameVersion='fixture-ver
 Reset-Stage
 $result = Invoke-SpherewrightResearchAndSave @arguments
 Assert-Stage ($result.acceptedDelta -eq 2 -and $result.acceptedAfter -eq 10 -and $result.frozen) 'counts actual accepted and freezes at ten'
-Assert-Stage ($result.auditWindowLimit -eq 10 -and $script:recorded.auditWindowLimit -eq 10) 'omitted window limit preserves the legacy ten-write default in result and evidence'
+Assert-Stage ($result.auditWindowLimit -eq 10 -and $script:recorded.auditWindowLimit -eq 10) 'explicit ten-write limit is preserved in result and evidence'
 Assert-Stage ($script:savePayload.expectedRevision -eq 7 -and $result.revision -eq 11 -and $result.durableThroughSequence -eq 95) 'uses actual revision and durable Journal, no plus-one or old J'
 Assert-Stage ($script:methods.Count -eq 14 -and @($script:methods | Where-Object {$_ -like 'commit_*'}).Count -eq 2) 'one research then one save, no replay'
 Assert-Stage ($script:researchPayload.techId -eq 2104 -and $script:researchBudget.Count -eq 4) 'accepts approved nonempty native future research budget'
@@ -135,6 +135,18 @@ foreach ($limit in @(20,50)) {
     try { Invoke-SpherewrightResearchAndSave @windowArguments | Out-Null } catch { $errorRecord = $_ }
     Assert-Stage ($null -ne $errorRecord -and $script:methods.Count -eq 0) "research/save $limit-write window reserves both slots before any read"
 }
+$defaultResearchArguments = @{}; foreach ($key in $arguments.Keys) { $defaultResearchArguments[$key] = $arguments[$key] }
+$defaultResearchArguments.Remove('AuditWindowLimit')
+$defaultResearchArguments.AcceptedBefore = 18
+Reset-Stage
+$defaultResearchResult = Invoke-SpherewrightResearchAndSave @defaultResearchArguments
+Assert-Stage ($defaultResearchResult.acceptedDelta -eq 2 -and $defaultResearchResult.acceptedAfter -eq 20 -and
+    $defaultResearchResult.frozen -and $defaultResearchResult.auditWindowLimit -eq 20 -and $script:recorded.auditWindowLimit -eq 20) 'omitted research limit defaults to 20 and exactly fills 18 to 20'
+$defaultResearchArguments.AcceptedBefore = 19
+Reset-Stage
+$defaultResearchBudgetError = $null
+try { Invoke-SpherewrightResearchAndSave @defaultResearchArguments | Out-Null } catch { $defaultResearchBudgetError = $_ }
+Assert-Stage ($null -ne $defaultResearchBudgetError -and $script:methods.Count -eq 0) 'default 20 research window rejects 19 before any request when two slots do not fit'
 $invalidWindowArguments = @{}; foreach ($key in $arguments.Keys) { $invalidWindowArguments[$key] = $arguments[$key] }
 $invalidWindowArguments.AuditWindowLimit = 11
 Reset-Stage
@@ -484,7 +496,7 @@ function Invoke-SpherewrightBridgeRequest([string]$Method, [string]$SessionId, [
 
 $materialArguments = @{
     SessionId='fixture-session';PlanetId=104;GameVersion='fixture-version';StorageEntityId=3051
-    MaterialItemId=1301;MaterialCount=1;RecipeId=85;CraftCount=1;AcceptedBefore=7;TimeoutSeconds=1
+    MaterialItemId=1301;MaterialCount=1;RecipeId=85;CraftCount=1;AcceptedBefore=7;AuditWindowLimit=10;TimeoutSeconds=1
     ValidateCraftPlan={
         param($plan)
         $budget=@($plan.itemBudget)
@@ -537,7 +549,7 @@ $materialTerminalIds=@($script:terminalActionIds)
 $materialMethods=@($script:commitMethods)
 Assert-MaterialStage ($materialSummary.result -ceq 'completed' -and $materialSummary.acceptedDelta -eq 3 -and
     $materialSummary.acceptedAfter -eq 10 -and $materialSummary.frozen) 'one transfer, handcraft and save consume three audit slots'
-Assert-MaterialStage ($materialSummary.auditWindowLimit -eq 10 -and $script:recordedMaterialSummary.auditWindowLimit -eq 10) 'omitted window limit preserves the legacy ten-write default in result and evidence'
+Assert-MaterialStage ($materialSummary.auditWindowLimit -eq 10 -and $script:recordedMaterialSummary.auditWindowLimit -eq 10) 'explicit ten-write limit is preserved in result and evidence'
 Assert-MaterialStage (($materialMethods -join ',') -ceq 'commit_transfer,commit_handcraft,commit_save' -and
     $materialCommitIds.Count -eq 3 -and @($materialCommitIds | Sort-Object -Unique).Count -eq 3) 'three distinct accepted actions occur in order'
 Assert-MaterialStage (($materialCommitIds -join ',') -ceq ($materialTerminalIds -join ',')) 'every terminal observes its same original action'
@@ -587,6 +599,19 @@ foreach ($limit in @(20,50)) {
     try { Invoke-SpherewrightMaterialHandcraftAndSave @windowArguments | Out-Null } catch { $errorRecord = $_ }
     Assert-MaterialStage ($null -ne $errorRecord -and $script:methods.Count -eq 0 -and $script:commitMethods.Count -eq 0) "material stage $limit-2 still cannot fit three slots before any read"
 }
+$defaultMaterialArguments = @{}; foreach ($key in $materialArguments.Keys) { $defaultMaterialArguments[$key] = $materialArguments[$key] }
+$defaultMaterialArguments.Remove('AuditWindowLimit')
+$defaultMaterialArguments.AcceptedBefore = 17
+Reset-MaterialStage
+$defaultMaterialSummary = Invoke-SpherewrightMaterialHandcraftAndSave @defaultMaterialArguments
+Assert-MaterialStage ($defaultMaterialSummary.acceptedDelta -eq 3 -and $defaultMaterialSummary.acceptedAfter -eq 20 -and
+    $defaultMaterialSummary.frozen -and $defaultMaterialSummary.auditWindowLimit -eq 20 -and
+    $script:recordedMaterialSummary.auditWindowLimit -eq 20 -and $script:commitMethods.Count -eq 3) 'omitted material limit defaults to 20 and exactly fills 17 to 20'
+$defaultMaterialArguments.AcceptedBefore = 18
+Reset-MaterialStage
+$defaultMaterialBudgetError = $null
+try { Invoke-SpherewrightMaterialHandcraftAndSave @defaultMaterialArguments | Out-Null } catch { $defaultMaterialBudgetError = $_ }
+Assert-MaterialStage ($null -ne $defaultMaterialBudgetError -and $script:methods.Count -eq 0 -and $script:commitMethods.Count -eq 0) 'default 20 material window rejects 18 before any request when three slots do not fit'
 
 $errorRecord=Invoke-MaterialFailure 'forge_queue'
 Assert-MaterialStage ($null -ne $errorRecord -and $errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 0 -and

@@ -129,7 +129,7 @@ function Invoke-SpherewrightBeltSiteQualification {
         [Parameter(Mandatory)]$ApprovedPlan,
         [Parameter(Mandatory)][ValidateRange(0, [long]::MaxValue)][long]$ExpectedRevision,
         [Parameter(Mandatory)][ValidateRange(0, 50)][int]$AcceptedBefore,
-        [ValidateSet(10, 20, 50)][int]$AuditWindowLimit = 10,
+        [ValidateSet(10, 20, 50)][int]$AuditWindowLimit = 20,
         [Parameter(Mandatory)][ValidateRange(0, [long]::MaxValue)][long]$MinimumDurableSequence,
         [Parameter(Mandatory)][scriptblock]$RecordEvidence
     )
@@ -339,7 +339,7 @@ function Invoke-SpherewrightResearchAndSave {
         [Parameter(Mandatory)][string]$GameVersion,
         [Parameter(Mandatory)][ValidateRange(1, [int]::MaxValue)][int]$TechId,
         [Parameter(Mandatory)][ValidateRange(0, 50)][int]$AcceptedBefore,
-        [ValidateSet(10, 20, 50)][int]$AuditWindowLimit = 10,
+        [ValidateSet(10, 20, 50)][int]$AuditWindowLimit = 20,
         [Parameter(Mandatory)][scriptblock]$ValidateResearchPlan,
         [Parameter(Mandatory)][scriptblock]$RecordEvidence,
         [bool]$PrioritizeQueued = $false,
@@ -435,7 +435,7 @@ function Invoke-SpherewrightMaterialHandcraftAndSave {
         [Parameter(Mandatory)][ValidateRange(1, 2147483647)][int]$RecipeId,
         [Parameter(Mandatory)][ValidateRange(1, 100)][int]$CraftCount,
         [Parameter(Mandatory)][ValidateRange(0, 50)][int]$AcceptedBefore,
-        [ValidateSet(10, 20, 50)][int]$AuditWindowLimit = 10,
+        [ValidateSet(10, 20, 50)][int]$AuditWindowLimit = 20,
         [Parameter(Mandatory)][scriptblock]$ValidateCraftPlan,
         [Parameter(Mandatory)][scriptblock]$ValidateCraftReadback,
         [Parameter(Mandatory)][scriptblock]$RecordEvidence,

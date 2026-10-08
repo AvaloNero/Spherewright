@@ -40,9 +40,10 @@ Spherewright 是《戴森球计划》的外部 Agent 控制层，不内置 LLM�
 
 ## 写入窗口、验证与提交
 
-- accepted 是**外部审计计数**，含已接受但最终失败；不按 revision/tick/Journal 推算或归零，幂等回放不重复计。共享入口支持固定10/20/50写，旧调用默认10，建议新窗口先20而非直接50；root只在原窗口独立核销完成后明确批准下一窗口上限，不能给当前窗口补额度或跳过已有冻结。须在额度内预留普通保存，到限冻结新commit，unknown等硬停止随时优先触发。
+- accepted 是**外部审计计数**，含已接受但最终失败；不按 revision/tick/Journal 推算或归零，幂等回放不重复计。用户已选**新窗口默认20写**，共享入口默认20并支持显式10/50。已声明10的窗口仍按10核销，调用必须显式传原上限；只有独立核销后才启用新20窗，不给当前窗口补额度或跳过冻结。须在额度内预留普通保存，到限冻结新commit，unknown等硬停止随时优先触发。
 - 封窗核本窗口全部原终态/唯一核销、owned/和平/实际沙盒/倍率/write health、玩家与真实 Journal durable/pending/error、单份完整工厂快照的 built/prebuild/拓扑及受影响库存/供电，与封存基线作确定性差异，root独立核原回执、覆盖与异常后明确交接。不要因每次封窗重跑无关全厂物料/物流/燃料供需长窗；这些只在对应业务验收或真实异常时做，不能因此降低生产验收。每个Journal边界读实际连续durable序号，不硬断言历史J值。
 - 保存与独立审计仍阻塞新写；脱敏阶段事实、commit/push及其CI由维护Luna及时并行收尾，不再为**仅事实交付**阻塞已核验且执行cohort未变的下一阶段。`Get-SpherewrightCommitImpact` 仅将新增/修改的日期化evidence、incident、current-status和gameplay-timeline事实路径判为交付；规则/playbook/安装/安全、代码、未知路径或删除均保守判为影响执行，不签放行。改变执行的文件须相关测试及准确SHA绿CI后才能使用；pending保持pending，已知红main先修；Git交付仍要完成，不能漏交或以此声称实机通过。
+- 脚本/规则改盘不是在途执行或另一会话的热更新。新窗口交接时root读当前规则并确认caller已加载对应脚本，将固定上限/改动要点放进既有短任务包；writer核同一声明后执行。已运行进程、旧计划/哈希和当前窗口不改；本类外部脚本变更不重启DSP或自动部署二进制。不要新建同步系统。
 - 当前代码变动跑直接相关最小测试；离线维护 Luna 仅运行与本次维护直接相关的测试。日常只运行实际 `pwsh` 与直接相关 CI；执行入口/导入链变化还跑真实 `pwsh -File` 零游戏调用 smoke。仅涉及 Windows PowerShell 5.1 兼容、安装或最终包的变更才额外用 5.1 验证。版本完整回归按 Roadmap 跑 locked restore、Core/Contracts/MCP 测试、当前 DLL 完整 Release 构建和必要实机/包测试；离线、部署、实机、异机证据分开写，不冒充。DSP API 新路径先核本机 DLL 精确类型/签名/调用条件与 SHA，再测试和冷部署实测；不猜方法名。
 - `main`保留已有修改。每个可验证的单一目的代码修复、完整阶段、blocker或窗口审计，必要测试/diff/status后由维护Luna按root批准文件commit/push，核远端SHA/CI；红先修，不叠无关功能，不为普通只读/参数造里程碑。不reset/clean/force push，不交敏感或半成品。tag/Release/Thunderstore仍须用户审核授权；最终Gate未通过不撤销当前有限阶段授权。
 - 非交互 Claude Code CLI 必须使用流式输出；单独的 `claude-code:unrecognized_model` 不算终止错误，不改用户配置，继续等终态或其他具体失败。外审无终态须如实标未完成，不能当通过。

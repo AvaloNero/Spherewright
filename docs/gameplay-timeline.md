@@ -5912,3 +5912,4 @@ factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembl
 - 2026-10-08：R312十笔由保存覆盖，便携套件与铜节点变化完成封窗核销；全局供需、Rod carry和36,000-tick门仍未通过，详见[事件证据](evidence/2026-10-08/departure-small-kit-ten-r312.md)。
 - 2026-10-08：R320核销Rod carry五件与两分拣器filter恢复；共享供需、36,000-tick连续门和整合恢复仍未通过，详见[事件证据](evidence/2026-10-08/departure-rod-carry-seven-r320.md)。
 - 2026-10-08：R321只读联合观察出现24-tick间隙，未取得36,000连续ticks；R322核销continuous credit为0，详见[观察缺口事件](evidence/2026-10-08/joint-observation-gap-r321.md)。
+- 2026-10-08：R323完成36,316个连续game ticks的联合只读采样，R324核销来源条件未通过、continuous credit仍为0；详见[阶段证据](evidence/2026-10-08/joint-supply-long-window-r324.md)。

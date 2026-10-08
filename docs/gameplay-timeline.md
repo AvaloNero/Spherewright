@@ -3,6 +3,8 @@
 更新时间：2026-10-08（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-08 — R218独立审计通过并核销十笔成功动作及Save `100924863/R42/J100`覆盖；R215手采Iron54得10 Ore，矿机1496已回收重建但出口仍空。R219原生配方资格positive、0 accepted，未制作；铁线、共享供需与连续窗口仍未通过。[铁源回收、备料与十写封窗](evidence/2026-10-08/iron-source-recovery-ten-r218.md)
+
 2026-10-08 — R185完成G侧16带/3 sorter与R侧首12带；10笔unique intent由Save `100842338/R23/J100`覆盖，root审计为9成功、1笔已知停滞Move失败、无unknown或在途。完整快照6229 built/0 prebuild，G Native路径见到1109但持续燃烧/供给及Gate 2仍未通过。[G/R燃料接线进度与R185十写封窗](evidence/2026-10-08/fuel-coupling-ten-r185.md)
 
 2026-10-08 — R152封存十笔窗口，普通Save `100546323/R5/J100`覆盖全部十笔，P104/R5、external10冻结、lifetime290。Native读回确认P102 169个支持物料对象/156条belt/6条完整路径；下一施工候选备料65条、施工上限60条，至少5条留作库存，不需压缩上限。旧铁矿1496已耗尽，continuous credit为0、Gate 2仍未过。[共享精炼燃料耦合与物料十写封窗](evidence/2026-10-08/shared-refinery-fuel-coupling-material-ten.md)

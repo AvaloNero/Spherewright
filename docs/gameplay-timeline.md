@@ -3,7 +3,7 @@
 更新时间：2026-10-09（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-09 — R398精确修正矿工86的已耗尽resourceNode 203后，通过whole-current资格核验；R407将既有1233、1223两只2011分拣器升为2012，R409独立核销并确认保存`102710336`/revision96/J102、external7/20、lifetime382。只验证了Native容量参数变化，持续供给仍未通过；R389的36,000-tick观察因33-tick缺口失败，continuous credit为0。[联合来源缺口、R398资格与R409核销](evidence/2026-10-09/joint-source-gap-and-prefix-r391.md)
+2026-10-09 — R421上调P104的1657钛矿石与916钛锭需求上限，R423独立核验后保存至`102745200`/revision101/J102，external10/20、lifetime385。只恢复需求，未证明新采矿、交货或持续供给；R389连续观察仍因33-tick缺口失败。[钛需求门槛与供给边界](evidence/2026-10-09/minimum-ti-demand-r423.md)
 
 2026-10-08 — R364完成9笔材料准备并保存至`102313600/R74/J102`，R365独立核销；当前新窗口external9/20、lifetime368冻结。R359/R361仅资格化结构绕行与有界材料范围，整路尚未施工、持续供给未通过。[油路绕行材料封窗](evidence/2026-10-08/oil-detour-material-r365.md)
 

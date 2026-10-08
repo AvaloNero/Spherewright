@@ -8,4 +8,10 @@ Root 的 R391 独立核验 `263e14e8aaae4417bacf88082a3b646b:18`（SHA-256 `E064
 
 32,295-tick前缀的Native计数仅作定位：warper 1210 `[39,40]`、rod 1802 `[16,16]`、P102钛矿石1004 `[0,0]`、P104钛锭1106 `[24,47]`。Ti源实物库存382→382；本地钛矿石3662→3582、钛锭3713→3745。不能由这些截面推断矿竭或长期供给状态，continuous credit为0。
 
-当前保存状态仍为R89、Save `102564883`、durable J102、external `3/20`、lifetime `378`，写入冻结且无在途或unknown。来源条件未通过，`wholeSupplyPassed=false`；R323/R324失败与R344诊断保持不变。R392在首条Native请求前因调用方函数引用错误停止（0 Native responses/0 intent/0 accepted）；root已修复调用方。R394有界只读因果诊断已完成（16次读取、6.517秒、0 Game写入），原件 `0c496a92e99c4057b31e92520908535f:18` / SHA-256 `3ACC54A1949B56B3B46B7ABAE0A12BA779FFDF7AAEFD782FED7C03F9800FA3C3`；R395正准备独立核验，尚未签通过。后续应先定位这些库存变化的直接原因，再决定最小修复与新的连续窗口；双自动补给、至少36,000 ticks、整合保存恢复和最终同SHA双候选包仍未通过。
+R392在首个Native请求前因调用方函数引用错误停止（0 Native responses/0 intent/0 accepted）；R394随后完成16次只读请求、用时6.517秒、0 Game写入，原件 `0c496a92e99c4057b31e92520908535f:18` / SHA-256 `3ACC54A1949B56B3B46B7ABAE0A12BA779FFDF7AAEFD782FED7C03F9800FA3C3`。R395停止记录保留。R397发现矿工86的resourceNode 203返回Native `INVALID_ENTITY`，仅该节点从`resourceNodeIds`移除并按自然耗尽处理，其他16个来源节点均有正证据；R398 whole-current资格核验通过，审计原件 `17067fcf1f2a4e91b4981bdec9097e72:2` / SHA-256 `C828EF97301E85BB7D4BEC9CBAD61769AC7699544B0CD47791BAFFFFDF6F1BD5`。这只是精确校正后的当前资格，不改变R389连续声明失败或whole supply未通过。
+
+R398当前cut的高能石墨1109为708、磁铁1102为6950、奇异物质1127为87、连通氢1120为136、钛锭1106为495；全局氢4845不等于连通氢，legacy4419排除。R391前缀的历史差异仍保留用于定位，不据此推断矿竭或唯一根因。
+
+R407以正常移动到既有1233附近、升级既有1233与1223两只2011分拣器为2012并正常保存，新增accepted4。writer原件 `0506229be23b4192bbe9ac15ad393ee7:125` / SHA-256 `C077D4124B03A496B118B5C621607C51A2918692B8FCC030DF5ED861E62B74D5`；root R409独立核对 `e235841341a24b9d8bbdeb99623dd7f0:1` / SHA-256 `35C50AF0B193FBD106C7D136825CA7179E1BEB9B1E8605230E31E9C9592BD6F2`。库存净差2011 `+2`、2012 `−2`，过滤、货物、互返边、15项静态字段、本地供电、Journal与Save覆盖均核实；三格运输周期的progressRequired由600000降至300000，仅为名义容量变化，未测持续生产改善。当前Save tick102710336、revision96、durable J102，external `7/20`、lifetime `382`，无在途或unknown。
+
+R404因caller漏掉物理belt1222基线，在Native prepare前停止且0 accepted；R406关闭并保留原once，之后以精确15项基线重新声明，没有重放原动作。后续设计中的H3345→3074与3074→3073两条普通分拣器尚未批准施工；既有3083已接入3073，石墨5196/5581已有名义能力，不据此宣称供需通过。双自动补给、至少36,000 ticks连续供需、整合保存恢复及最终同SHA双候选包仍未通过。

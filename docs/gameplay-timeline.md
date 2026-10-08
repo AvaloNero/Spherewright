@@ -3,7 +3,7 @@
 更新时间：2026-10-08（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-08 — R152封存十笔窗口，普通Save `100546323/R5/J100`覆盖全部十笔，P104/R5、external10冻结、lifetime290。Native完整帧与局部同tick库存读回确认P102 169个支持物料对象/156条belt/6条完整路径，旧铁矿1496已耗尽；下一组精炼耦合仍只是待压缩的施工候选，continuous credit为0、Gate 2仍未过。[共享精炼燃料耦合与物料十写封窗](evidence/2026-10-08/shared-refinery-fuel-coupling-material-ten.md)
+2026-10-08 — R152封存十笔窗口，普通Save `100546323/R5/J100`覆盖全部十笔，P104/R5、external10冻结、lifetime290。Native读回确认P102 169个支持物料对象/156条belt/6条完整路径；下一施工候选备料65条、施工上限60条，至少5条留作库存，不需压缩上限。旧铁矿1496已耗尽，continuous credit为0、Gate 2仍未过。[共享精炼燃料耦合与物料十写封窗](evidence/2026-10-08/shared-refinery-fuel-coupling-material-ten.md)
 
 2026-10-08 — R122接通P102 Ti尾带到既有belt61并建电塔187，R124经同星飞行到P104后普通Save `100342332/R36/J100`；R127独立核对新建、飞行与保存全闭合，external5冻结、lifetime285。需求站1657短期有船有货，但连续供给credit仍为0，整案未通过。[P102 Ti源端接通与P104短期返程](evidence/2026-10-08/ti-source-powered-return.md)
 

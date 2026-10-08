@@ -155,58 +155,92 @@ $ciFixture=Get-SpherewrightCommitChecks -CommitSha ('a'*40)
 Assert-Stage (-not $ciFixture.observed) 'absent workflow run stays unknown'
 
 # Offline Git fixture: classification uses only the requested SHA's exact diff-tree.
-$script:impactGitRows = @(); $script:impactGitExitCode = 0; $script:impactGitCallCount = 0; $script:impactGitArguments = @()
-function git {
-    $script:impactGitCallCount++
-    $script:impactGitArguments = @($args)
-    $global:LASTEXITCODE = $script:impactGitExitCode
-    foreach ($row in $script:impactGitRows) { Write-Output $row }
+$priorGitFunction = Get-Item -Path Function:\git -ErrorAction SilentlyContinue
+$hadPriorGitFunction = $null -ne $priorGitFunction
+$priorGitScriptBlock = if ($hadPriorGitFunction) { $priorGitFunction.ScriptBlock } else { $null }
+$priorLastExitVariable = Get-Variable -Name LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
+$hadPriorLastExitCode = $null -ne $priorLastExitVariable
+$priorLastExitCode = if ($hadPriorLastExitCode) { $priorLastExitVariable.Value } else { $null }
+try {
+    $script:impactGitRows = @(); $script:impactGitExitCode = 0; $script:impactGitCallCount = 0; $script:impactGitArguments = @()
+    function git {
+        $script:impactGitCallCount++
+        $script:impactGitArguments = @($args)
+        $global:LASTEXITCODE = $script:impactGitExitCode
+        foreach ($row in $script:impactGitRows) { Write-Output $row }
+    }
+    function Set-CommitImpactFixture([object[]]$Rows, [int]$ExitCode = 0) {
+        $script:impactGitRows = @($Rows)
+        $script:impactGitExitCode = $ExitCode
+        $script:impactGitCallCount = 0
+        $script:impactGitArguments = @()
+    }
+    $impactSha = 'a' * 40
+    $impactRepo = 'C:\fixture\spherewright'
+    $factDiff = @(
+        ('A' + "`t" + 'docs/evidence/2026-10-08/stage-note.md'),
+        ('M' + "`t" + 'docs/incidents/workflow-note.md'),
+        ('M' + "`t" + 'docs/current-status.md'),
+        ('A' + "`t" + 'docs/gameplay-timeline.md')
+    )
+    Set-CommitImpactFixture $factDiff
+    $impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
+    $expectedGitArgs = @('-C',$impactRepo,'diff-tree','--root','--no-commit-id','--name-status','--no-renames','-r',$impactSha)
+    Assert-Stage ($impact.deliveryOnly -and -not $impact.executionRelevant -and -not $impact.signOff -and
+        $impact.changedPaths.Count -eq 4) 'exact allowed fact-only A/M commit is delivery-only, not sign-off'
+    Assert-Stage ($script:impactGitCallCount -eq 1 -and
+        ($script:impactGitArguments -join '|') -ceq ($expectedGitArgs -join '|')) 'impact classification calls only the prescribed SHA diff-tree command'
+    Set-CommitImpactFixture @($factDiff + @('M' + "`t" + 'scripts/changed.ps1'))
+    $impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
+    Assert-Stage (-not $impact.deliveryOnly -and $impact.executionRelevant) 'mixed fact and source commit remains execution-relevant'
+    Set-CommitImpactFixture @(
+        'M' + "`t" + 'AGENTS.md',
+        'M' + "`t" + 'docs/agent-playbook.md',
+        'M' + "`t" + 'ROADMAP.md'
+    )
+    $impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
+    Assert-Stage (-not $impact.deliveryOnly -and $impact.executionRelevant) 'rules, playbook and roadmap documentation remain execution-relevant'
+    Set-CommitImpactFixture @('D' + "`t" + 'docs/evidence/2026-10-08/deleted-note.md')
+    $impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
+    Assert-Stage (-not $impact.deliveryOnly -and $impact.executionRelevant) 'deleting an otherwise allowed fact file remains execution-relevant'
+    Set-CommitImpactFixture @()
+    $impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
+    Assert-Stage (-not $impact.deliveryOnly -and $impact.executionRelevant -and $impact.changedPaths.Count -eq 0) 'empty merge diff remains execution-relevant'
+    Set-CommitImpactFixture @('M')
+    $ambiguousImpactRejected = $false
+    try { Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo | Out-Null } catch { $ambiguousImpactRejected = $true }
+    Assert-Stage ($ambiguousImpactRejected) 'malformed Git status row fails closed'
+    Set-CommitImpactFixture @('M' + "`t" + 'docs/current-status.md') 1
+    $failedImpactRejected = $false
+    try { Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo | Out-Null } catch { $failedImpactRejected = $true }
+    Assert-Stage ($failedImpactRejected) 'nonzero Git diff-tree exit fails closed'
+    Assert-Stage ($global:LASTEXITCODE -eq 1) 'Git failure fixture sets a nonzero shell status before restoration'
+} finally {
+    if ($hadPriorGitFunction) {
+        Set-Item -Path Function:\git -Value $priorGitScriptBlock -Force
+    } else {
+        Remove-Item -Path Function:\git -Force -ErrorAction SilentlyContinue
+    }
+    if ($hadPriorLastExitCode) {
+        Set-Variable -Name LASTEXITCODE -Scope Global -Value $priorLastExitCode -Force
+    } else {
+        Remove-Variable -Name LASTEXITCODE -Scope Global -Force -ErrorAction SilentlyContinue
+    }
 }
-function Set-CommitImpactFixture([object[]]$Rows, [int]$ExitCode = 0) {
-    $script:impactGitRows = @($Rows)
-    $script:impactGitExitCode = $ExitCode
-    $script:impactGitCallCount = 0
-    $script:impactGitArguments = @()
+$restoredGitFunction = Get-Item -Path Function:\git -ErrorAction SilentlyContinue
+$gitMockRestored = if ($hadPriorGitFunction) {
+    $null -ne $restoredGitFunction -and $restoredGitFunction.ScriptBlock.ToString() -ceq $priorGitScriptBlock.ToString()
+} else {
+    $null -eq $restoredGitFunction
 }
-$impactSha = 'a' * 40
-$impactRepo = 'C:\fixture\spherewright'
-$factDiff = @(
-    ('A' + "`t" + 'docs/evidence/2026-10-08/stage-note.md'),
-    ('M' + "`t" + 'docs/incidents/workflow-note.md'),
-    ('M' + "`t" + 'docs/current-status.md'),
-    ('A' + "`t" + 'docs/gameplay-timeline.md')
-)
-Set-CommitImpactFixture $factDiff
-$impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
-$expectedGitArgs = @('-C',$impactRepo,'diff-tree','--root','--no-commit-id','--name-status','--no-renames','-r',$impactSha)
-Assert-Stage ($impact.deliveryOnly -and -not $impact.executionRelevant -and -not $impact.signOff -and
-    $impact.changedPaths.Count -eq 4) 'exact allowed fact-only A/M commit is delivery-only, not sign-off'
-Assert-Stage ($script:impactGitCallCount -eq 1 -and
-    ($script:impactGitArguments -join '|') -ceq ($expectedGitArgs -join '|')) 'impact classification calls only the prescribed SHA diff-tree command'
-Set-CommitImpactFixture @($factDiff + @('M' + "`t" + 'scripts/changed.ps1'))
-$impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
-Assert-Stage (-not $impact.deliveryOnly -and $impact.executionRelevant) 'mixed fact and source commit remains execution-relevant'
-Set-CommitImpactFixture @(
-    'M' + "`t" + 'AGENTS.md',
-    'M' + "`t" + 'docs/agent-playbook.md',
-    'M' + "`t" + 'ROADMAP.md'
-)
-$impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
-Assert-Stage (-not $impact.deliveryOnly -and $impact.executionRelevant) 'rules, playbook and roadmap documentation remain execution-relevant'
-Set-CommitImpactFixture @('D' + "`t" + 'docs/evidence/2026-10-08/deleted-note.md')
-$impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
-Assert-Stage (-not $impact.deliveryOnly -and $impact.executionRelevant) 'deleting an otherwise allowed fact file remains execution-relevant'
-Set-CommitImpactFixture @()
-$impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
-Assert-Stage (-not $impact.deliveryOnly -and $impact.executionRelevant -and $impact.changedPaths.Count -eq 0) 'empty merge diff remains execution-relevant'
-Set-CommitImpactFixture @('M')
-$ambiguousImpactRejected = $false
-try { Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo | Out-Null } catch { $ambiguousImpactRejected = $true }
-Assert-Stage ($ambiguousImpactRejected) 'malformed Git status row fails closed'
-Set-CommitImpactFixture @('M' + "`t" + 'docs/current-status.md') 1
-$failedImpactRejected = $false
-try { Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo | Out-Null } catch { $failedImpactRejected = $true }
-Assert-Stage ($failedImpactRejected) 'nonzero Git diff-tree exit fails closed'
+$restoredLastExitVariable = Get-Variable -Name LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
+$lastExitCodeRestored = if ($hadPriorLastExitCode) {
+    $null -ne $restoredLastExitVariable -and $restoredLastExitVariable.Value -eq $priorLastExitCode
+} else {
+    $null -eq $restoredLastExitVariable
+}
+Assert-Stage ($gitMockRestored) 'Git fixture removes its mock or restores the prior function'
+Assert-Stage ($lastExitCodeRestored) 'Git fixture restores the pre-test LASTEXITCODE exactly'
 
 # Direct offline fixtures for observed built-storage snapshots. These call no
 # transport; keep their count separate from the existing 26 stage assertions.

@@ -17,11 +17,42 @@ function Get-SpherewrightCommitChecks {
     [pscustomobject]@{commit=$CommitSha;observed=($runs.Count -gt 0);runs=$runs;signOff=$false}
 }
 
+function Get-SpherewrightCommitImpact {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string]$CommitSha,
+        [Parameter(Mandatory)][string]$RepositoryDirectory
+    )
+    # Classification only, never CI success or runtime sign-off. No broad *.md
+    # exemption: rules, playbooks, roadmap, installation and unknown paths gate
+    # changed execution. Deletions/renames/merges also conservatively gate it.
+    $rows = @(& git -C $RepositoryDirectory diff-tree --root --no-commit-id --name-status --no-renames -r $CommitSha)
+    if ($LASTEXITCODE -ne 0) { throw 'Commit impact could not be collected; keep the execution gate.' }
+    $paths = [Collections.Generic.List[string]]::new()
+    $deliveryOnly = $rows.Count -gt 0
+    foreach ($row in $rows) {
+        $parts = $row -split "`t", 2
+        if ($parts.Count -ne 2) { throw 'Commit path classification is ambiguous; keep the execution gate.' }
+        $paths.Add($parts[1])
+        $isFactPath = $parts[1] -cmatch '^docs/(evidence/[0-9]{4}-[0-9]{2}-[0-9]{2}/[A-Za-z0-9_-]+\.md|incidents/[A-Za-z0-9_-]+\.md|current-status\.md|gameplay-timeline\.md)$'
+        if ($parts[0] -cnotin @('A','M') -or -not $isFactPath) { $deliveryOnly = $false }
+    }
+    [pscustomobject]@{commit=$CommitSha;changedPaths=$paths.ToArray();deliveryOnly=$deliveryOnly;executionRelevant=(-not $deliveryOnly);signOff=$false}
+}
+
 function Get-SpherewrightStageField($Value, [string]$Name) {
     if ($null -eq $Value -or $null -eq $Value.PSObject.Properties[$Name]) {
         throw "Required response field missing: $Name"
     }
     return $Value.$Name
+}
+
+function Assert-SpherewrightStageBudget([int]$AcceptedBefore, [int]$AuditWindowLimit, [int]$RequiredSlots) {
+    # This checks capacity, not authority. Pin the approved limit at window open;
+    # never enlarge an existing frozen window or reset its accepted count.
+    if ($AcceptedBefore -gt $AuditWindowLimit -or $RequiredSlots -gt $AuditWindowLimit - $AcceptedBefore) {
+        throw 'The approved audit window has insufficient slots; no reads or writes were issued.'
+    }
 }
 
 function Get-SpherewrightStorageItemCount {
@@ -97,11 +128,13 @@ function Invoke-SpherewrightBeltSiteQualification {
     param(
         [Parameter(Mandatory)]$ApprovedPlan,
         [Parameter(Mandatory)][ValidateRange(0, [long]::MaxValue)][long]$ExpectedRevision,
-        [Parameter(Mandatory)][ValidateRange(0, 10)][int]$AcceptedBefore,
+        [Parameter(Mandatory)][ValidateRange(0, 50)][int]$AcceptedBefore,
+        [ValidateSet(10, 20, 50)][int]$AuditWindowLimit = 10,
         [Parameter(Mandatory)][ValidateRange(0, [long]::MaxValue)][long]$MinimumDurableSequence,
         [Parameter(Mandatory)][scriptblock]$RecordEvidence
     )
 
+    Assert-SpherewrightStageBudget $AcceptedBefore $AuditWindowLimit 0
     # A fixed, root-approved 3/4/5-span READ-ONLY experiment, not a route planner
     # or construction executor. It cannot dispatch a commit, save or lifecycle call.
     $spans = @(Get-SpherewrightStageField $ApprovedPlan 'spans')
@@ -292,7 +325,7 @@ function Invoke-SpherewrightBeltSiteQualification {
     }
     $summary = [pscustomobject]@{result=$(if ($null -eq $failure -and $null -ne $closure) {'qualified_sites_only'} else {'stopped'});
         spans=$completed.ToArray();failure=$failure;closure=$closure;closureFailure=$closureFailure;bridgeRequests=$meter.requests;
-        acceptedDelta=0;acceptedAfter=$AcceptedBefore;doNotReplay=$true;futureActualIdJoinProven=$false;wholePlanExecutable=$false;
+        acceptedDelta=0;acceptedAfter=$AcceptedBefore;auditWindowLimit=$AuditWindowLimit;doNotReplay=$true;futureActualIdJoinProven=$false;wholePlanExecutable=$false;
         timingMs=[pscustomobject]@{entryToFirstPrepare=$firstPrepareMs;total=$watch.Elapsed.TotalMilliseconds};providerUsage=$null}
     $null = & $RecordEvidence ([pscustomobject]@{phase='summary';summary=$summary})
     return $summary
@@ -305,7 +338,8 @@ function Invoke-SpherewrightResearchAndSave {
         [Parameter(Mandatory)][ValidateRange(1, [int]::MaxValue)][int]$PlanetId,
         [Parameter(Mandatory)][string]$GameVersion,
         [Parameter(Mandatory)][ValidateRange(1, [int]::MaxValue)][int]$TechId,
-        [Parameter(Mandatory)][ValidateRange(0, 8)][int]$AcceptedBefore,
+        [Parameter(Mandatory)][ValidateRange(0, 50)][int]$AcceptedBefore,
+        [ValidateSet(10, 20, 50)][int]$AuditWindowLimit = 10,
         [Parameter(Mandatory)][scriptblock]$ValidateResearchPlan,
         [Parameter(Mandatory)][scriptblock]$RecordEvidence,
         [bool]$PrioritizeQueued = $false,
@@ -313,6 +347,7 @@ function Invoke-SpherewrightResearchAndSave {
         [Nullable[datetimeoffset]]$DispatchedAtUtc
     )
 
+    Assert-SpherewrightStageBudget $AcceptedBefore $AuditWindowLimit 2
     # Caller must already hold the verified single-writer handoff and two write
     # slots. Do not import a historical executor or infer permissions from this count.
     # Research itemBudget is native future research-consumption, not an empty
@@ -368,7 +403,7 @@ function Invoke-SpherewrightResearchAndSave {
         if ($durable -lt $initialDurable) { throw 'Journal durable sequence regressed; no replay.' }
         $summary = [pscustomobject]@{
             result='completed';acceptedDelta=$acceptedDelta;acceptedAfter=$AcceptedBefore+$acceptedDelta
-            frozen=($AcceptedBefore+$acceptedDelta -ge 10);inFlightActionIds=@();actions=$actions.ToArray()
+            auditWindowLimit=$AuditWindowLimit;frozen=($AcceptedBefore+$acceptedDelta -ge $AuditWindowLimit);inFlightActionIds=@();actions=$actions.ToArray()
             observedTick=$state.gameTick;savedTick=$state.lastOwnedSaveGameTick;revision=$state.revision;durableThroughSequence=$durable
             timingMs=[pscustomobject]@{entryToFirstPrepare=[math]::Round($firstPrepareMs,3);dispatchToFirstPrepare=$(if ($null -eq $DispatchedAtUtc) { $null } else { [math]::Round(($firstPrepareUtc-$DispatchedAtUtc).TotalMilliseconds,3) });total=[math]::Round($watch.Elapsed.TotalMilliseconds,3)}
             unproved=@('save_restart','production_throughput');nextBlocker=$null
@@ -399,12 +434,14 @@ function Invoke-SpherewrightMaterialHandcraftAndSave {
         [Parameter(Mandatory)][ValidateRange(1, 1000)][int]$MaterialCount,
         [Parameter(Mandatory)][ValidateRange(1, 2147483647)][int]$RecipeId,
         [Parameter(Mandatory)][ValidateRange(1, 100)][int]$CraftCount,
-        [Parameter(Mandatory)][ValidateRange(0, 7)][int]$AcceptedBefore,
+        [Parameter(Mandatory)][ValidateRange(0, 50)][int]$AcceptedBefore,
+        [ValidateSet(10, 20, 50)][int]$AuditWindowLimit = 10,
         [Parameter(Mandatory)][scriptblock]$ValidateCraftPlan,
         [Parameter(Mandatory)][scriptblock]$ValidateCraftReadback,
         [Parameter(Mandatory)][scriptblock]$RecordEvidence,
         [ValidateRange(1, 1800)][int]$TimeoutSeconds = 180
     )
+    Assert-SpherewrightStageBudget $AcceptedBefore $AuditWindowLimit 3
     # One explicitly approved ordinary-material transfer, one recipe, one save.
     # Caller supplies the single-writer lease and THREE external audit slots.
     # Matrix/cache transfers are excluded; this does not select goals or recipes.
@@ -483,7 +520,7 @@ function Invoke-SpherewrightMaterialHandcraftAndSave {
         $journal = Read-SpherewrightStageResult get_gameplay_journal $SessionId @{}
         $durable = Get-SpherewrightDurableJournalBoundary $journal $SessionId
         if ($durable -lt $initialDurable) { throw 'Durable Journal regressed; no replay.' }
-        $summary = [pscustomobject]@{result='completed';acceptedDelta=$acceptedDelta;acceptedAfter=$AcceptedBefore+$acceptedDelta;frozen=($AcceptedBefore+$acceptedDelta -ge 10);inFlightActionIds=@();actions=$actions.ToArray();observedTick=$state.gameTick;savedTick=$state.lastOwnedSaveGameTick;revision=$state.revision;durableThroughSequence=$durable;timingMs=[pscustomobject]@{entryToFirstPrepare=$firstPrepareMs;total=$watch.Elapsed.TotalMilliseconds};unproved=@('save_restart','production_throughput')}
+        $summary = [pscustomobject]@{result='completed';acceptedDelta=$acceptedDelta;acceptedAfter=$AcceptedBefore+$acceptedDelta;auditWindowLimit=$AuditWindowLimit;frozen=($AcceptedBefore+$acceptedDelta -ge $AuditWindowLimit);inFlightActionIds=@();actions=$actions.ToArray();observedTick=$state.gameTick;savedTick=$state.lastOwnedSaveGameTick;revision=$state.revision;durableThroughSequence=$durable;timingMs=[pscustomobject]@{entryToFirstPrepare=$firstPrepareMs;total=$watch.Elapsed.TotalMilliseconds};unproved=@('save_restart','production_throughput')}
         $null = & $RecordEvidence $summary
         return $summary
     } catch {

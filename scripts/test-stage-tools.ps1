@@ -15,7 +15,7 @@ function Assert-Storage([bool]$Condition, [string]$Name) {
 function Reset-Stage([string]$Failure = '') {
     $script:methods = [Collections.Generic.List[string]]::new()
     $script:sessionReads = 0; $script:progressReads = 0; $script:journalReads = 0
-    $script:actionId = ''; $script:failure = $Failure; $script:researchPayload = $null; $script:savePayload = $null; $script:researchBudget = @()
+    $script:actionId = ''; $script:failure = $Failure; $script:researchPayload = $null; $script:savePayload = $null; $script:researchBudget = @(); $script:recorded = $null
 }
 function Invoke-SpherewrightBridgeRequest([string]$Method, [string]$SessionId, [hashtable]$Payload) {
     $script:methods.Add($Method)
@@ -85,6 +85,7 @@ $arguments = @{SessionId='fixture-session';PlanetId=104;GameVersion='fixture-ver
 Reset-Stage
 $result = Invoke-SpherewrightResearchAndSave @arguments
 Assert-Stage ($result.acceptedDelta -eq 2 -and $result.acceptedAfter -eq 10 -and $result.frozen) 'counts actual accepted and freezes at ten'
+Assert-Stage ($result.auditWindowLimit -eq 10 -and $script:recorded.auditWindowLimit -eq 10) 'omitted window limit preserves the legacy ten-write default in result and evidence'
 Assert-Stage ($script:savePayload.expectedRevision -eq 7 -and $result.revision -eq 11 -and $result.durableThroughSequence -eq 95) 'uses actual revision and durable Journal, no plus-one or old J'
 Assert-Stage ($script:methods.Count -eq 14 -and @($script:methods | Where-Object {$_ -like 'commit_*'}).Count -eq 2) 'one research then one save, no replay'
 Assert-Stage ($script:researchPayload.techId -eq 2104 -and $script:researchBudget.Count -eq 4) 'accepts approved nonempty native future research budget'
@@ -111,12 +112,101 @@ Reset-Stage
 $invalid = @{}; foreach($key in $arguments.Keys){$invalid[$key]=$arguments[$key]}; $invalid.AcceptedBefore=9
 try { Invoke-SpherewrightResearchAndSave @invalid | Out-Null } catch { }
 Assert-Stage ($script:methods.Count -eq 0) 'insufficient external audit budget rejected before any request'
+foreach ($boundary in @(
+    [pscustomobject]@{limit=20;before=17;after=19;frozen=$false},
+    [pscustomobject]@{limit=20;before=18;after=20;frozen=$true},
+    [pscustomobject]@{limit=50;before=47;after=49;frozen=$false},
+    [pscustomobject]@{limit=50;before=48;after=50;frozen=$true}
+)) {
+    $windowArguments = @{}; foreach ($key in $arguments.Keys) { $windowArguments[$key] = $arguments[$key] }
+    $windowArguments.AuditWindowLimit = $boundary.limit
+    $windowArguments.AcceptedBefore = $boundary.before
+    Reset-Stage
+    $windowResult = Invoke-SpherewrightResearchAndSave @windowArguments
+    Assert-Stage ($windowResult.acceptedDelta -eq 2 -and $windowResult.acceptedAfter -eq $boundary.after -and
+        $windowResult.frozen -eq $boundary.frozen -and $windowResult.auditWindowLimit -eq $boundary.limit) "research/save exact $($boundary.limit)-write boundary from $($boundary.before)"
+}
+foreach ($limit in @(20,50)) {
+    $windowArguments = @{}; foreach ($key in $arguments.Keys) { $windowArguments[$key] = $arguments[$key] }
+    $windowArguments.AuditWindowLimit = $limit
+    $windowArguments.AcceptedBefore = $limit - 1
+    Reset-Stage
+    $errorRecord = $null
+    try { Invoke-SpherewrightResearchAndSave @windowArguments | Out-Null } catch { $errorRecord = $_ }
+    Assert-Stage ($null -ne $errorRecord -and $script:methods.Count -eq 0) "research/save $limit-write window reserves both slots before any read"
+}
+$invalidWindowArguments = @{}; foreach ($key in $arguments.Keys) { $invalidWindowArguments[$key] = $arguments[$key] }
+$invalidWindowArguments.AuditWindowLimit = 11
+Reset-Stage
+$invalidWindowRejected = $false
+try { Invoke-SpherewrightResearchAndSave @invalidWindowArguments | Out-Null } catch { $invalidWindowRejected = $true }
+Assert-Stage ($invalidWindowRejected -and $script:methods.Count -eq 0) 'unsupported audit window limit is rejected before any request'
+Reset-Stage
+$readOnlyBudgetError = $null
+$readOnlyArguments = @{ApprovedPlan=@{};ExpectedRevision=0;AcceptedBefore=11;AuditWindowLimit=10;MinimumDurableSequence=0;RecordEvidence={}}
+try { Invoke-SpherewrightBeltSiteQualification @readOnlyArguments | Out-Null } catch { $readOnlyBudgetError = $_ }
+Assert-Stage ($null -ne $readOnlyBudgetError -and $readOnlyBudgetError.Exception.Message -like '*insufficient slots*' -and
+    $script:methods.Count -eq 0) 'read-only qualification rejects a counter above its window before validation or requests'
 function gh { $global:LASTEXITCODE=0; '[{"databaseId":1,"headSha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","status":"completed","conclusion":"success","url":"https://example.invalid/ci"}]' }
 $ciFixture=Get-SpherewrightCommitChecks -CommitSha ('a'*40)
 Assert-Stage ($ciFixture.observed -and $ciFixture.runs[0].conclusion -ceq 'success' -and -not $ciFixture.signOff) 'exact SHA CI snapshot is not independent sign-off'
 function gh { $global:LASTEXITCODE=0; '[]' }
 $ciFixture=Get-SpherewrightCommitChecks -CommitSha ('a'*40)
 Assert-Stage (-not $ciFixture.observed) 'absent workflow run stays unknown'
+
+# Offline Git fixture: classification uses only the requested SHA's exact diff-tree.
+$script:impactGitRows = @(); $script:impactGitExitCode = 0; $script:impactGitCallCount = 0; $script:impactGitArguments = @()
+function git {
+    $script:impactGitCallCount++
+    $script:impactGitArguments = @($args)
+    $global:LASTEXITCODE = $script:impactGitExitCode
+    foreach ($row in $script:impactGitRows) { Write-Output $row }
+}
+function Set-CommitImpactFixture([object[]]$Rows, [int]$ExitCode = 0) {
+    $script:impactGitRows = @($Rows)
+    $script:impactGitExitCode = $ExitCode
+    $script:impactGitCallCount = 0
+    $script:impactGitArguments = @()
+}
+$impactSha = 'a' * 40
+$impactRepo = 'C:\fixture\spherewright'
+$factDiff = @(
+    ('A' + "`t" + 'docs/evidence/2026-10-08/stage-note.md'),
+    ('M' + "`t" + 'docs/incidents/workflow-note.md'),
+    ('M' + "`t" + 'docs/current-status.md'),
+    ('A' + "`t" + 'docs/gameplay-timeline.md')
+)
+Set-CommitImpactFixture $factDiff
+$impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
+$expectedGitArgs = @('-C',$impactRepo,'diff-tree','--root','--no-commit-id','--name-status','--no-renames','-r',$impactSha)
+Assert-Stage ($impact.deliveryOnly -and -not $impact.executionRelevant -and -not $impact.signOff -and
+    $impact.changedPaths.Count -eq 4) 'exact allowed fact-only A/M commit is delivery-only, not sign-off'
+Assert-Stage ($script:impactGitCallCount -eq 1 -and
+    ($script:impactGitArguments -join '|') -ceq ($expectedGitArgs -join '|')) 'impact classification calls only the prescribed SHA diff-tree command'
+Set-CommitImpactFixture @($factDiff + @('M' + "`t" + 'scripts/changed.ps1'))
+$impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
+Assert-Stage (-not $impact.deliveryOnly -and $impact.executionRelevant) 'mixed fact and source commit remains execution-relevant'
+Set-CommitImpactFixture @(
+    'M' + "`t" + 'AGENTS.md',
+    'M' + "`t" + 'docs/agent-playbook.md',
+    'M' + "`t" + 'ROADMAP.md'
+)
+$impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
+Assert-Stage (-not $impact.deliveryOnly -and $impact.executionRelevant) 'rules, playbook and roadmap documentation remain execution-relevant'
+Set-CommitImpactFixture @('D' + "`t" + 'docs/evidence/2026-10-08/deleted-note.md')
+$impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
+Assert-Stage (-not $impact.deliveryOnly -and $impact.executionRelevant) 'deleting an otherwise allowed fact file remains execution-relevant'
+Set-CommitImpactFixture @()
+$impact = Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo
+Assert-Stage (-not $impact.deliveryOnly -and $impact.executionRelevant -and $impact.changedPaths.Count -eq 0) 'empty merge diff remains execution-relevant'
+Set-CommitImpactFixture @('M')
+$ambiguousImpactRejected = $false
+try { Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo | Out-Null } catch { $ambiguousImpactRejected = $true }
+Assert-Stage ($ambiguousImpactRejected) 'malformed Git status row fails closed'
+Set-CommitImpactFixture @('M' + "`t" + 'docs/current-status.md') 1
+$failedImpactRejected = $false
+try { Get-SpherewrightCommitImpact -CommitSha $impactSha -RepositoryDirectory $impactRepo | Out-Null } catch { $failedImpactRejected = $true }
+Assert-Stage ($failedImpactRejected) 'nonzero Git diff-tree exit fails closed'
 
 # Direct offline fixtures for observed built-storage snapshots. These call no
 # transport; keep their count separate from the existing 26 stage assertions.
@@ -413,6 +503,7 @@ $materialTerminalIds=@($script:terminalActionIds)
 $materialMethods=@($script:commitMethods)
 Assert-MaterialStage ($materialSummary.result -ceq 'completed' -and $materialSummary.acceptedDelta -eq 3 -and
     $materialSummary.acceptedAfter -eq 10 -and $materialSummary.frozen) 'one transfer, handcraft and save consume three audit slots'
+Assert-MaterialStage ($materialSummary.auditWindowLimit -eq 10 -and $script:recordedMaterialSummary.auditWindowLimit -eq 10) 'omitted window limit preserves the legacy ten-write default in result and evidence'
 Assert-MaterialStage (($materialMethods -join ',') -ceq 'commit_transfer,commit_handcraft,commit_save' -and
     $materialCommitIds.Count -eq 3 -and @($materialCommitIds | Sort-Object -Unique).Count -eq 3) 'three distinct accepted actions occur in order'
 Assert-MaterialStage (($materialCommitIds -join ',') -ceq ($materialTerminalIds -join ',')) 'every terminal observes its same original action'
@@ -428,6 +519,40 @@ Assert-MaterialStage ($script:recordedMaterialSummary.acceptedAfter -eq 10 -and
     $summaryJson -notmatch 'private-(transfer|handcraft|save)-token' -and
     $recordJson -notmatch 'private-(transfer|handcraft|save)-token') 'returned and recorded summaries never expose plan tokens'
 Assert-MaterialCommitPrefix 3 'completed flow'
+
+foreach ($boundary in @(
+    [pscustomobject]@{limit=20;before=16;after=19;frozen=$false},
+    [pscustomobject]@{limit=20;before=17;after=20;frozen=$true},
+    [pscustomobject]@{limit=50;before=46;after=49;frozen=$false},
+    [pscustomobject]@{limit=50;before=47;after=50;frozen=$true}
+)) {
+    $windowArguments = @{}; foreach ($key in $materialArguments.Keys) { $windowArguments[$key] = $materialArguments[$key] }
+    $windowArguments.AuditWindowLimit = $boundary.limit
+    $windowArguments.AcceptedBefore = $boundary.before
+    Reset-MaterialStage
+    $windowSummary = Invoke-SpherewrightMaterialHandcraftAndSave @windowArguments
+    Assert-MaterialStage ($windowSummary.acceptedDelta -eq 3 -and $windowSummary.acceptedAfter -eq $boundary.after -and
+        $windowSummary.frozen -eq $boundary.frozen -and $windowSummary.auditWindowLimit -eq $boundary.limit -and
+        $script:recordedMaterialSummary.auditWindowLimit -eq $boundary.limit -and $script:commitMethods.Count -eq 3) "material stage exact $($boundary.limit)-write boundary from $($boundary.before)"
+}
+foreach ($limit in @(20,50)) {
+    $windowArguments = @{}; foreach ($key in $materialArguments.Keys) { $windowArguments[$key] = $materialArguments[$key] }
+    $windowArguments.AuditWindowLimit = $limit
+    $windowArguments.AcceptedBefore = $limit - 1
+    Reset-MaterialStage
+    $errorRecord = $null
+    try { Invoke-SpherewrightMaterialHandcraftAndSave @windowArguments | Out-Null } catch { $errorRecord = $_ }
+    Assert-MaterialStage ($null -ne $errorRecord -and $script:methods.Count -eq 0 -and $script:commitMethods.Count -eq 0) "material stage $limit-write window reserves all three slots before any read"
+}
+foreach ($limit in @(20,50)) {
+    $windowArguments = @{}; foreach ($key in $materialArguments.Keys) { $windowArguments[$key] = $materialArguments[$key] }
+    $windowArguments.AuditWindowLimit = $limit
+    $windowArguments.AcceptedBefore = $limit - 2
+    Reset-MaterialStage
+    $errorRecord = $null
+    try { Invoke-SpherewrightMaterialHandcraftAndSave @windowArguments | Out-Null } catch { $errorRecord = $_ }
+    Assert-MaterialStage ($null -ne $errorRecord -and $script:methods.Count -eq 0 -and $script:commitMethods.Count -eq 0) "material stage $limit-2 still cannot fit three slots before any read"
+}
 
 $errorRecord=Invoke-MaterialFailure 'forge_queue'
 Assert-MaterialStage ($null -ne $errorRecord -and $errorRecord.Exception.Data['spherewrightStageAcceptedDelta'] -eq 0 -and

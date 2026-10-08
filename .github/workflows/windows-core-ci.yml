@@ -48,6 +48,7 @@ jobs:
           ./scripts/test-stage-tools.ps1
           ./scripts/test-belt-site-qualification.ps1
           ./scripts/test-evidence-index.ps1
+          ./scripts/test-evidence-reader.ps1
           ./scripts/test-factory-evidence.ps1
           ./scripts/test-production-sampling.ps1
 

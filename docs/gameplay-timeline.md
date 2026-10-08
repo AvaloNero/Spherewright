@@ -3,7 +3,7 @@
 更新时间：2026-10-09（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
-2026-10-09 — R377关闭external16/20窗口（4个未用槽不结转），核销R373路线施工及Save `102506542/R86/J102`；同tick读回首次确认原油输入707并推进精炼油加工，路径`5949→6063→6316→40带→6315→2804→707`完整。lifetime375不变，continuous credit仍为0。[油路到料与窗口提前封闭](evidence/2026-10-09/oil-arrival-window-close-r377.md)
+2026-10-09 — R388核销warper仓`5331`的100件成品转出与Save `102564883/R89/J102`；当前external3/20、lifetime378冻结，warehouse腾出的空间不是持续产率证明。此前R377仅证明一次原油到达707；continuous credit仍为0。[warper成品腾挪与headroom](evidence/2026-10-09/warper-output-headroom-r388.md)
 
 2026-10-08 — R364完成9笔材料准备并保存至`102313600/R74/J102`，R365独立核销；当前新窗口external9/20、lifetime368冻结。R359/R361仅资格化结构绕行与有界材料范围，整路尚未施工、持续供给未通过。[油路绕行材料封窗](evidence/2026-10-08/oil-detour-material-r365.md)
 

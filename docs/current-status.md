@@ -7,7 +7,7 @@
 - 当前为和平、非沙盒、1× owned 世界，P104/R23/J100，normal Save `100842338`；external `10/10 FROZEN`、lifetime `300`。Root R185 独立审计 `74ddae3f45a441129389cc8e51f412d1:1`（SHA-256 `48AD375BDEE557B7ED75D44A735218098BBD6064C4A654F43C58970BE2C5B7B2`）确认10个唯一意图均已闭合：9笔成功、1笔已知Move失败；无重放、unknown或在途，Save覆盖全部10笔。普通commit保持冻结。
 - 当前仍运行源码提交 `863d35546f6cb49fcdaec5b5814869d1e13af42b`（CI `37698616442` success）对应cohort，游戏版本 `0.10.35.29104`；本次是文档提交，不改变已安装代码。
 - R184完整工厂快照 `099a4fd7c32b421db7a27f7a88b2b43c:75`（SHA-256 `C332D0973353EFD2D1465F0B6CA90DDAE044F35779040B047F19C3861EE40612`）为6229 built、0 prebuild；相对封存6198基线新增28条belt和3个sorter、无删除。旧对象4205与3303各有一条新增互惠连接声明，其余已核静态拓扑/配置无变化。N3为224节点/558消费者/134发电机、full-serve；该帧不冒称完整电网姿态快照。
-- 当前玩家库存：Fe `2`、gear `0`、belt `37`、普通sorter `5`、fast sorter `0`、pole `0`、circuit `930`；其余物品、inc/held及科研状态保持。玩家位置没有因失败Move而改变。
+- 当前玩家库存：Fe `2`、gear `0`、belt `37`、普通sorter `5`、fast sorter `0`、pole `0`、circuit `930`；其余物品、inc/held及科研状态保持。玩家在Move的已知停滞终态后保持当前位置，未将停滞位置当作目标到达证据。
 
 ## Gate 2 边界
 

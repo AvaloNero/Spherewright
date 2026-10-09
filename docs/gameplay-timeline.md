@@ -3,6 +3,8 @@
 更新时间：2026-10-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-10 — R515完成一次普通分拣器升级并保存，R519核销两笔accepted写入；当前external4/20、lifetime403且冻结。矿源和持续供给仍未通过。[R519石料过滤分拣器与保存核销](evidence/2026-10-10/stone-filter-sorter-r519.md)
+
 2026-10-10 — 用户确认后完成固定LastExit恢复，R514核验健康P104主档保存至`104944169`/J102，external2/20、lifetime401；R508同SHA双包仅离线预检，持续供给和最终发行门仍未通过。[R514恢复与双包预检](evidence/2026-10-10/stone-fixed-recovery-r514.md)
 
 2026-10-09 — R421上调P104的1657钛矿石与916钛锭需求上限，R423独立核验后保存至`102745200`/revision101/J102，external10/20、lifetime385。只恢复需求，未证明新采矿、交货或持续供给；R389连续观察仍因33-tick缺口失败。[钛需求门槛与供给边界](evidence/2026-10-09/minimum-ti-demand-r423.md)

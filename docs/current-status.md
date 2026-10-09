@@ -1,14 +1,23 @@
 # Spherewright 当前快照
 
-更新：2026-10-10（Asia/Singapore）。当前安装执行批次仍来自 `bd749ee5380d6c374dbe43483f01b81c550892bb`；R508双包仅离线预检通过，不是实机安装验收或最终发行批准。
+更新：2026-10-10（Asia/Singapore）。本页记录最近一次独立核验的现状，不把计划或历史基线当作新观察。
 
-## 当前 owned 状态
+## 执行与保存
 
-- 当前为健康owned P104/R29，最后正常Save为 `105244881`，Journal J102。固定20写窗口以10笔唯一accepted提前封存（opening lifetime 408，closing lifetime 418），这10笔均由该Save覆盖并经R585独立核销；累计计数不归零，未开新窗口。当前无在途或unknown，等待下一有限阶段。
-- R578的Move原动作Native成功，但玩家持续漂移、没有满足稳定落地条件，因此没有实施后续五段北接；同一原动作已核销且不重放。R582的Save调用者因错误地期待返回`planetId`而停止轮询；只读检查确认同一Save终态成功，没有再次保存或重放。
-- R585全厂快照为6366 built/0 prebuild；相对封存基线新增49条带材，旧5323 Native锚点旋转及slot 1接入6330，未删除对象且无非互惠边。57成员接收路径仍开放、空载；矿机5325仍network 0、服务比率不可用（`null`）、缓冲为空，尚未接电或获准作为来源。
-- 石料整案累计19笔accepted、53条带材、6个跨度、3次移动、1个分拣器、1台矿机、2次手工制作和5次Save；未建风机或电塔。R556原16/1100/2400 scope在使用6笔、698请求、1329032.8576毫秒后退役，未使用的10笔、402请求和1070秒不转移。
-- `sourceAdmitted=false`、`wholeSupplyPassed=false`、continuous credit 0。来源接电与过滤、实际开采、持续≥36000 ticks、Warper与Rod产率、双自动补给、整合保存恢复和最终同SHA双候选包验收均未通过；已验证的蓝图生命周期与Governor 2×范围保持。
-- 下一步是有界原生地面预览，尚未新增预算。R585封存的是当前阶段结果，不代表后续施工、来源或持续供给已经通过。
+- 当前已安装的执行 cohort 来自源码 `369f35c0d7ea352d505ec686cc22a52294d5601a`；对应 Windows Core CI `37992232537` 为 success，同 SHA 的构建含 2,762 项测试、228 个文件、64 个 MCP tools 和 1 个 resource。事实文档提交不改变该二进制来源。
+- R611 的唯一 healthy default exact-primary 恢复已由 R605 独立核销。当前为 owned P104/R1、J102，正常主档保存 tick `105305314`；原 primary 的最低保存 tick 为 `105305282`。窗口从 lifetime 418 开始，当前外部 accepted 为 2/20、lifetime 420；这两笔是一次正常保存和一次健康恢复。全案累计 21 accepted、6 次普通保存、3 次移动、53 条带材、6 个跨度、1 个分拣器、1 台矿机和 2 次手工制作；旧 R556 scope 已退役，不转移其余额。
+- 本轮全案上限保持 34 accepted、5 次移动、7 次普通保存、200 条带材、11 个跨度、2 个分拣器、1 台矿机、2 台风机、2 座电塔和 4 次手工制作。此前封闭的 10/20 窗口和 lifetime 418 保持历史值，不重置或重开。
 
-阶段索引：[R585石料路由前缀保存与固定窗口封存](evidence/2026-10-10/stone-route-prefix-save-r585.md)、[R577高端双接缝Native核验](evidence/2026-10-10/stone-raised-dual-cover-r577.md)、[R573上坡动作核销与余段预算](evidence/2026-10-10/stone-uphill-prefix-r573.md)、[R568下坡接入与关键接口复核](evidence/2026-10-10/stone-overpass-critical-interface-r568.md)、[R546石料有限备料与保存核销](evidence/2026-10-10/stone-finite-material-kit-r546.md)、[R536石料矿机出口与封窗核销](evidence/2026-10-10/stone-native-source-outlet-r536.md)、[R528石料来源接近资格](evidence/2026-10-10/stone-source-approach-r528.md)、[R519石料过滤分拣器与保存核销](evidence/2026-10-10/stone-filter-sorter-r519.md)、[R514固定LastExit恢复与双包预检](evidence/2026-10-10/stone-fixed-recovery-r514.md)、[R505接缝未知终态与修复](evidence/2026-10-09/stone-return-join-quarantine-r505.md)、[R492固定隔离恢复](evidence/2026-10-09/fixed-quarantine-recovery-r492.md)、[R472隔离状态](evidence/2026-10-09/empty-belt-live-quarantine-r472.md)、[R438/R441来源书挡](evidence/2026-10-09/full-source-bookends-r441.md)。当前快照记录现状；历史细节留在各自事件页。
+## 被动漂移恢复修复
+
+- 执行代码 cohort 的被动漂移修复只对明确 opt-in 的 `prepare_move` 生效，默认关闭。它绑定最近一次外部不可变玩家检查，要求速度不高于 0.15 m/s、位移不超过 0.05 m、检查不超过 2 秒，并精确核对原有所有非位置状态及容量、订单、锻造和无人机条件；其他动作、默认哈希和 Native 移动规则未改。
+- R605 核验时，恢复后的玩家保留了已保存的漂移状态；当时读数为 0.0687 m/s、核心能量 375.55 MJ。该读数属于该次观察，不代表当前实时值。恢复不计作落地或建造完成；下一项是固定落点的 Native 资格核验，实际移动或建造尚未批准。
+- R598 的 6,366 built/0 prebuild 工厂快照是可复用的封存基线；恢复后完成的是 Journal、材料和位置核验，不是新的全厂快照。已有 49 条新带材前缀和 57 个空载接收成员保留；矿机 5325 仍未接电或获准作为来源，不能据此宣称供料通过。
+
+## 未通过的验收
+
+- `sourceAdmitted=false`、`wholeSupplyPassed=false`、continuous credit 为 0。Warper 与 Rod 的最低产率及连续 36,000 ticks、双自动补给、完整材料与来源供需、整合保存恢复和最终同 SHA 双候选包验收仍未通过；已通过的蓝图生命周期和 Governor 2× 范围保持。
+- R508 的双包检查只是离线预检，不是实际 Mod Manager 安装或最终发行验收。R587/R591 的旧原因描述已由 R592 复算修正：公开完整 PlayerAction 哈希的差异来自 Q0.01 m 位置量化；仅代入原检查位置时前后哈希一致。Native prepare 内部快照未返回，不能推断其精确位置。
+- R599 文件名大小写、R606 将漂移门误用于普通关闭、R603 缺少历史 operationId 的调用方问题均以零 RPC 停止并由后续核验关闭；它们不是 Native 拒绝，也未重放成功前缀。
+
+阶段索引：[被动漂移恢复与状态绑定核验](evidence/2026-10-10/passive-drift-maintenance-r605.md)、[石料路线前缀保存](evidence/2026-10-10/stone-route-prefix-save-r585.md)、[来源书挡与材料清单](evidence/2026-10-09/full-source-bookends-r441.md)。

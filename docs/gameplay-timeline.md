@@ -5951,3 +5951,4 @@ factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembl
 - 2026-10-09：R467三笔回收完成、一笔保持`outcome_unknown`并触发写隔离；R472核验未决状态，R473仅核对恢复票据一致性，恢复方案待用户选择，详见[隔离状态与恢复边界](evidence/2026-10-09/empty-belt-live-quarantine-r472.md)。
 - 2026-10-09：用户确认后，R489按固定LastExit路径恢复并以正常主档保存覆盖恢复前缀；R492独立核验通过，历史5322未知action未重放或改判成功，来源门仍未通过，详见[固定隔离恢复](evidence/2026-10-09/fixed-quarantine-recovery-r492.md)。
 - 2026-10-09：R498两段返回带的原action为`outcome_unknown`并隔离；R503独立核实建成前缀，R504/R505确认原生核销拒绝，未重放/保存/加载。相关证明修复通过202项策略测试及本机Release构建，未部署；详见[接缝未知终态与修复](evidence/2026-10-09/stone-return-join-quarantine-r505.md)。
+- 2026-10-10：R609同批部署、R602菜单检查与R611健康恢复由R605核销；被动漂移修复只对显式 opt-in 的 Move 生效，来源与36,000-tick持续供给门仍未通过，详见[恢复与状态绑定核验](evidence/2026-10-10/passive-drift-maintenance-r605.md)。

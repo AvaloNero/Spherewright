@@ -12,6 +12,11 @@
 不代表跨 DSP 版本永久成立。
 需明确验证层级时使用子状态`fixed_offline`或`fixed_offline_live_pending`，不能将其读作实机已通过。
 
+## IFX-185 — 目标空带接入的后验证拒绝原生已连接输入，异常记录又丢失核销证据
+
+- 2026-10-09，`fixed_offline_live_pending`。R498两段Native带已建成、扣料和互惠拓扑由R503独立核实，原action仍为`outcome_unknown`；R504精确隔离核销因缺少保留计划/库存而拒绝。[原始事实与边界](evidence/2026-10-09/stone-return-join-quarantine-r505.md)。
+- 原post-create路径捕获仍要求带头input为空，与刚接入的negative prebuild矛盾；现只在完整16槽/互惠证明后允许该精确ID复读原路径，prepare门不变。完整prepared步骤改为创建前留存，start异常隔离时留存AfterInventory，防止DTO实时库存fallback冒充保留证据。202项相关策略测试及本机完整Release构建通过；没有冷部署、实机成功或对当前原action回填记录。现场仅异常类型、无堆栈，实际抛出调用点仍未证明。关联EXP-342。
+
 ## IFX-184 — 恢复预检计划滞留在已退出的调用方进程
 
 - 2026-09-30，`mitigated`（外部调用流程及包内指南；无 Plugin 协议缺陷证据）。同档正常保存/关闭后首次默认 resume prepare 成功，但执行者结束了持有短时 token 的命令进程，未发 commit；这是零 accepted/零在途的调用方丢失，不是游戏加载失败。fresh prepare 后在同一受保护调用中唯一提交并于 `78824606` 成功，原档/J92连续。[阶段证据](evidence/2026-09-30/research-demand-save-resume-two-windows.md)。

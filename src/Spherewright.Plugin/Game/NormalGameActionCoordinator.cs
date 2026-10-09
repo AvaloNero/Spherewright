@@ -613,6 +613,9 @@ internal sealed partial class NormalGameActionCoordinator
             action.OriginalOutcomeMessage = action.Message;
             action.CompletedAtGameTick = GameMain.gameTick;
             _sessions.QuarantineWritesOnMainThread(action.ActionId, action.Message);
+            // Freeze the actual debit at the quarantine boundary. A later result
+            // snapshot may observe inventory, but cannot replace retained proof.
+            action.AfterInventory = CaptureInventory(GameMain.mainPlayer);
         }
 
         return GameCallResult<NormalActionCommitResult>.Succeeded(CreateCommitResult(action, false));

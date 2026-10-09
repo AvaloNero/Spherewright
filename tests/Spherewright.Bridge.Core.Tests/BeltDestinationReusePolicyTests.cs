@@ -127,6 +127,37 @@ public sealed class BeltDestinationReusePolicyTests
         Assert.False(BeltDestinationReusePolicy.ProvesOnlyInputChanged(before, after, 100));
     }
 
+    [Fact]
+    public void NativeTargetCreationBindsOnlyTheProvedPendingInputAndPreservesItsOldOutput()
+    {
+        var before = Connections();
+        var after = Connections();
+        before[0] = new FactoryConnectionSnapshot { Slot = 0, IsOutput = true, OtherObjectId = 5320, OtherSlot = 1 };
+        after[0] = new FactoryConnectionSnapshot { Slot = 0, IsOutput = true, OtherObjectId = 5320, OtherSlot = 1 };
+        after[1] = new FactoryConnectionSnapshot { Slot = 1, OtherObjectId = -2, OtherSlot = 0 };
+        Assert.True(BeltDestinationReusePolicy.ProvesOnlyInputChanged(before, after, -2));
+        Assert.True(BeltDestinationReusePolicy.IsExactPendingHeadInput(1, 5321, 5321, -2, -2));
+        Assert.False(BeltDestinationReusePolicy.IsExactPendingHeadInput(1, 5321, 5321, -2, 0));
+        Assert.False(BeltDestinationReusePolicy.Supports(5321, 2001, 2001, 1, 0, true, 1, 0, 0, 0));
+
+        after[0].OtherObjectId = 5319;
+        Assert.False(BeltDestinationReusePolicy.ProvesOnlyInputChanged(before, after, -2));
+    }
+
+    [Theory]
+    [InlineData(0, 5321, 5321, -2, -2)]
+    [InlineData(2, 5321, 5321, -2, -2)]
+    [InlineData(1, 0, 0, -2, -2)]
+    [InlineData(1, 5321, 5320, -2, -2)]
+    [InlineData(1, 5321, 5321, -3, -2)]
+    [InlineData(1, 5321, 5321, 0, -2)]
+    [InlineData(1, 5321, 5321, 2, 2)]
+    [InlineData(1, 5321, 5321, int.MinValue, int.MinValue)]
+    [InlineData(1, 5321, 5321, -1000001, -1000001)]
+    public void PendingInputPermissionRejectsSourceSlotsWrongHeadsAndUnboundFeeds(
+        int changingSlot, int anchorId, int headId, int inputId, int provedId) =>
+        Assert.False(BeltDestinationReusePolicy.IsExactPendingHeadInput(changingSlot, anchorId, headId, inputId, provedId));
+
     [Theory]
     [InlineData("output")]
     [InlineData("wrong_other_slot")]

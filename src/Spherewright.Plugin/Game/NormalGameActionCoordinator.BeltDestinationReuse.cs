@@ -33,7 +33,8 @@ internal sealed partial class NormalGameActionCoordinator
     }
 
     private static bool TryCaptureEmptyBeltPath(PlanetFactory factory, int anchorId, int changingSlot,
-        out EmptyBeltPathState? state, out string reason, bool allowUnpoweredMinerSource = false)
+        out EmptyBeltPathState? state, out string reason, bool allowUnpoweredMinerSource = false,
+        int provedTargetPrebuildInput = 0)
     {
         state = null;
         reason = "belt_join_path_identity_unavailable";
@@ -81,7 +82,12 @@ internal sealed partial class NormalGameActionCoordinator
             if (members.Distinct().Count() != members.Count) return false;
             UnpoweredMinerFeedState? feed = null;
             factory.ReadObjectConn(members[0], 1, out _, out var headFeed, out _);
-            if (headFeed != 0 && (!allowUnpoweredMinerSource || !TryCaptureUnpoweredMinerFeed(factory, members[0], out feed)))
+            var pendingTargetInput = BeltDestinationReusePolicy.IsExactPendingHeadInput(
+                changingSlot, anchorId, members[0], headFeed, provedTargetPrebuildInput);
+            if (provedTargetPrebuildInput != 0 && !pendingTargetInput)
+            { reason = "belt_join_bound_target_prebuild_input_mismatch"; return false; }
+            if (headFeed != 0 && !pendingTargetInput
+                && (!allowUnpoweredMinerSource || !TryCaptureUnpoweredMinerFeed(factory, members[0], out feed)))
             { reason = "belt_join_source_feed_requires_bound_unpowered_empty_ti_miner"; return false; }
             // Require a simple chain. Only a SOURCE path may retain the exact
             // unpowered, stock-free Ti miner; side and prebuild feeds still reject.
@@ -200,9 +206,15 @@ internal sealed partial class NormalGameActionCoordinator
         return connections;
     }
 
-    private static bool EmptyJoinBindingsMatch(PlanetFactory factory, BeltDestinationState bound)
+    private static bool EmptyJoinBindingsMatch(PlanetFactory factory, BeltDestinationState bound,
+        int targetPrebuildInput = 0)
     {
-        if (!TryCaptureEmptyBeltPath(factory, bound.EntityId, 1, out var target, out _)
+        // Native creation changes this one input to a negative prebuild ID. Prove
+        // all sixteen old slots and its reciprocal prebuild edge before recapturing
+        // the unchanged old cargo path; never apply this permission at prepare.
+        if (targetPrebuildInput != 0 && !ProvesDestinationInput(factory, bound, targetPrebuildInput, true)) return false;
+        if (!TryCaptureEmptyBeltPath(factory, bound.EntityId, 1, out var target, out _,
+                provedTargetPrebuildInput: targetPrebuildInput)
             || !BeltSourceReusePolicy.SameEvidence(bound.Path.BindingHash, target!.BindingHash)) return false;
         return bound.SourcePath is null || (TryCaptureEmptyBeltPath(factory, bound.SourcePath.AnchorId, 0, out var source, out _,
                 bound.SourcePath.UnpoweredMinerFeed is not null)
@@ -290,7 +302,8 @@ internal sealed partial class NormalGameActionCoordinator
             throw new InvalidOperationException("The exact empty target path changed before native construction.");
         CreateWithSourceCoverProof(factory, tool, sourceCover, previews, source);
         if (destination is not null && (destinationCover!.objId != destination.EntityId
-            || !DestinationCoverMatches(destinationCover, destination, previews) || !EmptyJoinBindingsMatch(factory, destination)
+            || !DestinationCoverMatches(destinationCover, destination, previews)
+            || !EmptyJoinBindingsMatch(factory, destination, previews[previews.Count - 1].objId)
             || !ProvesCreatedEmptyJoin(factory, source, destination, previews)
             || !ProvesDestinationInput(factory, destination, previews[previews.Count - 1].objId, true)))
             throw new InvalidOperationException("Native target reuse path, cargo or reciprocal connection proof failed; do not replay.");

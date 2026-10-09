@@ -1556,7 +1556,38 @@ internal sealed partial class NormalGameActionCoordinator
                 }
             }
 
-            create();
+            // Retain the exact prepared geometry before native create/post-create
+            // proofs. A proof exception after material consumption must not discard
+            // the evidence required for same-action quarantine reconciliation.
+            action.ExpectedBuildEntities.Clear();
+            foreach (var step in action.Plan.BuildSteps)
+                action.ExpectedBuildEntities.Add(new BuildExpectedEntity
+                {
+                    ItemId = item.ID,
+                    Position = step.Position,
+                    InputObjectId = step.InputObjectId,
+                    OutputObjectId = step.OutputObjectId,
+                    InputStepIndex = step.InputStepIndex,
+                    OutputStepIndex = step.OutputStepIndex,
+                });
+
+            try { create(); }
+            finally
+            {
+                // Record only actual surviving native prebuild identities. Partial
+                // creation still remains unknown; cost, unique entity attribution
+                // and full directed topology are required by reconciliation.
+                foreach (var preview in previews)
+                {
+                    var id = preview.objId;
+                    if (id >= 0 || id == int.MinValue || factory.prebuildPool is null
+                        || -id >= factory.prebuildCursor || -id >= factory.prebuildPool.Length) continue;
+                    var prebuild = factory.prebuildPool[-id];
+                    if (prebuild.id == -id && prebuild.protoId == item.ID && !prebuild.isDestroyed
+                        && Vector3.Distance(prebuild.pos, preview.lpos) <= .01f
+                        && !action.PrebuildIds.Contains(-id)) action.PrebuildIds.Add(-id);
+                }
+            }
             if (action.Plan.BuildKind == NormalBuildKinds.Belt
                 && action.Plan.BuildSteps[0].BeltPathMode == BeltPathModes.NativeElevatedGrid
                 && !ProvesCreatedElevatedPath(factory, action.Plan.BuildSteps, previews))
@@ -1588,16 +1619,7 @@ internal sealed partial class NormalGameActionCoordinator
                         throw new InvalidOperationException("Native sorter prebuild attachment poses changed; do not replay construction.");
                 }
 
-                action.PrebuildIds.Add(-preview.objId);
-                action.ExpectedBuildEntities.Add(new BuildExpectedEntity
-                {
-                    ItemId = item.ID,
-                    Position = preview.lpos,
-                    InputObjectId = preview.inputObjId,
-                    OutputObjectId = preview.outputObjId,
-                    InputStepIndex = action.Plan.BuildSteps[previews.IndexOf(preview)].InputStepIndex,
-                    OutputStepIndex = action.Plan.BuildSteps[previews.IndexOf(preview)].OutputStepIndex,
-                });
+                if (!action.PrebuildIds.Contains(-preview.objId)) action.PrebuildIds.Add(-preview.objId);
             }
 
             if (player.package.GetItemCount(item.ID) != baseline - previews.Count)

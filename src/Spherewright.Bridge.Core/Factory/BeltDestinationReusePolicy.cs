@@ -92,6 +92,15 @@ public static class BeltDestinationReusePolicy
         return true;
     }
 
+    /// <summary>Identifies only the caller-proved negative prebuild input at the mutable target head.
+    /// This is not admission for a fed path: the Plugin must first prove the complete reciprocal input change,
+    /// prebuild identity and exact original path binding. Ordinary prepare calls pass no such permission.</summary>
+    public static bool IsExactPendingHeadInput(int changingSlot, int anchorId, int pathHeadId,
+        int observedInputId, int provedPrebuildId) => changingSlot == 1
+        && ValidPositiveObjectId(anchorId) && pathHeadId == anchorId
+        && provedPrebuildId < 0 && provedPrebuildId != int.MinValue && ValidObjectId(provedPrebuildId)
+        && observedInputId == provedPrebuildId;
+
     /// <summary>Proves the native path membership changed only by adjoining the exact NEW sequence.
     /// A null source denotes the free-head subset; this does not validate occupancy or placement.</summary>
     public static bool ProvesJoinedMembership(IReadOnlyList<int>? source, IReadOnlyList<int>? newIds,

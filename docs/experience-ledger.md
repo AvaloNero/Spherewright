@@ -1,6 +1,12 @@
 # Spherewright experience ledger
 
-更新时间：2026-10-07（Asia/Singapore）
+更新时间：2026-10-09（Asia/Singapore）
+
+## EXP-342 — 建造后证明绑定原生后态，异常时保留隔离证据
+
+- 状态：`validated_offline_live_pending`，2026-10-09。
+- 可复用规则：空带head的prepare保持无输入；Native创建后的证明必须先核全部旧槽保全及精确negative prebuild互惠输入，再复读原路径，不能继续要求该已改变槽为空，也不能对任意输入放行。Native创建前保留不可变prepared步骤，隔离时冻结实际库存；DTO实时fallback不等于隔离时保留证据。缺记录的旧进程不能靠离线代码补填或重复未知动作；精确Native核销拒绝后仍冻结，另走已授权的受保护恢复流程。
+- 202项相关Core策略测试和本机完整Release构建通过，代码未部署/实机验证；原action仍为未知。见[本次原件、修复和恢复边界](evidence/2026-10-09/stone-return-join-quarantine-r505.md)、IFX-185。
 
 ## EXP-341 — 私有nullable-array序列化保留真正空数组
 

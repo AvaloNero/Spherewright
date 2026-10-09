@@ -16,7 +16,7 @@ R592 对旧 R587/R591 记录复算后确认：公开完整 `PlayerAction` 哈希
 
 恢复后的核验复用了 R598 封存的 6,366 built/0 prebuild 工厂快照作为基线；本次读回核 Journal、材料和位置，并非新的全厂快照。49 条新带材前缀与 57 个空载接收成员保留；矿机 5325 仍未接电或获准作为来源。R508 只完成双候选包离线预检，不等于实际 Mod Manager 安装或最终发行验收。`sourceAdmitted=false`、`wholeSupplyPassed=false`、continuous credit 为 0；Warper/Rod 产率与连续 36,000 ticks、双自动补给、完整供需、整合保存恢复及最终同 SHA 双候选包等门仍未通过。
 
-R599 文件名大小写、R606 普通关闭误用 Drift 门、R603 缺历史 operationId 均为零 RPC 的调用方停止，后续已核销且未重放；它们不是 Native 拒绝。成功前缀和原始记录继续保留。
+R599 文件名大小写错误与 R603 缺少历史 operationId 均在发出 RPC 前停止（零 RPC）；R606 发出 3 次只读 RPC 后因普通关闭前的 speed 门停止，0 accepted、0 close/install/launch/load。它们是调用方停止，不是 Native 拒绝；成功前缀和原始记录继续保留。
 
 ## 原证据索引
 

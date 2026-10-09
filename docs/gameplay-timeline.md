@@ -3,6 +3,8 @@
 更新时间：2026-10-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-10 — R585独立核销固定20写窗口中的10笔唯一accepted均由正常Save覆盖；全厂快照6366 built/0 prebuild，石料矿机仍未接电或开采，来源及持续供给门未通过。[R585石料路由前缀保存与固定窗口封存](evidence/2026-10-10/stone-route-prefix-save-r585.md)
+
 2026-10-10 — R577完成由6332经16条NEW带材至6318的高端双接缝Native cover；旧路径开放空载、矿机仍未接电，施工尚未由新Save覆盖。R579同scope余段正在执行。[R577高端双接缝Native核验](evidence/2026-10-10/stone-raised-dual-cover-r577.md)
 
 2026-10-10 — R569上坡写入在调用者超时后经R572查询确认同一原动作成功；R573核对上坡与预算余量。施工尚未由新Save覆盖，来源连接与持续供给仍待验。[R573上坡动作核销与余段预算](evidence/2026-10-10/stone-uphill-prefix-r573.md)

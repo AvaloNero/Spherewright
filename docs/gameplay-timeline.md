@@ -3,6 +3,8 @@
 更新时间：2026-10-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-10 — R558同一原动作经只读核销为Native完成，R564完成下坡/地面接缝后R568确认13条新带材接入旧空载路径。阶段仍冻结待余段；矿机未接电，持续来源未通过。[R568下坡接入与关键接口复核](evidence/2026-10-10/stone-overpass-critical-interface-r568.md)
+
 2026-10-10 — R544完成有限取材与r84递归手搓，R546独立核验四笔accepted写入均由Save `105130853`/J102覆盖；固定20窗口新阶段external4、lifetime412并冻结。来源矿机仍未开采或接电。[R546石料有限备料与保存核销](evidence/2026-10-10/stone-finite-material-kit-r546.md)
 
 2026-10-10 — R529建成矿机后，R532/R533只读核销同一原action；R534建成两段空载出口带并保存，R536独立核销9笔写入并提前封闭固定窗口。石料仍未开采，持续来源未通过。[R536石料矿机出口与封窗核销](evidence/2026-10-10/stone-native-source-outlet-r536.md)

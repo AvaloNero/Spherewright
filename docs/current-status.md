@@ -1,14 +1,13 @@
 # Spherewright 当前快照
 
-更新：2026-10-10（Asia/Singapore）。当前安装批次来自 `bd749ee5380d6c374dbe43483f01b81c550892bb`：同源冷部署228个文件（4个Plugin与224个MCP文件）、64项工具和1项资源；该提交的2732项测试通过，CI `37954973052`成功。R508对同一源码SHA的双包离线预检通过，但不是实际Mod Manager安装、游戏运行验收或最终发行批准。
+更新：2026-10-10（Asia/Singapore）。当前执行安装批次仍来自 `bd749ee5380d6c374dbe43483f01b81c550892bb`：同源冷部署228个文件（4个Plugin与224个MCP文件）、64项工具和1项资源；该提交的2732项测试通过，CI `37954973052`成功。R508同SHA双包仅离线预检通过，不是实际Mod Manager安装、实机验收或最终发行批准。
 
 ## 当前 owned 状态
 
-- R546保存后当前为和平、非沙盒、1×的owned P104/R18健康状态；正常主档Save tick `105130853`，Journal完整且durable 102。新固定20窗口external 4/20、lifetime 412，四笔原动作均已由Save覆盖；当前无在途或未决动作，阶段末冻结。前一R536窗口独立封闭，累计计数未重置；历史R498的`outcome_unknown`仍保持原判定。
-- R544完成一次正常Move、从1511取铁块1101×165、按r84×55递归制作165条带材并正常保存；原生直接账单为铁块1101×110、齿轮1201×55→带材2001×165，实际净耗铁块165、齿轮为递归中间产物。背包带材31→196，铁块与齿轮归零，其他count/inc/held及位置保持。R541成功Move前缀与R544续接合计294/800请求、407.724/1200秒、4/30 accepted。
-- R541的caller在材料prepare前因本地Hashtable的`Count`键遮蔽而停止；该次Move已accepted并成功。R543只读核销原Move，未重放；其后继续剩余阶段。该caller失败不代表Native拒绝。
-- 工厂完整快照仍为6317 built/0 prebuild；R546无新增或移除对象，旧静态及互惠拓扑保持。矿机5325仍network 0、Native服务比率不可用（`null`），出口86→6317空载；本阶段没有接线、开采或新增供电。R538/R540的来源与风机点位是资格结果，不证明产量或供电已建立。
-- R497总预算当前累计为13/30 accepted、4/200条带、1/2个分拣器、1/1台矿机、2/4次移动、2/4份材料处理、4/5次保存、2/10段带材；风机与杆仍为0。下一已授权有限工作是先Native核验空接收端向来源延伸，再按预算处理运输、过滤连接与供电；具体动作遵守逐阶段caller边界。
-- 持续来源条件仍未通过：`wholeSupplyPassed=false`、continuous credit为0。29项物料、Warper与Rod各至少1/min且连续≥36,000 ticks、双自动补给、整合保存恢复及最终同SHA双候选包验收均未通过。已通过的蓝图生命周期和Governor 2×范围保持，已封闭的H侧候选不重开。
+- 当前为和平、非沙盒、1×的owned P104/R22健康状态，正常主档Save tick `105130853`，Journal完整且durable 102。当前固定20窗口external 6/20、lifetime 414，opening lifetime 408；无在途或unknown，写入冻结，等待同一原阶段余段继续。四笔材料动作已由该Save覆盖，随后两笔施工动作尚未Save覆盖。此前R536窗口已独立关闭且累计未重置；历史R498 `outcome_unknown`保持原判定。
+- R558的下坡施工原调用者在240秒后超时，摘要报告的预建筑与扣料字段不能据此判定动作未执行。R562只读核实同一原动作Native终态为completed，R563独立核对Native点位/实体ID、旧48个实体静态与电力及空载路径；没有重放。R564另一施工动作completed/succeeded，新增带材实体为6329、6330，实际扣除带材2。其后无人机返航观察耗尽本阶段请求余量，不是Native施工失败。
+- R568复核的61对象切片显示，13条新带材（斜坡11条及接缝2条）与旧带材5316–5323组成Native path 235、444格的空载路径；方向由新段接到旧头5323，再连至5316。旧头新增的接缝是6330/slot 1→旧头输入；源端6328仅新增6329/slot 0输出。两端旋转有Native证据；其余旧48个对象静态字段、电力网络成员与供电状态保持，N3/N4均满供。R567的独立读回见三架无人机空闲且无预建筑。矿机5325仍为network 0、`serveRatio=null`且缓冲为空；未证明接电或开采。
+- 原有限阶段目标为16笔accepted、1100请求、2400秒；目前2笔accepted、208请求、317254.227毫秒，余14笔、892请求、2082秒。全局累计预算为15笔accepted、17条带材及4个跨度；R557将本段跨度上限从10调整至11，整体200条带材、30笔accepted和5次保存的预算不变。下一余段仍需核验上坡、较高端Native双接缝、5段北向延伸、移动、过滤分拣器、2风机、至多2电塔及唯一末尾Save；这些尚未验证。
+- 持续来源条件仍未通过：`sourceAdmitted=false`、`wholeSupplyPassed=false`、continuous credit为0。29项物料、Warper与Rod各至少1/min且连续≥36,000 ticks、双自动补给、整合保存恢复及最终同SHA双候选包验收均未通过。历史R498未知动作不重放；已通过的蓝图生命周期和Governor 2×范围保持。
 
-阶段索引：[R546石料有限备料与保存核销](evidence/2026-10-10/stone-finite-material-kit-r546.md)、[R536石料矿机出口与封窗核销](evidence/2026-10-10/stone-native-source-outlet-r536.md)、[R528石料来源接近资格](evidence/2026-10-10/stone-source-approach-r528.md)、[R519石料过滤分拣器与保存核销](evidence/2026-10-10/stone-filter-sorter-r519.md)、[R514固定LastExit恢复与双包预检](evidence/2026-10-10/stone-fixed-recovery-r514.md)、[R505接缝未知终态与修复](evidence/2026-10-09/stone-return-join-quarantine-r505.md)、[R492固定隔离恢复](evidence/2026-10-09/fixed-quarantine-recovery-r492.md)、[R472隔离状态](evidence/2026-10-09/empty-belt-live-quarantine-r472.md)、[R438/R441来源书挡](evidence/2026-10-09/full-source-bookends-r441.md)。当前快照记录现状；历史事实留在各自事件页。
+阶段索引：[R568下坡接入与关键接口复核](evidence/2026-10-10/stone-overpass-critical-interface-r568.md)、[R546石料有限备料与保存核销](evidence/2026-10-10/stone-finite-material-kit-r546.md)、[R536石料矿机出口与封窗核销](evidence/2026-10-10/stone-native-source-outlet-r536.md)、[R528石料来源接近资格](evidence/2026-10-10/stone-source-approach-r528.md)、[R519石料过滤分拣器与保存核销](evidence/2026-10-10/stone-filter-sorter-r519.md)、[R514固定LastExit恢复与双包预检](evidence/2026-10-10/stone-fixed-recovery-r514.md)、[R505接缝未知终态与修复](evidence/2026-10-09/stone-return-join-quarantine-r505.md)、[R492固定隔离恢复](evidence/2026-10-09/fixed-quarantine-recovery-r492.md)、[R472隔离状态](evidence/2026-10-09/empty-belt-live-quarantine-r472.md)、[R438/R441来源书挡](evidence/2026-10-09/full-source-bookends-r441.md)。当前快照记录现状；历史事实留在各自事件页。

@@ -3,6 +3,8 @@
 更新时间：2026-10-10（Asia/Singapore）
 公开存档 ID：`owned-world-001`（真实存档名不进入仓库）
 
+2026-10-10 — R529建成矿机后，R532/R533只读核销同一原action；R534建成两段空载出口带并保存，R536独立核销9笔写入并提前封闭固定窗口。石料仍未开采，持续来源未通过。[R536石料矿机出口与封窗核销](evidence/2026-10-10/stone-native-source-outlet-r536.md)
+
 2026-10-10 — R520的Move在预算结束前已accepted，R524只读核实同一原action成功、R525独立核销；R526普通保存至`105072201`/J102。R528只读确认group 19矿机候选有正余量，未建造或开采；持续来源仍未通过。[R528石料来源接近资格](evidence/2026-10-10/stone-source-approach-r528.md)
 
 2026-10-10 — R515完成一次普通分拣器升级并保存，R519核销两笔accepted写入；当前external4/20、lifetime403且冻结。矿源和持续供给仍未通过。[R519石料过滤分拣器与保存核销](evidence/2026-10-10/stone-filter-sorter-r519.md)

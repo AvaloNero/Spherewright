@@ -5952,3 +5952,4 @@ factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembl
 - 2026-10-09：用户确认后，R489按固定LastExit路径恢复并以正常主档保存覆盖恢复前缀；R492独立核验通过，历史5322未知action未重放或改判成功，来源门仍未通过，详见[固定隔离恢复](evidence/2026-10-09/fixed-quarantine-recovery-r492.md)。
 - 2026-10-09：R498两段返回带的原action为`outcome_unknown`并隔离；R503独立核实建成前缀，R504/R505确认原生核销拒绝，未重放/保存/加载。相关证明修复通过202项策略测试及本机Release构建，未部署；详见[接缝未知终态与修复](evidence/2026-10-09/stone-return-join-quarantine-r505.md)。
 - 2026-10-10：R609同批部署、R602菜单检查与R611健康恢复由R605核销；被动漂移修复只对显式 opt-in 的 Move 生效，来源与36,000-tick持续供给门仍未通过，详见[恢复与状态绑定核验](evidence/2026-10-10/passive-drift-maintenance-r605.md)。
+- 2026-10-10：R618与R621完成两次有限燃料转入但尚未保存；R623通过固定北向接收端prepare-only资格，R624施工尚无终态，来源与持续供给仍未通过，详见[燃料状态与北向接收端资格](evidence/2026-10-10/finite-mecha-fuel-stationary-north-r623.md)。

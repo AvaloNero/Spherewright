@@ -1,17 +1,12 @@
 # Spherewright 当前快照
 
-更新：2026-10-09（Asia/Singapore）。当前运行代码来自 `d6517834d4d8c55f48f841525008b4cde0a5f6e5`，已完成同批冷部署（228个文件、64个工具、1项资源；该源码通过2722项测试，CI `37857133940` 成功）。同一受保护主档的健康恢复和全厂静态连续性核验通过。R472封存了随后发生的隔离状态与未决动作，详见[空带回收后的隔离边界](evidence/2026-10-09/empty-belt-live-quarantine-r472.md)。
+更新：2026-10-09（Asia/Singapore）。当前运行代码来自`d6517834d4d8c55f48f841525008b4cde0a5f6e5`，已完成同批冷部署（228个文件、64个工具、1项资源；该源码2722项测试通过，CI `37857133940`成功）。R492已完成固定隔离恢复、正常保存和独立审计，详见[固定隔离恢复](evidence/2026-10-09/fixed-quarantine-recovery-r492.md)。
 
 ## 当前 owned 状态
 
-- 当前Native状态为和平、非沙盒、1×资源倍率的 P104/R8，最新观察tick `102929987`；最近正常保存仍为 `102875419` / J102，Journal durable为102。R456窗口当前累计 `6/20` 笔、lifetime `398`。R457保存、R463健康恢复各1笔；R467又接受4笔。R467的4笔尚未被后续保存覆盖，窗口冻结，未决状态不能清零。
-- R467中，普通分拣器5325及空带5324、5323的三次原生回收均完成并读回，分别退还2011×1、2001×1、2001×1。第四笔回收5322已accepted，但终态为`outcome_unknown`：返回内容出现2001×1，却没有完成证明；异常为`InvalidOperationException`，具体发生位置和根因未知。保留原action与幂等意图，不重放、不改判成功。由此运行健康标记为`quarantined`且`writesAllowed=false`。
-- R463/R464确认冷部署后的同档健康恢复，R465/R466确认完整工厂静态连续性；R465基线为6315个built实体。R469原68条回执已封存为partial capture，其中64页读到6311个built实体；因遗漏必需的ExpectedEntityCount，后续动态观察未完成，且该快照没有读取prebuild。R470将R469快照与R465基线比较，差异仅为5325、5324、5323、5322移除，无新增或非互惠边。存活DTO投影只显示87、5316、5321的相关连接变化及5321旋转变化；它不等同于完整Native collider/pool事后证明。完整工厂快照tick为`102911191`。R471共8次只读请求，prebuild、玩家、Journal和电力分别读取；其中35对象同tick货物cut位于tick`102929959`。这些读数不与R469拼成同tick全厂快照。剩余5321→5320→5319→5318→5317→5316为115格开放、独立、空载完整路径。该cut可见路径，但5322原动作所需的即时Native完整pool/collider后验不可观察，仍不能改判成功。87和3725现有线路保留。读回库存inc/held一致，持有空带35、普通分拣器4，核心电量1.6 GJ且玩家静止，3座工厂均满供。
-- 当前源码的隔离入口仅支持核销原保留的`outcome_unknown` Build，不支持本次Dismantle在进程内核销。常规冷维护又要求健康保存且无未决动作，因此当前条件不满足。R473只读确认两份受保护恢复票据哈希一致、未过期且绑定当前主档与未决动作；这不证明固定LastExit候选已合格或当前状态已保存，也没有关闭、加载或安装。固定LastExit隔离恢复路径不在既有授权内。游戏保持运行，不保存、不关闭、不加载、不解除隔离，也不重放未知动作。下一步是由用户选择受保护的恢复路径；恢复前不执行建设。具体候选流程见[R472恢复边界](evidence/2026-10-09/empty-belt-live-quarantine-r472.md)，尚未授权或执行。
+- 当前为和平、非沙盒、1×资源倍率的P104/R1，healthy且无当前隔离；最近正常主档保存`103307910`、Journal durable 102。R492恢复后核验的完整Journal历史与版本链连续。固定20窗口在7/20封存，lifetime 399；未用13笔不转移，新20窗口尚未开启。普通写入暂时冻结，等待root界定下一有限阶段；后续石料来源方案应采用结构不同的有界布局，不盲重试node198旧占位yaw345/135或空带未知失败族。
+- 用户确认继续此前说明的固定LastExit隔离恢复方案。旧DSP进程在操作前已退出，退出原因未知。仅启动一次新桌面进程：首次Native只读请求超时，0 prepare/commit；同一进程之后显示healthy。唯一恢复prepare/commit被accepted。最初调用方误要求恢复DTO返回其不提供的幂等键，root核对接口后只查询原action，没有重提交。恢复完成后正常主档保存`103307910`覆盖固定LastExit `103307878`及此前四笔回收前缀；旧5322 action仍保留历史`outcome_unknown`，没有重放，也未伪称原action成功。
+- 独立审计确认完整工厂6311 built/0 prebuild，无新增或移除实体、无非互惠边；全库存count/inc/held、玩家位置和Journal保持连续。唯一跨时间静态差异为矿机1213的resourceNodeIds从[36,37]变为[37]：fresh Native读取确认36已不存在，37为剩余1384、minerCount 1；这与正常采掘一致，但属于推断，不代表持续铁供给通过。Stone节点198读到40320、minerCount 0。35对象同tick货物cut确认剩余5321→5320→5319→5318→5317→5316为115格空载路径，87与3725存活；3座已加载工厂的全部网络均满供。
+- R492的完整恢复、覆盖保存及当前快照核验不改变来源验收：R438/R441来源条件失败保持，continuous credit为0、`wholeSupplyPassed=false`。29物料、连通氢、远端新Ti及本地新炼Ti、Warper与Rod各至少1/min并连续至少36,000 ticks、双自动补给、整合保存恢复及最终同SHA双候选包仍未通过；蓝图生命周期与Governor 2×已通过范围保持原结论，封闭的H侧候选不重开。
 
-## Gate 2 边界
-
-- R438/R441的36090-tick连续窗口没有间隙，但库存下降超出容差；该来源条件失败保留，continuous credit为0，`wholeSupplyPassed=false`。Gate 2整体仍未通过。
-- 完整29物料与连通氢、远端新Ti与本地新炼Ti、Warper与Rod各至少1/min并连续至少36,000 ticks、双自动补给、整合保存恢复和最终同SHA双候选包仍未通过。已通过的蓝图生命周期与Governor 2×范围保持原结论；封闭的H侧候选不重开，失败的来源窗口不拼接、不改门槛。
-
-阶段索引：[R438/R441来源书挡](evidence/2026-10-09/full-source-bookends-r441.md)、[R449石料来源与封窗](evidence/2026-10-09/stone-source-recovery-r449.md)、[R454空带回收适配](evidence/2026-10-09/empty-belt-recovery-adapter-r454.md)、[R472隔离状态与未决动作](evidence/2026-10-09/empty-belt-live-quarantine-r472.md)。当前快照记录现状；历史原件与逐阶段边界留在对应事件页。
+阶段索引：[R438/R441来源书挡](evidence/2026-10-09/full-source-bookends-r441.md)、[R449石料来源与封窗](evidence/2026-10-09/stone-source-recovery-r449.md)、[R454空带回收适配](evidence/2026-10-09/empty-belt-recovery-adapter-r454.md)、[R472隔离状态与未决动作](evidence/2026-10-09/empty-belt-live-quarantine-r472.md)、[R492固定隔离恢复](evidence/2026-10-09/fixed-quarantine-recovery-r492.md)。当前快照记录现状；历史事实留在各自事件页。

@@ -5931,3 +5931,4 @@ factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembl
 - 2026-10-09：R447回收空载耗尽的矿机86并保存；R449核验来源未恢复，R451核销原17笔并完整封窗，剩余3额度不转移，详见[石料来源检查与封窗](evidence/2026-10-09/stone-source-recovery-r449.md)。
 - 2026-10-09：R453关闭两次碰撞拒绝的旧占位候选并保留3725活线；R454加入仅离线验证的隔离空带链头原生回收适配，尚未部署或实机执行，详见[适配边界](evidence/2026-10-09/empty-belt-recovery-adapter-r454.md)。
 - 2026-10-09：R467三笔回收完成、一笔保持`outcome_unknown`并触发写隔离；R472核验未决状态，R473仅核对恢复票据一致性，恢复方案待用户选择，详见[隔离状态与恢复边界](evidence/2026-10-09/empty-belt-live-quarantine-r472.md)。
+- 2026-10-09：用户确认后，R489按固定LastExit路径恢复并以正常主档保存覆盖恢复前缀；R492独立核验通过，历史5322未知action未重放或改判成功，来源门仍未通过，详见[固定隔离恢复](evidence/2026-10-09/fixed-quarantine-recovery-r492.md)。

@@ -2522,6 +2522,7 @@ public sealed class SpherewrightToolsTests
         Assert.Equal("move-plan",plan.GetProperty("planToken").GetString());
         Assert.True(plan.GetProperty("commitAllowedNow").GetBoolean());
         Assert.Equal("fresh-player",bridge.LastMoveRequest!.ExpectedPlayerStateHash);
+        Assert.False(bridge.LastMoveRequest.AllowPassiveDrift);
         Assert.Equal(200,bridge.LastMoveRequest.Target.X);
         Assert.Equal(1,bridge.LastMoveRequest.StateHashVersion);
     }
@@ -2537,10 +2538,30 @@ public sealed class SpherewrightToolsTests
         Assert.Contains("at most66",description);
         Assert.Contains("not route clearance",description);
         Assert.Contains("does not change existing hash/commit admission",description);
+        Assert.Contains("allowPassiveDrift (default false)", description);
+        Assert.Contains("moveStateBinding", description);
         var guide=AgentPlaybookResources.GetOpeningMovementPlaybook().Text;
         Assert.Contains("prepare_move.surfacePreview",guide);
         Assert.Contains("absent evidence is unknown, never dry ground",guide);
         Assert.Contains("drop the recovery intention",guide);
+    }
+
+    [Fact]
+    public async Task MovePassiveDriftIsExplicitAndPreservesDisclosedBinding()
+    {
+        var bridge = new FakeBridgeClient(SuccessResult()) { MovePlan = new PreparedNormalAction
+        {
+            Prepared = true, MoveStateBinding = new() { InspectionStateHash = "server-inspected",
+                MaximumDisplacementMetres = 0.05, MaximumAgeSeconds = 2 }
+        } };
+        var result = await SpherewrightTools.PrepareMoveAsync(bridge, "session", 104, 200, 0, 1,
+            "server-inspected", allowPassiveDrift: true);
+        Assert.True(bridge.LastMoveRequest!.AllowPassiveDrift);
+        Assert.Equal("server-inspected", bridge.LastMoveRequest.ExpectedPlayerStateHash);
+        var binding = result.StructuredContent!.Value.GetProperty("result").GetProperty("moveStateBinding");
+        Assert.Equal("bounded_passive_drift", binding.GetProperty("mode").GetString());
+        Assert.Equal(0.05, binding.GetProperty("maximumDisplacementMetres").GetDouble());
+        Assert.Equal(2, binding.GetProperty("maximumAgeSeconds").GetDouble());
     }
 
     [Fact]

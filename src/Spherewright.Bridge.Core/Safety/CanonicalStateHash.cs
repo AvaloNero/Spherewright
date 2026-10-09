@@ -60,12 +60,20 @@ public static class CanonicalStateHash
         return Hash(value);
     }
 
-    public static string PlayerAction(PlayerStateSnapshot snapshot)
+    public static string PlayerAction(PlayerStateSnapshot snapshot) =>
+        PlayerActionAtObservedPosition(snapshot, snapshot.Position);
+
+    // This projection is not admission by itself. The passive-drift Move guard
+    // supplies a server-recorded position and separately bounds age, speed and
+    // displacement; every other PlayerAction field stays bound to the same hash.
+    public static string PlayerActionAtObservedPosition(
+        PlayerStateSnapshot snapshot,
+        Vector3Snapshot observedPosition)
     {
         var value = new StringBuilder();
         Append(value, "player-action-v1", snapshot.SessionId, snapshot.PlanetId,
             snapshot.IsAlive, snapshot.IsOnPlanet, snapshot.MovementState,
-            Q(snapshot.Position.X), Q(snapshot.Position.Y), Q(snapshot.Position.Z),
+            Q(observedPosition.X), Q(observedPosition.Y), Q(observedPosition.Z),
             snapshot.CoreEnergy > 0d, snapshot.CoreEnergyCapacity > 0d,
             snapshot.InventorySlotCount, snapshot.InventoryOccupiedSlotCount,
             snapshot.ReactorEnergy > 0d, snapshot.ReactorItemId, snapshot.ReactorItemInc,

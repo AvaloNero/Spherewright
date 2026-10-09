@@ -77,7 +77,16 @@ internal sealed partial class NormalGameActionCoordinator
         }
 
         var player = playerResult.Value;
-        if (!string.Equals(request.ExpectedPlayerStateHash, player.StateHash, StringComparison.Ordinal))
+        var driftInspection = request.AllowPassiveDrift ? _reader.LastPassiveDriftMoveInspection : null;
+        if (request.AllowPassiveDrift)
+        {
+            if (driftInspection is null || GameMain.mainPlayer.currentOrder is not null
+                || _actions.ActiveValues.Any(action => !action.Terminal && IsPlayerOrderAction(action.ActionKind))
+                || !driftInspection.Allows(request.ExpectedPlayerStateHash, player,
+                    GameStateReader.PassiveDriftClockSeconds()))
+                return StalePlan("Passive-drift Move requires the same recent server inspection, unchanged action state, low speed and at most 0.05 metres displacement within two seconds.");
+        }
+        else if (!string.Equals(request.ExpectedPlayerStateHash, player.StateHash, StringComparison.Ordinal))
         {
             return StalePlan("Player state changed after inspection; inspect the player and prepare again.");
         }
@@ -102,6 +111,14 @@ internal sealed partial class NormalGameActionCoordinator
             target.y,
             target.z,
             request.ArrivalTolerance);
+        if (driftInspection is not null)
+        {
+            var binding = driftInspection.Describe();
+            expectedHash = CanonicalStateHash.Combine(NormalActionKinds.Move, expectedHash,
+                "bounded-passive-drift-v1", binding.InspectionStateHash,
+                binding.OriginPosition.X, binding.OriginPosition.Y, binding.OriginPosition.Z,
+                binding.InspectionCapturedAtGameTick, binding.ExpiresAtUtc);
+        }
         var payload = NormalActionPlanPayload.Move(
             _sessions.SessionId!,
             request.PlanetId,
@@ -109,13 +126,22 @@ internal sealed partial class NormalGameActionCoordinator
             playerActionHash,
             target,
             request.ArrivalTolerance,
-            distance);
+            distance,
+            driftInspection);
         var surfacePreview = CaptureMoveSurfacePreview(player.Position, target);
         var prepared = AddPreparedPlan(payload, common.Session!,
             Math.Max(1L, (long)Math.Ceiling(distance / 6f * 60f)),
             "Player remains on the same planet and reaches the target within the requested tolerance.");
         if (prepared.Value is not null)
+        {
             prepared.Value.SurfacePreview = surfacePreview;
+            if (driftInspection is not null)
+            {
+                prepared.Value.MoveStateBinding = driftInspection.Describe();
+                if (driftInspection.ExpiresAtUtc < prepared.Value.ExpiresAtUtc)
+                    prepared.Value.ExpiresAtUtc = driftInspection.ExpiresAtUtc;
+            }
+        }
         return prepared;
     }
 
@@ -1179,7 +1205,14 @@ internal sealed partial class NormalGameActionCoordinator
                     return player.Error;
                 }
 
-                if (!string.Equals(CanonicalStateHash.PlayerAction(player.Value), plan.PlayerStateHash, StringComparison.Ordinal))
+                var matchesPlayerState = plan.ActionKind == NormalActionKinds.Move
+                    && plan.PassiveDriftInspection is not null
+                    ? ReferenceEquals(plan.PassiveDriftInspection, _reader.LastPassiveDriftMoveInspection)
+                        && GameMain.mainPlayer.currentOrder is null
+                        && plan.PassiveDriftInspection.Allows(plan.PassiveDriftInspection.StateHash,
+                            player.Value, GameStateReader.PassiveDriftClockSeconds())
+                    : string.Equals(CanonicalStateHash.PlayerAction(player.Value), plan.PlayerStateHash, StringComparison.Ordinal);
+                if (!matchesPlayerState)
                 {
                     return Stale("Player state no longer matches the prepared action.");
                 }
@@ -2314,6 +2347,7 @@ internal sealed partial class NormalGameActionCoordinator
         public int PlanetId { get; private set; }
         public string ExpectedStateHash { get; private set; } = string.Empty;
         public string PlayerStateHash { get; private set; } = string.Empty;
+        public PassiveDriftMoveInspection? PassiveDriftInspection { get; private set; }
         public string ResourceStateHash { get; private set; } = string.Empty;
         public string ProgressionSelectionStateHash { get; private set; } = string.Empty;
         public string StarSystemStateHash { get; private set; } = string.Empty;
@@ -2378,13 +2412,15 @@ internal sealed partial class NormalGameActionCoordinator
             string playerStateHash,
             Vector3 target,
             float tolerance,
-            double distance) => new NormalActionPlanPayload
+            double distance,
+            PassiveDriftMoveInspection? passiveDriftInspection = null) => new NormalActionPlanPayload
             {
                 ActionKind = NormalActionKinds.Move,
                 SessionId = sessionId,
                 PlanetId = planetId,
                 ExpectedStateHash = expectedStateHash,
                 PlayerStateHash = playerStateHash,
+                PassiveDriftInspection = passiveDriftInspection,
                 TargetPosition = target,
                 ArrivalTolerance = tolerance,
                 EstimatedDistance = distance,

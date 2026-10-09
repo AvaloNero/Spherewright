@@ -250,7 +250,8 @@ internal sealed class NamedPipeBridgeServer : IDisposable
                             pipe,
                             header.RequestId,
                             header.SessionId,
-                            () => _gameStateReader.GetPlayerStateOnMainThread(header.SessionId, request.Payload),
+                            () => _gameStateReader.GetPlayerStateOnMainThread(header.SessionId, request.Payload,
+                                captureMoveInspection: true),
                             cancellationToken).ConfigureAwait(false);
                         break;
                     }

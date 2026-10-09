@@ -99,6 +99,8 @@ public sealed class PrepareMoveRequest
     public string ExpectedPlayerStateHash { get; set; } = string.Empty;
 
     public int StateHashVersion { get; set; } = 1;
+
+    public bool AllowPassiveDrift { get; set; }
 }
 
 public sealed class PrepareHarvestRequest
@@ -344,6 +346,8 @@ public sealed class CommitNormalActionRequest
 
 public sealed class PreparedNormalAction
 {
+    public MoveStateBindingSnapshot? MoveStateBinding { get; set; }
+
     public BeltEndpointPreviewSnapshot? BeltEndpointPreview { get; set; }
 
     // Null on older plugins and non-Move plans; absence never means a dry/clear route.

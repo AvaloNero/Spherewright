@@ -958,7 +958,7 @@ public static partial class SpherewrightTools
         Destructive = false,
         Idempotent = false,
         OpenWorld = false)]
-    [Description("Re-reads the owned-world player state and prepares a short-lived normal ground-movement order. Additive surfacePreview samples at most32m of the requested shortest surface arc using at most66 native downward rays. shoreRisk=detected warns of a possible water/shore crossing; partial/unavailable/null is not dry-ground proof. not_detected is not route clearance or guaranteed Walk: small intervening features, obstacles and the actual controller path remain unchecked. Read the agent playbook before movement: a fully observed short crossing distinguishes water in transit from an explicitly above-water terminal suffix; an aggregate warning alone does not identify the landing. This advisory evidence does not change existing hash/commit admission and never chooses or executes another target. For ordinary walking, revise risky/unknown proposals from fresh evidence before commit; after terminal arrival always fresh-read Walk, low speed and energy. It never moves or teleports the player during prepare.")]
+    [Description("Re-reads the owned-world player state and prepares a short-lived normal ground-movement order. Additive surfacePreview samples at most32m of the requested shortest surface arc using at most66 native downward rays. shoreRisk=detected warns of a possible water/shore crossing; partial/unavailable/null is not dry-ground proof. not_detected is not route clearance or guaranteed Walk: small intervening features, obstacles and the actual controller path remain unchecked. Read the agent playbook before movement: a fully observed short crossing distinguishes water in transit from an explicitly above-water terminal suffix; an aggregate warning alone does not identify the landing. This advisory evidence does not change existing hash/commit admission and never chooses or executes another target. For ordinary walking, revise risky/unknown proposals from fresh evidence before commit; after terminal arrival always fresh-read Walk, low speed and energy. Explicit allowPassiveDrift (default false) binds the latest external player inspection for an idle Drift only: speed at most0.15m/s, at most0.05m total drift within2 seconds, unchanged original non-position PlayerAction fields and exact capacity, no forge/construction/player order. Inspect moveStateBinding and its shortened expiry; do not issue another player read between prepare and commit. This does not relax terrain or post-arrival Walk proof. It never moves or teleports the player during prepare.")]
     public static async Task<CallToolResult> PrepareMoveAsync(
         IBridgeClient bridgeClient,
         string sessionId,
@@ -969,6 +969,7 @@ public static partial class SpherewrightTools
         string expectedPlayerStateHash,
         float arrivalTolerance = 1.5f,
         int stateHashVersion = 1,
+        bool allowPassiveDrift = false,
         CancellationToken cancellationToken = default)
     {
         var result = await bridgeClient.PrepareMoveAsync(
@@ -980,9 +981,10 @@ public static partial class SpherewrightTools
                 ArrivalTolerance = arrivalTolerance,
                 ExpectedPlayerStateHash = expectedPlayerStateHash,
                 StateHashVersion = stateHashVersion,
+                AllowPassiveDrift = allowPassiveDrift,
             },
             cancellationToken).ConfigureAwait(false);
-        return ToToolResult(result, "Normal surface-movement plan prepared; player state is unchanged.");
+        return ToToolResult(result, "Normal surface-movement plan prepared; no player order was issued.");
     }
 
     [McpServerTool(

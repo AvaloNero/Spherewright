@@ -45,6 +45,10 @@ internal sealed partial class GameStateReader
     private readonly GameSessionTracker _sessions;
     private readonly OverseerLogisticsProgressStore _overseerLogisticsProgressStore;
     private readonly GovernorDeclarationStore _governorDeclarationStore;
+    internal PassiveDriftMoveInspection? LastPassiveDriftMoveInspection { get; private set; }
+
+    internal static double PassiveDriftClockSeconds() =>
+        System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency;
     private readonly SnapshotPageStore<ResourceNodeSnapshot> _resourceSnapshots =
         new SnapshotPageStore<ResourceNodeSnapshot>(TimeSpan.FromSeconds(60), 16);
     private readonly SnapshotPageStore<FactoryEntitySnapshot> _factorySnapshots =
@@ -75,7 +79,8 @@ internal sealed partial class GameStateReader
 
     public GameCallResult<PlayerStateSnapshot> GetPlayerStateOnMainThread(
         string? requestedSessionId,
-        LocalPlanetRequest request)
+        LocalPlanetRequest request,
+        bool captureMoveInspection = false)
     {
         var accessError = ValidateOwnedPlanetOnMainThread(requestedSessionId, request.PlanetId, out var factory);
         if (accessError is not null)
@@ -257,6 +262,10 @@ internal sealed partial class GameStateReader
         // prepare stale on the next Unity frame after the first energy use.
         result.StateHash = CanonicalStateHash.PlayerAction(result);
         result.StateHashVersion = CanonicalStateHash.Version;
+        if (captureMoveInspection)
+            LastPassiveDriftMoveInspection = player.currentOrder is null
+                ? PassiveDriftMoveInspection.Capture(result, PassiveDriftClockSeconds(), DateTimeOffset.UtcNow)
+                : null;
         return GameCallResult<PlayerStateSnapshot>.Succeeded(result);
     }
 

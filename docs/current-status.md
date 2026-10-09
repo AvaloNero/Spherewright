@@ -1,18 +1,17 @@
 # Spherewright 当前快照
 
-更新：2026-10-09（Asia/Singapore）。当前代码新增空带头部有限回收适配，但仅离线实现、测试和构建完成；尚未同批冷部署或实机回收，详见[空带回收适配](evidence/2026-10-09/empty-belt-recovery-adapter-r454.md)。R451封窗与石料节点核验见[石料来源阶段](evidence/2026-10-09/stone-source-recovery-r449.md)；R438/R441连续来源失败仍保留，见[来源书挡与清单](evidence/2026-10-09/full-source-bookends-r441.md)。
+更新：2026-10-09（Asia/Singapore）。当前运行代码来自 `d6517834d4d8c55f48f841525008b4cde0a5f6e5`，已完成同批冷部署（228个文件、64个工具、1项资源；该源码通过2722项测试，CI `37857133940` 成功）。同一受保护主档的健康恢复和全厂静态连续性核验通过。R472封存了随后发生的隔离状态与未决动作，详见[空带回收后的隔离边界](evidence/2026-10-09/empty-belt-live-quarantine-r472.md)。
 
 ## 当前 owned 状态
 
-- live world仍为R112 / Save `102844177` / J102，external `17/20`、lifetime `392`；R451已核销原17笔并完整封窗，剩余3不转移，新20窗口未开，无在途或unknown，普通写入冻结。
-- R453 root独立审计确认旧占位yaw345→5318与yaw135→3725两次碰撞拒绝，关闭该候选族，不再旋转微移；保留3725现有活线。1005为石料；现有15台矿机未覆盖完整116个Stone矿点。详见[石料来源阶段](evidence/2026-10-09/stone-source-recovery-r449.md)。
-- R454仅增加针对完全隔离、空载、普通2001带链头的正常回收适配：最多16带/512 cells，按fresh完整路径货物、几何、身份、入边引用检查后调用一次原生DoDismantleObject，并核对精确退款与剩余链；没有直接改写游戏数组或自动重建。相关Core 118项、MCP 3项及完整Plugin Release构建已通过，使用Native DLL哈希`6C122E5443E6843979B4064050DFCB5E0D75577A0B64F6AE4111290238B33C12`。当前installed cohort仍是`863d35546f6cb49fcdaec5b5814869d1e13af42b`，新适配尚未冷部署或实机验证。
-- 下一步是同批冷部署后有限正常回收5325，再依序核验5324至5316；后续石料来源与重新接线仍需fresh Native资格。以上离线代码验证不等于实机回收、来源恢复或持续供料通过。
+- 当前Native状态为和平、非沙盒、1×资源倍率的 P104/R8，最新观察tick `102929987`；最近正常保存仍为 `102875419` / J102，Journal durable为102。R456窗口当前累计 `6/20` 笔、lifetime `398`。R457保存、R463健康恢复各1笔；R467又接受4笔。R467的4笔尚未被后续保存覆盖，窗口冻结，未决状态不能清零。
+- R467中，普通分拣器5325及空带5324、5323的三次原生回收均完成并读回，分别退还2011×1、2001×1、2001×1。第四笔回收5322已accepted，但终态为`outcome_unknown`：返回内容出现2001×1，却没有完成证明；异常为`InvalidOperationException`，具体发生位置和根因未知。保留原action与幂等意图，不重放、不改判成功。由此运行健康标记为`quarantined`且`writesAllowed=false`。
+- R463/R464确认冷部署后的同档健康恢复，R465/R466确认完整工厂静态连续性；R465基线为6315个built实体。R469原68条回执已封存为partial capture，其中64页读到6311个built实体；因遗漏必需的ExpectedEntityCount，后续动态观察未完成，且该快照没有读取prebuild。R470将R469快照与R465基线比较，差异仅为5325、5324、5323、5322移除，无新增或非互惠边。存活DTO投影只显示87、5316、5321的相关连接变化及5321旋转变化；它不等同于完整Native collider/pool事后证明。完整工厂快照tick为`102911191`。R471共8次只读请求，prebuild、玩家、Journal和电力分别读取；其中35对象同tick货物cut位于tick`102929959`。这些读数不与R469拼成同tick全厂快照。剩余5321→5320→5319→5318→5317→5316为115格开放、独立、空载完整路径。该cut可见路径，但5322原动作所需的即时Native完整pool/collider后验不可观察，仍不能改判成功。87和3725现有线路保留。读回库存inc/held一致，持有空带35、普通分拣器4，核心电量1.6 GJ且玩家静止，3座工厂均满供。
+- 当前源码的隔离入口仅支持核销原保留的`outcome_unknown` Build，不支持本次Dismantle在进程内核销。常规冷维护又要求健康保存且无未决动作，因此当前条件不满足。R473只读确认两份受保护恢复票据哈希一致、未过期且绑定当前主档与未决动作；这不证明固定LastExit候选已合格或当前状态已保存，也没有关闭、加载或安装。固定LastExit隔离恢复路径不在既有授权内。游戏保持运行，不保存、不关闭、不加载、不解除隔离，也不重放未知动作。下一步是由用户选择受保护的恢复路径；恢复前不执行建设。具体候选流程见[R472恢复边界](evidence/2026-10-09/empty-belt-live-quarantine-r472.md)，尚未授权或执行。
 
 ## Gate 2 边界
 
-- R441虽核实原36090-tick采样无缺口，但1109高能石墨736→665（容差3）、1210 Warper3071→3032（容差1）、1102磁铁6869→6845（容差3）、1005石料2855→2743（容差8）、1127奇异物质127→94（容差1）均超出允许下降。R389原36,000-tick连续声明因33-tick间隙失败且未拼接；本轮来源条件未通过，continuous credit为0、`wholeSupplyPassed=false`，整案仍为`executable=false`。
-- 完整29物料、连通氢、远端新Ti与本地新炼Ti、Warper与Rod各至少1/min并持续至少36,000 ticks、双自动补给、整合保存恢复及最终同SHA双候选包仍未通过；已通过的蓝图生命周期与Governor 2×范围保持原结论。封闭的H侧候选不重开。
-- R454实现和离线测试不改变R438/R441来源条件失败；continuous credit仍为0，`wholeSupplyPassed=false`。石料补源、接线、双自动补给、整合保存恢复及最终同SHA双候选包仍未通过。
+- R438/R441的36090-tick连续窗口没有间隙，但库存下降超出容差；该来源条件失败保留，continuous credit为0，`wholeSupplyPassed=false`。Gate 2整体仍未通过。
+- 完整29物料与连通氢、远端新Ti与本地新炼Ti、Warper与Rod各至少1/min并连续至少36,000 ticks、双自动补给、整合保存恢复和最终同SHA双候选包仍未通过。已通过的蓝图生命周期与Governor 2×范围保持原结论；封闭的H侧候选不重开，失败的来源窗口不拼接、不改门槛。
 
-历史原件见[Gate 2生产阶段](evidence/2026-10-02/warper-automatic-source-and-build.md)、[R334铁入口升级](evidence/2026-10-08/iron-admission-upgrade-r334.md)、[R340铁矿上游升级](evidence/2026-10-08/iron-ore-feeder-r340.md)、[R353油源分拣器升级](evidence/2026-10-08/oil-source-admission-r353.md)、[R355/R356窗口封闭](evidence/2026-10-08/fixed20-window-close-r355.md)、[R365油路绕行材料资格](evidence/2026-10-08/oil-detour-material-r365.md)、[R372油路覆盖前缀](evidence/2026-10-08/oil-cover-prefix-r372.md)、[R375油路施工结构核验](evidence/2026-10-09/oil-route-completion-r375.md)、[R377油路到料](evidence/2026-10-09/oil-arrival-window-close-r377.md)、[R388 warper headroom](evidence/2026-10-09/warper-output-headroom-r388.md)、[R440需求与取料保存](evidence/2026-10-09/ti-warp-demand-save-r440.md)、[R441连续窗口与清单](evidence/2026-10-09/full-source-bookends-r441.md)、[R449石料来源与封窗](evidence/2026-10-09/stone-source-recovery-r449.md)、[R454空带回收适配](evidence/2026-10-09/empty-belt-recovery-adapter-r454.md)及[R323/R324联合长窗](evidence/2026-10-08/joint-supply-long-window-r324.md)；当前快照不复述旧阶段流水。
+阶段索引：[R438/R441来源书挡](evidence/2026-10-09/full-source-bookends-r441.md)、[R449石料来源与封窗](evidence/2026-10-09/stone-source-recovery-r449.md)、[R454空带回收适配](evidence/2026-10-09/empty-belt-recovery-adapter-r454.md)、[R472隔离状态与未决动作](evidence/2026-10-09/empty-belt-live-quarantine-r472.md)。当前快照记录现状；历史原件与逐阶段边界留在对应事件页。

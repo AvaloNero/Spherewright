@@ -6,7 +6,7 @@
 
 - 当前 owned 世界为 P104，最后正常主档保存 tick `105708553`，durable Journal 为 102。R672封存的前一固定20窗口从lifetime432开始，实际2/20、结束于lifetime434，18个未用槽位退役且不转移。R652失败移动保留为已accepted历史动作，并由该保存覆盖。
 - 新固定20窗口从lifetime434开启，目前external `0/20`、整案lifetime `434`；整案实际累计35次accepted、4次移动、8次普通保存。R674只把规划的整案普通保存上限从8调至9，未增加accepted或移动上限，实际保存仍为8。当前无在途、未核销unknown或quarantine。
-- R673的Drift移动prepare返回Native `STALE_STATE`，0 commit、intent或accepted。R676/R677随后5次只读观察记录速度从 `0.162932277` 到 `0.178838089 m/s`、位移 `0.01617379 m`；Core canonical hash复算仅观察位置变化，其余PlayerAction绑定字段一致，能量变化不是该hash变化原因。内部Native prepare/commit快照不可见，R673拒绝的具体原因仍未证明。当前仍处于Drift；尚未确认人工正常上岸并停稳，也无落地或抵达仓库证据。R672最近完整工厂快照为 `6475 built / 0 prebuild`、65页；静态配置与连接无变化，N1、N3、N4网络均满供，库存保持不变。
+- R673的Drift移动prepare返回Native `STALE_STATE`，0 commit、intent或accepted。R676/R677随后5次只读观察记录速度从 `0.162932277` 到 `0.178838089 m/s`、位移 `0.01617379 m`；Core canonical hash复算仅观察位置变化，其余PlayerAction绑定字段一致，能量变化不是该hash变化原因。内部Native prepare/commit快照不可见，R673拒绝的具体原因仍未证明。当前仍处于Drift；尚未确认人工正常上岸并停稳，也无落地或抵达仓库证据。R672最近完整工厂快照为 `6475 built / 0 prebuild`、65页；静态配置与连接无变化，P104本地N1/N3/N4三个电网均满供，库存保持不变。
 
 ## 移动与来源边界
 

@@ -5956,6 +5956,6 @@ factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembl
 - 2026-10-10：R624完成北向五笔施工并读回105条新带材；R626核验实际空载接收路径与源头间距，矿机5325仍未供电。R627尚无终态，保存与持续供给验收仍待完成，详见[北向路线核验](evidence/2026-10-10/stationary-north-route-r626.md)。
 - 2026-10-10：R641保存并核销源端接缝与供电；R643确认一次有限石料送达87，R647完成29物料及来源审计，仍有两个矿点不可用、Rod携带需求未执行，持续供给门未通过。详见[石料接缝与来源诊断](evidence/2026-10-10/stone-source-seam-power-save-r641.md)。
 - 2026-10-10：R652移动以`position_stalled`结束；R661漂移提交在Native建动作前被`STALE_STATE`拒绝，R664只读核销本地未决。窗口仍冻结且未保存，R659/R665保留矿点可用性和来源边界，持续供给门未通过，详见[仓库返航与石料来源核验](evidence/2026-10-10/warehouse-return-recovery-r665.md)。
-- 2026-10-10：R672核销普通保存并提前封存固定窗口；全厂静态与连接保持、三个已加载工厂网络满供，但玩家仍处于Drift，未取得落地、仓库到达或持续供给证据。详见[仓库返航、封窗与石料来源边界](evidence/2026-10-10/warehouse-return-recovery-r665.md)。
+- 2026-10-10：R672核销普通保存并提前封存固定窗口；全厂静态与连接保持、P104本地N1/N3/N4三个电网满供，但玩家仍处于Drift，未取得落地、仓库到达或持续供给证据。详见[仓库返航、封窗与石料来源边界](evidence/2026-10-10/warehouse-return-recovery-r665.md)。
 - 2026-10-10：R673一次漂移移动prepare收到Native `STALE_STATE`，0 accepted，并达到旧恢复候选族两次拒绝的上限；R674仅将整案保存计划上限提高到9，实际保存仍为8。新固定窗口已从lifetime434开启，来源与落地验收仍未通过，详见[仓库返航、封窗与石料来源边界](evidence/2026-10-10/warehouse-return-recovery-r665.md)。
 - 2026-10-10：R676/R677只读观察仍见Drift速度高于Native移动门；canonical hash复算仅位置变化，R673拒绝的内部Native原因仍未知，尚未观察到人工上岸停稳。详见[仓库返航、封窗与石料来源边界](evidence/2026-10-10/warehouse-return-recovery-r665.md)。

@@ -6,7 +6,7 @@
 
 R672独立核销后，正常保存为 `105708553`、R24、durable Journal 102。固定20窗口累计2/20、lifetime 434；整案累计35次accepted、4次移动和8次普通保存。窗口提前封存，18个未用槽位退役且不转移。R652失败移动保留为已accepted历史动作，并由本次保存覆盖；无在途、未核销unknown或quarantine。
 
-完整工厂快照为 `6475 built / 0 prebuild`、65页，静态配置与连接无变化；N1、N3、N4网络均满供，库存保持不变。R672确认玩家仍处于Drift，不能将其作为落地、抵达仓库或持续供给的证据。
+完整工厂快照为 `6475 built / 0 prebuild`、65页，静态配置与连接无变化；P104本地N1/N3/N4三个电网均满供，库存保持不变。R672确认玩家仍处于Drift，不能将其作为落地、抵达仓库或持续供给的证据。
 
 R666的40秒观察取得120个Drift读数，严格 `0.03 m/s` 局部速度门未满足，未尝试Native移动。R665恢复候选族已有1次Native拒绝，候选上限为2。R659列出的20个当前有效有限矿点有正剩余；节点36/37返回 `INVALID_ENTITY`，剩余量不可用。R668复用了完整29项物料与拓扑上下文，但没有生产tick信用；这些有限观测不改变持续来源验收结论。
 
@@ -28,7 +28,7 @@ R676 writer `43f54012bee145178dd4eea8f0815057:6`，SHA-256 `CB9A90E2B5D3FE00F167
 
 R652的唯一accepted移动以`action_failed/position_stalled`结束；原动作已唯一核销，不重放。新固定20窗口从lifetime432开始，目前1/20、lifetime433。最后正常保存仍为tick `105510911`、durable Journal 102；本窗动作尚未由新保存覆盖，窗口冻结，无在途或未核销unknown。
 
-R657在速度0.163551718超过0.15时于prepare前停止，0 accepted。R661漂移prepare为positive，但Native在动作建立前返回`STALE_STATE`，同样0 accepted；其调用方本地未决由R664的5次只读健康核验关闭，不清计数也未保存。R665最近观察记录漂移0.129m、CoreEnergy 1.59998 GJ，仅代表该观察时点。
+R657在速度0.163551718超过0.15时于prepare前停止，0 accepted。R661漂移prepare为positive，但Native在动作建立前返回`STALE_STATE`，同样0 accepted；其调用方本地未决由R664的5次只读健康核验关闭，不清计数也未保存。R665最近观察记录漂移速度0.129m/s、CoreEnergy 1.59998 GJ，仅代表该观察时点。
 
 ## R665历史截面：来源与样本边界
 

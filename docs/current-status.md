@@ -4,8 +4,8 @@
 
 ## 当前运行与窗口
 
-- 当前 owned 世界为 P104，最后正常主档保存 tick `105708553`、durable Journal 102；当前为 R26。固定20窗口从lifetime `434`开启，目前external `1/20`、整案lifetime `435`；整案累计36次accepted、5次移动、8次普通保存。R692唯一成功的Move尚未被保存覆盖；无在途或unknown，新写冻结。
-- R704/R705最新玩家读回为tick `105956022`：Walk速度0、CoreEnergy约30.167 MJ、fuel与reactor均为0；石矿1005仍为6，位置与R697读回相同。来源仍未明，Walk速度0不证明已在陆地停稳。
+- 当前 owned 世界为 P104，最后正常主档保存 tick `105985786`、durable Journal 102；当前为 R27。固定20窗口从lifetime `434`开启，目前external `2/20`、整案lifetime `436`；整案累计37次accepted、5次移动、9次普通保存。R711的正常Save已覆盖R692成功Move；R715核验无在途或unknown。后续只按既定有限阶段继续，Save本身不批准任意新施工。
+- R713健康核验确认石矿1005仍为6，且完整背包、增量、held与Journal状态已核对。石矿增量来源仍未归因，Stone6获取/供给信用为0；不要求或假设用户曾手动操作。
 
 ## 来源与供需观察
 
@@ -17,9 +17,9 @@
 ## 验收边界
 
 - `wholeSupplyPassed=false`，continuous credit为0。Warper与Rod各至少1/min、连续36,000 ticks、双自动补给、完整来源竞争与材料供需、整合保存恢复和最终同SHA双候选包验收仍未通过；历史有限送达、库存或额定容量不能替代这些门。
-- R690地形预览中的多数位置位于水下；Walk速度为0不能代替dryland/上岸证据。旧orthogonal 4 m候选族的两次拒绝仍退役；采煤候选目前只有一次Harvest prepare `STALE_STATE`，0 commit/accepted，不应称为第二次拒绝。下一步先核清石矿增量是否来自手动操作，再按计划进行普通Save和燃料/供料接口预检；当前仍不进行新写。
+- R690地形预览中的多数位置位于水下；Walk速度为0不能代替dryland/上岸证据。旧orthogonal 4 m候选族的两次拒绝仍退役；采煤候选只有一次Harvest prepare `STALE_STATE`，0 commit/accepted，不应称为第二次拒绝。R711后续正常保存已覆盖R692成功Move，但没有采煤或加燃料；石矿来源未归因且信用为0，不再把用户确认手动操作作为阻塞。下一步按既定普通有限阶段做燃料、到达及近铁源接口预检。
 - root R706仅完成离线设计：候选包括矿机、1条出料路线、最多20个传送带段及过滤1001的普通分拣器，必要时加电塔与保存，至多5次accepted；设计不支持矿机直接接入既有带口，拟经带到带分拣器保留旧功能。1213仍占用1218的slot 1。矿机位置/覆盖、Native接缝、碰撞及功率均未fresh资格确认，`constructionApproved=false`；该候选不属于当前已批准施工范围，未扣料、未建造。
-- 下一步先核清石矿增量来源，再对group 3近源候选做fresh来源、路线、消费者、Native接口与容量预检；此设计不构成施工批准。固定36,000-tick验收门不变。
+- 对group 3近源候选的fresh来源、路线、消费者、Native接口与容量预检仍待完成；R706设计不构成施工批准。固定36,000-tick验收门不变。
 - R508双包检查仍只是离线预检，不是实际Mod Manager安装或最终发行验收。
 
 阶段索引：[煤矿接近与库存变化观察](evidence/2026-10-10/coal-fuel-approach-state-change-r697.md)、[完整来源只读核验与铁源差异](evidence/2026-10-10/full-source-readiness-r682.md)、[漂移状态与来源边界](evidence/2026-10-10/warehouse-return-recovery-r665.md)、[来源书挡与准备清单](evidence/2026-10-09/full-source-bookends-r441.md)。

@@ -5960,3 +5960,4 @@ factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembl
 - 2026-10-10：R673一次漂移移动prepare收到Native `STALE_STATE`，0 accepted，并达到旧恢复候选族两次拒绝的上限；R674仅将整案保存计划上限提高到9，实际保存仍为8。新固定窗口已从lifetime434开启，来源与落地验收仍未通过，详见[仓库返航、封窗与石料来源边界](evidence/2026-10-10/warehouse-return-recovery-r665.md)。
 - 2026-10-10：R676/R677只读观察仍见Drift速度高于Native移动门；canonical hash复算仅位置变化，R673拒绝的内部Native原因仍未知，尚未观察到人工上岸停稳。详见[仓库返航、封窗与石料来源边界](evidence/2026-10-10/warehouse-return-recovery-r665.md)。
 - 2026-10-10：R681/R682完成全来源只读核验；R683进一步定位所选磁铁炉的空铁矿输入及现有铁源至铁块炉的路径，但尚未确认唯一根因或批准修复，持续供给门仍未通过。详见[全来源核验与铁源差异](evidence/2026-10-10/full-source-readiness-r682.md)。
+- 2026-10-10：R692成功完成短程Move并由R694核销；后续采煤prepare因`STALE_STATE`停止，未采煤、加燃料或保存。R697核实石矿1005增加6件；R699完成只读全厂核验，煤点未开采，库存增量来源仍待确认，写入保持冻结。[煤矿接近与库存变化观察](evidence/2026-10-10/coal-fuel-approach-state-change-r697.md)

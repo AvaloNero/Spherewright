@@ -5955,3 +5955,4 @@ factory23219553完整23页2267 built、0 prebuild：1883belt/202sorter/36assembl
 - 2026-10-10：R618与R621完成两次有限燃料转入但尚未保存；R623通过固定北向接收端prepare-only资格，R624施工尚无终态，来源与持续供给仍未通过，详见[燃料状态与北向接收端资格](evidence/2026-10-10/finite-mecha-fuel-stationary-north-r623.md)。
 - 2026-10-10：R624完成北向五笔施工并读回105条新带材；R626核验实际空载接收路径与源头间距，矿机5325仍未供电。R627尚无终态，保存与持续供给验收仍待完成，详见[北向路线核验](evidence/2026-10-10/stationary-north-route-r626.md)。
 - 2026-10-10：R641保存并核销源端接缝与供电；R643确认一次有限石料送达87，R647完成29物料及来源审计，仍有两个矿点不可用、Rod携带需求未执行，持续供给门未通过。详见[石料接缝与来源诊断](evidence/2026-10-10/stone-source-seam-power-save-r641.md)。
+- 2026-10-10：R652移动以`position_stalled`结束；R661漂移提交在Native建动作前被`STALE_STATE`拒绝，R664只读核销本地未决。窗口仍冻结且未保存，R659/R665保留矿点可用性和来源边界，持续供给门未通过，详见[仓库返航与石料来源核验](evidence/2026-10-10/warehouse-return-recovery-r665.md)。

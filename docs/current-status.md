@@ -4,22 +4,22 @@
 
 ## 当前运行与窗口
 
-- 当前 owned 世界为P104/R31，最后正常主档Save `105999520`、durable Journal 102；固定20窗口external `5/20`、整案lifetime `439`。整案累计40次accepted、5次移动、3次手工材料、3次refuel、10次普通Save；无在途或unknown。R717 Harvest的原action已由R720核为成功并由R722后续Save覆盖，未重发。
-- 最新玩家读回tick `105999745`：Walk速度0、CoreEnergy约91.408 MJ、reactor约0.893 MJ。尚无≥100 MJ到达reserve已满足或dryland的fresh证明。Stone6仍为6，来源未归因，Stone6获取/供给信用为0；不要求或假设用户曾手动操作。
+- 当前 owned 世界为P104/R46，最后正常主档Save `106012859`、durable Journal 102；固定20窗口external `13/20`、整案lifetime `447`。整案累计48次accepted、12次移动、3次手工材料、3次refuel、11次普通Save；该窗口13笔唯一accepted均已由Save覆盖，无在途或unknown。R727有限到达阶段的7次普通短Move与1次Save均由R729原件独立核验，无重放。
+- 最新玩家读回tick `106013069`：Walk速度0、CoreEnergy约207.546 MJ、reactor为0。现在已有≥100 MJ到达reserve的fresh证明；dryland仍未证明。核验记录测得与Iron节点40相距约45.344 m、与磁铁炉1216相距约34.729 m，且Iron节点40在玩家建造范围内。Stone6仍为6，来源未归因、获取/供给信用为0；不要求或假设用户曾手动操作。
 
 ## 来源与供需观察
 
 - R682独立核验覆盖29项库存、20个当前有限矿点（均有Native正剩余）、钛源169与本地钛254、16个燃料发电实体、2座实验室及3座已加载工厂的供电；观察到0个预建筑。该只读覆盖确认了当前状态，不是连续产量或全案供料通过。
-- R699封存的完整工厂只读核验为6475 built/0 prebuild；相对R672无新增、移除、静态变化或非互惠边，P104本地网络成员与容量保持且满供。R704没有重采该全厂快照；它fresh读了1213、1216与1496等选定实体。R704完整Iron页含91个正剩余矿点，root R705确认group 3内有9个未占用正剩余点距磁铁炉1216约18.428–26.487 m、合计221723，其中node 40剩余28076。旧矿机1213无矿点/缓存，不证明周边矿点已耗尽；1216配方ID 2的铁矿输入与磁铁输出均为0，机器不工作但满供；1496仍工作且铁矿缓存44。因此近处补源是待fresh预检的候选，远处1496分流不是唯一方案。R704只复用了R699完整快照，不能称为6475实体的fresh复核。
+- R699封存的完整工厂只读核验为6475 built/0 prebuild；相对R672无新增、移除、静态变化或非互惠边，P104本地网络成员与容量保持且满供。R704未重采该快照，后来R729才完成6475实体、0 prebuild的fresh核验；相对封存状态新增/移除/静态/非互惠差异均为0，本地供电满供。R704只fresh读了1213、1216与1496等选定实体：Iron页含91个正剩余矿点，root R705确认group 3内有9个未占用正剩余点距磁铁炉1216约18.428–26.487 m、合计221723，其中node 40剩余28076。旧矿机1213无矿点/缓存，不证明周边矿点已耗尽；1216配方ID 2的铁矿输入与磁铁输出均为0，机器不工作但满供；1496仍工作且铁矿缓存44。R729确认Iron节点40仍有28076、minerCount为0且位于玩家建造范围内；fresh Native矿机覆盖、独立出料带及带到带分拣器接入1218仍未验证。
 - R681两个相互重叠的600-tick观测窗都记录到磁铁新产出为0，未求和或拼接。R683只读路径核对确认所选磁铁炉1216铁矿输入与磁铁输出均为0，其旧上游路径1213→1218–1222→1223→1216为空；当前仍工作的铁源1496经6270→6269→6267→6268→6271→6272→6273→6274→1507→1508→1509连至铁块炉1500。部分中间实体来自既有R672快照，并非此次全路径fresh覆盖；当前缺口是1216缺铁与共享供给问题。
 - 最近一次Warp、Rod及跨组库存细节来自R682/R647各自own-tick读回，不是R697当前库存快照，不能据此判断当前产率或连续窗口结果。
 
 ## 验收边界
 
 - `wholeSupplyPassed=false`，continuous credit为0。Warper与Rod各至少1/min、连续36,000 ticks、双自动补给、完整来源竞争与材料供需、整合保存恢复和最终同SHA双候选包验收仍未通过；历史有限送达、库存或额定容量不能替代这些门。
-- R690地形预览中的多数位置位于水下；Walk速度为0不能代替dryland/上岸证据。旧orthogonal 4 m候选族的两次拒绝仍退役；R695旧采煤候选有一次Harvest prepare `STALE_STATE`，不能称为第二次拒绝。后续R717原Harvest在caller等待超时后由R720核为成功；R722又正常加燃料并保存。当前燃料转入已完成，但≥100 MJ到达reserve与上岸状态尚未fresh证明。石矿来源仍未归因、信用为0，不再把用户确认手动操作作为阻塞；下一步做近铁源到达Native预检及最小供料接口核验。
+- R690地形预览中的多数位置位于水下；Walk速度为0不能代替dryland/上岸证据。旧orthogonal 4 m候选族的两次拒绝仍退役；R695旧采煤候选有一次Harvest prepare `STALE_STATE`，不能称为第二次拒绝。后续R717原Harvest在caller等待超时后由R720核为成功；R722又正常加燃料并保存。R729最新读回已证明CoreEnergy高于100 MJ到达reserve，但没有dryland证据。石矿来源仍未归因、信用为0，不再把用户确认手动操作作为阻塞；下一步对Iron节点40做fresh Native矿机覆盖预检，并核验独立出料带与带到带分拣器接入1218。
 - root R706仅完成离线设计：候选包括矿机、1条出料路线、最多20个传送带段及过滤1001的普通分拣器，必要时加电塔与保存，至多5次accepted；设计不支持矿机直接接入既有带口，拟经带到带分拣器保留旧功能。1213仍占用1218的slot 1。矿机位置/覆盖、Native接缝、碰撞及功率均未fresh资格确认，`constructionApproved=false`；该候选不属于当前已批准施工范围，未扣料、未建造。
-- 对group 3近源候选的fresh来源、路线、消费者、Native接口与容量预检仍待完成；R706设计不构成施工批准。固定36,000-tick验收门不变。
+- group 3近源方案仍需fresh来源、路线、消费者、Native接口与容量预检；R729的有限到达不是施工或路线clearance，`constructionApproved=false`。固定36,000-tick验收门不变。
 - R508双包检查仍只是离线预检，不是实际Mod Manager安装或最终发行验收。
 
-阶段索引：[煤矿接近与库存变化观察](evidence/2026-10-10/coal-fuel-approach-state-change-r697.md)、[完整来源只读核验与铁源差异](evidence/2026-10-10/full-source-readiness-r682.md)、[漂移状态与来源边界](evidence/2026-10-10/warehouse-return-recovery-r665.md)、[来源书挡与准备清单](evidence/2026-10-09/full-source-bookends-r441.md)。
+阶段索引：[近铁源有限到达与保存核销](evidence/2026-10-10/near-iron-source-arrival-r729.md)、[煤矿接近与库存变化观察](evidence/2026-10-10/coal-fuel-approach-state-change-r697.md)、[完整来源只读核验与铁源差异](evidence/2026-10-10/full-source-readiness-r682.md)、[漂移状态与来源边界](evidence/2026-10-10/warehouse-return-recovery-r665.md)、[来源书挡与准备清单](evidence/2026-10-09/full-source-bookends-r441.md)。
